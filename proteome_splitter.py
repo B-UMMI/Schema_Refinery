@@ -6,6 +6,7 @@
 
 
 import os
+import pickle
 import argparse
 
 from Bio import SeqIO
@@ -22,6 +23,7 @@ def main(input_files, output_dir):
 	# divide into Swiss-Prot and TrEMBL records
 	sp = {}
 	trembl = {}
+	descriptions = {}
 	for file in proteomes:
 	    for rec in SeqIO.parse(file, 'fasta'):
 	        recid = rec.id
@@ -31,6 +33,7 @@ def main(input_files, output_dir):
 	            trembl[recid] = prot
 	        elif recid.startswith('sp'):
 	            sp[recid] = prot
+	        descriptions[recid] = desc
 
 	# save to file
 	tr_file = os.path.join(output_dir, 'trembl_prots.fasta')
@@ -44,6 +47,11 @@ def main(input_files, output_dir):
 	    records = ['>{0}\n{1}'.format(k, v) for k, v in sp.items()]
 	    rectext = '\n'.join(records)
 	    tout.write(rectext)
+
+	# save descriptions
+	descriptions_file = os.path.join(output_dir, 'descriptions')
+	with open(descriptions_file, 'wb') as dout:
+		pickle.dump(descriptions, dout)
 
 
 def parse_arguments():
