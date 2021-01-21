@@ -172,10 +172,6 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     return stderr
 
 
-#schema_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/Annotations/schema_seed_gas_dys'
-#references_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/Annotations/splitted_proteomes'
-#output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/Annotations/proteome_matching'
-#blast_threads = 6
 def main(schema_dir, references_dir, output_dir, blast_threads):
 
     if os.path.isdir(output_dir) is False:
