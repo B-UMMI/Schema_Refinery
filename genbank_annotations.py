@@ -201,7 +201,6 @@ def main(input_files, schema_dir, output_dir):
     for f in gbk_files:
         recs = [rec for rec in SeqIO.parse(f, 'genbank')]
 
-        fasta_recs = []
         valid_recs = []
         for r in recs:
             rid = r.id
@@ -222,18 +221,18 @@ def main(input_files, schema_dir, output_dir):
                 gene_product = 'NA'
 
             frec = '>{0}|{1}|{2}\n{3}'.format(rid, gene_product, gene_name, seq)
-            fasta_recs.append(frec)
 
             if gene_name != 'NA':
                 if seq not in seen:
                     valid_recs.append(frec)
                     seen[seq] = [rid, gene_product, gene_name]
-
-        # save file with all proteins
-        filename = os.path.join(output_dir, os.path.basename(f).rstrip('.fasta')+'_cds.fasta')
-        with open(filename, 'w') as fout:
-            fasta_text = '\n'.join(fasta_recs)
-            fout.write(fasta_text)
+                elif seq in seen and seen[seq][2] == 'NA':
+                    valid_recs.append(frec)
+                    seen[seq] = [rid, gene_product, gene_name]
+            elif gene_name == 'NA':
+                if seq not in seen:
+                    valid_recs.append(frec)
+                    seen[seq] = [rid, gene_product, gene_name]
 
         # save file with the proteins that have a valid name
         # do not save repeated
