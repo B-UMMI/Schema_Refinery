@@ -111,16 +111,34 @@ def graph_html(networkx_graph, reps, output_html, title):
     """
     """
 
-    nt = Network('1080px', '1920px')
+    nt = Network('720px', '1280px')
 
     # populates the nodes and edges data structures
     nt.from_nx(networkx_graph)
 
-    for node in reps:
-        nt.nodes[int(node)]['color'] = '#dd4b39'
+    for node in nt.nodes:
+        node_id = node['id']
+        if node_id not in reps:
+            node['color'] = '#a6bddb'
+        else:
+            node['color'] = '#3690c0'
+            node['size'] = 12
 
-    nt.show_buttons(filter_=['physics'])
+    for edge in nt.edges:
+        rounded_weight = round(edge['weight'], 2)
+        edge['title'] = str(rounded_weight)
+
+    nt.show_buttons(filter_=['physics', 'manipulation'])
+
+    # change default title
     nt.heading = title
+    # enable multiselection of nodes and edges
+    nt.options.interaction.multiselect = True
+    # enable edge highlighting during hover
+    nt.options.interaction.hover = True
+    # change deafults for BarnesHut
+#    nt.barnes_hut(gravity=-2000, central_gravity=0.3, spring_length=95,
+#                  spring_strength=0.04, damping=0.25, overlap=0.5)
 
     nt.show(output_html)
 
