@@ -197,11 +197,10 @@ def main(input_files, schema_dir, output_dir):
 
     # extract features from gbk files and create simple multi-fasta files with
     # strictly necessary info
-    seen = {}
+    selected = {}
     for f in gbk_files:
         recs = [rec for rec in SeqIO.parse(f, 'genbank')]
 
-        valid_recs = []
         for r in recs:
             rid = r.id
             seq = str(r.seq)
@@ -220,33 +219,24 @@ def main(input_files, schema_dir, output_dir):
             else:
                 gene_product = 'NA'
 
-            frec = '>{0}|{1}|{2}\n{3}'.format(rid, gene_product, gene_name, seq)
-
             if gene_name != 'NA':
-                if seq not in seen:
-                    valid_recs.append(frec)
-                    seen[seq] = [rid, gene_product, gene_name]
-                elif seq in seen and seen[seq][2] == 'NA':
-                    valid_recs.append(frec)
-                    seen[seq] = [rid, gene_product, gene_name]
+                if seq not in selected:
+                    selected[seq] = [rid, gene_product, gene_name]
+                elif seq in selected and selected[seq][2] == 'NA':
+                    selected[seq] = [rid, gene_product, gene_name]
             elif gene_name == 'NA':
-                if seq not in seen:
-                    valid_recs.append(frec)
-                    seen[seq] = [rid, gene_product, gene_name]
+                if seq not in selected:
+                    selected[seq] = [rid, gene_product, gene_name]
 
-        # save file with the proteins that have a valid name
-        # do not save repeated
-        filename2 = os.path.join(output_dir, os.path.basename(f).rstrip('.fasta')+'_valid_cds.fasta')
-        if len(valid_recs) > 0:
-            with open(filename2, 'w') as fout:
-                fasta_text = '\n'.join(valid_recs)
-                fout.write(fasta_text)
+    # create records to save to Fasta file
+    selected_recs = ['>{0}|{1}|{2}\n{3}'.format(*v, k) for k, v in selected.items()]
 
-    # concatenate all CDS files
-    # concatenate only files with genes that have gene names
-    cds_files = [os.path.join(output_dir, f) for f in os.listdir(output_dir) if f.endswith('valid_cds.fasta')]
-    single_file = os.path.join(output_dir, 'valid_cds_concat.fasta')
-    concatenate_files(cds_files, single_file)
+    # save file with the proteins that have a valid name
+    # do not save repeated
+    selected_file = os.path.join(output_dir, 'selected_cds.fasta')
+    with open(selected_file, 'w') as outfile:
+        fasta_text = '\n'.join(selected_recs)
+        outfile.write(fasta_text)
 
     # BLAST alleles for each locus against file with all CDSs from origin genomes
     reps_dir = os.path.join(schema_dir, 'short')
@@ -274,7 +264,7 @@ def main(input_files, schema_dir, output_dir):
     make_blast_db('makeblastdb', prot_file, blastdb_path, 'prot')
 
     blastout = os.path.join(output_dir, 'blastout.tsv')
-    run_blast('blastp', blastdb_path, single_file, blastout,
+    run_blast('blastp', blastdb_path, selected_file, blastout,
               max_hsps=1, threads=6, ids_file=None, blast_task=None,
               max_targets=1, ignore=None)
 
@@ -286,19 +276,29 @@ def main(input_files, schema_dir, output_dir):
     for r in blast_results:
         r[1] = reps_ids[int(r[1])]
 
+    # create mapping between sequence IDs and sequence
+    selected_inverse = {v[0]: [k, v[2]] for k, v in selected.items()}
+
     best_matches = {}
     for rec in blast_results:
         query = rec[0].split('|')[0]
         subject = rec[1]
         score = rec[-1]
+        query_name = selected_inverse[query][1]
         if subject in best_matches:
-            if float(score) > float(best_matches[subject][1]):
-                best_matches[subject] = [query, score]
+            if best_matches[subject][2] == 'NA' and query_name != 'NA':
+                best_matches[subject] = [query, score, query_name]
+            elif best_matches[subject][2] != 'NA' and query_name != 'NA':
+                if float(score) > float(best_matches[subject][1]):
+                    best_matches[subject] = [query, score, query_name]
+            elif best_matches[subject][2] == 'NA' and query_name == 'NA':
+                if float(score) > float(best_matches[subject][1]):
+                    best_matches[subject] = [query, score, query_name]
         else:
-            best_matches[subject] = [query, score]
+            best_matches[subject] = [query, score, query_name]
 
     # get identifiers mapping
-    ids_to_name = {v[0]: v[1:] for k, v in seen.items()}
+    ids_to_name = {v[0]: v[1:] for k, v in selected.items()}
     # add names
     for k in best_matches:
         best_matches[k].extend(ids_to_name[best_matches[k][0]])
@@ -327,7 +327,7 @@ def main(input_files, schema_dir, output_dir):
     header = 'locus\torigin_id\torigin_product\torigin_name\torigin_bsr'
     annotations_file = os.path.join(output_dir, 'genbank_annotations.tsv')
     with open(annotations_file, 'w') as at:
-        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k, v[0], v[2], v[3], v[4]) for k, v in best_matches.items()]
+        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k, v[0], v[3], v[4], v[5]) for k, v in best_matches.items()]
         outtext = '\n'.join(outlines)
         at.write(outtext)
 
