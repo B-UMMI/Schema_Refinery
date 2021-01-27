@@ -107,26 +107,34 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     return stderr
 
 
-def graph_html(networkx_graph, reps, output_html, title):
+#networkx_graph = G
+#reps = representatives
+def graph_html(networkx_graph, reps, output_html, loci_ids, title):
     """
     """
 
     nt = Network('720px', '1280px')
+
+    # attribute colors to each locus. Hardcoded!
+    colors = [('#9ecae1', '#2171b5'), ('#a1d99b', '#238b45')]
+    colors_map = {locus: colors[i] for i, locus in enumerate(loci_ids)}
 
     # populates the nodes and edges data structures
     nt.from_nx(networkx_graph)
 
     for node in nt.nodes:
         node_id = node['id']
+        node_locus, allele_id = node_id.split('_')
+        node['label'] = allele_id
         if node_id not in reps:
-            node['color'] = '#a6bddb'
+            node['color'] = colors_map[node_locus][0]
         else:
-            node['color'] = '#3690c0'
+            node['color'] = colors_map[node_locus][1]
             node['size'] = 12
 
-    for edge in nt.edges:
-        rounded_weight = round(edge['weight'], 2)
-        edge['title'] = str(rounded_weight)
+#    for edge in nt.edges:
+#        rounded_weight = round(edge['weight'], 2)
+#        edge['title'] = str(rounded_weight)
 
     nt.show_buttons(filter_=['physics', 'manipulation'])
 
@@ -144,28 +152,35 @@ def graph_html(networkx_graph, reps, output_html, title):
 
 
 # add way to apply cutoff and output groups of alleles
-#locus_id = 'GCF-002236855-protein1020'
+#loci_ids = ['GCF-002236855-protein1020', 'GCF-003203475-protein1498']
 #schema_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/spyogenes_schema_processed'
 #output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis'
 #blast_score_ratio = 0.6
-def main(locus_id, schema_dir, output_dir, blast_score_ratio):
+#title = 'sclB & sclA'
+def main(loci_ids, schema_dir, output_dir, blast_score_ratio, title):
 
-    locus_file = os.path.join(schema_dir, locus_id+'.fasta')
+    loci_files = {locus: os.path.join(schema_dir, locus+'.fasta') for locus in loci_ids}
 
     # create file with short ids
-    records = [((rec.id).split('_')[-1], str((rec.translate(table=11, cds=True)).seq))
-               for rec in SeqIO.parse(locus_file, 'fasta')]
+    records = {k: [] for k in loci_files}
+    for locus, file in loci_files.items():
+        current_records = [('{0}_{1}'.format(locus, (rec.id).split('_')[-1]), str((rec.translate(table=11, cds=True)).seq))
+                           for rec in SeqIO.parse(file, 'fasta')]
+        records[locus] = current_records
 
     # get locus rep IDs
-    locus_rep_file = os.path.join(schema_dir, 'short', locus_id+'_short.fasta')
-    reps = [(rec.id).split('_')[-1] for rec in SeqIO.parse(locus_rep_file, 'fasta')]
+    loci_rep_files = {locus: os.path.join(schema_dir, 'short', locus+'_short.fasta') for locus in loci_ids}
+    representatives = []
+    for locus, file in loci_rep_files.items():
+        current_representatives = ['{0}_{1}'.format(locus, (rec.id).split('_')[-1]) for rec in SeqIO.parse(file, 'fasta')]
+        representatives.extend(current_representatives)
 
     # save records with short ids
-    records_str = '\n'.join(['>{0}\n{1}'.format(*rec) for rec in records])
-
     seqs_file = os.path.join(output_dir, 'locus_seqs.fasta')
-    with open(seqs_file, 'w') as outfile:
-        outfile.write(records_str)
+    for locus, recs in records.items():
+        records_str = '\n'.join(['>{0}\n{1}'.format(*rec) for rec in recs]) + '\n'
+        with open(seqs_file, 'a') as outfile:
+            outfile.write(records_str)
 
     # create BLASTdb with locus proteins
     output_path = os.path.join(output_dir, 'locus_db')
@@ -177,7 +192,7 @@ def main(locus_id, schema_dir, output_dir, blast_score_ratio):
               max_hsps=1, threads=6, ids_file=None, blast_task=None,
               max_targets=10, ignore=None)
 
-    # read results and create dict with all matches per query
+    # read BLASTp results
     with open(blast_output, 'r') as infile:
         blast_results = list(csv.reader(infile, delimiter='\t'))
 
@@ -208,8 +223,8 @@ def main(locus_id, schema_dir, output_dir, blast_score_ratio):
     G.add_weighted_edges_from(edges)
 
     # create HTML with grpah viz
-    output_html = os.path.join(output_dir, '{0}_graph.html'.format(locus_id))
-    graph_html(G, reps, output_html, locus_id)
+    output_html = os.path.join(output_dir, '{0}_graph.html'.format(title))
+    graph_html(G, representatives, output_html, loci_ids, title)
 
 
 # add option to scan for motifs in alleles and color nodes based on that information
@@ -219,7 +234,7 @@ def parse_arguments():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('-l', type=str, required=True,
-                        dest='locus_id',
+                        nargs='+', dest='loci_ids',
                         help='')
 
     parser.add_argument('-s', type=str, required=True,
@@ -233,6 +248,11 @@ def parse_arguments():
     parser.add_argument('--bsr', type=float, required=False,
                         default=0.6,
                         dest='blast_score_ratio',
+                        help='')
+    
+    parser.add_argument('--t', type=str, required=False,
+                        default='myGraph',
+                        dest='title',
                         help='')
 
     args = parser.parse_args()
