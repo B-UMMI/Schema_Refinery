@@ -19,6 +19,7 @@ from pyvis.network import Network
 def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type,
                   ignore=None):
     """ Creates a BLAST database.
+
         Parameters
         ----------
         input_fasta : str
@@ -53,6 +54,7 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
               max_targets=None, ignore=None):
     """ Execute BLAST to align sequences in a FASTA file
         against a BLAST database.
+
         Parameters
         ----------
         blast_path : str
@@ -152,13 +154,17 @@ def graph_html(networkx_graph, reps, output_html, loci_ids, title):
 
 
 # add way to apply cutoff and output groups of alleles
-#loci_ids = ['GCF-002236855-protein1020', 'GCF-003203475-protein1498']
-#schema_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/spyogenes_schema_processed'
-#output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis'
-#blast_score_ratio = 0.6
-#title = 'sclB & sclA'
-def main(loci_ids, schema_dir, output_dir, blast_score_ratio, title):
+loci_ids = ['GCF-002236855-protein1020']
+schema_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/spyogenes_schema_processed'
+output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/test_graph'
+blast_score_ratio = 0.6
+title = 'sclB'
+def main(loci_ids, schema_dir, output_dir, blast_score_ratio,
+         title, frequency_table):
 
+    if os.path.isdir(output_dir) is False:
+        os.mkdir(output_dir)
+    
     loci_files = {locus: os.path.join(schema_dir, locus+'.fasta') for locus in loci_ids}
 
     # create file with short ids
@@ -215,6 +221,11 @@ def main(loci_ids, schema_dir, output_dir, blast_score_ratio, title):
     # exclude based on BSR
     blast_results_filtered = [l for l in blast_results_filtered if float(l[-1]) >= blast_score_ratio]
 
+    # log transform frequency values
+    if frequency_table is not None:
+        with open(frequency_table, 'r') as infile:
+            frequencies = list(csv.reader(infile, delimiter='\t'))
+
     # instantiate graph
     G = nx.Graph()
 
@@ -253,6 +264,10 @@ def parse_arguments():
     parser.add_argument('--t', type=str, required=False,
                         default='myGraph',
                         dest='title',
+                        help='')
+
+    parser.add_argument('--f', type=str, required=False,
+                        dest='frequency_table',
                         help='')
 
     args = parser.parse_args()
