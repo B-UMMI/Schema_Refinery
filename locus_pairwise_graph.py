@@ -12,7 +12,6 @@ import subprocess
 
 import networkx as nx
 from Bio import SeqIO
-from Bio.Seq import Seq
 from pyvis.network import Network
 
 
@@ -88,8 +87,10 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
             String with errors raised during BLAST execution.
     """
 
+    outfmt = ('6 qseqid sseqid pident length mismatch gapopen '
+              'qstart qend sstart send evalue bitscore score')
     blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
-                  '-out', blast_output, '-outfmt', '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore score',
+                  '-out', blast_output, '-outfmt', outfmt,
                   '-max_hsps', str(max_hsps), '-num_threads', str(threads),
                   '-evalue', '0.001']
 
@@ -109,34 +110,67 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     return stderr
 
 
-#networkx_graph = G
-#reps = representatives
-def graph_html(networkx_graph, reps, output_html, loci_ids, title):
+def linear_conversion(value, current_min, current_max, new_min, new_max):
     """
     """
+
+    converted_value = ((value-current_min) / (current_max-current_min)) \
+        * (new_max - new_min) + new_min
+
+    return converted_value
+
+
+def convert_frequencies(frequencies, new_min, new_max):
+    """
+    """
+
+    max_freq = max(frequencies)
+    min_freq = min(frequencies)
+    converted_values = {f: linear_conversion(f, min_freq, max_freq, new_min, new_max)
+                  for f in frequencies}
+
+    return converted_values
+
+
+def graph_html(networkx_graph, reps, output_html, title, frequencies):
+    """
+    """
+
+    if frequencies is not None:
+        # min and max values for node size
+        min_size = 10
+        max_size = 50
+        freqs_values = set([int(v[0]) for k, v in frequencies.items() if int(v[0]) != 0])
+        converted_values = convert_frequencies(freqs_values, min_size, max_size)
 
     nt = Network('720px', '1280px')
-
-    # attribute colors to each locus. Hardcoded!
-    colors = [('#9ecae1', '#2171b5'), ('#a1d99b', '#238b45')]
-    colors_map = {locus: colors[i] for i, locus in enumerate(loci_ids)}
 
     # populates the nodes and edges data structures
     nt.from_nx(networkx_graph)
 
     for node in nt.nodes:
         node_id = node['id']
-        node_locus, allele_id = node_id.split('_')
-        node['label'] = allele_id
-        if node_id not in reps:
-            node['color'] = colors_map[node_locus][0]
-        else:
-            node['color'] = colors_map[node_locus][1]
-            node['size'] = 12
 
-#    for edge in nt.edges:
-#        rounded_weight = round(edge['weight'], 2)
-#        edge['title'] = str(rounded_weight)
+        if frequencies is not None:
+            allele_ids = frequencies[node_id][1]
+            allele_ids = allele_ids.split(',')
+            node['title'] = ('freq: {0}<br>alleles: '
+                             '{1}').format(frequencies[node_id][0],
+                                           frequencies[node_id][1])
+
+            if any([i in reps for i in allele_ids]) is True:
+                node['color'] = '#a50f15'
+            else:
+                node['color'] = '#2171b5'
+
+            prot_freq = int(frequencies[node_id][0])
+            if prot_freq == 0:
+                node['size'] = 1
+            else:
+                node['size'] = converted_values[prot_freq]
+        else:
+            node['color'] = '#2171b5'
+            node['size'] = 10
 
     nt.show_buttons(filter_=['physics', 'manipulation'])
 
@@ -146,55 +180,24 @@ def graph_html(networkx_graph, reps, output_html, loci_ids, title):
     nt.options.interaction.multiselect = True
     # enable edge highlighting during hover
     nt.options.interaction.hover = True
-    # change deafults for BarnesHut
-#    nt.barnes_hut(gravity=-2000, central_gravity=0.3, spring_length=95,
-#                  spring_strength=0.04, damping=0.25, overlap=0.5)
 
     nt.show(output_html)
 
 
 # add way to apply cutoff and output groups of alleles
-loci_ids = ['GCF-002236855-protein1020']
-schema_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/spyogenes_schema_processed'
-output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/test_graph'
-blast_score_ratio = 0.6
-title = 'sclB'
-def main(loci_ids, schema_dir, output_dir, blast_score_ratio,
+def main(input_file, output_dir, schema_dir, locus_id, blast_score_ratio,
          title, frequency_table):
 
     if os.path.isdir(output_dir) is False:
         os.mkdir(output_dir)
-    
-    loci_files = {locus: os.path.join(schema_dir, locus+'.fasta') for locus in loci_ids}
-
-    # create file with short ids
-    records = {k: [] for k in loci_files}
-    for locus, file in loci_files.items():
-        current_records = [('{0}_{1}'.format(locus, (rec.id).split('_')[-1]), str((rec.translate(table=11, cds=True)).seq))
-                           for rec in SeqIO.parse(file, 'fasta')]
-        records[locus] = current_records
-
-    # get locus rep IDs
-    loci_rep_files = {locus: os.path.join(schema_dir, 'short', locus+'_short.fasta') for locus in loci_ids}
-    representatives = []
-    for locus, file in loci_rep_files.items():
-        current_representatives = ['{0}_{1}'.format(locus, (rec.id).split('_')[-1]) for rec in SeqIO.parse(file, 'fasta')]
-        representatives.extend(current_representatives)
-
-    # save records with short ids
-    seqs_file = os.path.join(output_dir, 'locus_seqs.fasta')
-    for locus, recs in records.items():
-        records_str = '\n'.join(['>{0}\n{1}'.format(*rec) for rec in recs]) + '\n'
-        with open(seqs_file, 'a') as outfile:
-            outfile.write(records_str)
 
     # create BLASTdb with locus proteins
     output_path = os.path.join(output_dir, 'locus_db')
-    make_blast_db('makeblastdb', seqs_file, output_path, 'prot')
+    make_blast_db('makeblastdb', input_file, output_path, 'prot')
 
     # BLAST all against all
     blast_output = os.path.join(output_dir, 'blastout.tsv')
-    run_blast('blastp', output_path, seqs_file, blast_output,
+    run_blast('blastp', output_path, input_file, blast_output,
               max_hsps=1, threads=6, ids_file=None, blast_task=None,
               max_targets=10, ignore=None)
 
@@ -221,10 +224,16 @@ def main(loci_ids, schema_dir, output_dir, blast_score_ratio,
     # exclude based on BSR
     blast_results_filtered = [l for l in blast_results_filtered if float(l[-1]) >= blast_score_ratio]
 
-    # log transform frequency values
+    # get IDs of representatives
+    rep_file = os.path.join(schema_dir, 'short', locus_id+'_short.fasta')
+    representative_ids = [(rec.id).split('_')[-1] for rec in SeqIO.parse(rep_file, 'fasta')]
+
+    # read and log transform frequency values
+    frequencies_dict = None
     if frequency_table is not None:
         with open(frequency_table, 'r') as infile:
-            frequencies = list(csv.reader(infile, delimiter='\t'))
+            frequencies = list(csv.reader(infile, delimiter='\t'))[1:]
+            frequencies_dict = {l[0]: l[1:] for l in frequencies}
 
     # instantiate graph
     G = nx.Graph()
@@ -235,40 +244,54 @@ def main(loci_ids, schema_dir, output_dir, blast_score_ratio,
 
     # create HTML with grpah viz
     output_html = os.path.join(output_dir, '{0}_graph.html'.format(title))
-    graph_html(G, representatives, output_html, loci_ids, title)
+    graph_html(G, representative_ids, output_html, title, frequencies_dict)
 
 
-# add option to scan for motifs in alleles and color nodes based on that information
 def parse_arguments():
 
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-l', type=str, required=True,
-                        nargs='+', dest='loci_ids',
-                        help='')
-
-    parser.add_argument('-s', type=str, required=True,
-                        dest='schema_dir',
-                        help='')
+    parser.add_argument('-i', type=str, required=True,
+                        dest='input_file',
+                        help='Fasta file with locus translated sequences.')
 
     parser.add_argument('-o', type=str, required=True,
                         dest='output_dir',
-                        help='')
+                        help='Path to output directory where output files '
+                             'will be saved.')
+
+    parser.add_argument('-s', type=str, required=True,
+                        dest='schema_dir',
+                        help='Path to the schema\'s directory.' )
+
+    parser.add_argument('-l', type=str, required=True,
+                        dest='locus_id',
+                        help='The ID of the locus.')
 
     parser.add_argument('--bsr', type=float, required=False,
                         default=0.6,
                         dest='blast_score_ratio',
-                        help='')
-    
+                        help='Minimum BLAST Score Ratio value. '
+                             'Smaller values will not be shown as '
+                             'edges in the graph.')
+
     parser.add_argument('--t', type=str, required=False,
                         default='myGraph',
                         dest='title',
-                        help='')
+                        help='Title to display in the HTML page.')
 
     parser.add_argument('--f', type=str, required=False,
                         dest='frequency_table',
-                        help='')
+                        help='TSV file with protein and allele '
+                             'frequencies. The first column has '
+                             'the ID of the proteins in the input '
+                             'Fasta file. The second column has '
+                             'the frequency of each protein based '
+                             'on the frequency of alleles that code '
+                             'for the protein. The last column has '
+                             'the identifiers of the alleles that '
+                             'code for the protein (separated by commas).')
 
     args = parser.parse_args()
 
