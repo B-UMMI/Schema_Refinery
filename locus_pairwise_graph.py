@@ -111,7 +111,25 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
 
 
 def linear_conversion(value, current_min, current_max, new_min, new_max):
-    """
+    """ Converts one value to a value in another linear scale.
+
+        Parameters
+        ----------
+        value : int or float
+            Value to convert to new scale.
+        current_min : int or float
+            Minimum value of the current scale.
+        current_max : int or float
+            Maximum value of the current scale.
+        new_min : int or float
+            Minimum value of the new scale.
+        new_max : int or float
+            Maximum value of the new scale.
+
+        Returns
+        -------
+        converted_value : int or float
+            Value converted to the new scale.
     """
 
     converted_value = ((value-current_min) / (current_max-current_min)) \
@@ -121,13 +139,28 @@ def linear_conversion(value, current_min, current_max, new_min, new_max):
 
 
 def convert_frequencies(frequencies, new_min, new_max):
-    """
+    """ Converts a set of values to new values in another linear scale.
+
+        Parameters
+        ----------
+        frequencies : list or set
+            A list or a set with all distinct frequency values.
+        new_min : int
+            Minimum value of the new scale.
+        new_max : int
+            Maximum value of the new scale.
+
+        Returns
+        -------
+        converted_values : dict
+            Dictionary with frequency values as keys and the value
+            in the new scale as values.
     """
 
     max_freq = max(frequencies)
     min_freq = min(frequencies)
     converted_values = {f: linear_conversion(f, min_freq, max_freq, new_min, new_max)
-                  for f in frequencies}
+                        for f in frequencies}
 
     return converted_values
 
