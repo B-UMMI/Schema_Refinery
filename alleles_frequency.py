@@ -14,6 +14,71 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 
 
+def read_tabular(input_file, delimiter='\t'):
+    """ Read tabular file.
+
+        Parameters
+        ----------
+        input_file : str
+            Path to a tabular file.
+        delimiter : str
+            Delimiter used to separate file fields.
+
+        Returns
+        -------
+        lines : list
+            A list with a sublist per line in the input file.
+            Each sublist has the fields that were separated by
+            the defined delimiter.
+    """
+
+    with open(input_file, 'r') as infile:
+        reader = csv.reader(infile, delimiter=delimiter)
+        lines = [line for line in reader]
+
+    return lines
+
+
+def write_to_file(text, output_file, write_mode, end_char):
+    """ Writes a single string to a file.
+
+        Parameters
+        ----------
+        text : str
+            A single string to write to the output file.
+        output_file : str
+            Path to the output file.
+        write_mode : str
+            Write mode can be 'w', writes text and overwrites
+            any text in file, or 'a', appends text to text
+            already in file.
+        end_char : str
+            Character added to the end of the file.
+    """
+
+    with open(output_file, write_mode) as out:
+        out.write(text+end_char)
+
+
+def write_lines(lines, output_file):
+    """ Writes a list of strings to a file. The strings
+        are joined with newlines before being written to
+        file.
+
+        Parameters
+        ----------
+        lines : list
+            List with the lines/strings to write to the
+            output file.
+        output_file : str
+            Path to the output file.
+    """
+
+    joined_lines = '\n'.join(lines)
+
+    write_to_file(joined_lines, output_file, 'a', '\n')
+
+
 def translate_sequence(dna_str, table_id):
     """ Translate a DNA sequence using the BioPython package.
 
@@ -44,12 +109,9 @@ def group_by_protein(fasta_file):
         Returns
         -------
         protein_diversity : dict
-            Dictionary with a gene identifier as key and
-            another dictionary as value. The nested dictionary
-            has protein sequences as keys and a list as value
-            for each key. Each list has the allele identifiers
-            and sequences that code for that protein, organized
-            in tuples.
+            Dictionary with protein sequences as keys and a
+            list as value for each key. Each list has the allele
+            identifiers of the alleles that code for the protein.
     """
 
     protein_diversity = {}
@@ -67,14 +129,61 @@ def group_by_protein(fasta_file):
     return protein_diversity
 
 
+def protein_frequencies(protein_groups, locus_classifications):
+    """ Creates lines to write Fasta file with proteins
+        and determines the frequency of each protein
+        based on the alleles that code for that protein.
+
+        Parameters
+        ----------
+        protein_groups : dict
+            Dictionary with protein sequences as keys and
+            a list with the IDs of the alleles that code
+            for the protein.
+        locus_classification : dict
+            A dictionary with alleles IDs as keys and a list
+            with the sample IDs that have the allele and the
+            frequency of the allele based on the results in
+            a AlleleCall matrix.
+
+        Returns
+        -------
+        protein_lines : list
+            List with Fasta string records (e.g.: '>1\nMKT').
+        prots_freqs : list
+            List with one sublist per distinct protein coded
+            by the alleles of the locus. Each sublist has
+            the protein ID attributed to the protein, the
+            frequency of the protein and a list with the IDs
+            of the alleles that code for that protein.
+    """
+
+    protid = 1
+    protein_lines = []
+    prots_freqs = []
+    for k, v in protein_groups.items():
+        line = '>{0}\n{1}'.format(protid, k)
+        protein_lines.append(line)
+        total_freq = 0
+        for a in v:
+            total_freq += locus_classifications[int(a)][-1]
+        prots_freqs.append([protid, total_freq, v])
+        protid += 1
+
+    return [protein_lines, prots_freqs]
+
+
+schema = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/alleles_frequency_analysis/scl_schema'
+locus_id = 'GCF-002236855-protein1020'
+allelecall_matrix = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/alleles_frequency_analysis/scl_allelecall_results/results_20210204T180920/results_alleles.tsv'
+output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/alleles_frequency_analysis/frequencies_data'
 def main(schema, locus_id, allelecall_matrix, output_dir):
 
     if os.path.isdir(output_dir) is False:
         os.mkdir(output_dir)
 
     # import AlleleCall matrix
-    with open(allelecall_matrix, 'r') as infile:
-        profiles = list(csv.reader(infile, delimiter='\t'))
+    profiles = read_tabular(allelecall_matrix)
 
     # get locus column
     locus_index = profiles[0].index(locus_id+'.fasta')
@@ -102,6 +211,7 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
     alleles_ids = [int((rec.id).split('_')[-1])
                    for rec in SeqIO.parse(locus_file, 'fasta')]
 
+    # add zero entries for genomes where the locus was not detected
     for a in alleles_ids:
         if a not in locus_classifications:
             locus_classifications[a] = ['', 0]
@@ -109,23 +219,11 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
     # determine frequency at protein level
     protein_groups = group_by_protein(locus_file)
 
-    # write file with proteins and add protein freqs
-    protid = 1
-    protein_lines = []
-    prots_freqs = []
-    for k, v in protein_groups.items():
-        line = '>{0}\n{1}'.format(protid, k)
-        protein_lines.append(line)
-        total_freq = 0
-        for a in v:
-            total_freq += locus_classifications[int(a)][-1]
-        prots_freqs.append([protid, total_freq, v])
-        protid += 1
+    protein_lines, prots_freqs = protein_frequencies(protein_groups, locus_classifications)
 
     # write Fasta with proteins
     protein_file = os.path.join(output_dir, '{0}_protein.fasta'.format(locus_id))
-    with open(protein_file, 'w') as outfile:
-        outfile.write('\n'.join(protein_lines))
+    write_lines(protein_lines, protein_file)
 
     # create output file with protein frequencies
     prots_freqs = sorted(prots_freqs, key=lambda x: x[1], reverse=True)
@@ -135,8 +233,7 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
     prots_freqs_lines = [prots_freqs_header] + prots_freqs_lines
     protein_freqs_file = os.path.join(output_dir,
                                       '{0}_protein_frequencies.tsv'.format(locus_id))
-    with open(protein_freqs_file, 'w') as outfile:
-        outfile.write('\n'.join(prots_freqs_lines))
+    write_lines(prots_freqs_lines, protein_freqs_file)
 
     # create output file with DNA sequences frequencies
     output_lines = [[k, v[-1], v[:-1]] for k, v in locus_classifications.items()]
@@ -146,11 +243,9 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
     output_text = ['{0}\t{1}\t{2}'.format(l[0], l[1], ','.join(l[2]))
                    for l in output_lines]
     output_text = [output_header] + output_text
-    output_text = '\n'.join(output_text)
 
     output_file = os.path.join(output_dir, '{0}_frequencies.tsv'.format(locus_id))
-    with open(output_file, 'w') as outfile:
-        outfile.write(output_text)
+    write_lines(output_text, output_file)
 
 
 def parse_arguments():
