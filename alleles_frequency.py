@@ -173,10 +173,6 @@ def protein_frequencies(protein_groups, locus_classifications):
     return [protein_lines, prots_freqs]
 
 
-schema = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/alleles_frequency_analysis/scl_schema'
-locus_id = 'GCF-002236855-protein1020'
-allelecall_matrix = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/alleles_frequency_analysis/scl_allelecall_results/results_20210204T180920/results_alleles.tsv'
-output_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/wgMLST_schema/spyogenes_schema/solve_problematic_2/scl_analysis/alleles_frequency_analysis/frequencies_data'
 def main(schema, locus_id, allelecall_matrix, output_dir):
 
     if os.path.isdir(output_dir) is False:
