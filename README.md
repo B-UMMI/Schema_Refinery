@@ -57,10 +57,24 @@ Download only the genome assemblies that are available in RefSeq:
 python download_ncbi_assemblies.py -t <input_table> -o <output_directory> --ftp refseq
 ```
 
+Download only the genome assemblies that are available in RefSeq using 4 threads
+
+```py
+python download_ncbi_assemblies.py -t <input_table> -o <output_directory> --ftp refseq --threads 4
+```
+
 ## download_reference_proteomes.py
 
 Accepts a Proteomes report table from Uniprot and downloads
 the proteomes of the samples listed in the table.
+
+## fasta_header_integer.py
+
+Converts fasta headers to consecutive integers, useful for the creation of BLAST databases.
+
+## genbank_annotations_2.py
+
+This script extracts annotations for a schema from genbank files.
 
 ## genbank_annotations.py
 
