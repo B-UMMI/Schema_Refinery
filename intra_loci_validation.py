@@ -89,7 +89,7 @@ def main(schema_full, schema_short, output_directory, blast_score_ratio, num_thr
     short_base_schema, short_directory = svf.identify_input_type(schema_short)
     # discard files with values of self BSR
     short_base_schema = [file for file in short_base_schema if 'bsr' not in file]
-    print(short_base_schema)
+    # print(short_base_schema)
     # create working directory
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
@@ -104,13 +104,13 @@ def main(schema_full, schema_short, output_directory, blast_score_ratio, num_thr
     full_protein_schema = svf.translate_schema(full_dna_schema)
 
     # same steps for the representative sequences
-    print(short_directory)
+    # print(short_directory)
     short_dna_schema = svf.short_schema_dict(short_base_schema, short_directory,
                                              genes_ids, alleles_ids)
     short_protein_schema = svf.translate_schema(short_dna_schema)
 
     representatives_identifiers = svf.determine_representatives(short_protein_schema)
-    sys.exit(0)
+    # sys.exit(0)
     # create FASTA lines with all proteins for each gene and save in files
     full_protein_lines = svf.schema_fasta_lines(full_protein_schema)
 
