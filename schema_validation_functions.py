@@ -34,7 +34,6 @@ from collections import Counter
 
 from Bio import SeqIO
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna
 
 
 def schema_dictionary(schema_files, files_directory):
@@ -72,7 +71,7 @@ def schema_dictionary(schema_files, files_directory):
         file_name = '{0}/{1}'.format(files_directory, file)
         allele_num = 1
         # get the allele identifier and DNA sequence for each allele in the file
-        for allele in SeqIO.parse(file_name, 'fasta', generic_dna):
+        for allele in SeqIO.parse(file_name, 'fasta'):
             allele_id = allele.id
             allele_numid = '{0}_{1}'.format(gene_num, allele_num)
             alleles_ids_dict[allele_numid] = allele_id
@@ -105,7 +104,7 @@ def short_schema_dict(schema_files, files_directory, genes_ids, alleles_ids):
         schema_dict[gene_num] = {}
         file_name = '{0}/{1}'.format(files_directory, file)
         # get the allele identifier and DNA sequence for each allele in the file
-        for allele in SeqIO.parse(file_name, 'fasta', generic_dna):
+        for allele in SeqIO.parse(file_name, 'fasta'):
             allele_id = alleles_ids[allele.id]
             allele_sequence = str(allele.seq)
 
@@ -444,7 +443,7 @@ def within_loci_blast(blast_input):
     
     # determine if minimum allele length is smaller than 30aa
     small = False
-    for allele in SeqIO.parse(full_file, 'fasta', generic_dna):
+    for allele in SeqIO.parse(full_file, 'fasta'):
         if len(str(allele.seq)) < 30:
             small = True
     
@@ -1115,7 +1114,7 @@ def identify_input_type(input_argument):
 
     # if it is a directory, list all files in that directory
     if os.path.isdir(input_argument) is True:
-        input_files = os.listdir(input_argument)
+        input_files = [f for f in os.listdir(input_argument) if f.endswith('.fasta') is True]
         schema_directory = input_argument
 
     # if it is a file, get the basename for all files
