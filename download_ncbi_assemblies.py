@@ -57,7 +57,7 @@ def download_assembly(url, file_name):
     return response
 
 
-def main(input_table, output_directory, file_extension, ftp):
+def main(input_table, output_directory, file_extension, ftp, threads):
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
@@ -104,7 +104,7 @@ def main(input_table, output_directory, file_extension, ftp):
     # We can use a with statement to ensure threads are cleaned up promptly
     failures = []
     success = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         # Start the load operations and mark each future with its URL
         for res in executor.map(download_assembly, ftp_urls, assemblies_ids):
             failures.append(res)
@@ -149,13 +149,19 @@ def parse_arguments():
                         default='refseq+genbank',
                         dest='ftp',
                         help='')
+    
+    parser.add_argument('-th', '--threads', type=int,
+                    required=False, default=2,
+                    dest='threads',
+                    help='Number of threads for download.'
+                    )
 
     args = parser.parse_args()
 
-    return [args.input_table, args.output_directory, args.file_extension, args.ftp]
+    return [args.input_table, args.output_directory, args.file_extension, args.ftp, args.threads]
 
 
 if __name__ == '__main__':
 
     args = parse_arguments()
-    main(args[0], args[1], args[2], args[3])
+    main(args[0], args[1], args[2], args[3], args[4])
