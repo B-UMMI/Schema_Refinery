@@ -8,6 +8,7 @@
 import os
 import sys
 import csv
+import time
 import argparse
 import urllib.request
 
@@ -71,7 +72,7 @@ def download_ftp_file(file_url, out_file):
         try:
             res = urllib.request.urlretrieve(file_url, out_file)
         except:
-            pass
+            time.sleep(1)
         tries += 1
         if os.path.isfile(out_file) is True:
             downloaded = True
@@ -100,19 +101,32 @@ def download_assemblies(sample_ids, sample_paths, output_directory):
             Number of failed downloads.
     """
 
-    print('\nDownloading {0} assemblies...'.format(len(sample_ids)))
+    # list files in output directory
+    local_files = os.listdir(output_directory)
+
+    # create URLs to download
+    remote_urls = []
+    for sid in sample_ids:
+        sample_basename = sample_paths[sid].split('/')[-1]
+        # do not download files that have already been downloaded
+        if sample_basename not in local_files and sample_basename.split('.gz')[0] not in local_files:
+            sample_file = os.path.join(output_directory, sample_basename)
+            sample_url = ebi_ftp + sample_paths[sid]
+            remote_urls.append([sample_url, sample_file])
+
+    if len(remote_urls) < len(sample_ids):
+        print('{0} assemblies had already been downloaded.'
+              ''.format(len(sample_ids)-len(remote_urls)))
+
+    print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
     failed = 0
     downloaded = 0
-    for sid in sample_ids:
-        sample_file = sample_paths[sid].split('/')[-1]
-        sample_file = os.path.join(output_directory, sample_file)
-        sample_url = ebi_ftp + sample_paths[sid]
-        res = download_ftp_file(sample_url, sample_file)
-
+    for url in remote_urls:
+        res = download_ftp_file(*url)
         if res is True:
             downloaded += 1
             print('\r', 'Downloaded {0}/{1}'.format(downloaded,
-                                                    len(sample_ids)),
+                                                    len(remote_urls)),
                   end='')
         else:
             failed += 1
