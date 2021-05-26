@@ -155,7 +155,6 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
 
     # BLAST all against all for each locus
     print('Starting BLASTp...')
-
     blast_stderr = svf.map_async_parallelizer(blast_inputs,
                                               svf.function_helper,
                                               blast_threads,
