@@ -68,11 +68,13 @@ def main(input_files, schema_dir, output_dir):
             if g not in genes_positions:
                 missing.append(g)
 
+    print(missing)
+
     # save results
     header = 'locus\tcontig\tstart\tstop\tstrand'
     positions_outfile = os.path.join(output_dir, 'loci_positions.tsv')
     with open(positions_outfile, 'w') as outfile:
-        outlines = [header] + ['{0}\t{1}\t{2}\t{3}'.format(k, v[-1], v[0], v[1], v[2]) for k, v in genes_positions.items()]
+        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k, v[-1], v[0], v[1], v[2]) for k, v in genes_positions.items()]
         outtext = '\n'.join(outlines)
         outfile.write(outtext)
 

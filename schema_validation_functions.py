@@ -1,525 +1,328 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AUTHOR
+Purpose
+-------
 
-    Rafael Mamede
-    github: @rfm-targa
+This module has the collection of functions that are used to validate
+schemas. The schema structure should respect a set of criteria that are
+used during the CreateSchema and AlleleCall processes. All alleles for
+a gene present in the schema should be selected only if they share a
+BSR >= 0.6 with at least one representative allele of that gene.
+Representative alleles from different loci should not share a BSR >= 0.6.
+However, the process does not guarantee that all alleles for a gene in
+the schema share a BSR >= 0.6 or that non-representative sequences from
+one gene cannot have a BSR >= 0.6 with alleles from other gene. The
+functions in this module were created with the intent of validating
+schemas and help determine if a given schema or subset of a schema
+respects the necessary criteria and does not deviate too much from
+those criteria due to aspects that are not controlled during the
+CreateSchema or AlleleCall processes.
 
-DESCRIPTION
-
-    This module has the collection of functions that are used to validate schemas.
-    The schema structure should respect a set of criteria that are used during the
-    CreateSchema and AlleleCall processes. All alleles for a gene present in the schema
-    should be selected only if they share a BSR >= 0.6 with at least one representative
-    allele of that gene. Representative alleles from different loci should not share
-    a BSR >= 0.6. However, the process does not guarantee that all alleles for a gene 
-    in the schema share a BSR >= 0.6 or that non-representative sequences from one gene
-    cannot have a BSR >= 0.6 with alleles from other gene.
-    The functions in this module were created with the intent of validating schemas and
-    help determine if a given schema or subset of a schema respects the necessary criteria
-    and does not deviate too much from those criteria due to aspects that are not controlled
-    during the CreateSchema or AlleleCall processes.
-
-    Several functions in this module require that 'Biopython' be installed in the working
-    environment.
+Several functions in this module require that 'Biopython' be installed
+in the working environment.
 """
 
 
 import os
-import sys
 import csv
+import time
 import shutil
+import itertools
+import traceback
+import subprocess
 from collections import Counter
+from multiprocessing import Pool
 
 from Bio import SeqIO
 from Bio.Seq import Seq
 
 
-def schema_dictionary(schema_files, files_directory):
-    """ Creates a dictionary that stores all allele sequences for each gene of
+def schema_dictionary(schema_files, output_directory):
+    """
+    """
+
+    loci_reassigned = {}
+    # for each FASTA file that has the alleles for a locus
+    for locus, file in schema_files.items():
+        records = [((rec.id).split('_')[-1], str(rec.seq))
+                   for rec in SeqIO.parse(file, 'fasta')]
+        fasta_records = ['>{0}_{1}\n{2}'.format(locus, rec[0], rec[1])
+                         for rec in records]
+        fasta_text = '\n'.join(fasta_records)
+        output_file = os.path.join(output_directory, os.path.basename(file))
+        loci_reassigned[locus] = output_file
+
+        with open(output_file, 'w') as outfile:
+            outfile.write(fasta_text+'\n')
+
+    return loci_reassigned
+
+
+def translate_schema(fasta_files, output_directory):
+    """ Creates a dictionary that stores the protein sequences
+        coded in the DNA sequences of each allele per gene in
         the schema.
-    
-        Args: 
-            schema_files (list): the list of files names that constitute the schema.
-            files_directory (str): the directory with the schema files.
-        
-        Returns: 
-            schema_dict (dict): a dictionary with gene identifiers as keys. Each 
-            key has a sub dictionary with alleles identifiers as keys and alleles 
-            sequences as values.
-        
-        Example:query_prefix
+
+        Parameters
+        ----------
+        fasta_files : str
             
-            >>> schema_dictionary(['gene_1.fasta','gene_2.fasta'], '/home/user/schema_folder')
-            {'gene_1-protein1':{'gene_1-protein1_allele1':'ATGAAATAA',
-                                'gene_1-protein1_allele2':'ATGAGGTAA'},
-             'gene_1-protein2':{'gene_1-protein2_allele1':'ATGACATAA',
-                                'gene_1-protein2_allele2':'ATGAGCTAA'},...}
+
+        Returns
+        -------
+        protein_schema_dict : dict
+            A dictionary with gene identifiers as keys. Each key
+            has a sub dictionary with alleles identifiers as keys
+            and alleles protein sequences as values.
     """
 
-    schema_dict = {}
-    # for each FASTA file that has the alleles for a locus
-    gene_ids_dict = {}
-    gene_num = 1
-    alleles_ids_dict = {}
-    for file in schema_files:
-        gene_name = file.split('.')[0]
-        gene_ids_dict[gene_num] = gene_name
-        # create a sub dictionary to hold the allele sequences for each gene
-        schema_dict[gene_num] = {}
-        file_name = '{0}/{1}'.format(files_directory, file)
-        allele_num = 1
-        # get the allele identifier and DNA sequence for each allele in the file
-        for allele in SeqIO.parse(file_name, 'fasta'):
-            allele_id = allele.id
-            allele_numid = '{0}_{1}'.format(gene_num, allele_num)
-            alleles_ids_dict[allele_numid] = allele_id
-            allele_sequence = str(allele.seq)
+    protein_files = {}
+    for locus, file in fasta_files.items():
+        records = [(rec.id, str(rec.seq))
+                   for rec in SeqIO.parse(file, 'fasta')]
+        protein_records = [(rec[0], str(translate_sequence(rec[1], 11)))
+                           for rec in records]
 
-            schema_dict[gene_num][allele_numid] = allele_sequence
-            allele_num += 1
+        protein_fasta = ['>{0}\n{1}'.format(rec[0], rec[1])
+                         for rec in protein_records]
 
-        gene_num += 1
+        protein_text = '\n'.join(protein_fasta)
+        output_file = os.path.join(output_directory,
+                                   os.path.basename(file)+'_protein')
+        protein_files[locus] = output_file
+        with open(output_file, 'w') as outfile:
+            outfile.write(protein_text+'\n')
 
-    return [schema_dict, gene_ids_dict, alleles_ids_dict]
+    return protein_files
 
 
-def short_schema_dict(schema_files, files_directory, genes_ids, alleles_ids):
-    """
-    """
-    
-    # invert genes and alleles identifiers dictionaries
-    genes_ids = {v:k for k, v in genes_ids.items()}
-    alleles_ids = {v:k for k, v in alleles_ids.items()}
-    
-    schema_dict = {}
-    # for each FASTA file that has the alleles for a locus
-    for file in schema_files:
-        # need to find a way to deal with all kinds of identifiers...
-        gene_name = file.split('.')[0]
-        gene_name = gene_name.rstrip('_short')
-        gene_num = genes_ids[gene_name]
-        # create a sub dictionary to hold the allele sequences for each gene
-        schema_dict[gene_num] = {}
-        file_name = '{0}/{1}'.format(files_directory, file)
-        # get the allele identifier and DNA sequence for each allele in the file
-        for allele in SeqIO.parse(file_name, 'fasta'):
-            allele_id = alleles_ids[allele.id]
-            allele_sequence = str(allele.seq)
+def translate_sequence(dna_str, table_id):
+    """ Translates a DNA sequence using the BioPython package.
 
-            schema_dict[gene_num][allele_id] = allele_sequence
-    
-    return schema_dict
+        Parameters
+        ----------
+        dna_str : str
+            String representing a DNA sequence.
+        table_id : int
+            Translation table identifier.
 
-
-def translate_schema(schema_dictionary):
-    """ Creates a dictionary that stores the protein sequences coded in the DNA 
-        sequences of each allele per gene in the schema.
-
-        Args: 
-            schema_dictionary (dict): a dictionary with gene identifiers as keys. Each 
-            key has a sub dictionary with alleles identifiers as keys and alleles 
-            sequences as values.
-
-        Returns: 
-            protein_schema_dict (dict): a dictionary with gene identifiers as keys. Each 
-            key has a sub dictionary with alleles identifiers as keys and alleles 
-            protein sequences as values.
-
-        Example:
-
-            >>> translate_schema({'gene_1-protein1':{'gene_1-protein1_allele1':'ATGAAATAA',
-                                                     'gene_1-protein1_allele2':'ATGAGGTAA'},...})
-            {'gene_1-protein1':{'gene_1-protein1_allele1':'MK',
-                                'gene_1-protein1_allele2':'MR'},...}
+        Returns
+        -------
+        protseq : Bio.Seq.Seq
+            Protein sequence created by translating the
+            input DNA sequence.
     """
 
-    protein_schema_dict = {}
-    for gene_name in schema_dictionary:
-        # get the dictionary with the DNA sequences of the current gene
-        allele_dict = schema_dictionary[gene_name]
-        for allele, sequence in allele_dict.items():
-            # translate the DNA sequences of all alleles
-            translation = translate(sequence)
-            # only proceed if the sequence could be translated
-            if isinstance(translation, list):
-                translated_sequence = translation[0]
-                # add protein sequence of allele
-                if gene_name in protein_schema_dict:
-                    protein_schema_dict[gene_name][allele] = translated_sequence
-                # add new gene key to dict and first allele protein sequence
-                else:
-                    protein_schema_dict[gene_name] = {allele: translated_sequence}
-        
-    return protein_schema_dict
+    myseq_obj = Seq(dna_str)
+    protseq = Seq.translate(myseq_obj, table=table_id, cds=True)
+
+    return protseq
 
 
-def schema_fasta_lines(protein_schema_dictionary):
-    """ Creates lines with headers and protein sequences typical of a FASTA file.
-    
-        Args: 
-            protein_schema_dictionary (dict): a dictionary with gene identifiers as keys. Each
-            key has a sub dictionary with alleles identifiers as keys and alleles protein 
-            sequences as values.
-        
-        Returns:
-            protein_lines (dict): a dictionary with locus identifiers as keys and a list 
-            of strings with headers and protein sequences as values.
-        
-        Example:
-            
-            >>> schema_fasta_lines({'gene_1-protein1':{'gene_1-protein1_allele1':'MK',
-                                                     'gene_1-protein1_allele2':'MR'},...})
-            {gene_1-protein1: ['> gene_1-protein1_allele1', 'MK',
-                               '> gene_1-protein1_allele2', 'MR',...],
-            {gene_2-protein2: ['> gene_2-protein2_allele1', 'ML',
-                               '> gene_2-protein2_allele2', 'MN',...],
-            ...}
+def decode_str(str_list, encoding):
+    """ Decodes bytes objects in the input list and
+        strips decoded strings from whitespaces and
+        newlines.
+
+        Parameters
+        ----------
+        str_list
+            List with string or bytes objects to decode
+            and strip of whitespaces and newlines.
+        encoding : str
+            Encoding codec to use.
+
+        Returns
+        -------
+        decoded : list
+            List with strings without whitespaces or
+            newlines.
     """
 
-    protein_lines = {}
-    # for each sequence identifier
-    for gene_name in protein_schema_dictionary:
-        # get the dictionary with the alleles for that gene
-        allele_dict = protein_schema_dictionary[gene_name]
-        alleles_lines = []
-        # for each allele sequence identifier and allele sequence
-        for sequence_id, sequence in allele_dict.items():
-            # create the header and sequence lines and append them sequentially
-            header = '> {}'.format(sequence_id)
-            protein = sequence
+    decoded = [m.decode(encoding).strip()
+               if type(m) == bytes
+               else m.strip()
+               for m in str_list]
 
-            alleles_lines.append(header)
-            alleles_lines.append(protein)
-        
-        protein_lines[gene_name] = alleles_lines
-
-    return protein_lines
+    return decoded
 
 
-def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of given DNA strand.
-    
-        Args:
-            dna_sequence (str): string representing a DNA sequence.
-        
-        Returns:
-            reverse_complement_strand (str): the reverse complement of the DNA sequence, without
-            lowercase letters.
-        
-        Example:
-            >>> reverse_complement('ATCGgcaNn')
-            'NNTGCCGAT'
-    """
-    
-    base_complement = {'A':'T', 'C':'G', 'G':'C', 'T':'A',
-                      'a':'T', 'c':'G', 'g':'C', 't':'A',
-                      'n':'N', 'N':'N'}
-    
-    # convert string into list with each character as a separate element
-    sequence_bases = list(dna_sequence)
-    
-    # determine complement strand
-    sequence_complement = [base_complement[base] for base in sequence_bases]
-    
-    complement_strand = ''.join(sequence_complement)
-    
-    # reverse strand
-    reverse_complement_strand = complement_strand[::-1]
-    
-    return reverse_complement_strand
+def filter_list(lst, remove):
+    """ Removes elements from a list.
 
+        Parameters
+        ----------
+        lst : list
+            Input list.
+        remove : list
+            List of elements to remove from input list.
 
-def translate(dna_sequence):
-    """ Converts a given DNA sequence into a protein sequence. The strand will 
-        be translated according to the sense strand if it has start and stop codons, 
-        otherwise it will be reverse complemented and translated if possible.
-        
-        Args:
-            dna_sequence (str): a string representing a DNA sequence.
-        
-        Returns:
-            protseq (str): a string representing the protein sequence obtained from 
-            the translation of the input DNA sequence.
-            translated_strand (str): indicates the DNA strand that coded for the protein
-            sequence (sense or antisense).
-            
-        Example:
-            >>> translate("GTGACACCAAAACCATGA")
-            ['MTPKP', 'sense']
-        
-        Note:
-            The sequence is scanned for ambiguous nucleotides according to IUPAC definitions.
-            The translation table used is the 'The Bacterial, Archaeal and Plant Plastid Code'
-            from NCBI.
-            For more information about the translation table used visit:
-                https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
-    """
-    
-    sequence = dna_sequence
-    tableid = 11
-    # ATC and ATA are start codons? OMG must change this function asap
-    start_codons = ('ATG','GTG','TTG','ATT','CTG','ATC','ATA')
-    stop_codons = ('TAA','TAG','TGA')
-    translated_strand = ''
-
-    # sequences with ambiguous nucleotides are not translated
-    if any((nuc in 'RYWSMKHBVDN') for nuc in sequence):
-        ambiguous = 'amb'
-        
-        return ambiguous
-    
-    # if the sequence has no ambiguous nucleotides
-    else:
-        # check for start and stop codons
-        start = sequence.startswith(start_codons)
-        stop = sequence.endswith(stop_codons)
-        
-        # translate sequence if it is a CDS
-        if start and stop:
-            myseq = Seq(sequence)
-            protseq = Seq.translate(myseq, table=tableid, cds=True)
-            translated_strand = 'sense'
-        
-        # reverse complement the strand to check for CDS if sense strand had no CDS
-        else:
-            revC_seq = reverse_complement(sequence)
-            start = revC_seq.startswith(start_codons)
-            stop = revC_seq.endswith(stop_codons)
-
-            if start and stop:
-                myseq = Seq(revC_seq)
-                protseq = Seq.translate(myseq, table=tableid, cds=True)
-                translated_strand = 'antisense'
-
-    if translated_strand == '':
-        return 1
-        
-    return [str(protseq), translated_strand]
-
-
-def create_blastdb(write_directory, input_file, verbose=False):
-    """ Creates a BLASTp database based on the input sequences file.
-        
-        Args:
-            write_directory (str): path to the directory where the new BLASTp database 
-            directory should be created.
-            input_file (str): path to the protein sequences file in FASTA format. The 
-            basename of this string is used as prefix for the name of the database.
-        
-        Returns:
-            database_name (str): name of the BLASTp database that is created.
-            
-        Example:
-            >>> create_blastdb('/home/user/workdir/', '/home/user/workdir/file.fasta')
-            file_db
-    """
-    
-    basename = os.path.splitext(os.path.basename(input_file))[0]
-    blastdb_dirname = '{0}/{1}_blastdbs'.format(write_directory, basename)
-    database_name = '{0}/{1}_db'.format(blastdb_dirname, basename)
-    
-    database_files = [database_name + '.pin', database_name + '.phr', database_name + '.psq']
-
-    if not os.path.isdir(blastdb_dirname):
-        os.makedirs(blastdb_dirname)
-    
-    protein_db_cmd = 'makeblastdb -in {0} -out {1} -dbtype prot -logfile {1}_blast.log'.format(input_file, database_name)
-
-    if not all([os.path.isfile(file) for file in database_files]):
-        
-        os.system(protein_db_cmd)
-        
-        if not all([os.path.isfile(file) for file in database_files]):
-            raise Exception('BLASTp database could not be created, one or more database files could not be created.')
-        elif not all([os.stat(file).st_size > 0 for file in database_files]):
-            raise Exception('BLASTp database could not be created, one or more database files are empty.')
-        elif verbose == True:
-            print('BLASTp database succesfully created!')
-
-    else:
-        print('BLASTp database files found. Using existing database files..')
-        
-    return database_name
-
-
-def write_fasta(fasta_lines, output_file):
-    """ Writes strings/lines stored in an input list to a file, sequentially.
-        Lines should represent FASTA headers and sequences.
-        
-        Args:
-            fasta_lines (list): a list with lines/strings.
-            output_file (str): the name of the output file.
-                
-        Returns:
-            Creates 'output_file' FASTA file and prints the number of sequences
-            written into the FASTA file.
-    """
-    
-    joined_lines = '\n'.join(fasta_lines)
-    #number_sequences = len(fasta_lines) // 2
-    
-    with open(output_file, 'w') as file:
-        file.write(joined_lines)
-    
-    # Inform user of how many sequences were written into the file.
-    #print('Wrote {0} FASTA sequences to {1}'.format(number_sequences, output_file))
-
-
-def write_per_locus_fasta_file(loci_lines, output_directory, suffix):
-    """ Writes a set of FASTA files based on a dictionary with gene identifiers as 
-        keys and a list of headers and sequences for each gene.
-        
-        Args:
-            lines (dict): a dictionary with genes/loci identifiers as keys and a list 
-            of headers and sequences as values for each key.
-            output_directory (str): the path to the directory where FASTA files should be created.
-                
-        Returns:
-            fasta_paths (list): a list with the full path for each FASTA file created.
+        Returns
+        -------
+        filtered_list : list
+            List without the removed elements.
     """
 
-    fasta_paths = []
-    for locus in loci_lines:
-        fasta_lines = loci_lines[locus]
-        output_file = '{0}/{1}{2}.fasta'.format(output_directory, locus, suffix)
-        fasta_paths.append(output_file)
-        write_fasta(fasta_lines, output_file)
-    
-    # sort paths in list based on the locus name so that the lists of paths
-    # for the files with all alleles and for the files with the representative alleles
-    # have the same order
-    if 'short' in fasta_paths[0]:
-        sorting_function = lambda x: (x.split('/')[-1]).split('_short')[0]
-    else:
-        sorting_function = lambda x: (x.split('/')[-1]).split('.fasta')[0]
-    
-    fasta_paths.sort(key = sorting_function)
-    
-    return fasta_paths
+    filtered_list = list(set(lst) - set(remove))
+
+    return filtered_list
 
 
-def write_all_loci_fasta_file(loci_lines, output_directory):
-    """ Joins the headers and sequences lines of all genes/loci and writes 
-        them into file.
-        
-        Args:
-            lines (dict): a dictionary with genes/loci identifiers as keys and a list 
-            of headers and sequences as values for each key.
-            output_directory (str): the path to the directory where FASTA files should be created.
-        
-        Returns:
-            Creates a FASTA file with headers and sequences of all genes/loci.
-    """
-    
-    fasta_lines = []
-    for locus in loci_lines:
-        fasta_lines += loci_lines[locus]
-    
-    write_fasta(fasta_lines, output_directory)
+def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type,
+                  ignore=None):
+    """ Creates a BLAST database.
 
+        Parameters
+        ----------
+        makeblastdb_path : str
+            Path to the 'makeblastdb' executable.
+        input_fasta : str
+            Path to the FASTA file that contains the sequences
+            that should be added to the BLAST database.
+        output_path : str
+            Path to the directory where the database files
+            will be created. Database files will have names
+            with the path's basemane.
+        db_type : str
+            Type of the database, nucleotide (nuc) or
+            protein (prot).
+        ignore : list of None
+            List with BLAST warnings that should be ignored.
 
-def within_loci_blast(blast_input):
-    """ Creates a BLASTp database with the full set of alleles in the schema and 
-        BLASTs the representative sequences against the BLASTp database.
-        
-        Args:
-            full_fastas (list): a list with the full paths for the FASTA files with all 
-            alleles.
-            short_fastas (list): a list with the full paths for the FASTA files with the 
-            representative sequences.
-            output_directory (str): name of the directory where the BLASTp daabase should be 
-            created.
-            num_threads (int): number o CPU cores to use to run BLASTp.
-        Returns:
-            blast_files (list): a list with the paths to the BLAST output files created.
+        Returns
+        -------
+        Creates a BLAST database with the input sequences.
     """
 
-    full_file = blast_input[0]
-    short_file = blast_input[1]
-    output_directory = blast_input[2]
-    num_threads = blast_input[3]
-    
-    # determine if minimum allele length is smaller than 30aa
-    small = False
-    for allele in SeqIO.parse(full_file, 'fasta'):
-        if len(str(allele.seq)) < 30:
-            small = True
-    
-    # Create BLASTp database with all sequences
-    blastdb_name = create_blastdb(output_directory, full_file)
-    
-    filename = os.path.basename(full_file).split('.')[0]
-    
-    blast_out_file = '{0}/{1}_blast_out.tsv'.format(output_directory, filename)
-    
-    # do not forget to define max HSPs (High-scoring Segment Pairs) or BLAST might return several hits per subject with the same query
-    # increase number of maximum targets because BLAST default is 500
-    if small is False:
-        blast_command = ('blastp -db {0} -query {1} -out {2} '
-                        '-outfmt "6 qseqid sseqid pident length qstart qend sstart send evalue bitscore score" '
-                        '-max_hsps 1 -num_threads {3} -max_target_seqs 100000'.format(blastdb_name, short_file, blast_out_file, num_threads))
-    # if there are proteins smaller than 30aa, use blastp-short
-    elif small is True:
-        blast_command = ('blastp -task blastp-short -db {0} -query {1} -out {2} '
-                        '-outfmt "6 qseqid sseqid pident length qstart qend sstart send evalue bitscore score" '
-                        '-max_hsps 1 -num_threads {3} -max_target_seqs 100000'.format(blastdb_name, short_file, blast_out_file, num_threads))
-    
-    os.system(blast_command)
-    
-    os.remove(full_file)
-    os.remove(short_file)
-    
-    blastdb_dirname = os.path.dirname(blastdb_name)
-    shutil.rmtree(blastdb_dirname)
-    
-    return blast_out_file
+    blastdb_cmd = [makeblastdb_path, '-in', input_fasta, '-out', output_path,
+                   '-parse_seqids', '-dbtype', db_type]
+
+    makedb_cmd = subprocess.Popen(blastdb_cmd,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+
+    stderr = makedb_cmd.stderr.readlines()
+
+    if len(stderr) > 0:
+        stderr = decode_str(stderr, 'utf8')
+        if ignore is not None:
+            stderr = filter_list(stderr, ignore)
+
+    return stderr
+
+
+def run_blast(blast_path, blast_db, fasta_file, blast_output,
+              max_hsps=1, threads=1, ids_file=None, blast_task=None,
+              max_targets=None, ignore=None):
+    """ Execute BLAST to align sequences in a FASTA file
+        against a BLAST database.
+
+        Parameters
+        ----------
+        blast_path : str
+            Path to BLAST executables.
+        blast_db : str
+            Path to the BLAST database.
+        fasta_file : str
+            Path to the FASTA file with sequences to
+            align against the BLAST database.
+        blast_output : str
+            Path to the file that will be created to
+            store BLAST results.
+        max_hsps : int
+            Maximum number of High Scoring Pairs per
+            pair of aligned sequences.
+        threads : int
+            Number of threads/cores used to run BLAST.
+        ids_file : str
+            Path to a file with sequence identifiers,
+            one per line. Sequences will only be aligned
+            to the sequences in the BLAST database that
+            have any of the identifiers in this file.
+        blast_task : str
+            Type of BLAST task.
+        max_targets : int
+            Maximum number of target/subject sequences
+            to align against.
+        ignore : list or None
+            List with BLAST warnings that should be ignored.
+
+        Returns
+        -------
+        stderr : str
+            String with errors raised during BLAST execution.
+    """
+
+    blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
+                  '-out', blast_output, '-outfmt', '6 qseqid sseqid score',
+                  '-max_hsps', str(max_hsps), '-num_threads', str(threads),
+                  '-evalue', '0.001']
+
+    if ids_file is not None:
+        blast_args.extend(['-seqidlist', ids_file])
+    if blast_task is not None:
+        blast_args.extend(['-task', blast_task])
+    if max_targets is not None:
+        blast_args.extend(['-max_target_seqs', str(max_targets)])
+
+    blast_proc = subprocess.Popen(blast_args,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+
+    stderr = blast_proc.stderr.readlines()
+
+    if len(stderr) > 0:
+        stderr = decode_str(stderr, 'utf8')
+        if ignore is not None:
+            stderr = filter_list(stderr, ignore)
+
+    return stderr
 
 
 def read_blast_tabular(blast_tabular_file):
     """ Read a file with BLAST results in tabular format
-    
+
         Args: 
             blast_tabular_file (str): path to output file of BLAST.
-        
+
         Returns:
             blasting_results (list): a list with a sublist per line in the input
             file.
     """
-    
+
     with open(blast_tabular_file, 'r') as blastout:
         blasting_results = []
         reader = csv.reader(blastout, delimiter='\t')
         for row in reader:
             blasting_results.append(row)
-    
+
     return blasting_results
 
 
 def create_blast_results_dictionary(blast_results):
     """ Creates a dictionary based on the BLAST results of matches given as input.
-        
+
         Args:
             blast_results (list): list with a sublist for each line that was in the 
             BLAST output file.
-        
+
         Returns:
             blast_matches (dict): a dictionary with genes/loci identifiers as keys.
             Values are dictionaries with alleles identifiers as keys and dictionaries with 
             hits identifiers as keys and a list of BLASTp information about the hits as values.
     """
-    
+
     blast_matches = {}
     # for every hit in the BLAST results
     for match in blast_results:
-        
+
         # get unique name for the query and hit
         query_name = match[0].strip()
         hit_name = match[1].strip()
-        
+
         gene_id = query_name.split('_')[0]
-        
+
         # get the relevant information
         identity = match[2]
         query_length = match[3]
@@ -530,7 +333,7 @@ def create_blast_results_dictionary(blast_results):
         #evalue = match[8]
         bitscore = match[9]
         raw_score = match[10]
-        
+
         # create the gene/locus key with the first query and hit information
         if gene_id not in blast_matches:
             blast_matches[gene_id] = {query_name:{hit_name: [identity, query_length, query_start,
@@ -1043,29 +846,6 @@ def write_matches_validation(matches, output_file, header):
         out.writelines(lines)
 
 
-def determine_representatives(representatives_schema):
-    """ Retrieves the identifiers of all representative alleles in the input schema.
-
-        Args:
-            representative_schema (dict): dictionary with locus identifiers as keys and
-            a dictionary with alleles identifiers as keys and sequences as values.
-
-        Returns:
-            representative_identifiers (list): list with all representative alleles
-            identifiers of all loci.
-    """
-
-    representatives_identifiers = []
-    # for each allele identifier in the short schema
-    for locus in representatives_schema:
-        # add each representative allele identifier to the same list
-        representatives = list(representatives_schema[locus].keys())
-        representatives = [rep.split('.')[0] for rep in representatives]
-        representatives_identifiers.extend(representatives)
-
-    return representatives_identifiers
-
-
 def inter_loci_matches(locus_dictionary):
     """ Determines the matches between alleles of different loci from the full
         set of matches.
@@ -1100,28 +880,183 @@ def inter_loci_matches(locus_dictionary):
     return locus_matches
 
 
-def identify_input_type(input_argument):
-    """ Determines if the input argument path is for a file or for a directory.
+def function_helper(input_args):
+    """ Runs function by passing set of provided inputs and
+        captures exceptions raised during function execution.
 
-        Args:
-            input_argument (str): path to a file or directory.
+        Parameters
+        ----------
+        input_args : list
+            List with function inputs and function object to call
+            in the last index.
 
-        Returns:
-            A list with two variables:
-                input_files (list): list of files names to all schema files to use.
-                schema_directory (str): path of the directory with the schema files.
+        Returns
+        -------
+        results : list
+            List with the results returned by the function.
+            If an exception is raised it returns a list with
+            the name of the function and the exception traceback.
     """
 
-    # if it is a directory, list all files in that directory
-    if os.path.isdir(input_argument) is True:
-        input_files = [f for f in os.listdir(input_argument) if f.endswith('.fasta') is True]
-        schema_directory = input_argument
+    try:
+        results = input_args[-1](*input_args[0:-1])
+    except Exception as e:
+        func_name = (input_args[-1]).__name__
+        traceback_lines = traceback.format_exception(etype=type(e), value=e,
+                                                     tb=e.__traceback__)
+        traceback_text = ''.join(traceback_lines)
+        print('Error on {0}:\n{1}\n'.format(func_name, traceback_text))
+        results = [func_name, traceback_text]
 
-    # if it is a file, get the basename for all files
-    elif os.path.isfile(input_argument) is True:
-        with open(input_argument, 'r') as file:
-            input_files = [f.strip() for f in file.readlines()]
-            schema_directory = os.path.dirname(input_files[0])
-            input_files = [os.path.basename(f) for f in input_files]
+    return results
 
-    return [input_files, schema_directory]
+
+def map_async_parallelizer(inputs, function, cpu, callback='extend',
+                           chunksize=1, show_progress=False):
+    """ Parallelizes function calls by creating several processes
+        and distributing inputs.
+
+        Parameters
+        ----------
+        inputs : list
+            List with inputs to process.
+        function
+            Function to be parallelized.
+        cpu : int
+            Number of processes to create (based on the
+            number of cores).
+        callback : str
+            Results can be appended, 'append', to the
+            list that stores results or the list of results
+            can be extended, 'extend'.
+        chunksize : int
+            Size of input chunks that will be passed to
+            each process. The function will create groups
+            of inputs with this number of elements.
+        show_progress: bool
+            True to show a progress bar with the percentage
+            of inputs that have been processed, False
+            otherwise.
+
+        Returns
+        -------
+        results : list
+            List with the results returned for each function
+            call.
+    """
+
+    results = []
+    pool = Pool(cpu)
+    if callback == 'extend':
+        rawr = pool.map_async(function, inputs,
+                              callback=results.extend, chunksize=chunksize)
+    elif callback == 'append':
+        rawr = pool.map_async(function, inputs,
+                              callback=results.append, chunksize=chunksize)
+
+    if show_progress is True:
+        completed = False
+        while completed is False:
+            completed = progress_bar(rawr, len(inputs))
+
+    rawr.wait()
+
+    return results
+
+
+def progress_bar(process, total, tickval=5, ticknum=20, completed=False):
+    """ Creates and prints progress bar to stdout.
+
+        Parameters
+        ----------
+        process : multiprocessing.pool.MapResult
+            Multiprocessing object.
+        total : int
+            Total number of inputs that have to be processed.
+        tickval : int
+            Progress completion percentage value for each
+            tick.
+        ticknum : int
+            Total number of ticks in progress bar.
+        completed : bool
+            Boolean indicating if process has completed.
+
+        Returns
+        -------
+        completed : bool
+            Boolean indicating if process has completed.
+    """
+
+    # check if process has finished
+    if (process.ready()):
+        # print full progress bar and satisfy stopping condition
+        progress_bar = '[{0}] 100%'.format('='*ticknum)
+        completed = True
+
+    # check how many inputs have been processed
+    remaining = process._number_left
+    if remaining == total:
+        # print empty progress bar
+        progress_bar = '[{0}] 0%'.format(' '*ticknum)
+    else:
+        # print progress bar, incremented by 5%
+        progress = int(100-(remaining/total)*100)
+        progress_tick = progress//tickval
+        progress_bar = '[{0}{1}] {2}%'.format('='*progress_tick,
+                                              ' '*(ticknum-progress_tick),
+                                              progress)
+
+    print('\r', progress_bar, end='')
+    time.sleep(0.5)
+
+    return completed
+
+
+def concatenate_files(files, output_file, header=None):
+    """ Concatenates the contents of a set of files.
+
+        Parameters
+        ----------
+        files : list
+            List with the paths to the files to concatenate.
+        output_file : str
+            Path to the output file that will store the
+            concatenation of input files.
+        header : str or NoneType
+            Specify a header that should be written as the
+            first line in the output file.
+
+        Returns
+        -------
+        output_file : str
+            Path to the output file that was created with
+            the concatenation of input files.
+    """
+
+    with open(output_file, 'w') as of:
+        if header is not None:
+            of.write(header)
+        for f in files:
+            with open(f, 'r') as fd:
+                shutil.copyfileobj(fd, of)
+
+    return output_file
+
+
+def flatten_list(list_to_flatten):
+    """ Flattens one level of a nested list.
+
+        Parameters
+        ----------
+        list_to_flatten : list
+            List with nested lists.
+
+        Returns
+        -------
+        flattened_list : str
+            Input list flattened by one level.
+    """
+
+    flattened_list = list(itertools.chain(*list_to_flatten))
+
+    return flattened_list
