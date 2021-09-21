@@ -10,7 +10,7 @@ create a distance matrix. It also determines the number of
 shared loci to create a matrix with those values. The 'INF-'
 prefix is removed and ASM, ALM, NIPH, NIPHEM, PLOT3, PLOT5,
 LNF and LOTSC classifications are substituted by '0' before
-determining pairwise distances.
+performing pairwise comparisons.
 """
 
 
@@ -32,13 +32,17 @@ import get_varSize_deep as gs
 def pickle_dumper(content, output_file):
     """ Use the Pickle module to serialize an object.
 
-        Parameters
-        ----------
-        content : type
-            Variable that refers to the object that will
-            be serialized and written to the output file.
-        output_file : str
-            Path to the output file.
+    Parameters
+    ----------
+    content : type
+        Variable that refers to the object that will
+        be serialized and written to the output file.
+    output_file : str
+        Path to the output file.
+
+    Returns
+    -------
+    None.
     """
 
     with open(output_file, 'wb') as po:
@@ -48,16 +52,16 @@ def pickle_dumper(content, output_file):
 def pickle_loader(input_file):
     """ Use the Pickle module to de-serialize an object.
 
-        Parameters
-        ----------
-        input_file : str
-            Path to file with byte stream to be de-serialized.
+    Parameters
+    ----------
+    input_file : str
+        Path to file with byte stream to be de-serialized.
 
-        Returns
-        -------
-        content : type
-            Variable that refers to the de-serialized
-            object.
+    Returns
+    -------
+    content : type
+        Variable that refers to the de-serialized
+        object.
     """
 
     with open(input_file, 'rb') as pi:
@@ -69,24 +73,24 @@ def pickle_loader(input_file):
 def progress_bar(process, total, tickval=5, ticknum=20, completed=False):
     """ Creates and prints progress bar to stdout.
 
-        Parameters
-        ----------
-        process : multiprocessing.pool.MapResult
-            Multiprocessing object.
-        total : int
-            Total number of inputs that have to be processed.
-        tickval : int
-            Progress completion percentage value for each
-            tick.
-        ticknum : int
-            Total number of ticks in progress bar.
-        completed : bool
-            Boolean indicating if process has completed.
+    Parameters
+    ----------
+    process : multiprocessing.pool.MapResult
+        Multiprocessing object.
+    total : int
+        Total number of inputs that have to be processed.
+    tickval : int
+        Progress completion percentage value for each
+        tick.
+    ticknum : int
+        Total number of ticks in progress bar.
+    completed : bool
+        Boolean indicating if process has completed.
 
-        Returns
-        -------
-        completed : bool
-            Boolean indicating if process has completed.
+    Returns
+    -------
+    completed : bool
+        Boolean indicating if process has completed.
     """
 
     # check if process has finished
@@ -118,18 +122,18 @@ def function_helper(input_args):
     """ Runs function by passing set of provided inputs and
         captures exceptions raised during function execution.
 
-        Parameters
-        ----------
-        input_args : list
-            List with function inputs and function object to call
-            in the last index.
+    Parameters
+    ----------
+    input_args : list
+        List with function inputs and function object to call
+        in the last index.
 
-        Returns
-        -------
-        results : list
-            List with the results returned by the function.
-            If an exception is raised it returns a list with
-            the name of the function and the exception traceback.
+    Returns
+    -------
+    results : list
+        List with the results returned by the function.
+        If an exception is raised it returns a list with
+        the name of the function and the exception traceback.
     """
 
     try:
@@ -150,33 +154,33 @@ def map_async_parallelizer(inputs, function, cpu, callback='extend',
     """ Parallelizes function calls by creating several processes
         and distributing inputs.
 
-        Parameters
-        ----------
-        inputs : list
-            List with inputs to process.
-        function
-            Function to be parallelized.
-        cpu : int
-            Number of processes to create (based on the
-            number of cores).
-        callback : str
-            Results can be appended, 'append', to the
-            list that stores results or the list of results
-            can be extended, 'extend'.
-        chunksize : int
-            Size of input chunks that will be passed to
-            each process. The function will create groups
-            of inputs with this number of elements.
-        show_progress: bool
-            True to show a progress bar with the percentage
-            of inputs that have been processed, False
-            otherwise.
+    Parameters
+    ----------
+    inputs : list
+        List with inputs to process.
+    function
+        Function to be parallelized.
+    cpu : int
+        Number of processes to create (based on the
+        number of cores).
+    callback : str
+        Results can be appended, 'append', to the
+        list that stores results or the list of results
+        can be extended, 'extend'.
+    chunksize : int
+        Size of input chunks that will be passed to
+        each process. The function will create groups
+        of inputs with this number of elements.
+    show_progress: bool
+        True to show a progress bar with the percentage
+        of inputs that have been processed, False
+        otherwise.
 
-        Returns
-        -------
-        results : list
-            List with the results returned for each function
-            call.
+    Returns
+    -------
+    results : list
+        List with the results returned for each function
+        call.
     """
 
     results = []
@@ -198,25 +202,79 @@ def map_async_parallelizer(inputs, function, cpu, callback='extend',
     return results
 
 
-def determine_distances_fast_parallel(input_table, cpu_cores, tmp_directory, genome_ids):
-    """
+def tsv_to_nparray(input_file, missing_data=False):
+    """ Reads a TSV file with a matrix of allelic profiles.
+        File lines are read as a generator to exclude the
+        sample identifier and avoid loading huge files
+        into memory.
+
+    Parameters
+    ----------
+    input_file : str
+        Path to the TSV file with the matrix with
+        allelic profiles.
+
+    Returns
+    -------
+    np_array : ndarray
+        Numpy array with the numeric values for
+        all allelic profiles.
     """
 
     # import matrix without column and row identifiers
-    with open(input_table, 'r') as infile:
-        lines = ('\t'.join(line.split('\t')[1:]) for line in infile if not line.startswith('FILE'))
+    with open(input_file, 'r') as infile:
+        lines = ('\t'.join(line.split('\t')[1:])
+                 for line in infile)
         # dtype=float32 should be faster than integer dtypes
         # but runs faster with dtype=int32 in test setup
-        # dtype=int32 supports max integer of 2147483647
+        # dtype=int32 supports max integer of 2,147,483,647
         # should be safe even when arrays are multiplied
-        np_matrix = np.loadtxt(fname=lines, delimiter='\t', dtype='int32')
+        if missing_data is False:
+            np_array = np.genfromtxt(fname=lines, delimiter='\t',
+                                     dtype='int32', skip_header=1)
+        elif missing_data is True:
+            np_array = np.genfromtxt(fname=lines, delimiter='\t',
+                                     dtype='int32', missing_values='',
+                                     filling_values=0, skip_header=1)
+
+    return np_array
+
+
+def pairwise_comparisons(input_table, cpu_cores, tmp_directory, genome_ids):
+    """ Distributes samples per available CPU cores to compute
+        pairwise allelic differences and the number of shared
+        loci for a matrix of allelic profiles.
+
+    Parameters
+    ----------
+    input_table : str
+        Path to TSV file that contains the matrix with
+        allelic profiles.
+    cpu_cores : int
+        Number of CPU cores to use to perform pairwise
+        comparisons.
+    tmp_directory : str
+        Path to the temporary directory that will store
+        intermediate files.
+    genome_ids : list
+        List with sample identifiers.
+
+    Returns
+    -------
+    results : list
+        List with dictionaries. Each dictionary has sample
+        identiifers as keys and path to a pickle file with
+        results as values.
+    """
+
+    np_matrix = tsv_to_nparray(input_table)
 
     rows_indexes = [i for i in range(len(np_matrix))]
     random.shuffle(rows_indexes)
     # divide inputs into 20 lists for 5% progress resolution
     parallel_inputs = divide_list_into_n_chunks(rows_indexes, 20)
 
-    common_args = [[l, np_matrix, genome_ids, tmp_directory, separate_dists] for l in parallel_inputs]
+    common_args = [[l, np_matrix, genome_ids, tmp_directory, compute_distances] for l in parallel_inputs]
 
     # increasing cpu cores can greatly increase memory usage
     results = map_async_parallelizer(common_args,
@@ -227,9 +285,33 @@ def determine_distances_fast_parallel(input_table, cpu_cores, tmp_directory, gen
     return results
 
 
-def separate_dists(indexes, np_matrix, genome_ids, tmp_directory):
+def compute_distances(indexes, np_matrix, genome_ids, tmp_directory):
+    """ Computes pairwise allelic differences and number
+        of shared loci for a matrix of allelic profiles.
+
+    Parameters
+    ----------
+    indexes : list
+        List with the line index of the allelic profiles
+        that will be processed.
+    np_matrix : ndarray
+        Numpy array with dtype=int32 values for allelic profiles.
+    genome_ids : list
+        List with sample identifiers.
+    tmp_directory : str
+        Path to temporary directory where pickle files with
+        results will be stored.
+
+    Returns
+    -------
+    output_files : list
+        List with the paths to all pickle files that were created
+        to store results.
+
+    """
 
     # multiply one row per cycle to avoid memory overflow
+    # read only part of the matrix for huge files and process in chunks?
     output_files = {}
     for i in indexes:
         current_genome = genome_ids[i]
@@ -262,18 +344,18 @@ def separate_dists(indexes, np_matrix, genome_ids, tmp_directory):
 def divide_list_into_n_chunks(list_to_divide, n):
     """ Divides a list into a defined number of sublists.
 
-        Parameters
-        ----------
-        list_to_divide : list
-            List to divide into sublists.
-        n : int
-            Number of sublists to create.
+    Parameters
+    ----------
+    list_to_divide : list
+        List to divide into sublists.
+    n : int
+        Number of sublists to create.
 
-        Returns
-        -------
-        sublists : list
-            List with the sublists created by dividing
-            the input list.
+    Returns
+    -------
+    sublists : list
+        List with the sublists created by dividing
+        the input list.
     """
 
     sublists = []
@@ -289,7 +371,19 @@ def divide_list_into_n_chunks(list_to_divide, n):
     
 
 def join_iterable(iterable, delimiter='\t'):
-    """
+    """ Joins the elements of an iterable.
+
+    Parameters
+    ----------
+    iterable : iter
+        Iterable with elements to join (e.g.: list, set, dict).
+    delimiter : str, optional
+        String used to join all elements. The default is '\t'.
+
+    Returns
+    -------
+    joined : str
+        A string with all elements joined by the delimiter.
     """
 
     joined = delimiter.join(iterable)
@@ -298,7 +392,20 @@ def join_iterable(iterable, delimiter='\t'):
 
 
 def write_text(text, output_file, mode='w'):
-    """
+    """ Writes a string to a file.
+
+    Parameters
+    ----------
+    text : str
+        String to write to file.
+    output_file : str
+        Path to output file.
+    mode : str, optional
+        Write mode. The default is 'w'.
+
+    Returns
+    -------
+    None.
     """
 
     # write matrix to output file
@@ -311,12 +418,14 @@ def write_lines(lines, output_file, mode='w'):
 
     Parameters
     ----------
-    matrix_rows : list
+    lines : list
         List of sublists where each sublist corresponds
-        to one row of a AlleleCall matrix.
-    output_matrix : str
-        Path to the file that should be created to store
-        the output matrix.
+        to one row with any number of elements.
+    output_file : str
+        Path to the output file to which the lines will
+        be written.
+    mode : str, optional
+        Write mode. The default is 'w'.
 
     Returns
     -------
@@ -332,43 +441,45 @@ def write_lines(lines, output_file, mode='w'):
     write_text(lines_text, output_file, mode)
 
 
-def read_tabular(input_file, delimiter='\t'):
-    """
-    Read a tabular file.
+def get_sample_ids(input_file, delimiter='\t'):
+    """ Extracts the sample identifiers from a
+        matrix with allelic profiles.
 
     Parameters
     ----------
     input_file : str
-        Path to a tabular file.
-    delimiter : str
-        Delimiter used to separate file fields.
+        Path to the input file that contains a matrix
+        with allelic profiles.
+    delimiter : str, optional
+        Field delimiter. The default is '\t'.
 
     Returns
     -------
-    lines : list
-        A list with a sublist per line in the input file.
-        Each sublist has the fields that were separated by
-        the defined delimiter.
+    sample_ids : list
+        List with the sample identifiers.
     """
 
     with open(input_file, 'r') as infile:
         reader = csv.reader(infile, delimiter=delimiter)
-        lines = [line for line in reader]
+        sample_ids = [line[0] for line in reader][1:]
 
-    return lines
-
-
-def get_input_ids(input_file, delimiter='\t'):
-
-    with open(input_file, 'r') as infile:
-        reader = csv.reader(infile, delimiter=delimiter)
-        input_ids = [line[0] for line in reader][1:]
-
-    return input_ids
+    return sample_ids
 
 
 def merge_dictionaries(dictionaries):
-    """
+    """ Merges several dictionaries.
+
+    Parameters
+    ----------
+    dictionaries : list
+        List with several dictionaries to merge.
+
+    Returns
+    -------
+    merged : dict
+        A dictionary that is the result of merging
+        all input dictionaries. Common keys will
+        be overwritten.
     """
 
     merged = {}
@@ -378,7 +489,111 @@ def merge_dictionaries(dictionaries):
     return merged
 
 
-def main(input_matrix, output_directory, cpu_cores):
+def numpy_symmetrify(numpy_array, skip=0, empty='lower'):
+    """ Converts a numpy array with zeroed values above
+        or below the diagonal into a symmetric array.
+
+    Parameters
+    ----------
+    numpy_array :  ndarray
+        Numpy array to symmetrify.
+    skip : int, optional
+        Number of diagonal lines to skip.
+    empty : str, optional
+        Specify if the matrix is zeroed above or
+        below the diagonal.
+
+    Returns
+    -------
+    symmetric_array : ndarray
+        Input array converted to a symmetric array.
+    """
+
+    if empty == 'lower':
+        symmetric_array = np.triu(numpy_array, k=skip) + np.tril(numpy_array.T)
+    elif empty == 'upper':
+        symmetric_array = np.tril(numpy_array, k=skip) + np.triu(numpy_array.T)
+
+    return symmetric_array
+
+
+def concatenate_arrays(arrays, axis=1):
+    """ Concatenate Numpy arrays.
+    
+    Parameters
+    ----------
+    arrays : tup
+        A tuple with Numpy arrays.
+    axis : int, optional
+        The axis along which the arrays will be joined.
+        1 for join columns, 0 to join rows.
+
+    Returns
+    -------
+    concatenated : ndarray
+        The concatenated array.
+    """
+
+    concatenated = np.concatenate(arrays, axis=axis)
+
+    return concatenated
+
+
+def write_matrices(pickled_results, genome_ids, output_pairwise,
+                   output_p, col_ids):
+    """ Write matrices with number of allelic differences and
+        number of shared loci above the diagonal.
+
+    Parameters
+    ----------
+    pickled_results : dict
+        Dictionary with sample identifiers as keys
+        and paths to binary files with pickled results
+        as values.
+    genome_ids : list
+        List with sample identifiers.
+    output_pairwise : str
+        Path to the output file to which the matrix
+        with pairwise allelic differences will be saved.
+    output_p : str
+        Path to the output file to which the matrix
+        with pairwise shared loci will be saved.
+    col_ids: list
+        List with sample identifiers to add as headers.
+
+    Returns
+    -------
+    None.
+    """
+
+    sl_lines = [col_ids]
+    ad_lines = [col_ids]
+    limit = 300
+    for g in genome_ids:
+        current_file = pickled_results[g]
+        # load data
+        data = pickle_loader(current_file)
+
+        shared_loci = list(data[0])
+        shared_loci = list(map(str, shared_loci))
+        allele_diffs = list(data[1])
+        allele_diffs = list(map(str, allele_diffs))
+
+        padding = [''] * (len(genome_ids)-len(allele_diffs))
+
+        sl_line = [g] + padding + shared_loci
+        sl_lines.append(sl_line)
+        ad_line = [g] + padding + allele_diffs
+        ad_lines.append(ad_line)
+
+        if len(sl_lines) >= limit or g == genome_ids[-1]:
+            write_lines(ad_lines, output_pairwise, mode='a')
+            ad_lines = []
+            write_lines(sl_lines, output_p, mode='a')
+            sl_lines = []
+
+
+def main(input_matrix, output_directory, cpu_cores, symmetric):
 
     # create output directory if it does not exist
     if os.path.isdir(output_directory) is False:
@@ -408,57 +623,49 @@ def main(input_matrix, output_directory, cpu_cores):
         os.mkdir(tmp_directory)
 
     # get sample identifiers
-    genome_ids = get_input_ids(input_matrix, delimiter='\t')
+    genome_ids = get_sample_ids(input_matrix, delimiter='\t')
     total_genomes = len(genome_ids)
 
     # this uses a lot of memory for really large matrices
-    print('Determining pairwise distances...')
-    start2 = time.time()
-    parallel_pairwise = determine_distances_fast_parallel(output_masked, cpu_cores, tmp_directory, genome_ids)
-    end2 = time.time()
-    delta2 = end2 - start2
-    print('\n', delta2)
+    parallel_pairwise = pairwise_comparisons(output_masked, cpu_cores,
+                                             tmp_directory, genome_ids)
 
     merged = merge_dictionaries(parallel_pairwise)
 
-    print('Creating distance matrix...', end='')
+    print('\nCreating distance matrix...', end='')
     # create files with headers
-    headers = [''] + genome_ids
-    headers = join_iterable(headers, '\t')
+    col_ids = ['FILE'] + genome_ids
     output_pairwise = os.path.join(output_directory,
                                    '{0}_allelic_differences.tsv'.format(input_basename))
-    write_text(headers, output_pairwise)
-
     output_p = os.path.join(output_directory,
                             '{0}_shared_loci.tsv'.format(input_basename))
-    write_text(headers, output_p)
 
     # import arrays per genome and save to matrix file
-    sl_lines = []
-    ad_lines = []
-    limit = 500
-    for g in genome_ids:
-        current_file = merged[g]
-        # load data
-        data = pickle_loader(current_file)
+    write_matrices(merged, genome_ids, output_pairwise, output_p, col_ids)
 
-        shared_loci = list(data[0])
-        shared_loci = list(map(str, shared_loci))
-        allele_diffs = list(data[1])
-        allele_diffs = list(map(str, allele_diffs))
+    if symmetric is True:
+        row_ids = np.array([genome_ids]).T
+        col_ids = '\t'.join(col_ids)
 
-        padding = [''] * (len(genome_ids)-len(allele_diffs))
+        pairwise_differences = tsv_to_nparray(output_pairwise, True)
+        # convert into symmetric matrix
+        symmetric_matrix = numpy_symmetrify(pairwise_differences)
+        # add column with genome identifiers
+        symmetric_matrix = concatenate_arrays((row_ids, symmetric_matrix))
 
-        sl_line = [g] + padding + shared_loci
-        sl_lines.append(sl_line)
-        ad_line = [g] + padding + allele_diffs
-        ad_lines.append(ad_line)
+        # save symmetric matrix with allelic differences
+        os.remove(output_pairwise)
+        np.savetxt(output_pairwise, symmetric_matrix, fmt='%s',
+                   header=col_ids, delimiter='\t', comments='')
 
-        if len(sl_lines) >= limit or g == genome_ids[-1]:
-            write_lines(ad_lines, output_pairwise, mode='a')
-            ad_lines = []
-            write_lines(sl_lines, output_p, mode='a')
-            sl_lines = []
+        # convert shared loci matrix to symmetric
+        shared_loci = tsv_to_nparray(output_p, True)
+        symmetric_matrix = numpy_symmetrify(shared_loci, 1)
+        symmetric_matrix = concatenate_arrays((row_ids, symmetric_matrix))
+
+        os.remove(output_p)
+        np.savetxt(output_p, symmetric_matrix, fmt='%s',
+                   header=col_ids, delimiter='\t', comments='')
 
     print('done.')
     print('Distance matrix with allelic differences available at {0}'.format(output_pairwise))
@@ -489,6 +696,11 @@ def parse_arguments():
                         dest='cpu_cores',
                         help='Number of CPU cores used to perform '
                              'pairwise comparisons.')
+    
+    parser.add_argument('-s', '--symmetric', action='store_true',
+                        required=False,
+                        dest='symmetric',
+                        help='Creates symmetric matrices.')
 
     args = parser.parse_args()
 
