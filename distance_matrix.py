@@ -17,9 +17,11 @@ performing pairwise comparisons.
 import os
 import csv
 import time
+import math
 import shutil
 import pickle
 import random
+import pandas as pd
 import argparse
 import traceback
 import numpy as np
@@ -489,56 +491,6 @@ def merge_dictionaries(dictionaries):
     return merged
 
 
-def numpy_symmetrify(numpy_array, skip=0, empty='lower'):
-    """ Converts a numpy array with zeroed values above
-        or below the diagonal into a symmetric array.
-
-    Parameters
-    ----------
-    numpy_array :  ndarray
-        Numpy array to symmetrify.
-    skip : int, optional
-        Number of diagonal lines to skip.
-    empty : str, optional
-        Specify if the matrix is zeroed above or
-        below the diagonal.
-
-    Returns
-    -------
-    symmetric_array : ndarray
-        Input array converted to a symmetric array.
-    """
-
-    if empty == 'lower':
-        symmetric_array = np.triu(numpy_array, k=skip) + np.tril(numpy_array.T)
-    elif empty == 'upper':
-        symmetric_array = np.tril(numpy_array, k=skip) + np.triu(numpy_array.T)
-
-    return symmetric_array
-
-
-def concatenate_arrays(arrays, axis=1):
-    """ Concatenate Numpy arrays.
-    
-    Parameters
-    ----------
-    arrays : tup
-        A tuple with Numpy arrays.
-    axis : int, optional
-        The axis along which the arrays will be joined.
-        1 for join columns, 0 to join rows.
-
-    Returns
-    -------
-    concatenated : ndarray
-        The concatenated array.
-    """
-
-    concatenated = np.concatenate(arrays, axis=axis)
-
-    return concatenated
-
-
 def write_matrices(pickled_results, genome_ids, output_pairwise,
                    output_p, col_ids):
     """ Write matrices with number of allelic differences and
@@ -593,6 +545,159 @@ def write_matrices(pickled_results, genome_ids, output_pairwise,
             sl_lines = []
 
 
+def concatenate_files(files, output_file, header=None):
+    """ Concatenates the contents of a set of files.
+
+        Parameters
+        ----------
+        files : list
+            List with the paths to the files to concatenate.
+        output_file : str
+            Path to the output file that will store the
+            concatenation of input files.
+        header : str or NoneType
+            Specify a header that should be written as the
+            first line in the output file.
+
+        Returns
+        -------
+        output_file : str
+            Path to the output file that was created with
+            the concatenation of input files.
+    """
+
+    with open(output_file, 'w') as of:
+        if header is not None:
+            of.write(header)
+        for f in files:
+            with open(f, 'r') as fd:
+                shutil.copyfileobj(fd, of)
+
+    return output_file
+
+
+def transpose_matrix(input_file, output_directory):
+    """ Transposes lines in a TSV file.
+
+    Parameters
+    ----------
+    input_file : str
+        Path to the input TSV file.
+    output_directory : str
+        Path to the directory to which intermediate files
+        with transposed lines will be written.
+
+    Returns
+    -------
+    output_transpose : str
+        Path to the file with the transposed matrix.
+        This file is created by concatenating all
+        files saved into `output_directory`.
+    """
+
+    file_id = 1
+    transpose_files = []
+    input_basename = os.path.basename(input_file)
+    with open(input_file, 'r') as infile:
+        # get columns names
+        columns = [e.strip() for e in (infile.__next__()).split('\t')]
+        # divide into smaller sets to avoid loading huge files
+        num_col_sets = math.ceil(len(columns)/500)
+        col_sets = divide_list_into_n_chunks(columns, num_col_sets)
+        # use Pandas to read columns sets and save transpose
+        for c in col_sets:
+            # dtype=str or Pandas converts values into floats
+            df = pd.read_csv(input_file, usecols=c, delimiter='\t', dtype=str)
+            output_basename = input_basename.replace('.tsv', '_{0}.tsv'.format(file_id))
+            output_file = os.path.join(output_directory, output_basename)
+            # transpose columns
+            df = df.T
+            # do not save header that contains row indexes
+            df.to_csv(output_file, sep='\t', header=False)
+            transpose_files.append(output_file)
+            file_id += 1
+
+    # concatenate all files with transposed lines
+    output_transpose = input_file.replace('.tsv', '_transpose.tsv')
+    concatenate_files(transpose_files, output_transpose)
+
+    return output_transpose
+
+
+def merge_triangular_matrices(upper_matrix, lower_matrix, output_file, matrix_size):
+    """ Merge two triangular matrices with the same dimensions
+        to create a symmetric matrix.
+
+    Parameters
+    ----------
+    upper_matrix : str
+        Path to the TSV file that contains the upper
+        triangular matrix.
+    lower_matrix : str
+        Path to the TSV file that contains the lower
+        triangular matrix.
+    output_file : str
+        Path to the output file to which the symmetric
+        matrix will be saved.
+    matrix_size : int
+        Total number of lines in the triangular matrix.
+
+    Returns
+    -------
+    None.
+    """
+
+    with open(upper_matrix, 'r') as upper_handle, open(lower_matrix, 'r') as lower_handle:
+        upper_reader = csv.reader(upper_handle, delimiter='\t')
+        lower_reader = csv.reader(lower_handle, delimiter='\t')
+
+        merged_lines = []
+        for i in range(matrix_size):
+            upper_line = upper_reader.__next__()
+            lower_line = lower_reader.__next__()
+            merged_line = [e
+                           if e != ''
+                           else lower_line[i]
+                           for i, e in enumerate(upper_line)]
+            merged_lines.append(merged_line)
+
+            if len(merged_lines) >= 200 or i == (matrix_size-1):
+                write_lines(merged_lines, output_file, mode='a')
+                merged_lines = []
+
+
+def symmetrify_matrix(input_matrix, matrix_size, tmp_directory):
+    """ Symmetrify a triangular matrix.
+
+    Parameters
+    ----------
+    input_matrix : str
+        Path to TSV file that contains the triangular matrix.
+    matrix_size : int
+        Total number of lines in input file.
+
+    Returns
+    -------
+    symmetric_output : str
+        Path to the output file that contains the symmetric
+        matrix.
+    """
+
+    output_transpose = transpose_matrix(input_matrix, tmp_directory)
+
+    # merge upper and lower diagonal matrices into symmetric matrix
+    symmetric_output = input_matrix.replace('.tsv', '_symmetric.tsv')
+
+    merge_triangular_matrices(input_matrix, output_transpose,
+                              symmetric_output, matrix_size)
+
+    # delete files with triangular matrices
+    os.remove(input_matrix)
+    os.remove(output_transpose)
+
+    return symmetric_output
+
+
 def main(input_matrix, output_directory, cpu_cores, symmetric):
 
     # create output directory if it does not exist
@@ -644,32 +749,16 @@ def main(input_matrix, output_directory, cpu_cores, symmetric):
     write_matrices(merged, genome_ids, output_pairwise, output_p, col_ids)
 
     if symmetric is True:
-        row_ids = np.array([genome_ids]).T
-        col_ids = '\t'.join(col_ids)
-
-        pairwise_differences = tsv_to_nparray(output_pairwise, True)
-        # convert into symmetric matrix
-        symmetric_matrix = numpy_symmetrify(pairwise_differences)
-        # add column with genome identifiers
-        symmetric_matrix = concatenate_arrays((row_ids, symmetric_matrix))
-
-        # save symmetric matrix with allelic differences
-        os.remove(output_pairwise)
-        np.savetxt(output_pairwise, symmetric_matrix, fmt='%s',
-                   header=col_ids, delimiter='\t', comments='')
-
-        # convert shared loci matrix to symmetric
-        shared_loci = tsv_to_nparray(output_p, True)
-        symmetric_matrix = numpy_symmetrify(shared_loci, 1)
-        symmetric_matrix = concatenate_arrays((row_ids, symmetric_matrix))
-
-        os.remove(output_p)
-        np.savetxt(output_p, symmetric_matrix, fmt='%s',
-                   header=col_ids, delimiter='\t', comments='')
+        # add 1 to include header
+        symmetric_allelic_differences = symmetrify_matrix(output_pairwise,
+                                                          len(genome_ids)+1,
+                                                          tmp_directory)
+        symmetric_shared_loci = symmetrify_matrix(output_p,
+                                                  len(genome_ids)+1,
+                                                  tmp_directory)
 
     print('done.')
-    print('Distance matrix with allelic differences available at {0}'.format(output_pairwise))
-    print('Matrix with shared loci available at {0}'.format(output_p))
+    print('Results available in {0}'.format(output_directory))
 
     # delete folder with intermediate pickles
     shutil.rmtree(tmp_directory)
@@ -696,7 +785,7 @@ def parse_arguments():
                         dest='cpu_cores',
                         help='Number of CPU cores used to perform '
                              'pairwise comparisons.')
-    
+
     parser.add_argument('-s', '--symmetric', action='store_true',
                         required=False,
                         dest='symmetric',
