@@ -28,7 +28,6 @@ import numpy as np
 from multiprocessing import Pool
 
 import mask_matrix as mm
-import get_varSize_deep as gs
 
 
 def pickle_dumper(content, output_file):
@@ -204,7 +203,7 @@ def map_async_parallelizer(inputs, function, cpu, callback='extend',
     return results
 
 
-def tsv_to_nparray(input_file, missing_data=False):
+def tsv_to_nparray(input_file, array_dtype='int32'):
     """ Reads a TSV file with a matrix of allelic profiles.
         File lines are read as a generator to exclude the
         sample identifier and avoid loading huge files
@@ -231,13 +230,8 @@ def tsv_to_nparray(input_file, missing_data=False):
         # but runs faster with dtype=int32 in test setup
         # dtype=int32 supports max integer of 2,147,483,647
         # should be safe even when arrays are multiplied
-        if missing_data is False:
-            np_array = np.genfromtxt(fname=lines, delimiter='\t',
-                                     dtype='int32', skip_header=1)
-        elif missing_data is True:
-            np_array = np.genfromtxt(fname=lines, delimiter='\t',
-                                     dtype='int32', missing_values='',
-                                     filling_values=0, skip_header=1)
+        np_array = np.genfromtxt(fname=lines, delimiter='\t',
+                                 dtype=array_dtype, skip_header=1)
 
     return np_array
 
@@ -309,7 +303,6 @@ def compute_distances(indexes, np_matrix, genome_ids, tmp_directory):
     output_files : list
         List with the paths to all pickle files that were created
         to store results.
-
     """
 
     # multiply one row per cycle to avoid memory overflow
