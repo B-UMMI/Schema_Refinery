@@ -232,6 +232,13 @@ def tsv_to_nparray(input_file, array_dtype='int32'):
         # should be safe even when arrays are multiplied
         np_array = np.genfromtxt(fname=lines, delimiter='\t',
                                  dtype=array_dtype, skip_header=1)
+        
+        # need to reshape array to 2D if it only has info for one sample
+        try:
+            # if it does not have columns it needs to be reshaped
+            np_array.shape[1]
+        except Exception:
+            np_array = np.array([np_array])
 
     return np_array
 
