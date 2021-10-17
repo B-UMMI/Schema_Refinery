@@ -21,11 +21,12 @@ import math
 import shutil
 import pickle
 import random
-import pandas as pd
 import argparse
 import traceback
-import numpy as np
 from multiprocessing import Pool
+
+import numpy as np
+import pandas as pd
 
 import mask_matrix as mm
 
@@ -241,51 +242,6 @@ def tsv_to_nparray(input_file, array_dtype='int32'):
             np_array = np.array([np_array])
 
     return np_array
-
-
-def pairwise_comparisons(input_table, cpu_cores, tmp_directory, genome_ids):
-    """ Distributes samples per available CPU cores to compute
-        pairwise allelic differences and the number of shared
-        loci for a matrix of allelic profiles.
-
-    Parameters
-    ----------
-    input_table : str
-        Path to TSV file that contains the matrix with
-        allelic profiles.
-    cpu_cores : int
-        Number of CPU cores to use to perform pairwise
-        comparisons.
-    tmp_directory : str
-        Path to the temporary directory that will store
-        intermediate files.
-    genome_ids : list
-        List with sample identifiers.
-
-    Returns
-    -------
-    results : list
-        List with dictionaries. Each dictionary has sample
-        identiifers as keys and path to a pickle file with
-        results as values.
-    """
-
-    np_matrix = tsv_to_nparray(input_table)
-
-    rows_indexes = [i for i in range(len(np_matrix))]
-    random.shuffle(rows_indexes)
-    # divide inputs into 20 lists for 5% progress resolution
-    parallel_inputs = divide_list_into_n_chunks(rows_indexes, 20)
-
-    common_args = [[l, np_matrix, genome_ids, tmp_directory, compute_distances] for l in parallel_inputs]
-
-    # increasing cpu cores can greatly increase memory usage
-    results = map_async_parallelizer(common_args,
-                                     function_helper,
-                                     cpu_cores,
-                                     show_progress=True)
-
-    return results
 
 
 def compute_distances(indexes, np_matrix, genome_ids, tmp_directory):
@@ -544,6 +500,8 @@ def write_matrices(pickled_results, genome_ids, output_pairwise,
             write_lines(sl_lines, output_p, mode='a')
             sl_lines = []
 
+    return True
+
 
 def concatenate_files(files, output_file, header=None):
     """ Concatenates the contents of a set of files.
@@ -731,11 +689,22 @@ def main(input_matrix, output_directory, cpu_cores, symmetric):
     genome_ids = get_sample_ids(input_matrix, delimiter='\t')
     total_genomes = len(genome_ids)
 
-    # this uses a lot of memory for really large matrices
-    parallel_pairwise = pairwise_comparisons(output_masked, cpu_cores,
-                                             tmp_directory, genome_ids)
+    np_matrix = tsv_to_nparray(output_masked)
 
-    merged = merge_dictionaries(parallel_pairwise)
+    rows_indexes = [i for i in range(len(np_matrix))]
+    random.shuffle(rows_indexes)
+    # divide inputs into 20 lists for 5% progress resolution
+    parallel_inputs = divide_list_into_n_chunks(rows_indexes, 20)
+
+    common_args = [[l, np_matrix, genome_ids, tmp_directory, compute_distances] for l in parallel_inputs]
+
+    # increasing cpu cores can greatly increase memory usage
+    results = map_async_parallelizer(common_args,
+                                     function_helper,
+                                     cpu_cores,
+                                     show_progress=True)
+
+    merged = merge_dictionaries(results)
 
     print('\nCreating distance matrix...', end='')
     # create files with headers
@@ -746,7 +715,7 @@ def main(input_matrix, output_directory, cpu_cores, symmetric):
                             '{0}_shared_loci.tsv'.format(input_basename))
 
     # import arrays per genome and save to matrix file
-    write_matrices(merged, genome_ids, output_pairwise, output_p, col_ids)
+    results = write_matrices(merged, genome_ids, output_pairwise, output_p, col_ids)
 
     if symmetric is True:
         # add 1 to include header
