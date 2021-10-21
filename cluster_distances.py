@@ -24,6 +24,8 @@ from matplotlib import pyplot as plt
 
 
 def simply_return(data):
+    """
+    """
 
     return data
 
@@ -107,8 +109,6 @@ def select_centroids(cluster_stats):
     return centroid
 
 
-# dataframe = distance_matrix
-# identifier = k
 def centroids_inter_dists(dataframe, centroids_ids, identifier):
     """
     """
@@ -209,13 +209,24 @@ def clusters_boxplot(distance_matrix, clusters):
         upper_values = cluster_array[np.triu_indices(len(v), k=1)]
         values = upper_values.tolist()
 
-        # create trace for cluster's boxplot
-        trace = go.Box(y=values, name=k,
-                       marker=dict(color=colors[i],
-                                   line=dict(width=1, color='#252525')),
-                       fillcolor=colors[i],
-                       line_color='#252525',
-                       boxpoints='outliers', jitter=0.5)
+        if len(values) >= 5:
+            # create trace for cluster's boxplot
+            trace = go.Box(y=values, name=k,
+                           marker=dict(color=colors[i],
+                                       line=dict(width=1, color='#252525')),
+                           fillcolor=colors[i],
+                           line_color='#252525',
+                           boxpoints='outliers', jitter=0.5)
+        else:
+            # only display points if n<5
+            trace = go.Box(y=values, name=k,
+                           marker=dict(color=colors[i],
+                                       line=dict(width=1, color='#252525')),
+                           fillcolor='rgba(0,0,0,0)',
+                           line_color='rgba(0,0,0,0)',
+                           pointpos = 0,
+                           boxpoints='all',
+                           jitter=0.5)
 
         traces.append(trace)
 
@@ -249,7 +260,7 @@ def clusters_heatmap(distance_matrix):
 
 
 def cluster_dendogram(distance_matrix_file, output_file,
-                          linkage_function, distance_function):
+                      linkage_function, distance_function):
     """
     """
 
@@ -259,6 +270,10 @@ def cluster_dendogram(distance_matrix_file, output_file,
                               index_col='FILE')
 
     labels = list(distance_df.index)
+    # do not create dendogram if we only have one sample
+    if len(labels) < 2:
+        return False
+
     # DF to array
     distance_array = distance_df.to_numpy()
     condensed_array = np.triu(distance_array)
@@ -269,6 +284,9 @@ def cluster_dendogram(distance_matrix_file, output_file,
                                linkagefun=linkage_function)
 
     fig.for_each_trace(lambda trace: trace.update(visible=False))
+
+    # get ordered sample labels
+    ordered_labels = list(fig.layout['xaxis']['ticktext'])
 
     # change yaxis for dendogram traces
     for i in range(len(fig['data'])):
@@ -297,11 +315,20 @@ def cluster_dendogram(distance_matrix_file, output_file,
     # align with bottom dendogram
     heat_data = heat_data[:,dendro_leaves]
 
+    heatmap_hovertext = []
+    for i, l in enumerate(ordered_labels):
+        heatmap_hovertext.append([])
+        for j, l2 in enumerate(ordered_labels):
+            heatmap_hovertext[-1].append('x: {0}<br>y: {1}<br>Distance: {2}'.format(l, l2, heat_data[i][j]))
+
     heatmap = [go.Heatmap(x = dendro_leaves,
                           y = dendro_leaves,
                           z = heat_data,
-                          colorscale = 'Blues')]
+                          colorscale = 'Blues',
+                          hoverinfo='text',
+                          text=heatmap_hovertext)]
 
+    # adjust heatmap tick values position
     heatmap[0]['x'] = fig['layout']['xaxis']['tickvals']
     heatmap[0]['y'] = dendro_side['layout']['yaxis']['tickvals']
 
@@ -355,12 +382,231 @@ def cluster_dendogram(distance_matrix_file, output_file,
 
     plot(fig, filename=output_file, auto_open=False)
 
+    return True
 
-allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_allelecall_results_clean.tsv'
-output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/test_results'
-clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_clusters.tsv'
-cpu_cores = 1
-def main(allelecall_results, output_directory, clusters, cpu_cores):
+
+def write_list(input_list, output_file, mode='w'):
+    """
+    """
+
+    joined_lines = ['\t'.join(l) for l in input_list]
+    joined_text = '\n'.join(joined_lines)
+    with open(output_file, mode) as outfile:
+        outfile.write(joined_text+'\n')
+
+
+def create_directory(directory_path):
+    """
+    """
+
+    if os.path.isdir(directory_path) is False:
+        os.mkdir(directory_path)
+
+
+def divide_results(clusters, allelecall_df, output_directory, concat_file):
+    """
+    """
+
+    clusters_files = {}
+    include_header = True
+    for k, v in clusters.items():
+        cluster_results = allelecall_df.loc[v]
+        # Create subdir to store cluster results
+        cluster_dir = os.path.join(output_directory, k)
+        create_directory(cluster_dir)
+
+        # save cluster df to cluster dir
+        cluster_tsv = os.path.join(cluster_dir, '{0}_allelecall_results.tsv'.format(k))
+        cluster_results.to_csv(cluster_tsv, sep='\t')
+
+        clusters_files[k] = [cluster_dir, cluster_tsv]
+
+        # appends cluster profiles to file with all results
+        cluster_results.to_csv(concat_file, sep='\t',
+                               mode='a', header=include_header)
+        
+        include_header = False
+    
+    return clusters_files
+
+
+def create_dm(input_file, output_directory):
+    """
+    """
+
+    input_basename = os.path.basename(input_file)
+    # remove extension that is after last '.'
+    input_basename = '.'.join(input_basename.split('.')[0:-1])
+
+    # wgMLST
+    tmp_directory = os.path.join(output_directory, 'tmp')
+    create_directory(tmp_directory)
+
+    genome_ids = dm.get_sample_ids(input_file, delimiter='\t')
+
+    np_matrix = dm.tsv_to_nparray(input_file)
+    rows_indexes = [i for i in range(len(np_matrix))]
+    results = dm.compute_distances(rows_indexes, np_matrix,
+                                   genome_ids, tmp_directory)
+
+    print('\nCreating distance matrix...', end='')
+    # create files with headers
+    col_ids = ['FILE'] + genome_ids
+    output_pairwise = os.path.join(output_directory,
+                                   '{0}_allelic_differences.tsv'.format(input_basename))
+    output_p = os.path.join(output_directory,
+                            '{0}_shared_loci.tsv'.format(input_basename))
+
+    # import arrays per genome and save to matrix file
+    results2 = dm.write_matrices(results, genome_ids,
+                                 output_pairwise, output_p, col_ids)
+
+    # add 1 to include header
+    symmetric_allelic_differences = dm.symmetrify_matrix(output_pairwise,
+                                                         len(genome_ids)+1,
+                                                         tmp_directory)
+    symmetric_shared_loci = dm.symmetrify_matrix(output_p,
+                                                 len(genome_ids)+1,
+                                                 tmp_directory)
+
+    shutil.rmtree(tmp_directory)
+    
+    return [symmetric_allelic_differences, symmetric_shared_loci]
+
+
+def inter_cluster_stats2(stats, distance_matrix):
+    """
+    """
+
+    cluster_ids = [k for k in stats if 'centroid' not in k]
+    current_cols = ['FILE'] + cluster_ids
+
+    stats_df = pd.read_csv(distance_matrix,
+                           usecols=current_cols,
+                           sep='\t',
+                           index_col='FILE')
+
+    outdf = stats_df[~stats_df.index.isin(cluster_ids)]
+    # do not compute values if there is only one cluster
+    if len(outdf) != 0:
+        for e in cluster_ids:
+            strain_stats = inter_cluster_stats(outdf, e)
+            stats[e]['min_out'] = strain_stats[0]
+            stats[e]['max_out'] = strain_stats[1]
+            stats[e]['mean_out'] = strain_stats[2]
+
+    return stats
+
+
+def boxplot_html(data, output_file, title, xaxis_title,
+                 yaxis_title, legend_title):
+    """
+    """
+
+    # Create HTML with Boxplots
+    fig = go.Figure()
+    for t in data:
+        fig.add_trace(t)
+
+    fig.update_layout(template='seaborn',
+                      title=title,
+                      xaxis_title=xaxis_title,
+                      yaxis_title=yaxis_title,
+                      legend_title=legend_title,
+                      font=dict(size=14))
+
+    plot(fig, filename=output_file, auto_open=False)
+
+
+def heatmap_html(data, output_file, title):
+    """
+    """
+
+    # Heatmap
+    fig = go.Figure()
+    fig.add_trace(data)
+    fig.update_layout(template='seaborn',
+                      title=title)
+
+    plot(fig, filename=output_file, auto_open=False)
+
+
+def save_cluster_stats(data, output_file, headers):
+    """
+    """
+
+    lines = [headers]
+    for h, j in data.items():
+        if 'centroid' not in h:
+            current_id = h
+            min_distance = j['min']
+            min_id = min_distance[0][0]
+            min_distance = str(min_distance[1])
+
+            max_distance = j['max']
+            max_id = max_distance[0][0]
+            max_distance = str(max_distance[1])
+
+            mean_distance = j['mean']
+            if mean_distance != '':
+                mean_distance = str(round(mean_distance, 2))
+
+            lines.append([h, min_distance, min_id,
+                          max_distance, max_id,
+                          mean_distance])
+
+    write_list(lines, output_file)
+
+
+# data = wgMLST_stats
+# headers = file_headers
+# output_file = outfile
+def global_stats_lines(data):
+    """
+    """
+
+    lines = []
+    for h, j in data.items():
+        if 'centroid' not in h:
+            current_id = h
+            min_distance = j['min']
+            min_id = min_distance[0][0]
+            min_distance = str(min_distance[1])
+
+            max_distance = j['max']
+            max_id = max_distance[0][0]
+            max_distance = str(max_distance[1])
+
+            mean_distance = j['mean']
+            if mean_distance != '':
+                mean_distance = str(round(mean_distance, 2))
+
+            min_distance_out = j['min_out']
+            min_id_out = min_distance_out[0][0]
+            min_distance_out = str(min_distance_out[1])
+
+            max_distance_out = j['max_out']
+            max_id_out = max_distance_out[0][0]
+            max_distance_out = str(max_distance_out[1])
+
+            mean_distance_out = str(round(j['mean_out'], 2))
+
+            lines.append([h, min_distance, min_id,
+                          max_distance, max_id,
+                          mean_distance, min_distance_out,
+                          min_id_out, max_distance_out,
+                          max_id_out, mean_distance_out,
+                          k])
+
+    return lines
+
+
+# allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_allelecall_results_clean.tsv'
+# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_clusters_stats'
+# clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_clusters.tsv'
+# cpu_cores = 1
+def main(allelecall_results, output_directory, clusters, cpu_cores,
+         dendogram_threshold):
 
     # Create output directory
     if os.path.isdir(output_directory) is False:
@@ -370,44 +616,32 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
     if clusters is not None:
         # read clusters    
         clusters_lines = read_tabular(clusters)
+        # sort lines by cluster identifier
+        # sort if cluster identifier is an integer
+        #clusters_lines = sorted(clusters_lines, key= lambda x: int(x[1]))
+        # sort any type of identifier
+        clusters_lines = sorted(clusters_lines, key= lambda x: x[1])
         for l in clusters_lines:
             clusters_dict.setdefault(l[1], []).append(l[0])
 
-    # mask matrix
+    # get input basename to use as file prefix
     input_basename = os.path.basename(allelecall_results)
     input_basename = input_basename.split('.tsv')[0]
+
+    # mask input matrix
     masked_results = os.path.join(output_directory, input_basename+'_masked.tsv')
     mm.main(allelecall_results, masked_results, None)
 
-    # import allelecall results
-    df = pd.read_csv(masked_results, sep='\t', index_col='FILE')
+    # import masked matrix
+    allelecall_df = pd.read_csv(masked_results, sep='\t', index_col='FILE')
 
-    clusters_dirs = {}
-    first = True
     all_results_dir = os.path.join(output_directory, 'all_results')
-    if os.path.isdir(all_results_dir) is False:
-        os.mkdir(all_results_dir)
+    create_directory(all_results_dir)
     all_results_file = os.path.join(all_results_dir, 'all_results.tsv')
+    clusters_dirs = divide_results(clusters_dict, allelecall_df,
+                                   output_directory, all_results_file)
+    # add directory and file with all results
     clusters_dirs['all_results'] = [all_results_dir, all_results_file]
-    for k, v in clusters_dict.items():
-        cluster_results = df.loc[v]
-        # Create subdir to store cluster results
-        cluster_dir = os.path.join(output_directory, k)
-        if os.path.isdir(cluster_dir) is False:
-            os.mkdir(cluster_dir)
-
-        # save cluster df to cluster dir
-        cluster_tsv = os.path.join(cluster_dir, '{0}_allelecall_results.tsv'.format(k))
-        cluster_results.to_csv(cluster_tsv, sep='\t')
-
-        clusters_dirs[k] = [cluster_dir, cluster_tsv]
-
-        # append cluster results to file with all results
-        if first is True:
-            cluster_results.to_csv(all_results_file, sep='\t', mode='a')
-            first = False
-        else:
-            cluster_results.to_csv(all_results_file, sep='\t', mode='a', header=False)
 
     # determine cgMLST for all clusters
     for k, v in clusters_dirs.items():
@@ -420,103 +654,27 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
     for k, data in clusters_dirs.items():
         # wgMLST
         wgMLST_distance_dir = os.path.join(data[0], 'wgMLST_{0}_distances'.format(k))
-        os.mkdir(wgMLST_distance_dir)
+        create_directory(wgMLST_distance_dir)
 
         # cgMLST
         cgMLST_distance_dir = os.path.join(data[0], 'cgMLST_{0}_distances'.format(k))
-        os.mkdir(cgMLST_distance_dir)
+        create_directory(cgMLST_distance_dir)
 
         clusters_dirs[k].extend([wgMLST_distance_dir, cgMLST_distance_dir])
 
+    # running the main function from the distance_matrix.py script
+    # originates a memory leak. Could not determine the cause.
+    # running other functions that are not the main function does
+    # not cause a memory leak
+
     # determine distance matrices
     processed = 0
-    ad_template = '{0}_allelic_differences.tsv'
-    sl_template = '{0}_shared_loci.tsv'
     for k, v in clusters_dirs.items():
-        input_basename = os.path.basename(v[1])
-        # remove extension that is after last '.'
-        input_basename = '.'.join(input_basename.split('.')[0:-1])
-
         # wgMLST
-        tmp_directory = os.path.join(v[3], 'tmp')
-        os.mkdir(tmp_directory)
-
-        genome_ids = dm.get_sample_ids(v[1], delimiter='\t')
-
-        np_matrix = dm.tsv_to_nparray(v[1])
-        rows_indexes = [i for i in range(len(np_matrix))]
-        results = dm.compute_distances(rows_indexes, np_matrix, genome_ids, tmp_directory)
-
-        #merged = dm.merge_dictionaries([results])
-
-        print('\nCreating distance matrix...', end='')
-        # create files with headers
-        col_ids = ['FILE'] + genome_ids
-        output_pairwise = os.path.join(v[3],
-                                       ad_template.format(input_basename))
-        output_p = os.path.join(v[3],
-                                sl_template.format(input_basename))
-
-        # import arrays per genome and save to matrix file
-        results2 = dm.write_matrices(results, genome_ids,
-                                     output_pairwise, output_p, col_ids)
-
-        # add 1 to include header
-        symmetric_allelic_differences = dm.symmetrify_matrix(output_pairwise,
-                                                             len(genome_ids)+1,
-                                                             tmp_directory)
-        symmetric_shared_loci = dm.symmetrify_matrix(output_p,
-                                                     len(genome_ids)+1,
-                                                     tmp_directory)
-
-        shutil.rmtree(tmp_directory)
-        clusters_dirs[k].append(symmetric_allelic_differences)
-
+        wgMLST_res = create_dm(v[1], v[3])
         # cgMLST
-        input_basename = os.path.basename(v[2])
-        # remove extension that is after last '.'
-        input_basename = '.'.join(input_basename.split('.')[0:-1])
-        tmp_directory = os.path.join(v[4], 'tmp')
-        os.mkdir(tmp_directory)
-
-        np_matrix = dm.tsv_to_nparray(v[2])
-        rows_indexes = [i for i in range(len(np_matrix))]
-        # running like this seems to work without ever increasing memory usage...
-        results = dm.compute_distances(rows_indexes, np_matrix,
-                                       genome_ids, tmp_directory)
-
-        print('\nCreating distance matrix...', end='')
-        # create files with headers
-        output_pairwise = os.path.join(v[4],
-                                       ad_template.format(input_basename))
-        output_p = os.path.join(v[4],
-                                sl_template.format(input_basename))
-
-        # import arrays per genome and save to matrix file
-        results2 = dm.write_matrices(results, genome_ids,
-                                    output_pairwise, output_p, col_ids)
-
-        # add 1 to include header
-        symmetric_allelic_differences = dm.symmetrify_matrix(output_pairwise,
-                                                             len(genome_ids)+1,
-                                                             tmp_directory)
-        symmetric_shared_loci = dm.symmetrify_matrix(output_p,
-                                                     len(genome_ids)+1,
-                                                     tmp_directory)
-
-        processed += 1
-        print('Processed {0}'.format(processed))
-
-        shutil.rmtree(tmp_directory)
-        clusters_dirs[k].append(symmetric_allelic_differences)
-
-###################################
-
-    # running the main function from the distance_matrix.py script originates a memory leak
-    # could not determine the cause
-    # running other functions that are not the main function does not cause a memory leak
-
-###################################
+        cgMLST_res = create_dm(v[2], v[4])
+        clusters_dirs[k].extend([wgMLST_res[0], cgMLST_res[0]])
 
     # determine intra-cluster stats for all clusters
     all_stats = {}
@@ -597,89 +755,42 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
     clusters = [k for k in all_stats if k != 'all_results']
     for c in clusters:
         # wgMLST
-        current_data = all_stats['all_results'][0][c]
-        cluster_ids = [k for k in current_data if 'centroid' not in k]
-        current_cols = ['FILE'] + cluster_ids
-
-        wgMLST_df = pd.read_csv(clusters_dirs['all_results'][5],
-                                usecols=current_cols,
-                                sep='\t',
-                                index_col='FILE')
-
-        outdf = wgMLST_df[~wgMLST_df.index.isin(cluster_ids)]
-        # do not compute values if there is only one cluster
-        if len(outdf) != 0:
-            for e in cluster_ids:
-                strain_stats = inter_cluster_stats(outdf, e)
-                all_stats['all_results'][0][c][e]['min_out'] = strain_stats[0]
-                all_stats['all_results'][0][c][e]['max_out'] = strain_stats[1]
-                all_stats['all_results'][0][c][e]['mean_out'] = strain_stats[2]
-
+        data = all_stats['all_results'][0][c]
+        res = inter_cluster_stats2(data, wgMLST_file)
+        all_stats['all_results'][0][c] = res
         # cgMLST
-        cgMLST_df = pd.read_csv(clusters_dirs['all_results'][6],
-                                usecols=current_cols,
-                                sep='\t',
-                                index_col='FILE')
-
-        outdf = cgMLST_df[~cgMLST_df.index.isin(cluster_ids)]
-        # do not compute values if there is only one cluster
-        if len(outdf) != 0:
-            for e in cluster_ids:
-                strain_stats = inter_cluster_stats(outdf, e)
-                all_stats['all_results'][1][c][e]['min_out'] = strain_stats[0]
-                all_stats['all_results'][1][c][e]['max_out'] = strain_stats[1]
-                all_stats['all_results'][1][c][e]['mean_out'] = strain_stats[2]
+        data = all_stats['all_results'][1][c]
+        res = inter_cluster_stats2(data, cgMLST_file)
+        all_stats['all_results'][1][c] = res
 
     # Create HTML files with plots
+    boxplot_title = 'Intra-emm comparison at {0}MLST level (number of allelic differences)'
+    heatmap_title = 'Distance matrix at {0}MLST level (number of allelic differences)'
     for k, v in traces.items():
         outdir = os.path.join(output_directory, k)
-
-        # Create HTML with Boxplots
+        # boxplots
         # wgMLST
-        data = v
-        fig = go.Figure()
-        wgMLST_html = os.path.join(outdir, 'wgMLST_clusters_boxplots.html')
-        for t in data[0][0]:
-            fig.add_trace(t)
-
-        fig.update_layout(template='seaborn', title='Intra-emm comparison (number of allelic differences)',
-                          xaxis_title='',
-                          yaxis_title='Allelic differences',
-                          legend_title='Clusters',
-                          font=dict(size=14))
-
-        plot(fig, filename=wgMLST_html, auto_open=False)
-
+        output_html = os.path.join(outdir,
+                                   'wgMLST_clusters_boxplots.html')
+        boxplot_html(v[0][0], output_html, boxplot_title.format('wg'),
+                     'emm type', 'Number of allelic differences',
+                     'emm type')
         # cgMLST
-        fig = go.Figure()
-        cgMLST_html = os.path.join(outdir, 'cgMLST_clusters_boxplots.html')
-        for t in data[1][0]:
-            fig.add_trace(t)
+        output_html = os.path.join(outdir,
+                                   'cgMLST_clusters_boxplots.html')
+        boxplot_html(v[1][0], output_html, boxplot_title.format('cg'),
+                     'emm type', 'Number of allelic differences',
+                     'emm type')
 
-        fig.update_layout(template='seaborn', title='Intra-emm comparison (number of allelic differences)',
-                          xaxis_title='',
-                          yaxis_title='Allelic differences',
-                          legend_title='Clusters',
-                          font=dict(size=14))
-
-        plot(fig, filename=cgMLST_html, auto_open=False)
-
-        # Heatmap
+        # heatmaps
         # wgMLST
-        fig = go.Figure()
-        wgMLST_html = os.path.join(outdir, 'wgMLST_heatmap.html')
-        fig.add_trace(data[0][1])
-        fig.update_layout(template='seaborn', title='Distance matrix (number of allelic differences)')
-
-        plot(fig, filename=wgMLST_html, auto_open=False)
-
+        output_html = os.path.join(outdir,
+                                   'wgMLST_heatmap.html')
+        heatmap_html(v[0][1], output_html, heatmap_title.format('wg'))
         # cgMLST
-        fig = go.Figure()
-        cgMLST_html = os.path.join(outdir, 'cgMLST_heatmap.html')
-        fig.add_trace(data[1][1])
-        fig.update_layout(template='seaborn', title='Distance matrix (number of allelic differences)')
-
-        plot(fig, filename=cgMLST_html, auto_open=False)
+        output_html = os.path.join(outdir,
+                                   'cgMLST_heatmap.html')
+        heatmap_html(v[1][1], output_html, heatmap_title.format('cg'))
 
     # Create plot with boxplots for the separate analysis of each cluster
     # this is different than the boxplots for the analysis of the complete results
@@ -688,12 +799,48 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
     wgMLST_html = os.path.join(output_directory, 'wgMLST_clusters_boxplots.html')
     cgMLST_fig = go.Figure()
     cgMLST_html = os.path.join(output_directory, 'cgMLST_clusters_boxplots.html')
+
+    wgMLST_traces = []
+    cgMLST_traces = []
     for k, v in traces.items():
         if k != 'all_results':
-            wgMLST_fig.add_trace(v[0][0][0])
-            cgMLST_fig.add_trace(v[1][0][0])
+            wgMLST_traces.append(v[0][0][0])
+            cgMLST_traces.append(v[1][0][0])
 
+    # add colors to traces
+    colors = ['#f7fcf0', '#ccebc5', '#4eb3d3', '#0868ac']
+    c = 0
+    for i in range(len(wgMLST_traces)):
+        wgMLST_traces[i]['marker']['color'] = colors[c]
+        cgMLST_traces[i]['marker']['color'] = colors[c]
+        if wgMLST_traces[i]['fillcolor'] != 'rgba(0,0,0,0)':
+            wgMLST_traces[i]['fillcolor'] = colors[c]
+            cgMLST_traces[i]['fillcolor'] = colors[c]
+
+        c += 1
+        if c > len(colors)-1:
+            c = 0
+
+    for t in wgMLST_traces:
+        wgMLST_fig.add_trace(t)
+    wgMLST_fig_title = 'Intra-emm comparison at wgMLST level (number of allelic differences)'
+    wgMLST_fig.update_layout(template='seaborn',
+                             title=wgMLST_fig_title,
+                             xaxis_title='emm type',
+                             yaxis_title='Number of allelic differences',
+                             legend_title='emm type',
+                             font=dict(size=14))
     plot(wgMLST_fig, filename=wgMLST_html, auto_open=False)
+
+    for t in cgMLST_traces:
+        cgMLST_fig.add_trace(t)
+    cgMLST_fig_title = 'Intra-emm comparison at cgMLST level (number of allelic differences)'
+    cgMLST_fig.update_layout(template='seaborn',
+                             title=cgMLST_fig_title,
+                             xaxis_title='emm type',
+                             yaxis_title='Number of allelic differences',
+                             legend_title='emm type',
+                             font=dict(size=14))
     plot(cgMLST_fig, filename=cgMLST_html, auto_open=False)
 
     # Create output files with stats
@@ -705,60 +852,12 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
     for k, v in all_stats.items():
         if k != 'all_results':
             # wgMLST
-            wgMLST_stats = v[0][k]
             outfile = os.path.join(output_directory, k, 'wgMLST_stats.tsv')
-            wgMLST_lines = [cluster_headers]
-            for h, j in wgMLST_stats.items():
-                if 'centroid' not in h:
-                    current_id = h
-                    min_distance = j['min']
-                    min_id = min_distance[0][0]
-                    min_distance = str(min_distance[1])
-
-                    max_distance = j['max']
-                    max_id = max_distance[0][0]
-                    max_distance = str(max_distance[1])
-
-                    mean_distance = j['mean']
-                    if mean_distance != '':
-                        mean_distance = str(round(mean_distance, 2))
-
-                    wgMLST_lines.append([h, min_distance, min_id,
-                                         max_distance, max_id,
-                                         mean_distance])
-
-            wgMLST_lines = ['\t'.join(l) for l in wgMLST_lines]
-            wgMLST_text = '\n'.join(wgMLST_lines)
-            with open(outfile, 'w') as outh:
-                outh.write(wgMLST_text+'\n')
-
+            save_cluster_stats(v[0][k], outfile, cluster_headers)
+            
             # cgMLST
-            cgMLST_stats = v[1][k]
             outfile = os.path.join(output_directory, k, 'cgMLST_stats.tsv')
-            cgMLST_lines = [cluster_headers]
-            for h, j in cgMLST_stats.items():
-                if 'centroid' not in h:
-                    current_id = h
-                    min_distance = j['min']
-                    min_id = min_distance[0][0]
-                    min_distance = str(min_distance[1])
-
-                    max_distance = j['max']
-                    max_id = max_distance[0][0]
-                    max_distance = str(max_distance[1])
-
-                    mean_distance = j['mean']
-                    if mean_distance != '':
-                        mean_distance = str(round(mean_distance, 2))
-
-                    cgMLST_lines.append([h, min_distance, min_id,
-                                         max_distance, max_id,
-                                         mean_distance])
-
-            cgMLST_lines = ['\t'.join(l) for l in cgMLST_lines]
-            cgMLST_text = '\n'.join(cgMLST_lines)
-            with open(outfile, 'w') as outh:
-                outh.write(cgMLST_text+'\n')
+            save_cluster_stats(v[1][k], outfile, cluster_headers)
 
     # Create output files with global stats
     global_stats = all_stats['all_results']
@@ -766,87 +865,20 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
     wgMLST_lines = [file_headers]
     cgMLST_lines = [file_headers]
     for k in clusters_ids:
+        # wgMLST
         wgMLST_stats = global_stats[0][k]
-        for h, j in wgMLST_stats.items():
-            if 'centroid' not in h:
-                current_id = h
-                min_distance = j['min']
-                min_id = min_distance[0][0]
-                min_distance = str(min_distance[1])
+        current_lines = global_stats_lines(wgMLST_stats)
+        wgMLST_lines.extend(current_lines)
 
-                max_distance = j['max']
-                max_id = max_distance[0][0]
-                max_distance = str(max_distance[1])
-
-                mean_distance = j['mean']
-                if mean_distance != '':
-                    mean_distance = str(round(mean_distance, 2))
-
-                min_distance_out = j['min_out']
-                min_id_out = min_distance_out[0][0]
-                min_distance_out = str(min_distance_out[1])
-
-                max_distance_out = j['max_out']
-                max_id_out = min_distance_out[0][0]
-                max_distance_out = str(max_distance_out[1])
-
-                mean_distance_out = str(round(j['mean_out'], 2))
-
-                wgMLST_lines.append([h, min_distance, min_id,
-                                     max_distance, max_id,
-                                     mean_distance, min_distance_out,
-                                     min_id_out, max_distance_out,
-                                     max_id_out, mean_distance_out,
-                                     k])
-
+        # cgMLST
         cgMLST_stats = global_stats[1][k]
-        outfile = os.path.join(output_directory, 'all_results', 'cgMLST_stats.tsv')
-        for h, j in cgMLST_stats.items():
-            if 'centroid' not in h:
-                current_id = h
-                min_distance = j['min']
-                min_id = min_distance[0][0]
-                min_distance = str(min_distance[1])
-
-                max_distance = j['max']
-                max_id = max_distance[0][0]
-                max_distance = str(max_distance[1])
-
-                mean_distance = j['mean']
-                if mean_distance != '':
-                    mean_distance = str(round(mean_distance, 2))
-
-                min_distance_out = j['min_out']
-                min_id_out = min_distance_out[0][0]
-                min_distance_out = str(min_distance_out[1])
-
-                max_distance_out = j['max_out']
-                max_id_out = min_distance_out[0][0]
-                max_distance_out = str(max_distance_out[1])
-
-                mean_distance_out = str(round(j['mean_out'], 2))
-
-                cgMLST_lines.append([h, min_distance, min_id,
-                                     max_distance, max_id,
-                                     mean_distance, min_distance_out,
-                                     min_id_out, max_distance_out,
-                                     max_id_out, mean_distance_out,
-                                     k])
+        current_lines = global_stats_lines(cgMLST_stats)
+        cgMLST_lines.extend(current_lines)
 
     outfile = os.path.join(output_directory, 'all_results', 'wgMLST_stats.tsv')
-    with open(outfile, 'w') as outh:
-        wgMLST_lines = ['\t'.join(l) for l in wgMLST_lines]
-        wgMLST_text = '\n'.join(wgMLST_lines)
-        outh.write(wgMLST_text+'\n')
-
+    write_list(wgMLST_lines, outfile)
     outfile = os.path.join(output_directory, 'all_results', 'cgMLST_stats.tsv')
-    with open(outfile, 'w') as outh:
-        cgMLST_lines = ['\t'.join(l) for l in cgMLST_lines]
-        cgMLST_text = '\n'.join(cgMLST_lines)
-        outh.write(cgMLST_text+'\n')
-
-    #######################
-    # Dendogram and heatmap
+    write_list(cgMLST_lines, outfile)
 
     # define linkage function to use
     # Perform hierarchical/agglomerative clustering
@@ -863,14 +895,14 @@ def main(allelecall_results, output_directory, clusters, cpu_cores):
         # wgMLST
         distance_matrix_file = v[5]
         output_file = os.path.join(v[0], 'wgMLST_dendogram.html')
-        cluster_dendogram(distance_matrix_file, output_file,
-                          linkage_function, distance_function)
+        res = cluster_dendogram(distance_matrix_file, output_file,
+                                linkage_function, distance_function)
 
         # cgMLST
         distance_matrix_file = v[6]
         output_file = os.path.join(v[0], 'cgMLST_dendogram.html')
-        cluster_dendogram(distance_matrix_file, output_file,
-                          linkage_function, distance_function)
+        res = cluster_dendogram(distance_matrix_file, output_file,
+                                linkage_function, distance_function)
 
 
 def parse_arguments():
@@ -901,6 +933,11 @@ def parse_arguments():
     parser.add_argument('-c', '--cpu-cores', type=int,
                         required=False, default=1,
                         dest='cpu_cores',
+                        help='')
+    
+    parser.add_argument('-dt', '--dendogram-threshold', type=float,
+                        required=False, default=None,
+                        dest='dendogram_threshold',
                         help='')
 
     args = parser.parse_args()
