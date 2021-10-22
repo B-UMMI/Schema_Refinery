@@ -601,9 +601,9 @@ def global_stats_lines(data):
     return lines
 
 
-# allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_allelecall_results_clean.tsv'
-# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_clusters_stats'
-# clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho_clusters.tsv'
+# allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_emm_types_results_alleles.tsv'
+# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_emm_types_stats'
+# clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_emm_types.tsv'
 # cpu_cores = 1
 def main(allelecall_results, output_directory, clusters, cpu_cores,
          dendogram_threshold):
@@ -616,13 +616,16 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
     if clusters is not None:
         # read clusters    
         clusters_lines = read_tabular(clusters)
-        # sort lines by cluster identifier
-        # sort if cluster identifier is an integer
-        #clusters_lines = sorted(clusters_lines, key= lambda x: int(x[1]))
-        # sort any type of identifier
-        clusters_lines = sorted(clusters_lines, key= lambda x: x[1])
         for l in clusters_lines:
             clusters_dict.setdefault(l[1], []).append(l[0])
+
+    # sort clusters by decreasing number of elements
+    clusters_size = [(k, len(v))
+                     for k, v in clusters_dict.items()]
+    clusters_size = sorted(clusters_size,
+                           key = lambda x: x[1], reverse=True)
+    ordered_clusters = {c[0]: clusters_dict[c[0]]
+                        for c in clusters_size}
 
     # get input basename to use as file prefix
     input_basename = os.path.basename(allelecall_results)
@@ -638,7 +641,7 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
     all_results_dir = os.path.join(output_directory, 'all_results')
     create_directory(all_results_dir)
     all_results_file = os.path.join(all_results_dir, 'all_results.tsv')
-    clusters_dirs = divide_results(clusters_dict, allelecall_df,
+    clusters_dirs = divide_results(ordered_clusters, allelecall_df,
                                    output_directory, all_results_file)
     # add directory and file with all results
     clusters_dirs['all_results'] = [all_results_dir, all_results_file]
@@ -681,10 +684,10 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
     for k, v in clusters_dirs.items():
         # determine wg and cg stats for all samples
         if k == 'all_results':
-            current_clusters = clusters_dict
+            current_clusters = ordered_clusters
         # determine wg and cg stats per cluster
         else:
-            current_clusters = {k: clusters_dict[k]}
+            current_clusters = {k: ordered_clusters[k]}
 
         # wgMLST
         wgMLST_file = v[5]
@@ -700,9 +703,9 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
     traces = {}
     for k, v in clusters_dirs.items():
         if k == 'all_results':
-            current_clusters = clusters_dict
+            current_clusters = ordered_clusters
         else:
-            current_clusters = {k: clusters_dict[k]}
+            current_clusters = {k: ordered_clusters[k]}
 
         # wgMLST
         wgMLST_file = v[5]
