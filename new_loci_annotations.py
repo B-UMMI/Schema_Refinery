@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+AUTHOR
+    Ines Almeida
+    github: @IgnesA
+DESCRIPTION
+    Attempt 1:
+    This script accepts a "matches.tsv" table and a "no_match.tsv" 
+    table outputed from "match_schemas.py" script. It also accepts one old 
+    Loci Annotations table based in an old schema and generates a
+    New Annotations Table with the loci ids from the new schema 
+    outputted by chewBBACA with the correspondent loci annotations 
+    already created.
+"""
+
 import argparse
 import os
 import csv
@@ -14,7 +31,7 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
 
     
 
-    # open input_table_1 "matches.tsv" outputed from "match_schemas-.py" script
+    # open input_table_1 "matches.tsv" outputed from "match_schemas.py" script
     with open(input_table_1, 'r') as table1:
         lines_table_1 = list(csv.reader(table1, delimiter='\t'))
 
@@ -22,7 +39,7 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
     with open(input_table_2, 'r') as table2:
         lines_table_2 = list(csv.reader(table2, delimiter='\t'))
     
-     # open input_table_2 with loci annotations
+     # open input_table_3 "no_match.tsv" outputed from "match_schemas.py" script
     with open(input_table_3, 'r') as table3:
         lines_table_3 = list(csv.reader(table3, delimiter='\t'))
 
@@ -44,19 +61,18 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
         row[0] = row[0].split('.fasta')[0]
         dict[row[0]] = row
 
-
+    #creating "new_annotations" table 
     for row in processed_table_1:
 
         entry = dict.get(row[1])
 
-        #this check is done so the script completes without errors, there are still unmatched genes in the tables
         if entry:
             entry[0] = row[0]
             final_table.append(entry)
         else:
             final_table.append([row[0]])
 
-
+    #adding the no_match genes to the "new_annotations" table
     for row in lines_table_3:
         final_table.append([row[0]])
 
@@ -81,7 +97,6 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
       
 
 
-
 def parse_arguments():
 
     parser = argparse.ArgumentParser(description=__doc__,
@@ -89,24 +104,26 @@ def parse_arguments():
 
     parser.add_argument('-i1', '--input_table_1', type=str,
                         required=True, dest='input_table_1',
-                        help='')
+                        help='"matches.tsv" file outputed from "match_schemas.py" script')
     
     parser.add_argument('-i2', '--input_table_2', type=str,
                         required=True, dest='input_table_2',
-                        help='')
+                        help='TSV file of the old loci annotations table')
 
     parser.add_argument('-i3', '--input_table_3', type=str,
                         required=True, dest='input_table_3',
-                        help='')
+                        help='TSV file of the "no_match.txt" file' 
+                        'outputed from "match_schemas.py" script')
 
     parser.add_argument('-bsrt', '--bsr_threshold', type=float,
                         required=False, dest='bsr_threshold', default=0.7,
-                        help='')
+                        help='Input the minimum bsr threshold acceptable (a number from 0 to 1).' 
+                            'Example: 0.6. If this parameter is not given, the default value is 0.7.')
 
     parser.add_argument('-o', '--output_directory', type=str,
                     required=True, dest='output_directory',
-                    help='Path to the directory where downloaded '
-                            'files will be stored.')
+                    help='Path to the directory where generated '
+                            'files will be stored')
 
     args = parser.parse_args()
 
