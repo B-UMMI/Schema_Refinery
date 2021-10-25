@@ -55,7 +55,6 @@ def read_tabular(input_file, delimiter='\t'):
     return lines
 
 
-# merge this and next function?
 def intra_cluster_stats(dataframe, row_id):
     """
     """
@@ -558,9 +557,6 @@ def save_cluster_stats(data, output_file, headers):
     write_list(lines, output_file)
 
 
-# data = wgMLST_stats
-# headers = file_headers
-# output_file = outfile
 def global_stats_lines(data):
     """
     """
@@ -601,12 +597,52 @@ def global_stats_lines(data):
     return lines
 
 
+def custom_cgMLST(allelecall_results, core_genome, output_file):
+    """
+    """
+
+    # read list of loci in cgMLST
+    with open(core_genome, 'r') as infile:
+        cgMLST_loci = infile.read().splitlines()
+
+    # read allelecall results for those loci
+    allelecall_df = pd.read_csv(allelecall_results,
+                                usecols=['FILE']+cgMLST_loci,
+                                sep='\t',
+                                index_col='FILE')
+
+    # save cgMLST results
+    allelecall_df.to_csv(output_file, sep='\t')
+
+
+# coelho args
+allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_allelecall_results.tsv'
+output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_clusters_stats'
+clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_clusters.tsv'
+cpu_cores = 1
+dendogram_threshold = None
+dataset_name = 'emm type'
+core_genome = None
+
+# davies phylogroups args
+# allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1326_phylogroups_results_alleles.tsv'
+# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1326_phylogroup_stats'
+# clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1326_phylogroups.tsv'
+# cpu_cores = 1
+# dendogram_threshold = None
+# dataset_name = 'Phylogroup'
+# core_genome = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/cgMLST_100_schema.txt'
+
+# davies emm args
 # allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_emm_types_results_alleles.tsv'
-# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_emm_types_stats'
+# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_phylogroup_stats'
 # clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1726_emm_types.tsv'
 # cpu_cores = 1
+# dendogram_threshold = None
+# dataset_name = 'emm type'
+# core_genome = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/cgMLST_100_schema.txt'
 def main(allelecall_results, output_directory, clusters, cpu_cores,
-         dendogram_threshold):
+         dendogram_threshold, dataset_name, core_genome):
 
     # Create output directory
     if os.path.isdir(output_directory) is False:
@@ -649,8 +685,15 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
     # determine cgMLST for all clusters
     for k, v in clusters_dirs.items():
         cg_dir = os.path.join(v[0], '{0}_cgMLST'.format(k))
-        current_cg = cg.main(v[1], cg_dir, 1.0, [], [])
         cg_file = os.path.join(cg_dir, 'cgMLST.tsv')
+        # determine cgMLST for each cluster
+        if core_genome is None:
+            current_cg = cg.main(v[1], cg_dir, 1.0, [], [])
+        # use cgMLST provided by user
+        else:
+            create_directory(cg_dir)
+            custom_cgMLST(v[1], core_genome, cg_file)
+
         clusters_dirs[k].append(cg_file)
 
     # create directories to store files with distances
@@ -767,7 +810,7 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
         all_stats['all_results'][1][c] = res
 
     # Create HTML files with plots
-    boxplot_title = 'Intra-emm comparison at {0}MLST level (number of allelic differences)'
+    boxplot_title = '{0} comparison at {1}MLST level (number of allelic differences)'
     heatmap_title = 'Distance matrix at {0}MLST level (number of allelic differences)'
     for k, v in traces.items():
         outdir = os.path.join(output_directory, k)
@@ -775,15 +818,15 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
         # wgMLST
         output_html = os.path.join(outdir,
                                    'wgMLST_clusters_boxplots.html')
-        boxplot_html(v[0][0], output_html, boxplot_title.format('wg'),
-                     'emm type', 'Number of allelic differences',
-                     'emm type')
+        boxplot_html(v[0][0], output_html, boxplot_title.format(dataset_name, 'wg'),
+                     dataset_name, 'Number of allelic differences',
+                     dataset_name)
         # cgMLST
         output_html = os.path.join(outdir,
                                    'cgMLST_clusters_boxplots.html')
-        boxplot_html(v[1][0], output_html, boxplot_title.format('cg'),
-                     'emm type', 'Number of allelic differences',
-                     'emm type')
+        boxplot_html(v[1][0], output_html, boxplot_title.format(dataset_name, 'cg'),
+                     dataset_name, 'Number of allelic differences',
+                     dataset_name)
 
         # heatmaps
         # wgMLST
@@ -826,23 +869,23 @@ def main(allelecall_results, output_directory, clusters, cpu_cores,
 
     for t in wgMLST_traces:
         wgMLST_fig.add_trace(t)
-    wgMLST_fig_title = 'Intra-emm comparison at wgMLST level (number of allelic differences)'
+    wgMLST_fig_title = '{0} comparison at wgMLST level (number of allelic differences)'.format(dataset_name)
     wgMLST_fig.update_layout(template='seaborn',
                              title=wgMLST_fig_title,
-                             xaxis_title='emm type',
+                             xaxis_title=dataset_name,
                              yaxis_title='Number of allelic differences',
-                             legend_title='emm type',
+                             legend_title=dataset_name,
                              font=dict(size=14))
     plot(wgMLST_fig, filename=wgMLST_html, auto_open=False)
 
     for t in cgMLST_traces:
         cgMLST_fig.add_trace(t)
-    cgMLST_fig_title = 'Intra-emm comparison at cgMLST level (number of allelic differences)'
+    cgMLST_fig_title = '{0} comparison at cgMLST level (number of allelic differences)'.format(dataset_name)
     cgMLST_fig.update_layout(template='seaborn',
                              title=cgMLST_fig_title,
-                             xaxis_title='emm type',
+                             xaxis_title=dataset_name,
                              yaxis_title='Number of allelic differences',
-                             legend_title='emm type',
+                             legend_title=dataset_name,
                              font=dict(size=14))
     plot(cgMLST_fig, filename=cgMLST_html, auto_open=False)
 
@@ -916,31 +959,33 @@ def parse_arguments():
     parser.add_argument('-d', '--allelecall-results', type=str,
                         required=True, dest='allelecall_results',
                         help='')
-    
-    parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='')
-
-    parser.add_argument('-m', '--mode', type=str,
-                        required=True, dest='mode',
-                        help='')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
                         help='')
 
-    parser.add_argument('--clusters', type=str,
+    parser.add_argument('-c', ,'--clusters', type=str,
                         required=False, dest='clusters',
                         help='')
 
-    parser.add_argument('-c', '--cpu-cores', type=int,
+    parser.add_argument('-cpu', '--cpu-cores', type=int,
                         required=False, default=1,
                         dest='cpu_cores',
                         help='')
-    
+
     parser.add_argument('-dt', '--dendogram-threshold', type=float,
                         required=False, default=None,
                         dest='dendogram_threshold',
+                        help='')
+
+    parser.add_argument('-dn', '--dataset-name', type=str,
+                        required=False, default='My dataset',
+                        dest='dataset_name',
+                        help='')
+
+    parser.add_argument('-cg', '--core-genome', type=str,
+                        required=False,
+                        dest='core_genome',
                         help='')
 
     args = parser.parse_args()
