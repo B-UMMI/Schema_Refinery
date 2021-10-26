@@ -189,8 +189,7 @@ def clusters_boxplot(distance_matrix, clusters):
     """
     """
 
-    colors = ['#f7fcf0', '#ccebc5', '#4eb3d3',
-              '#0868ac']
+    colors = ['#f7fcf0', '#ccebc5', '#4eb3d3', '#0868ac']
 
     # use Pandas to get columns for each cluster
     i = 0
@@ -246,7 +245,6 @@ def clusters_heatmap(distance_matrix):
     # get distance values
     cluster_array = df.to_numpy()
     values = cluster_array.tolist()
-    # reorder matrix lines to group ids in same clusters!
 
     matrix_header = list(df.columns)
 
@@ -282,6 +280,7 @@ def cluster_dendogram(distance_matrix_file, output_file,
                                labels=labels, distfun=distance_function,
                                linkagefun=linkage_function)
 
+    # hide upper dendogram
     fig.for_each_trace(lambda trace: trace.update(visible=False))
 
     # get ordered sample labels
@@ -616,13 +615,13 @@ def custom_cgMLST(allelecall_results, core_genome, output_file):
 
 
 # coelho args
-allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_allelecall_results.tsv'
-output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_clusters_stats'
-clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_clusters.tsv'
-cpu_cores = 1
-dendogram_threshold = None
-dataset_name = 'emm type'
-core_genome = None
+# allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_allelecall_results.tsv'
+# output_directory = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_clusters_stats'
+# clusters = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Coelho/coelho268_clusters.tsv'
+# cpu_cores = 1
+# dendogram_threshold = None
+# dataset_name = 'emm type'
+# core_genome = None
 
 # davies phylogroups args
 # allelecall_results = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/cluster_distances/Davies/davies1326_phylogroups_results_alleles.tsv'
