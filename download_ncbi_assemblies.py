@@ -23,8 +23,8 @@ import time
 import socket
 import argparse
 import urllib.request
+import copy
 import concurrent.futures
-
 
 socket.setdefaulttimeout(30)
 
@@ -47,6 +47,7 @@ def download_assembly(url, file_name):
     download_tries = 7
     while tries < download_tries:
         try:
+
             response = urllib.request.urlretrieve(url, file_name)
             tries = 7
         except Exception:
@@ -57,7 +58,20 @@ def download_assembly(url, file_name):
     return response
 
 
-def main(input_table, output_directory, file_extension, ftp, threads):
+def main(input_table, output_directory, file_extension, ftp, threads, organism_name):
+
+    # Clean the organism name given, removing underscores
+    organism_name_list = organism_name.lower().split("_")
+    organism_name = ""
+    for el in organism_name_list:
+        organism_name += el + " "
+    
+    organism_name = organism_name[:-1]
+
+    #testing
+    print("organism name: " + organism_name, "organism len: " + str(len(organism_name)))
+
+
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
@@ -73,6 +87,49 @@ def main(input_table, output_directory, file_extension, ftp, threads):
         refseq_urls = [line[15] for line in lines[1:] if line[15].strip() != '']
         refseq_assemblies_ids = [url.split('/')[-1] for url in refseq_urls]
 
+
+
+    supressed = []
+
+    assembly_latest = []
+
+    print("Downloading assembly_summary_refseq...")
+    download_assembly("https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_refseq.txt", "fil") 
+    
+    # open assembly_summary_refseq table 
+    with open("fil", 'r') as table1:
+        lines_table_1 = list(csv.reader(table1, delimiter='\t'))
+        lines_table_1.remove(lines_table_1[0])
+
+    os.remove("fil")
+    print("Finished downloading assembly_summary_refseq.")
+
+    # processing assembly_summary_refseq table filtering for the organism_name given as argument
+    for row in lines_table_1: 
+        if organism_name in row[7].lower():
+            assembly_latest.append(row[0])  
+
+    #copy list so the remove operation inside for doesn't mess with the iteration
+    ids = copy.copy(refseq_assemblies_ids)
+
+    #removing suppressed genomes from refseq_assemblies_ids and refseq_urls
+    for id in ids:
+
+        processed_id = id.split('_')
+        processed_id = processed_id[0] + "_" + processed_id[1] 
+
+        if processed_id not in assembly_latest:
+            supressed.append(processed_id)
+            refseq_assemblies_ids.remove(id)
+        
+            for el in refseq_urls:
+                if processed_id in el:
+                    refseq_urls.remove(el)
+            
+    
+    #print(supressed)
+
+
     genbank_urls = []
     genbank_assemblies_ids = []
     if 'genbank' in ftp:
@@ -84,11 +141,16 @@ def main(input_table, output_directory, file_extension, ftp, threads):
     urls = refseq_urls + genbank_urls
     assemblies_ids = refseq_assemblies_ids + genbank_assemblies_ids
 
+
+
     ftp_urls = []
     for url in range(len(urls)):
         ftp_url = '{0}/{1}_{2}'.format(urls[url],
             assemblies_ids[url], file_extension)
         ftp_urls.append(ftp_url)
+
+    #print(ftp_urls) #caminho para fazer download """
+  
 
     files_number = len(ftp_urls)
     if files_number == 0:
@@ -156,12 +218,18 @@ def parse_arguments():
                     help='Number of threads for download.'
                     )
 
+    parser.add_argument('-n', '--organism_name', type=str,
+                    required=True, dest='organism_name',
+                    help='Organism name. If the name has more than 1 word,'
+                    'put "_" between words. For example: Streptococcus_pneumoniae'
+                    )
+
     args = parser.parse_args()
 
-    return [args.input_table, args.output_directory, args.file_extension, args.ftp, args.threads]
+    return [args.input_table, args.output_directory, args.file_extension, args.ftp, args.threads, args.organism_name]
 
 
 if __name__ == '__main__':
 
     args = parse_arguments()
-    main(args[0], args[1], args[2], args[3], args[4])
+    main(args[0], args[1], args[2], args[3], args[4], args[5])
