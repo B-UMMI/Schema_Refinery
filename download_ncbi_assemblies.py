@@ -68,10 +68,6 @@ def main(input_table, output_directory, file_extension, ftp, threads, organism_n
     
     organism_name = organism_name[:-1]
 
-    #testing
-    print("organism name: " + organism_name, "organism len: " + str(len(organism_name)))
-
-
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
@@ -87,6 +83,13 @@ def main(input_table, output_directory, file_extension, ftp, threads, organism_n
         refseq_urls = [line[15] for line in lines[1:] if line[15].strip() != '']
         refseq_assemblies_ids = [url.split('/')[-1] for url in refseq_urls]
 
+    genbank_urls = []
+    genbank_assemblies_ids = []
+    if 'genbank' in ftp:
+        # get genbank urls
+        # only get if sample is not in refseq list
+        genbank_urls = [line[14] for line in lines[1:] if line[14].strip() != '' and line[15] not in refseq_urls]
+        genbank_assemblies_ids = [url.split('/')[-1] for url in genbank_urls]
 
 
     supressed = []
@@ -130,17 +133,8 @@ def main(input_table, output_directory, file_extension, ftp, threads, organism_n
     #print(supressed)
 
 
-    genbank_urls = []
-    genbank_assemblies_ids = []
-    if 'genbank' in ftp:
-        # get genbank urls
-        # only get if sample is not in refseq list
-        genbank_urls = [line[14] for line in lines[1:] if line[14].strip() != '' and line[15] not in refseq_urls]
-        genbank_assemblies_ids = [url.split('/')[-1] for url in genbank_urls]
-
     urls = refseq_urls + genbank_urls
     assemblies_ids = refseq_assemblies_ids + genbank_assemblies_ids
-
 
 
     ftp_urls = []
@@ -148,8 +142,6 @@ def main(input_table, output_directory, file_extension, ftp, threads, organism_n
         ftp_url = '{0}/{1}_{2}'.format(urls[url],
             assemblies_ids[url], file_extension)
         ftp_urls.append(ftp_url)
-
-    #print(ftp_urls) #caminho para fazer download """
   
 
     files_number = len(ftp_urls)
@@ -220,8 +212,8 @@ def parse_arguments():
 
     parser.add_argument('-n', '--organism_name', type=str,
                     required=True, dest='organism_name',
-                    help='Organism name. If the name has more than 1 word,'
-                    'put "_" between words. For example: Streptococcus_pneumoniae'
+                    help='Organism name. If the name has more than 1 word,put "_" between words.' 
+                    'For example: Streptococcus_pneumoniae'
                     )
 
     args = parser.parse_args()
