@@ -11,6 +11,7 @@ import csv
 import time
 import argparse
 import urllib.request
+from zipfile import ZipFile
 
 
 maxInt = sys.maxsize
@@ -133,10 +134,109 @@ def download_assemblies(sample_ids, sample_paths, output_directory):
 
     return failed
 
+def download_assemblies_stride(sample_ids, sample_paths, output_directory, 
+                                stride, downloaded_ids):
+    """ Downloads a set of assemblies from the FTP server of
+        the "ENA2018-bacteria-661k" study, in a specified interval.
+
+        Parameters
+        ----------
+        sample_ids : list
+            List with the identifiers of the samples/assemblies
+            to download.
+        sample_paths : dict
+            Dictionary with sample/assemblies identifiers as
+            keys and FTP paths as values.
+        output_directory : str
+            Path to the output directory.
+        stride : str
+            Interval of indexes to download.
+        downloaded_ids : str
+            Path to the file with the already downloaded sample ids.
+
+        Returns
+        -------
+        failed : int
+            Number of failed downloads.
+    """
+
+
+    interval_list = stride.split(':')
+    low = int(interval_list[0]) -1
+    high = int(interval_list[1])
+
+    # make sure the interval doesnt go outside of the sample_ids list bounds
+    if high > len(sample_ids):
+        high = len(sample_ids)
+        #update the stride string for the zip archive name
+        stride = str(low + 1) + ':' + str(high)
+
+    lines_table_downloaded_ids = []
+    downloaded_ids_list = []
+    if downloaded_ids:
+        # open downloaded_ids table
+        with open(downloaded_ids, 'r') as table_downloaded_ids:
+            lines_table_downloaded_ids = list(csv.reader(table_downloaded_ids, delimiter='\t'))
+
+        for line in lines_table_downloaded_ids:
+            downloaded_ids_list.append(line[0])
+        
+
+    # create URLs to download
+    remote_urls = []
+    for i in range(low, high):
+        sample_basename = sample_paths[sample_ids[i]].split('/')[-1]
+        
+        # do not download files that have already been downloaded
+        if sample_basename not in downloaded_ids_list and sample_basename.split('.gz')[0] not in downloaded_ids_list:
+            sample_file = os.path.join(output_directory, sample_basename)
+            sample_url = ebi_ftp + sample_paths[sample_ids[i]]
+            remote_urls.append([sample_url, sample_file])
+
+            #add file to downloaded_ids list
+            downloaded_ids_list.append(sample_basename)
+            lines_table_downloaded_ids.append([sample_basename])
+
+    # this checks if the downloaded files was passed as argument, the first time this is run in stride
+    # there is no downloaded_ids file because nothing was downloaded yet
+    if not downloaded_ids:
+        downloaded_ids = 'downloaded_ids.tsv'
+    
+    with open(downloaded_ids, 'w') as csvfile: 
+        # creating a csv writer object 
+        csvwriter = csv.writer(csvfile, delimiter='\t') 
+
+        # writing the data rows 
+        csvwriter.writerows(lines_table_downloaded_ids)
+
+
+    print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
+    failed = 0
+    downloaded = 0
+    for url in remote_urls:
+        res = download_ftp_file(*url)
+        if res is True:
+            downloaded += 1
+            print('\r', 'Downloaded {0}/{1}'.format(downloaded,
+                                                    len(remote_urls)),
+                  end='')
+        else:
+            failed += 1
+
+    # create a ZipFile object
+    with ZipFile(output_directory + '/' + stride + '.zip', 'w') as zipObj:
+        for file in os.listdir(output_directory):
+            if '.gz' in file:
+                zipObj.write(output_directory + '/' + file, file)
+                #remove the .gz file
+                os.remove(output_directory + '/' + file)
+
+    return failed
+
 
 def main(metadata_table, paths_table, species_name, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
-         max_contig_number, mlst_species, known_st, any_quality):
+         max_contig_number, mlst_species, known_st, any_quality, stride, downloaded_ids):
 
     # read file with metadata
     metadata_lines = read_table(metadata_table)
@@ -245,7 +345,10 @@ def main(metadata_table, paths_table, species_name, output_directory,
         sample_paths = {l[0]: l[1].split('/ebi/ftp')[1] for l in ftp_lines}
 
         # download assemblies
-        download_assemblies(sample_ids, sample_paths, output_directory)
+        if stride:
+            download_assemblies_stride(sample_ids, sample_paths, output_directory, stride, downloaded_ids)
+        else:
+            download_assemblies(sample_ids, sample_paths, output_directory)
 
 
 def parse_arguments():
@@ -323,6 +426,24 @@ def parse_arguments():
                         dest='any_quality',
                         help='Download all assemblies, even the ones '
                              'that are not high quality.')
+
+    parser.add_argument('-stride', '--stride', type=str,
+                        required=False,
+                        dest='stride',
+                        help='Interval specifying which sample ids to download.'
+                        'Example: "1:2000" - This will download the first 2000 samples.'
+                        'Note: If you want to download from the first id, you have to put '
+                        '"1", not "0" in the lower value.')
+
+    parser.add_argument('-dids', '--downloaded_ids', type=str,
+                        required=False,
+                        dest='downloaded_ids',
+                        help='This is a tsv file containing the sample ids that '
+                              'have already been downloaded. This file is generated '
+                              'after the first iteration of "stride" downloads. If '
+                              'you are downloading the files using "stride" and you dont '
+                              'give this file, then the program has no idea what samples '
+                              'have already been downloaded.')
 
     args = parser.parse_args()
 
