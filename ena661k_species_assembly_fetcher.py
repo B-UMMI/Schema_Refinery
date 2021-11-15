@@ -12,6 +12,7 @@ import time
 import argparse
 import urllib.request
 from zipfile import ZipFile
+import hashlib
 
 
 maxInt = sys.maxsize
@@ -25,6 +26,49 @@ while True:
 
 # ftp path
 ebi_ftp = 'http://ftp.ebi.ac.uk'
+
+# checklist.chk
+url_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
+
+# Dictionary of hash values
+hashes_dict = {}
+
+def HandleProgress(block_num, block_size, total_size):
+        read_data= 0
+        # calculating the progress
+        # storing a temporary value  to store downloaded bytesso that we can add it later to the overall downloaded data
+        temp = block_num * block_size
+        read_data = temp + read_data
+        #calculating the remaining size
+        remaining_size = total_size - read_data
+        if(remaining_size<=0):
+            downloaded_percentage = 100
+            remaining_size = 0
+        else:
+            downloaded_percentage = int(((total_size-remaining_size) / total_size)*(100))
+
+        if downloaded_percentage == 100:
+            print( f'Downloaded: {downloaded_percentage}%  ' , end="\n")
+        else:
+            print(" ", end="\r")   
+            print( f'Downloaded: {downloaded_percentage}%  ' , end="\r")
+
+
+def checkDownload(download:str, original_hash:str):
+    """
+        Function to check the integrity of a downloaded file.
+    """
+
+    with open(download, 'rb') as infile:
+        data = infile.read()
+        md5 = hashlib.md5(data).hexdigest()
+
+
+    if md5 != original_hash:
+        print('Hashes do not match')
+        return False
+    
+    return True
 
 
 def read_table(file_path, delimiter='\t'):
@@ -50,7 +94,7 @@ def read_table(file_path, delimiter='\t'):
     return lines
 
 
-def download_ftp_file(file_url, out_file):
+def download_ftp_file(file_url, out_file, original_hash=''):
     """ Downloads a file from a FTP server.
 
         Parameter
@@ -71,12 +115,16 @@ def download_ftp_file(file_url, out_file):
     downloaded = False
     while downloaded is False and tries <= 5:
         try:
-            res = urllib.request.urlretrieve(file_url, out_file)
+            res = urllib.request.urlretrieve(file_url, out_file, HandleProgress)
         except:
             time.sleep(1)
         tries += 1
         if os.path.isfile(out_file) is True:
-            downloaded = True
+            if original_hash != '':
+                if checkDownload(out_file, original_hash):
+                    downloaded = True
+            else:
+                downloaded = True
 
     return downloaded
 
@@ -113,7 +161,7 @@ def download_assemblies(sample_ids, sample_paths, output_directory):
         if sample_basename not in local_files and sample_basename.split('.gz')[0] not in local_files:
             sample_file = os.path.join(output_directory, sample_basename)
             sample_url = ebi_ftp + sample_paths[sid]
-            remote_urls.append([sample_url, sample_file])
+            remote_urls.append([sample_url, sample_file, hashes_dict[sid]])
 
     if len(remote_urls) < len(sample_ids):
         print('{0} assemblies had already been downloaded.'
@@ -126,16 +174,19 @@ def download_assemblies(sample_ids, sample_paths, output_directory):
         res = download_ftp_file(*url)
         if res is True:
             downloaded += 1
-            print('\r', 'Downloaded {0}/{1}'.format(downloaded,
-                                                    len(remote_urls)),
-                  end='')
+            if (downloaded == len(remote_urls)):
+                print('Downloaded {0}/{1}'.format(downloaded,
+                                                    len(remote_urls)), end="\n")
+            else:
+                print('Downloaded {0}/{1}'.format(downloaded,
+                                                    len(remote_urls)), end="\033[F")
         else:
             failed += 1
 
     return failed
 
 def download_assemblies_stride(sample_ids, sample_paths, output_directory, 
-                                stride, downloaded_ids):
+                                stride):
     """ Downloads a set of assemblies from the FTP server of
         the "ENA2018-bacteria-661k" study, in a specified interval.
 
@@ -151,8 +202,6 @@ def download_assemblies_stride(sample_ids, sample_paths, output_directory,
             Path to the output directory.
         stride : str
             Interval of indexes to download.
-        downloaded_ids : str
-            Path to the file with the already downloaded sample ids.
 
         Returns
         -------
@@ -170,16 +219,6 @@ def download_assemblies_stride(sample_ids, sample_paths, output_directory,
         high = len(sample_ids)
         #update the stride string for the zip archive name
         stride = str(low + 1) + ':' + str(high)
-
-    lines_table_downloaded_ids = []
-    downloaded_ids_list = []
-    if downloaded_ids:
-        # open downloaded_ids table
-        with open(downloaded_ids, 'r') as table_downloaded_ids:
-            lines_table_downloaded_ids = list(csv.reader(table_downloaded_ids, delimiter='\t'))
-
-        for line in lines_table_downloaded_ids:
-            downloaded_ids_list.append(line[0])
         
 
     # create URLs to download
@@ -187,27 +226,9 @@ def download_assemblies_stride(sample_ids, sample_paths, output_directory,
     for i in range(low, high):
         sample_basename = sample_paths[sample_ids[i]].split('/')[-1]
         
-        # do not download files that have already been downloaded
-        if sample_basename not in downloaded_ids_list and sample_basename.split('.gz')[0] not in downloaded_ids_list:
-            sample_file = os.path.join(output_directory, sample_basename)
-            sample_url = ebi_ftp + sample_paths[sample_ids[i]]
-            remote_urls.append([sample_url, sample_file])
-
-            #add file to downloaded_ids list
-            downloaded_ids_list.append(sample_basename)
-            lines_table_downloaded_ids.append([sample_basename])
-
-    # this checks if the downloaded files was passed as argument, the first time this is run in stride
-    # there is no downloaded_ids file because nothing was downloaded yet
-    if not downloaded_ids:
-        downloaded_ids = 'downloaded_ids.tsv'
-    
-    with open(downloaded_ids, 'w') as csvfile: 
-        # creating a csv writer object 
-        csvwriter = csv.writer(csvfile, delimiter='\t') 
-
-        # writing the data rows 
-        csvwriter.writerows(lines_table_downloaded_ids)
+        sample_file = os.path.join(output_directory, sample_basename)
+        sample_url = ebi_ftp + sample_paths[sample_ids[i]]
+        remote_urls.append([sample_url, sample_file, hashes_dict[sample_ids[i]]])
 
 
     print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
@@ -217,9 +238,12 @@ def download_assemblies_stride(sample_ids, sample_paths, output_directory,
         res = download_ftp_file(*url)
         if res is True:
             downloaded += 1
-            print('\r', 'Downloaded {0}/{1}'.format(downloaded,
-                                                    len(remote_urls)),
-                  end='')
+            if (downloaded == len(remote_urls)):
+                print('Downloaded {0}/{1}'.format(downloaded,
+                                                    len(remote_urls)), end="\n")
+            else:
+                print('Downloaded {0}/{1}'.format(downloaded,
+                                                    len(remote_urls)), end="\033[F")
         else:
             failed += 1
 
@@ -231,12 +255,13 @@ def download_assemblies_stride(sample_ids, sample_paths, output_directory,
                 #remove the .gz file
                 os.remove(output_directory + '/' + file)
 
+
     return failed
 
 
 def main(metadata_table, paths_table, species_name, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
-         max_contig_number, mlst_species, known_st, any_quality, stride, downloaded_ids):
+         max_contig_number, mlst_species, known_st, any_quality, stride):
 
     # read file with metadata
     metadata_lines = read_table(metadata_table)
@@ -338,6 +363,23 @@ def main(metadata_table, paths_table, species_name, output_directory,
         selected_text = '\n'.join(selected_lines)
         outfile.write(selected_text)
 
+    # download hashes file
+    print('Downloading checklist.chk...')
+    download_ftp_file(url_hash_file, 'checklist.chk')
+
+    
+    # Putting checksums in dictionary
+    with open('checklist.chk', 'r') as table:
+
+        lines = table.readlines()
+
+        # hashes_dict = {rows[0]:rows[1] for rows in csv.reader(table, delimiter='\t')}
+        for line in lines:
+            if 'contigs.fa.gz' in line:
+                vars = line.split('  ')
+                hashes_dict[vars[1].split('/')[3].split('.')[0]] = vars[0]
+    
+
     if ftp_download is True:
 
         # read table with FTP paths
@@ -346,7 +388,7 @@ def main(metadata_table, paths_table, species_name, output_directory,
 
         # download assemblies
         if stride:
-            download_assemblies_stride(sample_ids, sample_paths, output_directory, stride, downloaded_ids)
+            download_assemblies_stride(sample_ids, sample_paths, output_directory, stride)
         else:
             download_assemblies(sample_ids, sample_paths, output_directory)
 
@@ -435,15 +477,6 @@ def parse_arguments():
                         'Note: If you want to download from the first id, you have to put '
                         '"1", not "0" in the lower value.')
 
-    parser.add_argument('-dids', '--downloaded_ids', type=str,
-                        required=False,
-                        dest='downloaded_ids',
-                        help='This is a tsv file containing the sample ids that '
-                              'have already been downloaded. This file is generated '
-                              'after the first iteration of "stride" downloads. If '
-                              'you are downloading the files using "stride" and you dont '
-                              'give this file, then the program has no idea what samples '
-                              'have already been downloaded.')
 
     args = parser.parse_args()
 
