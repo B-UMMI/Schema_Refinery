@@ -8,11 +8,6 @@ based on allele calling results. It also determines the
 number of distinct protein variants and the list of alleles
 that code for each protein variant.
 
-Expected input
---------------
-
-
-
 Code documentation
 ------------------
 """
@@ -27,7 +22,7 @@ from Bio.Seq import Seq
 
 
 def read_tabular(input_file, delimiter='\t'):
-    """ Read TSV file.
+    """ Read a TSV file.
 
     Parameters
     ----------
@@ -45,13 +40,12 @@ def read_tabular(input_file, delimiter='\t'):
     """
 
     with open(input_file, 'r') as infile:
-        reader = csv.reader(infile, delimiter=delimiter)
-        lines = [line for line in reader]
+        lines = list(csv.reader(infile, delimiter=delimiter))
 
     return lines
 
 
-def write_to_file(text, output_file, write_mode, end_char):
+def write_to_file(text, output_file, write_mode, end_char='\n'):
     """ Writes a single string to a file.
 
     Parameters
@@ -88,7 +82,7 @@ def write_lines(lines, output_file):
 
     joined_lines = '\n'.join(lines)
 
-    write_to_file(joined_lines, output_file, 'a', '\n')
+    write_to_file(joined_lines, output_file, 'a')
 
 
 def translate_sequence(dna_str, table_id):
@@ -121,7 +115,7 @@ def group_by_protein(fasta_file):
     Parameters
     ----------
     fasta_file : str
-        Path to the FASTA file with DNA sequences.
+        Path to a FASTA file with DNA sequences.
 
     Returns
     -------
@@ -138,9 +132,12 @@ def group_by_protein(fasta_file):
         sequence = str(record.seq)
         try:
             protein = str(translate_sequence(sequence, 11))
+        # alleles in chewie schemas should be translatable
         except Exception:
             continue
 
+        # store the allele identifiers for alleles that code for
+        # each distinct protein
         protein_diversity.setdefault(protein, []).append(allele_id)
 
     return protein_diversity
@@ -156,12 +153,12 @@ def protein_frequencies(protein_groups, locus_classifications):
     protein_groups : dict
         Dictionary with protein sequences as keys and
         a list with the IDs of the alleles that code
-        for the protein.
-    locus_classification : dict
-        A dictionary with alleles IDs as keys and a list
+        for the protein as value.
+    locus_classifications : dict
+        A dictionary with allele IDs as keys and a list
         with the sample IDs that have the allele and the
         frequency of the allele based on the results in
-        a AlleleCall matrix.
+        the allele calling matrix.
 
     Returns
     -------
@@ -180,9 +177,12 @@ def protein_frequencies(protein_groups, locus_classifications):
     prots_freqs = []
     for k, v in protein_groups.items():
         line = '>{0}\n{1}'.format(protid, k)
+        # store protein record
         protein_lines.append(line)
         total_freq = 0
         for a in v:
+            # increment protein frequency for each allele
+            # that codes for that protein
             total_freq += locus_classifications[int(a)][-1]
         prots_freqs.append([protid, total_freq, v])
         protid += 1
@@ -198,12 +198,14 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
     # import AlleleCall matrix
     profiles = read_tabular(allelecall_matrix)
 
+    locus_id = locus_id.split('.fasta')[0]
+
     # get locus column
     try:
-        locus_index = profiles[0].index(locus_id+'.fasta')
-    except:
-    # locus identifier does not have ".fasta" extension
         locus_index = profiles[0].index(locus_id)
+    # locus identifier does not have ".fasta" extension
+    except Exception as e:
+        locus_index = profiles[0].index(locus_id+'.fasta')
 
     # get locus classifications for all genomes
     locus_classifications = {}
@@ -244,7 +246,7 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
 
     # write Fasta with proteins
     protein_file = os.path.join(output_dir,
-                                '{0}_protein.fasta'.format(locus_id))
+                                '{0}_protein_variants.fasta'.format(locus_id))
     write_lines(protein_lines, protein_file)
 
     # create output file with protein frequencies
@@ -272,7 +274,7 @@ def main(schema, locus_id, allelecall_matrix, output_dir):
     output_text = [output_header] + output_text
 
     output_file = os.path.join(output_dir,
-                               '{0}_frequencies.tsv'.format(locus_id))
+                               '{0}_allele_frequencies.tsv'.format(locus_id))
     write_lines(output_text, output_file)
 
 
