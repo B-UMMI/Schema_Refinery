@@ -712,7 +712,7 @@ def inter_cluster_stats2(stats, distance_matrix):
 
 def boxplot_html(data, output_file, title, xaxis_title,
                  yaxis_title, legend_title, boxplot_min,
-                 fontsize=14):
+                 fontsize):
     """ Creates a HTML file with boxplots.
 
     Parameters
@@ -746,7 +746,7 @@ def boxplot_html(data, output_file, title, xaxis_title,
                       xaxis_title=xaxis_title,
                       yaxis_title=yaxis_title,
                       legend_title=legend_title,
-                      font=dict(size=14))
+                      font=dict(size=fontsize))
 
     plot(fig, filename=output_file, auto_open=False)
 
@@ -886,7 +886,8 @@ def custom_cgMLST(allelecall_results, core_genome, output_file):
 
 
 def main(input_data, output_directory, clusters, cpu_cores,
-         dendogram_threshold, dataset_name, core_genome, minimum_n):
+         dendogram_threshold, dataset_name, core_genome, minimum_n,
+         plot_fontsize):
 
     # Create output directory
     if os.path.isdir(output_directory) is False:
@@ -1069,13 +1070,13 @@ def main(input_data, output_directory, clusters, cpu_cores,
                                    'wgMLST_clusters_boxplots.html')
         boxplot_html(v[0][0], output_html, boxplot_title.format(dataset_name, 'wg'),
                      dataset_name, 'Number of allelic differences',
-                     dataset_name, boxplot_min, 24)
+                     dataset_name, boxplot_min, plot_fontsize)
         # cgMLST
         output_html = os.path.join(outdir,
                                    'cgMLST_clusters_boxplots.html')
         boxplot_html(v[1][0], output_html, boxplot_title.format(dataset_name, 'cg'),
                      dataset_name, 'Number of allelic differences',
-                     dataset_name, boxplot_min, 24)
+                     dataset_name, boxplot_min, plot_fontsize)
 
         # heatmaps
         # wgMLST
@@ -1120,7 +1121,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
                              xaxis_title=dataset_name,
                              yaxis_title='Number of allelic differences',
                              legend_title=dataset_name,
-                             font=dict(size=14))
+                             font=dict(size=plot_fontsize))
     plot(wgMLST_fig, filename=wgMLST_html, auto_open=False)
 
     for t in cgMLST_traces:
@@ -1131,7 +1132,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
                              xaxis_title=dataset_name,
                              yaxis_title='Number of allelic differences',
                              legend_title=dataset_name,
-                             font=dict(size=14))
+                             font=dict(size=plot_fontsize))
     plot(cgMLST_fig, filename=cgMLST_html, auto_open=False)
 
     # Create output files with stats
@@ -1245,6 +1246,11 @@ def parse_arguments():
                         help='Minimum number of strains that a cluster '
                              'must include to create a boxplot for that '
                              'cluster.')
+
+    parser.add_argument('-pf', '--plot-fontsize', type=int,
+                        required=False, default=14,
+                        dest='plot_fontsize',
+                        help='Fontsize for text in HTML files.')
 
     args = parser.parse_args()
 
