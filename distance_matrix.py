@@ -215,6 +215,8 @@ def tsv_to_nparray(input_file, array_dtype='int32'):
     input_file : str
         Path to the TSV file with the matrix with
         allelic profiles.
+    array_dtype : str
+        Array data type.
 
     Returns
     -------
@@ -506,22 +508,22 @@ def write_matrices(pickled_results, genome_ids, output_pairwise,
 def concatenate_files(files, output_file, header=None):
     """ Concatenates the contents of a set of files.
 
-        Parameters
-        ----------
-        files : list
-            List with the paths to the files to concatenate.
-        output_file : str
-            Path to the output file that will store the
-            concatenation of input files.
-        header : str or NoneType
-            Specify a header that should be written as the
-            first line in the output file.
+    Parameters
+    ----------
+    files : list
+        List with the paths to the files to concatenate.
+    output_file : str
+        Path to the output file that will store the
+        concatenation of input files.
+    header : str or NoneType
+        Specify a header that should be written as the
+        first line in the output file.
 
-        Returns
-        -------
-        output_file : str
-            Path to the output file that was created with
-            the concatenation of input files.
+    Returns
+    -------
+    output_file : str
+        Path to the output file that was created with
+        the concatenation of input files.
     """
 
     with open(output_file, 'w') as of:
@@ -633,6 +635,8 @@ def symmetrify_matrix(input_matrix, matrix_size, tmp_directory):
         Path to TSV file that contains the triangular matrix.
     matrix_size : int
         Total number of lines in input file.
+    tmp_directory : str
+        Path to the output temporary directory.
 
     Returns
     -------
