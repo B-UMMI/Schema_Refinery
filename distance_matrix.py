@@ -11,6 +11,9 @@ shared loci to create a matrix with those values. The 'INF-'
 prefix is removed and ASM, ALM, NIPH, NIPHEM, PLOT3, PLOT5,
 LNF and LOTSC classifications are substituted by '0' before
 performing pairwise comparisons.
+
+Code documentation
+------------------
 """
 
 
