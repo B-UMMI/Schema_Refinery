@@ -9,83 +9,87 @@ import os
 import sys
 import csv
 import time
+import socket
+import hashlib
 import argparse
 import urllib.request
 from zipfile import ZipFile
-import hashlib
 
 
+# increase the field_size_limit
+# "File4_QC_characterisation_661k.txt" passed to this script has fields
+# that exceed field_size_limit (field: low_coverage_contigs)
 maxInt = sys.maxsize
 while True:
+    # this might lead to a OverflowError
+    # we need to decrease the value until it is accepted
     try:
         csv.field_size_limit(maxInt)
         break
     except OverflowError:
         maxInt = int(maxInt/10)
 
+# set socket timeout for urllib calls
+socket.setdefaulttimeout(60)
 
-# ftp path
+# EBI ftp path
 ebi_ftp = 'http://ftp.ebi.ac.uk'
 
-# checklist.chk
+# URL to download "checklist.chk" file with md5 hashes
 url_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
 
-# Dictionary of hash values
-hashes_dict = {}
 
+# function passed to urllib.request.urlretrieve to track progress
 def HandleProgress(block_num, block_size, total_size):
-        read_data= 0
-        # calculating the progress
-        # storing a temporary value  to store downloaded bytesso that we can add it later to the overall downloaded data
-        temp = block_num * block_size
-        read_data = temp + read_data
-        #calculating the remaining size
-        remaining_size = total_size - read_data
-        if(remaining_size<=0):
-            downloaded_percentage = 100
-            remaining_size = 0
-        else:
-            downloaded_percentage = int(((total_size-remaining_size) / total_size)*(100))
+    read_data= 0
+    # calculating the progress
+    # storing a temporary value  to store downloaded bytesso that we can add it later to the overall downloaded data
+    temp = block_num * block_size
+    read_data = temp + read_data
+    #calculating the remaining size
+    remaining_size = total_size - read_data
+    if(remaining_size<=0):
+        downloaded_percentage = 100
+        remaining_size = 0
+    else:
+        downloaded_percentage = int(((total_size-remaining_size) / total_size)*(100))
 
-        if downloaded_percentage == 100:
-            print( f'Downloaded: {downloaded_percentage}%  ' , end="\n")
-        else:
-            print(" ", end="\r")   
-            print( f'Downloaded: {downloaded_percentage}%  ' , end="\r")
+    if downloaded_percentage == 100:
+        print( f'Downloaded: {downloaded_percentage}%  ' , end="\n")
+    else:
+        print(" ", end="\r")   
+        print( f'Downloaded: {downloaded_percentage}%  ' , end="\r")
 
 
-def checkDownload(download:str, original_hash:str):
-    """
-        Function to check the integrity of a downloaded file.
-    """
+def checkDownload(file:str, file_hash:str):
+    """ Checks the integrity of a downloaded file. """
 
-    with open(download, 'rb') as infile:
+    with open(file, 'rb') as infile:
         data = infile.read()
         md5 = hashlib.md5(data).hexdigest()
 
-
-    if md5 != original_hash:
+    if md5 != file_hash:
         print('Hashes do not match')
         return False
-    
+
     return True
 
 
 def read_table(file_path, delimiter='\t'):
     """ Reads a tabular file.
 
-        Parameters
-        ----------
-        file_path : str
-            Path to the tabular file.
-        delimiter : str
-            Field delimiter.
+    Parameters
+    ----------
+    file_path : str
+        Path to the tabular file.
+    delimiter : str
+        Field delimiter.
 
-        Returns
-        -------
-        lines : list
-            List that contains one sublist per
-            line in the input tabular file.
+    Returns
+    -------
+    lines : list
+        List that contains one sublist per
+        line in the input tabular file.
     """
 
     with open(file_path, 'r') as infile:
@@ -94,33 +98,36 @@ def read_table(file_path, delimiter='\t'):
     return lines
 
 
-def download_ftp_file(file_url, out_file, original_hash=''):
+def download_ftp_file(file_url, out_file, original_hash, retry, verify=True):
     """ Downloads a file from a FTP server.
 
-        Parameter
-        ---------
-        file_url : str
-            FTP path to the file to download.
-        out_file : str
-            Local path to the file that will be downloaded.
+    Parameter
+    ---------
+    file_url : str
+        FTP path to the file to download.
+    out_file : str
+        Local path to the file that will be downloaded.
+    retry : int
+        Maximum number of retries if download fails.
+    original_hash : str
 
-        Returns
-        -------
-        res : tup
-            A tuple with the path to the local file
-            and the response object.
+    Returns
+    -------
+    downloaded : bool
+        True if file was successfully downloaded, False otherwise.
     """
 
     tries = 0
     downloaded = False
-    while downloaded is False and tries <= 5:
+    while downloaded is False and tries < retry:
         try:
             res = urllib.request.urlretrieve(file_url, out_file, HandleProgress)
         except:
             time.sleep(1)
         tries += 1
+
         if os.path.isfile(out_file) is True:
-            if original_hash != '':
+            if verify is True:
                 if checkDownload(out_file, original_hash):
                     downloaded = True
             else:
@@ -129,139 +136,24 @@ def download_ftp_file(file_url, out_file, original_hash=''):
     return downloaded
 
 
-def download_assemblies(sample_ids, sample_paths, output_directory):
-    """ Downloads a set of assemblies from the FTP server of
-        the "ENA2018-bacteria-661k" study.
-
-        Parameters
-        ----------
-        sample_ids : list
-            List with the identifiers of the samples/assemblies
-            to download.
-        sample_paths : dict
-            Dictionary with sample/assemblies identifiers as
-            keys and FTP paths as values.
-        output_directory : str
-            Path to the output directory.
-
-        Returns
-        -------
-        failed : int
-            Number of failed downloads.
-    """
-
-    # list files in output directory
-    local_files = os.listdir(output_directory)
-
-    # create URLs to download
-    remote_urls = []
-    for sid in sample_ids:
-        sample_basename = sample_paths[sid].split('/')[-1]
-        # do not download files that have already been downloaded
-        if sample_basename not in local_files and sample_basename.split('.gz')[0] not in local_files:
-            sample_file = os.path.join(output_directory, sample_basename)
-            sample_url = ebi_ftp + sample_paths[sid]
-            remote_urls.append([sample_url, sample_file, hashes_dict[sid]])
-
-    if len(remote_urls) < len(sample_ids):
-        print('{0} assemblies had already been downloaded.'
-              ''.format(len(sample_ids)-len(remote_urls)))
-
-    print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
-    failed = 0
-    downloaded = 0
-    for url in remote_urls:
-        res = download_ftp_file(*url)
-        if res is True:
-            downloaded += 1
-            if (downloaded == len(remote_urls)):
-                print('Downloaded {0}/{1}'.format(downloaded,
-                                                    len(remote_urls)), end="\n")
-            else:
-                print('Downloaded {0}/{1}'.format(downloaded,
-                                                    len(remote_urls)), end="\033[F")
-        else:
-            failed += 1
-
-    return failed
-
-def download_assemblies_stride(sample_ids, sample_paths, output_directory, 
-                                stride):
-    """ Downloads a set of assemblies from the FTP server of
-        the "ENA2018-bacteria-661k" study, in a specified interval.
-
-        Parameters
-        ----------
-        sample_ids : list
-            List with the identifiers of the samples/assemblies
-            to download.
-        sample_paths : dict
-            Dictionary with sample/assemblies identifiers as
-            keys and FTP paths as values.
-        output_directory : str
-            Path to the output directory.
-        stride : str
-            Interval of indexes to download.
-
-        Returns
-        -------
-        failed : int
-            Number of failed downloads.
-    """
-
-
-    interval_list = stride.split(':')
-    low = int(interval_list[0]) -1
-    high = int(interval_list[1])
-
-    # make sure the interval doesnt go outside of the sample_ids list bounds
-    if high > len(sample_ids):
-        high = len(sample_ids)
-        #update the stride string for the zip archive name
-        stride = str(low + 1) + ':' + str(high)
-        
-
-    # create URLs to download
-    remote_urls = []
-    for i in range(low, high):
-        sample_basename = sample_paths[sample_ids[i]].split('/')[-1]
-        
-        sample_file = os.path.join(output_directory, sample_basename)
-        sample_url = ebi_ftp + sample_paths[sample_ids[i]]
-        remote_urls.append([sample_url, sample_file, hashes_dict[sample_ids[i]]])
-
-
-    print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
-    failed = 0
-    downloaded = 0
-    for url in remote_urls:
-        res = download_ftp_file(*url)
-        if res is True:
-            downloaded += 1
-            if (downloaded == len(remote_urls)):
-                print('Downloaded {0}/{1}'.format(downloaded,
-                                                    len(remote_urls)), end="\n")
-            else:
-                print('Downloaded {0}/{1}'.format(downloaded,
-                                                    len(remote_urls)), end="\033[F")
-        else:
-            failed += 1
-
-    # create a ZipFile object
-    with ZipFile(output_directory + '/' + stride + '.zip', 'w') as zipObj:
-        for file in os.listdir(output_directory):
-            if '.gz' in file:
-                zipObj.write(output_directory + '/' + file, file)
-                #remove the .gz file
-                os.remove(output_directory + '/' + file)
-
-
-    return failed
-
-
+metadata_table = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/datasets/ENA661k/article/supplementary_data/File4_QC_characterisation_661K.txt'
+paths_table = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/datasets/ENA661k/article/supplementary_data/sampleid_assembly_paths.txt'
+species_name = 'Streptococcus agalactiae'
+output_directory = '/home/rfm/Desktop/test_schema_refinery/beep'
+ftp_download = True
+abundance = None
+genome_size = None
+size_threshold = None
+max_contig_number = None
+mlst_species = 'sagalactiae'
+known_st = True
+any_quality = False
+stride = None
+retry = 3
 def main(metadata_table, paths_table, species_name, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
-         max_contig_number, mlst_species, known_st, any_quality, stride):
+         max_contig_number, mlst_species, known_st, any_quality, stride,
+         retry):
 
     # read file with metadata
     metadata_lines = read_table(metadata_table)
@@ -279,7 +171,6 @@ def main(metadata_table, paths_table, species_name, output_directory,
 
     if len(species_lines) == 0:
         print('Did not find matches for {0}.'.format(species_name))
-        print('Please provide a valid species name.')
         sys.exit(0)
 
     # filter based on genome size
@@ -345,12 +236,12 @@ def main(metadata_table, paths_table, species_name, output_directory,
 
     # get sample identifiers
     sample_ids = [line[0] for line in species_lines]
-    print('Selected {0} samples/assemblies that meet filtering '
-          'criteria.'.format(len(sample_ids)))
-
     if len(sample_ids) == 0:
         sys.exit('Did not find samples/assemblies that passed '
                  'filtering criteria.')
+    else:
+        print('Selected {0} samples/assemblies that meet filtering '
+              'criteria.'.format(len(sample_ids)))
 
     # create output directory
     if os.path.isdir(output_directory) is False:
@@ -361,36 +252,78 @@ def main(metadata_table, paths_table, species_name, output_directory,
         selected_lines = ['\t'.join(line)
                           for line in [metadata_header]+species_lines]
         selected_text = '\n'.join(selected_lines)
-        outfile.write(selected_text)
+        outfile.write(selected_text+'\n')
 
     # download hashes file
     print('Downloading checklist.chk...')
-    download_ftp_file(url_hash_file, 'checklist.chk')
+    local_checklist = os.path.join(output_directory, 'checklist.chk')
+    download_ftp_file(url_hash_file, local_checklist, None, retry, False)
 
-    
     # Putting checksums in dictionary
-    with open('checklist.chk', 'r') as table:
-
+    hashes_dict = {}
+    with open(local_checklist, 'r') as table:
         lines = table.readlines()
-
-        # hashes_dict = {rows[0]:rows[1] for rows in csv.reader(table, delimiter='\t')}
         for line in lines:
-            if 'contigs.fa.gz' in line:
-                vars = line.split('  ')
-                hashes_dict[vars[1].split('/')[3].split('.')[0]] = vars[0]
-    
+            md5_hash, file_path = line.split('  ')
+            file_basename = file_path.split('/')[-1].split('.')[0]
+            hashes_dict[file_basename] = md5_hash
+
+    # get hashes for species samples
+    species_hashes = {i: hashes_dict[i] for i in sample_ids}
 
     if ftp_download is True:
-
         # read table with FTP paths
         ftp_lines = read_table(paths_table)
         sample_paths = {l[0]: l[1].split('/ebi/ftp')[1] for l in ftp_lines}
+        # get FTP paths only for selected samples
+        species_paths = {i: sample_paths[i] for i in sample_ids}
 
-        # download assemblies
         if stride:
-            download_assemblies_stride(sample_ids, sample_paths, output_directory, stride)
+            interval_list = stride.split(':')
+            low = int(interval_list[0]) -1
+            high = int(interval_list[1])
+        
+            # make sure the interval doesnt go outside of the sample_ids list bounds
+            if high > len(sample_ids):
+                high = len(sample_ids)
+                # update the stride string for the zip archive name
+                stride = str(low + 1) + ':' + str(high)
         else:
-            download_assemblies(sample_ids, sample_paths, output_directory)
+            low = 0
+            high = len(species_paths)
+
+        # list files in output directory
+        local_files = os.listdir(output_directory)
+
+        # create URLs to download
+        remote_urls = []
+        for i in range(low, high):
+            sample_basename = sample_paths[sample_ids[i]].split('/')[-1]
+            # do not download files that have already been downloaded
+            # check hash for files that have been downloaded!!! Delete if it does not match!
+            if sample_basename not in local_files and sample_basename.split('.gz')[0] not in local_files:
+                sample_file = os.path.join(output_directory, sample_basename)
+                sample_url = ebi_ftp + sample_paths[sample_ids[i]]
+                remote_urls.append([sample_url, sample_file, hashes_dict[sample_ids[i]]])
+
+        sample_ids = sample_ids[low:high]
+
+        if len(remote_urls) < len(sample_ids):
+            print('{0} assemblies had already been downloaded.'
+                  ''.format(len(sample_ids)-len(remote_urls)))
+
+        print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
+        failed = 0
+        downloaded = 0
+        for url in remote_urls:
+            res = download_ftp_file(*url, retry)
+            if res is True:
+                downloaded += 1
+                print('\r', 'Downloaded {0}/{1}'.format(downloaded, len(remote_urls)), end='')
+            else:
+                failed += 1
+
+        print('\nFailed download for {0} files.'.format(failed))
 
 
 def parse_arguments():
@@ -433,7 +366,7 @@ def parse_arguments():
                         required=False,
                         dest='abundance',
                         help='Minimum species abundance. Samples with species'
-                        ' abundance below this value are not selected.')
+                             ' abundance below this value are not selected.')
 
     parser.add_argument('-gs', '--genome-size', type=int,
                         required=False,
@@ -472,11 +405,18 @@ def parse_arguments():
     parser.add_argument('-stride', '--stride', type=str,
                         required=False,
                         dest='stride',
-                        help='Interval specifying which sample ids to download.'
-                        'Example: "1:2000" - This will download the first 2000 samples.'
-                        'Note: If you want to download from the first id, you have to put '
-                        '"1", not "0" in the lower value.')
+                        help='Interval specifying which sample ids to '
+                             'download. Example: "1:2000" - This will '
+                             'download the first 2000 samples. Note: If '
+                             'you want to download from the first id, '
+                             'you have to put "1", not "0" in the lower '
+                             'value.')
 
+    parser.add_argument('-r', '--retry', type=int,
+                        required=False, dest='retry',
+                        default=7,
+                        help='Maximum number of retries when a '
+                             'download fails.')
 
     args = parser.parse_args()
 
@@ -486,5 +426,4 @@ def parse_arguments():
 if __name__ == "__main__":
 
     args = parse_arguments()
-    print(args)
     main(**vars(args))
