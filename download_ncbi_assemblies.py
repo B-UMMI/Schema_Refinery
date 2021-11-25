@@ -6,7 +6,6 @@ Purpose
 This script accepts a Genome Assembly and Annotation report
 table from the NCBI and downloads the genome assemblies of
 the samples listed in the table.
-After failing a download, the script retries up to 7 times.
 
 Code documentation
 ------------------
@@ -25,6 +24,7 @@ import concurrent.futures
 from itertools import repeat
 
 
+# set socket timeout for urllib calls
 socket.setdefaulttimeout(30)
 
 
@@ -33,8 +33,7 @@ assembly_summary_refseq = 'https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS
 
 
 def download_file(url, file_name, retry):
-    """ Accepts a url to download a file, retrying up to 7 times
-        if previous attempts are not successful.
+    """ Accepts a URL to download a file.
 
     Parameters
     ----------
