@@ -23,12 +23,14 @@ def main(input_files, schema_dir, output_dir):
     if os.path.isdir(output_dir) is False:
         os.mkdir(output_dir)
 
+    genomes = sorted(os.listdir(input_files), key=lambda x: x.lower())
+
     # dict with genome assembly identifier to full path
     genomes = {os.path.basename(f): os.path.join(input_files, f)
-               for f in os.listdir(input_files)}
+               for f in genomes}
     # replace characters to get same identiifers as in schema
     genomes = {k.replace('_', '-'): v for k, v in genomes.items()}
-    genomes = {k.split('.fasta')[0]: v for k, v in genomes.items()}
+    genomes = {k.split('.')[0]: v for k, v in genomes.items()}
 
     # dict with locus identifier to full path
     genes = {f.split('.fasta')[0]: os.path.join(schema_dir, f)
@@ -44,17 +46,11 @@ def main(input_files, schema_dir, output_dir):
         genes_seqs[gene] = rep_seq
 
     # dict with locus identifier to genome of origin
-    genes_genomes = {}
+    genes_groups = {}
     for gene, gene_path in genes.items():
         gene_genome = gene.split('-protein')[0]
-        for genome, genome_path in genomes.items():
-            if gene_genome in genome:
-                genes_genomes[gene] = genome_path
-
-    # group genes by genome
-    genes_groups = {}
-    for k, v in genes_genomes.items():
-        genes_groups.setdefault(v, []).append(k)
+        if gene_genome in genomes:
+            genes_groups.setdefault(genomes[gene_genome], []).append(gene)
 
     # get start and stop positions
     missing = []
@@ -78,9 +74,12 @@ def main(input_files, schema_dir, output_dir):
 
             if g not in genes_positions:
                 missing.append(g)
+            
+        if len(genes_positions) + len(missing) == len(genes_seqs):
+            break
 
     print('Could not determine start and stop positions for '
-          '{0} loci.'.format(missing))
+          '{0} loci.'.format(len(missing)))
 
     # save results
     header = 'locus\tcontig\tstart\tstop\tstrand'
@@ -89,7 +88,7 @@ def main(input_files, schema_dir, output_dir):
         outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k, v[-1], v[0], v[1], v[2])
                                for k, v in genes_positions.items()]
         outtext = '\n'.join(outlines)
-        outfile.write(outtext)
+        outfile.write(outtext+'\n')
 
 
 def parse_arguments():
