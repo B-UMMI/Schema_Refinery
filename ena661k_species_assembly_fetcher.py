@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script enables the download of genome assemblies from the
+ENA661k study ("Exploring bacterial diversity via a curated
+and searchable snapshot of archived DNA sequences").
 
+Code documentation
+------------------
 """
 
 
@@ -61,15 +68,29 @@ def HandleProgress(block_num, block_size, total_size):
         print( f'Downloaded: {downloaded_percentage}%  ' , end="\r")
 
 
-def checkDownload(file:str, file_hash:str):
-    """ Checks the integrity of a downloaded file. """
+def checkDownload(file:str, file_hash:str, remove=False):
+    """ Checks the integrity of a downloaded file.
+
+    Parameters
+    ----------
+    file : str
+        Path to the file to check.
+    file_hash : str
+        Expected md5 hash for the file contents.
+
+    Returns
+    -------
+    True if the hash determined for the file contents matches
+    the expected hash, False otherwise.
+    """
 
     with open(file, 'rb') as infile:
         data = infile.read()
         md5 = hashlib.md5(data).hexdigest()
 
     if md5 != file_hash:
-        print('Hashes do not match')
+        if remove is True:
+            os.remove(file)
         return False
 
     return True
@@ -98,7 +119,7 @@ def read_table(file_path, delimiter='\t'):
     return lines
 
 
-def download_ftp_file(file_url, out_file, original_hash, retry, verify=True):
+def download_ftp_file(file_url, out_file, original_hash, retry, verify=True, progress=False):
     """ Downloads a file from a FTP server.
 
     Parameter
@@ -121,14 +142,17 @@ def download_ftp_file(file_url, out_file, original_hash, retry, verify=True):
     downloaded = False
     while downloaded is False and tries < retry:
         try:
-            res = urllib.request.urlretrieve(file_url, out_file, HandleProgress)
+            if progress is False:
+                res = urllib.request.urlretrieve(file_url, out_file)
+            else:
+                res = urllib.request.urlretrieve(file_url, out_file, HandleProgress)
         except:
             time.sleep(1)
         tries += 1
 
         if os.path.isfile(out_file) is True:
             if verify is True:
-                if checkDownload(out_file, original_hash):
+                if checkDownload(out_file, original_hash, True):
                     downloaded = True
             else:
                 downloaded = True
@@ -136,20 +160,6 @@ def download_ftp_file(file_url, out_file, original_hash, retry, verify=True):
     return downloaded
 
 
-metadata_table = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/datasets/ENA661k/article/supplementary_data/File4_QC_characterisation_661K.txt'
-paths_table = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/datasets/ENA661k/article/supplementary_data/sampleid_assembly_paths.txt'
-species_name = 'Streptococcus agalactiae'
-output_directory = '/home/rfm/Desktop/test_schema_refinery/beep'
-ftp_download = True
-abundance = None
-genome_size = None
-size_threshold = None
-max_contig_number = None
-mlst_species = 'sagalactiae'
-known_st = True
-any_quality = False
-stride = None
-retry = 3
 def main(metadata_table, paths_table, species_name, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, mlst_species, known_st, any_quality, stride,
@@ -255,9 +265,11 @@ def main(metadata_table, paths_table, species_name, output_directory,
         outfile.write(selected_text+'\n')
 
     # download hashes file
-    print('Downloading checklist.chk...')
     local_checklist = os.path.join(output_directory, 'checklist.chk')
-    download_ftp_file(url_hash_file, local_checklist, None, retry, False)
+    if os.path.isfile(local_checklist) is False:
+        print('Downloading checklist.chk...')
+        download_ftp_file(url_hash_file, local_checklist, None,
+                          retry, False, True)
 
     # Putting checksums in dictionary
     hashes_dict = {}
@@ -300,7 +312,6 @@ def main(metadata_table, paths_table, species_name, output_directory,
         for i in range(low, high):
             sample_basename = sample_paths[sample_ids[i]].split('/')[-1]
             # do not download files that have already been downloaded
-            # check hash for files that have been downloaded!!! Delete if it does not match!
             if sample_basename not in local_files and sample_basename.split('.gz')[0] not in local_files:
                 sample_file = os.path.join(output_directory, sample_basename)
                 sample_url = ebi_ftp + sample_paths[sample_ids[i]]
