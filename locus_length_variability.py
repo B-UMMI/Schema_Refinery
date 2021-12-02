@@ -3,10 +3,10 @@
 """
 Purpose
 -------
-This scripts computes loci allele length statistics for all
-loci in a schema, identifying loci with multiple allele
-length modes and loci with alleles that deviate from the
-mode value.
+This scripts computes allele length statistics for all
+loci in a schema, identifying loci with multimodal allele
+length distributions and loci with alleles that deviate
+from the mode value.
 
 Code documentation
 ------------------
@@ -35,8 +35,8 @@ def import_sequences(fasta_path):
     Returns
     -------
     seqs_dict : dict
-        Dictionary that has sequence identifiers as keys and
-        sequences as values.
+        Dictionary that has sequence identifiers as
+        keys and sequences as values.
     """
 
     records = SeqIO.parse(fasta_path, 'fasta')
@@ -45,7 +45,7 @@ def import_sequences(fasta_path):
     return seqs_dict
 
 
-def histogram_tracer(xdata, ydata, marker_color):
+def histogram_trace(xdata, ydata, marker_color):
     """ Creates a histogram (go.Bar) trace.
 
     Parameters
@@ -59,7 +59,7 @@ def histogram_tracer(xdata, ydata, marker_color):
     marker_color : str
         Color to fill the bars.
 
-    Retunrs
+    Returns
     -------
     trace : plotly.graph_objects.Bar
         Trace with data to display histogram.
@@ -73,23 +73,53 @@ def histogram_tracer(xdata, ydata, marker_color):
 
 
 def create_subplots(nplots, ncols, titles):
-    """
+    """ Create a Figure objcet with predefined subplots.
+
+    Parameters
+    ----------
+    nplots : int
+        Number of plots that will be displayed.
+    ncols : int
+        Number of subplots per row.
+    titles : list
+        Subplot titles.
+
+    Returns
+    -------
+    subplots_fig : plotly.graph_objs._figure.Figure
+        Figure object with predefined subplots.
     """
 
-    cols = ncols
-    rows = statistics.math.ceil((nplots / ncols))
-    subplots_fig = make_subplots(rows=rows, cols=cols,
+    # determine number of rows
+    nrows = statistics.math.ceil((nplots / ncols))
+    subplots_fig = make_subplots(rows=nrows, cols=ncols,
                                  subplot_titles=titles)
 
     return subplots_fig
 
 
-def add_multiple_traces(traces, fig, srow, scol, max_cols):
-    """
+def add_multiple_traces(traces, fig, max_cols):
+    """ Add traces to Figure object based on the number
+        of cols per row.
+
+    Parameters
+    ----------
+    traces : list
+        List with trace objects to add.
+    fig : plotly.graph_objs._figure.Figure
+        Figure object with predefined subplots.        
+    max_cols : int
+        Maximum number of columns per row.
+
+    Returns
+    -------
+    fig : plotly.graph_objs._figure.Figure
+        Figure object with the data to display the
+        traces.
     """
 
-    row_start = srow
-    col_start = scol
+    row_start = 1
+    col_start = 1
     for t in traces:
         fig.append_trace(t, row_start, col_start)
         if col_start < max_cols:
@@ -116,20 +146,6 @@ def write_text(text, output_file, end='\n'):
 
     with open(output_file, 'w') as outfile:
         outfile.write(text+end)
-
-
-def write_stats(stats, header, output_file):
-    """
-    """
-
-    lines = [header]
-    for locus, values in stats.items():
-        most_frequent_str = ';'.join([str(v) for v in values[4]])
-        str_values = [values[5]] + [str(v) for v in values[0:4]] + [most_frequent_str] + [values[7]]
-        lines.append('\t'.join(str_values))
-
-    text = '\n'.join(lines)
-    write_text(text, output_file)
 
 
 def main(schema_directory, output_directory, size_threshold):
@@ -199,7 +215,7 @@ def main(schema_directory, output_directory, size_threshold):
 
         if locus_mode == 'None' or len(outlier) > 0:
             # create histogram object
-            trace = histogram_tracer(xdata, ydata, '#0868ac')
+            trace = histogram_trace(xdata, ydata, '#0868ac')
             if locus_mode == 'None':
                 loci_stats[locus].extend([trace, 'multimodal'])
             elif len(outlier) > 0:
@@ -213,9 +229,16 @@ def main(schema_directory, output_directory, size_threshold):
     file_template = '{0}/{1}'
 
     # save full stats
-    stats_outfile = file_template.format(output_directory,
-                                         'loci_stats.tsv')
-    write_stats(loci_stats, header, stats_outfile)
+    stats_outfile = file_template.format(output_directory, 'loci_stats.tsv')
+    lines = [header]
+    for locus, values in loci_stats.items():
+        most_frequent_str = ';'.join([str(v) for v in values[4]])
+        str_values = [values[5]] + [str(v) for v in values[0:4]] \
+            + [most_frequent_str] + [values[7]]
+        lines.append('\t'.join(str_values))
+
+    text = '\n'.join(lines)
+    write_text(text, stats_outfile)
 
     # create HTML with subplots for loci with alleles outside length threshold
     # get list of loci
@@ -231,7 +254,7 @@ def main(schema_directory, output_directory, size_threshold):
     # create Figure object for subplots
     outlier_mode_fig = create_subplots(len(outlier_traces), 2, outlier_loci)
     outlier_mode_fig = add_multiple_traces(outlier_traces, outlier_mode_fig,
-                                           1, 1, 2)
+                                           2)
 
     # adjust figure height and layout
     fig_height = (statistics.math.ceil(len(outlier_mode_fig.data)/2))*300
@@ -263,7 +286,7 @@ def main(schema_directory, output_directory, size_threshold):
 
     multimodal_fig = create_subplots(len(multimodal_traces), 2, multimodal_loci)
     multimodal_fig = add_multiple_traces(multimodal_traces, multimodal_fig,
-                                         1, 1, 2)
+                                         2)
 
     fig_height = (statistics.math.ceil(len(multimodal_fig.data)/2))*300
     multimodal_fig.update_layout(title='Loci with multimodal allele length distributions',
@@ -285,7 +308,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-s', '--schema-directory', type=str,
+    parser.add_argument('-i', '--schema-directory', type=str,
                         required=True,
                         dest='schema_directory',
                         help='Path to the schema\'s directory.')
