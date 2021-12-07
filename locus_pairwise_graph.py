@@ -251,29 +251,22 @@ def graph_html(networkx_graph, reps, output_html, title, frequencies):
     nt.show(output_html)
 
 
-# add way to apply cutoff and output groups of alleles
-input_file = '/home/rfm/Desktop/test_schema_refinery/GCF-000006785-protein1_protein.fasta'
-output_dir = '/home/rfm/Desktop/test_schema_refinery/boop'
-schema_dir = '/home/rfm/Desktop/rfm/Lab_Analyses/GAS_PrepExternalSchema/latest_schema/spyogenes_schema_processed'
-locus_id = 'GCF-000006785-protein1'
-blast_score_ratio = 0.6
-title = 'Beep Boop'
-frequency_table = '/home/rfm/Desktop/test_schema_refinery/beep/GCF-000006785-protein1_protein_frequencies.tsv'
-maximum_links = 5
 def main(input_file, output_dir, schema_dir, locus_id, blast_score_ratio,
          title, frequency_table, maximum_links):
 
     if os.path.isdir(output_dir) is False:
         os.mkdir(output_dir)
 
-    # create Fasta fil with short headers to avoid BLAST error
+    # create Fasta file with short headers to avoid BLAST error
     # related with long sequence identifiers
     records = []
     for rec in SeqIO.parse(input_file, 'fasta'):
         short_id = '{0}_{1}'.format(locus_id, (rec.id).split('_')[-1])
         records.append('>{0}\n{1}'.format(short_id, str(rec.seq)))
 
-    input_file = input_file.split('.fasta')[0] + '_shortIDs.fasta'
+    input_file_basename = os.path.basename(input_file)
+    input_file_basename = input_file_basename.split('.fasta')[0] + '_shortIDs.fasta'
+    input_file = os.path.join(output_dir, input_file_basename)
     with open(input_file, 'w') as outfile:
         text = '\n'.join(records)
         outfile.write(text+'\n')
@@ -344,11 +337,12 @@ def main(input_file, output_dir, schema_dir, locus_id, blast_score_ratio,
                           for rec in SeqIO.parse(rep_file, 'fasta')]
 
     # read and log transform frequency values
-    frequencies_dict = None
-    if frequency_table is not None:
-        with open(frequency_table, 'r') as infile:
-            frequencies = list(csv.reader(infile, delimiter='\t'))[1:]
-            frequencies_dict = {l[0]: l[1:] for l in frequencies}
+    # not working!
+    # frequencies_dict = None
+    # if frequency_table is not None:
+    #     with open(frequency_table, 'r') as infile:
+    #         frequencies = list(csv.reader(infile, delimiter='\t'))[1:]
+    #         frequencies_dict = {l[0]: l[1:] for l in frequencies}
 
     # instantiate graph
     G = nx.Graph()
@@ -396,6 +390,7 @@ def parse_arguments():
                         dest='title',
                         help='Title to display in the HTML page.')
 
+    # currently not working
     parser.add_argument('--f', type=str, required=False,
                         dest='frequency_table',
                         help='TSV file with protein and allele '
