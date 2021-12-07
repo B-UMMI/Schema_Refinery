@@ -20,11 +20,15 @@ from Bio.Seq import Seq
 def reverse_str(string):
     """ Reverse character order in input string.
 
-        Args:
-            string (str): string to be reversed.
+    Parameters
+    ----------
+    string : str
+        String to be reversed.
 
-        Returns:
-            revstr (str): reverse of input string.
+    Returns
+    -------
+    revstr : str
+        Reverse of input string.
     """
 
     revstr = string[::-1]
@@ -33,48 +37,53 @@ def reverse_str(string):
 
 
 def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of given DNA strand.
+    """ Determines the reverse complement of a DNA sequence.
 
-        Args:
-            dna_sequence (str): string representing a DNA sequence.
+    Parameters
+    ----------
+    dna_sequence : str
+        String representing a DNA sequence.
 
-        Returns:
-            reverse_complement_strand (str): the reverse complement
-            of the DNA sequence, without lowercase letters.
+    Returns
+    -------
+    reverse_complement : str
+        The reverse complement of the input DNA
+        sequence.
     """
 
-    base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-                       'a': 'T', 'c': 'G', 'g': 'C', 't': 'A'}
+    base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 
     # convert string into list with each character as a separate element
-    bases = list(dna_sequence)
+    bases = list(dna_sequence.upper())
 
     # determine complement strand
     complement_bases = []
     for base in bases:
-        if base in base_complement:
-            complement_bases.append(base_complement[base])
-        else:
-            complement_bases.append(base.upper())
+        complement_bases.append(base_complement.get(base, base))
 
     complement_strand = ''.join(complement_bases)
 
     # reverse strand
-    reverse_complement_strand = reverse_str(complement_strand)
+    reverse_complement = reverse_str(complement_strand)
 
-    return reverse_complement_strand
+    return reverse_complement
 
 
 def translate_sequence(dna_str, table_id):
     """ Translate a DNA sequence using the BioPython package.
 
-        Args:
-            dna_str (str): DNA sequence as string type.
-            table_id (int): translation table identifier.
+    Parameters
+    ----------
+    dna_str : str
+        DNA sequence.
+    table_id : int
+        Translation table identifier.
 
-        Returns:
-            protseq (str): protein sequence created by translating
-            the input DNA sequence.
+    Returns
+    -------
+    protseq : str
+        Protein sequence created by translating
+        the input DNA sequence.
     """
 
     myseq_obj = Seq(dna_str)
@@ -87,14 +96,15 @@ def translate_sequence(dna_str, table_id):
 def make_blast_db(input_fasta, output_path, db_type):
     """ Creates a BLAST database.
 
-        Args:
-            input_fasta (str): path to the input file with sequences.
-            output_path (str): path to the output database.
-            db_type (str): type of the database, nucleotide (nuc) or
-            protein (prot).
-
-        Returns:
-            Creates a BLAST database with the input sequences.
+    Parameters
+    ----------
+    input_fasta : str
+        Path to a Fasta file.
+    output_path : str
+        Path to the output BLAST database.
+    db_type : str
+        Type of the database, nucleotide (nuc) or
+        protein (prot).
     """
 
     blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
