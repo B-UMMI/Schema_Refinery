@@ -73,8 +73,9 @@ def parse_arguments():
     parser.add_argument('-i', type=str, required=True,
                         dest='input_file',
                         help='Path to text file with groups of loci '
-                             'to merge. Each line must have a group of '
-                             'loci to merge (identifiers separated by ",").')
+                             'to merge. Each line must have a group '
+                             'of loci to merge (identifiers separated '
+                             'by ",").')
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_dir',

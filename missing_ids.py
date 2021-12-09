@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 18 22:56:26 2021
+Purpose
+-------
+This script determines if any locus in a schema does
+not have sequential allele identifiers.
 
-@author: rfm
+Code documentation
+------------------
 """
 
 
@@ -13,7 +17,7 @@ import argparse
 from Bio import SeqIO
 
 
-def main(schema_directory, output_directory):
+def main(schema_directory):
 
     schema_loci = [os.path.join(schema_directory, file)
                    for file in os.listdir(schema_directory)
@@ -43,11 +47,7 @@ def parse_arguments():
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_directory',
-                        help='')
-
-    parser.add_argument('-o', type=str, required=True,
-                        dest='output_directory',
-                        help='')
+                        help='Path to the schema\'s directory.')
 
     args = parser.parse_args()
 
