@@ -34,7 +34,7 @@ def main(input_file, schema_directory):
             os.remove(os.path.join(schema_directory, 'short', locus_id+'_short'+'.fasta'))
             total += 1
 
-    print('Removed {0} from schema.'.format(total))
+    print('Removed {0} loci from schema.'.format(total))
 
 
 def parse_arguments():
