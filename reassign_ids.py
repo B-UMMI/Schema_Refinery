@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 18 17:01:04 2021
+Purpose
+-------
+This script reassigns allele identifiers to ensure that
+the set of alleles for a locus have sequential identifiers.
 
-@author: rfm
+Code documentation
+------------------
 """
 
 
@@ -38,17 +42,18 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-i', type=str, required=True,
-                        dest='input_file',
-                        help='')
+    parser.add_argument('-i', '--input-file', type=str,
+                        required=True, dest='input_file',
+                        help='Path to input Fasta file.')
 
-    parser.add_argument('-o', type=str, required=True,
-                        dest='output_file',
-                        help='')
+    parser.add_argument('-o', '--output-file', type=str,
+                        required=True, dest='output_file',
+                        help='Path to output file.')
 
-    parser.add_argument('--s', type=int, required=False,
-                        default=1, dest='start_id',
-                        help='')
+    parser.add_argument('-s', '--start-id', type=int,
+                        required=False, default=1,
+                        dest='start_id',
+                        help='Starting allele identifier.')
 
     args = parser.parse_args()
 
