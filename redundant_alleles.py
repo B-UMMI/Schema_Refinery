@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script determines if a locus has duplicated alleles and
+if different loci have alleles in common.
 
+Code documentation
+------------------
 """
 
 
@@ -12,7 +18,7 @@ import argparse
 from Bio import SeqIO
 
 
-def main(schema_directory, output_directory):
+def main(schema_directory):
 
     # get list of loci in schema
     schema_loci = [os.path.join(schema_directory, file)
@@ -36,7 +42,7 @@ def main(schema_directory, output_directory):
                             for k, v in locus_hashes.items()
                             if len(v) > 1]
         if len(locus_duplicates) > 0:
-            print(locus_duplicates)
+            print('Locus {0} has duplicates:\n{1}'.format(locus_id, locus_duplicates))
 
     # determine if different loci have alleles in common
     loci_duplicates = []
@@ -44,7 +50,7 @@ def main(schema_directory, output_directory):
     for k, v in loci_hashes.items():
         distinct_loci = set([l[0] for l in v])
         if len(distinct_loci) > 1:
-            print(v)
+            print('Loci {0} have alleles in common:\n{1}'.format(distinct_loci, v))
             loci_duplicates.append(v)
         i += 1
 
@@ -56,11 +62,7 @@ def parse_arguments():
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_directory',
-                        help='')
-
-    parser.add_argument('-o', type=str, required=True,
-                        dest='output_directory',
-                        help='')
+                        help='Path to the schema\'s directory.')
 
     args = parser.parse_args()
 
