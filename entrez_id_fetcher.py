@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script accepts a list of accession numbers from the NCBI
+databases and searches for linked identifiers to create a TSV
+file with linked identifiers between the NCBI\'s databases.
 
-
-
+Code documentation
+------------------
 """
 
 
@@ -25,7 +30,20 @@ database_patterns = {'biosample': 'SAM[E|D|N][A-Z]?[0-9]+',
 
 
 def determine_id_type(identifier):
-    """
+    """ Determines the database name for an accession number
+        from the NCBI.
+
+    Parameters
+    ----------
+    identifier : str
+        Accession number from one of NCBI\'s databases.
+
+    Returns
+    -------
+    match : str
+        The name of the database the identifier belongs to.
+        Returns None if it is not possible to identify the
+        identifier type.
     """
 
     match = None
@@ -38,7 +56,21 @@ def determine_id_type(identifier):
 
 
 def get_esearch_record(identifier, database):
-    """
+    """ Run an Entrez search and returns the parsed results.
+
+    Parameters
+    ----------
+    identifier : str
+        Accession number from one of NCBI\'s databases.
+    database : str
+        NCBI database to query.
+
+    Returns
+    -------
+    record : iter
+        Multilevel data structure of Python lists and
+        dictionaries with the query results, including
+        the primary IDs linked to the accession number.
     """
 
     handle = Entrez.esearch(db=database, term=identifier)
@@ -48,7 +80,20 @@ def get_esearch_record(identifier, database):
 
 
 def get_esummary_record(identifier, database):
-    """
+    """ Retrieve document summaries and return parsed results.
+
+    Parameters
+    ----------
+    identifier : str
+        Primary ID for a NCBI record.
+    database : str
+        NCBI database to query.
+
+    Returns
+    -------
+    esummary_record : iter
+        Multilevel data structure of Python lists and
+        dictionaries with summary data about the record.
     """
 
     esummary_handle = Entrez.esummary(db=database, id=identifier, report='full')
@@ -58,7 +103,24 @@ def get_esummary_record(identifier, database):
 
 
 def get_elink_record(identifier, fromdb, todb):
-    """
+    """ Retrieves primary IDs for links to NCBI databases.
+
+    Parameters
+    ----------
+    identifier : str
+        Primary ID for a NCBI record.
+    fromdb : str
+        Database the input identifier belongs to.
+    todb : str
+        Database to search for linked identifiers.
+
+    Returns
+    -------
+    elink_record : iter
+        Multilevel data structure of Python lists and
+        dictionaries with the query results, including
+        primary IDs from `todb` linked to the input
+        identifier.
     """
 
     elink_handle = Entrez.elink(dbfrom=fromdb, db=todb, id=identifier)
@@ -68,7 +130,21 @@ def get_elink_record(identifier, fromdb, todb):
 
 
 def get_elink_id(elink_record):
-    """
+    """ Extract linked identifers from parsed results from
+        Entrez.elink.
+
+    Parameters
+    ----------
+    elink_record : iter
+        Multilevel data structure of Python lists and
+        dictionaries with the query results, including
+        primary IDs from `todb` linked to the input
+        identifier.
+
+    Returns
+    -------
+    elink_ids : list
+        List of primary IDs for one of NCBI's databases.
     """
 
     elink_id = elink_record[0]['LinkSetDb']
@@ -82,7 +158,20 @@ def get_elink_id(elink_record):
 
 
 def fetch_sra_accessions(identifiers):
-    """
+    """ Retrieves SRA accession numbers.
+
+    Parameters
+    ----------
+    identifiers : list
+        List of primary IDs for the SRA records.
+
+    Returns
+    -------
+    sra_accessions : list
+        List with SRA accession numbers.
+    sequencing_platforms : list
+        List with the sequencing platform for each
+        SRA record.
     """
 
     sra_accessions = []
@@ -105,7 +194,25 @@ def fetch_sra_accessions(identifiers):
 
 
 def fetch_assembly_accessions(identifiers):
-    """
+    """ Retrieves Assembly accession numbers.
+
+    Parameters
+    ----------
+    identifiers : list
+        List with primary IDs for Assembly records.
+
+    Returns
+    -------
+    refseq_accessions : list
+        List with RefSeq accession numbers.
+    genbank_accessions : list
+        List with GenBank accession numbers.
+    biosample_ids : list
+        List with primary IDs for BioSample records
+        linked to the Assembly records.
+    biosample_accessions : list
+        List with accession numbers for BioSample records
+        linked to the Assembly records.
     """
 
     refseq_accessions = []
@@ -138,6 +245,7 @@ def fetch_assembly_accessions(identifiers):
             list(set(biosample_accessions))]
 
 
+# implement ID batch processing? (Bio.Entrez might support requests to get info for several IDs)
 def main(input_file, output_file, email):
 
     # read identifiers
@@ -158,8 +266,9 @@ def main(input_file, output_file, email):
             else:
                 match_db = match
         else:
-            pass
             print('{0:<} : {1}'.format('Could not determine database type.'))
+            # process next identifier
+            continue
 
         # get record data for identifier
         record = get_esearch_record(i, match_db)
