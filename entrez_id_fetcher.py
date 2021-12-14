@@ -7,6 +7,7 @@
 """
 
 
+import os
 import re
 import csv
 import time
@@ -15,8 +16,7 @@ import argparse
 from Bio import Entrez
 
 
-ids_types = ['assembly', 'biosample', 'bioproject', 'sra']
-
+# regex expressions to identify identifier type
 database_patterns = {'biosample': 'SAM[E|D|N][A-Z]?[0-9]+',
                      'bioproject': 'PRJ[E|D|N][A-Z][0-9]+',
                      'sra': '[E|D|S]RR[0-9]{6,}',
@@ -86,6 +86,7 @@ def fetch_sra_accessions(identifiers):
     """
 
     sra_accessions = []
+    sequencing_platforms = []
     for i in identifiers:
         # Get SRA summary
         sra_record = get_esummary_record(i, 'sra')
@@ -96,7 +97,11 @@ def fetch_sra_accessions(identifiers):
         if len(sra_accession) > 0:
             sra_accessions.append(sra_accession[0])
 
-    return sra_accessions
+        # get sequencing platform
+        sequencing_platform = sra_record[0]['ExpXml'].split('</Platform>')[0].split('>')[-1]
+        sequencing_platforms.append(sequencing_platform)
+
+    return [sra_accessions, sequencing_platforms]
 
 
 def fetch_assembly_accessions(identifiers):
@@ -112,16 +117,20 @@ def fetch_assembly_accessions(identifiers):
         assembly_record = get_esummary_record(i, 'assembly')
         # get RefSeq identifier
         refseq_accession = assembly_record['DocumentSummarySet']['DocumentSummary'][0]['Synonym'].get('RefSeq', '')
-        refseq_accessions.append(refseq_accession)
+        if refseq_accession != '':
+            refseq_accessions.append(refseq_accession)
         # get GenBank identifier
         genbank_accession = assembly_record['DocumentSummarySet']['DocumentSummary'][0]['Synonym'].get('Genbank', '')
-        genbank_accessions.append(genbank_accession)
+        if genbank_accession != '':
+            genbank_accessions.append(genbank_accession)
 
         # get Biosample accession number
         biosample_id = assembly_record['DocumentSummarySet']['DocumentSummary'][0].get('BioSampleId', '')
-        biosample_ids.append(biosample_id)
+        if biosample_id != '':
+            biosample_ids.append(biosample_id)
         biosample_accession = assembly_record['DocumentSummarySet']['DocumentSummary'][0].get('BioSampleAccn', '')
-        biosample_accessions.append(biosample_accession)
+        if biosample_accession != '':
+            biosample_accessions.append(biosample_accession)
 
     return [refseq_accessions,
             genbank_accessions,
@@ -129,9 +138,6 @@ def fetch_assembly_accessions(identifiers):
             list(set(biosample_accessions))]
 
 
-input_file = '/home/rfm/Desktop/test_schema_refinery/ids_ncbi_test_1_100.txt'
-output_file = '/home/rfm/Desktop/test_schema_refinery/converted_ids.tsv'
-email = 'rmamede@medicina.ulisboa.pt'
 def main(input_file, output_file, email):
 
     # read identifiers
@@ -168,12 +174,13 @@ def main(input_file, output_file, email):
                 # link to and get SRA accessions
                 elink_record = get_elink_record(biosample_ids[0], 'biosample', 'sra')
                 sra_ids = get_elink_id(elink_record)
-                sra_accessions = fetch_sra_accessions(sra_ids)
+                sra_accessions, sequencing_platforms = fetch_sra_accessions(sra_ids)
 
             database_identifiers[i] = [refseq_accessions[0],
                                        genbank_accessions[0],
                                        biosample_accessions[0],
-                                       ','.join(sra_accessions)]
+                                       ','.join(sra_accessions),
+                                       ','.join(sequencing_platforms)]
 
         elif match_db == 'biosample':
             # link and get Assembly accessions
@@ -184,12 +191,13 @@ def main(input_file, output_file, email):
             # link to and get SRA accessions
             elink_record = get_elink_record(record_ids[0], 'biosample', 'sra')
             sra_ids = get_elink_id(elink_record)
-            sra_accessions = fetch_sra_accessions(sra_ids)
+            sra_accessions, sequencing_platforms = fetch_sra_accessions(sra_ids)
 
             database_identifiers[i] = [','.join(refseq_accessions),
                                        ','.join(genbank_accessions),
                                        i,
-                                       ','.join(sra_accessions)]
+                                       ','.join(sra_accessions),
+                                       ','.join(sequencing_platforms)]
 
         elif match_db == 'sra':
             # Get SRA Summary
@@ -214,14 +222,23 @@ def main(input_file, output_file, email):
         print('RefSeq: {0:<}\n'
               'GenBank: {1:<}\n'
               'BioSample: {2:<}\n'
-              'SRA: {3:<}\n'.format(*database_identifiers[i]))
+              'SRA: {3:<}\n'
+              'SequencingPlatform: {4:<}\n'.format(*database_identifiers[i]))
 
     # write output table
-    output_header = 'RefSeq\tGenBank\tBioSample\tSRA'
-    output_lines = [output_header] + ['\t'.join(v) for k, v in database_identifiers.items()]
+    output_header = 'InputID\tRefSeq\tGenBank\tBioSample\tSRA\tSequencingPlatform'
+    output_lines = [output_header]
+    output_lines.extend(['\t'.join([k]+v) for k, v in database_identifiers.items()])
     output_text = '\n'.join(output_lines)
     with open(output_file, 'w') as outfile:
         outfile.write(output_text+'\n')
+
+    # delete .dtd files
+    dtd_files = [file
+                 for file in os.listdir(os.getcwd())
+                 if file.endswith('.dtd')]
+    for file in dtd_files:
+        os.remove(file)
 
 
 def parse_arguments():
