@@ -52,7 +52,19 @@ import argparse
 
 
 def join_iterable(iterable, delimiter='\t'):
-    """
+    """ Joins elements in an iterable into one string.
+
+    Parameters
+    ----------
+    iterable : iter
+        Iterable with elements to join.
+    delimiter : str
+        Elements in iterable will be joined with this string.
+
+    Returns
+    -------
+    joined : str
+        String representing all elements in input iterable joined.
     """
 
     joined = delimiter.join(iterable)
@@ -61,7 +73,16 @@ def join_iterable(iterable, delimiter='\t'):
 
 
 def write_text(text, output_file, mode='w'):
-    """
+    """ Writes a string to a file.
+
+    Parameters
+    ----------
+    text : str
+        Single string to write to file.
+    output_file : str
+        Path to the output file.
+    mode : str
+        Write mode ('w' to write, 'a' to append).
     """
 
     # write matrix to output file
@@ -70,21 +91,15 @@ def write_text(text, output_file, mode='w'):
 
 
 def write_lines(lines, output_file, mode='w'):
-    """ Writes a matrix to a file.
+    """ Writes a list of rows to a file.
 
     Parameters
     ----------
-    matrix_rows : list
-        List of sublists where each sublist corresponds
-        to one row of a AlleleCall matrix.
-    output_matrix : str
-        Path to the file that should be created to store
-        the output matrix.
-
-    Returns
-    -------
-    Writes matrix rows (each sublist of the input list is
-    a row) to the output file.
+    lines : list
+        List of sublists where each sublist has the elements
+        for a row.
+    output_file : str
+        Path to the output file.
     """
 
     # join matrix lines into chunk of text
@@ -96,7 +111,23 @@ def write_lines(lines, output_file, mode='w'):
 
 
 def change_masking_chars(masking_dict, masking_characters):
-    """
+    """ Parses list of masking instructions to modify dictionary
+        with word substitution mapping according to the instructions
+        passed by the user.
+
+    Parameters
+    ----------
+    masking_dict : dict
+        Dictionary with allele call classification to masking
+        work mapping.
+    masking_characters : list
+        List with masking instructions. Each element in the list
+        matches one instruction.
+
+    Returns
+    -------
+    masking_dict : dict
+        Dictionary with updated substitution instructions.
     """
 
     for char in masking_characters:
@@ -125,21 +156,19 @@ def mask_matrix(input_matrix, masking_chars_dict, output_matrix):
 
     Parameters
     ----------
-    matrix_rows : list
-        List of sublists where each row has the elements of
-        one row of a AlleleCall matrix.
+    input_matrix : str
+        Path to file that contains a matrix with allelic profiles.
     masking_chars_dict : dict
         Dictionary with matrix elements that should be
         substituted as keys and the characters that will
         substitute those elements as values.
+    output_matrix : str
+        Path to the output file.
 
     Returns
     -------
-    masked_matrix : list
-        List of sublists where each sublist has the elements
-        of one row of the matrix, masked according to the
-        character substitutions specified in the
-        `masking_chars_dict` dictionary.
+    total_masked : int
+        Total number of allelic profiles that were masked.
     """
 
     limit = 200

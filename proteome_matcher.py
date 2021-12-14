@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script translates loci representative alleles and
+aligns them against Swiss-Prot and TrEMBL records to
+select annotation terms based on the BSR computed for
+each alignment.
+
+Code documentation
+------------------
 """
 
 
@@ -17,11 +26,15 @@ from Bio.Seq import Seq
 def reverse_str(string):
     """ Reverse character order in input string.
 
-        Args:
-            string (str): string to be reversed.
+    Parameters
+    ----------
+    string : str
+        String to be reversed.
 
-        Returns:
-            revstr (str): reverse of input string.
+    Returns
+    -------
+    revstr : str
+        Reverse of input string.
     """
 
     revstr = string[::-1]
@@ -30,48 +43,53 @@ def reverse_str(string):
 
 
 def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of given DNA strand.
+    """ Determines the reverse complement of a DNA sequence.
 
-        Args:
-            dna_sequence (str): string representing a DNA sequence.
+    Parameters
+    ----------
+    dna_sequence : str
+        String representing a DNA sequence.
 
-        Returns:
-            reverse_complement_strand (str): the reverse complement
-            of the DNA sequence, without lowercase letters.
+    Returns
+    -------
+    reverse_complement : str
+        The reverse complement of the input DNA
+        sequence.
     """
 
-    base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-                       'a': 'T', 'c': 'G', 'g': 'C', 't': 'A'}
+    base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 
     # convert string into list with each character as a separate element
-    bases = list(dna_sequence)
+    bases = list(dna_sequence.upper())
 
     # determine complement strand
     complement_bases = []
     for base in bases:
-        if base in base_complement:
-            complement_bases.append(base_complement[base])
-        else:
-            complement_bases.append(base.upper())
+        complement_bases.append(base_complement.get(base, base))
 
     complement_strand = ''.join(complement_bases)
 
     # reverse strand
-    reverse_complement_strand = reverse_str(complement_strand)
+    reverse_complement = reverse_str(complement_strand)
 
-    return reverse_complement_strand
+    return reverse_complement
 
 
 def translate_sequence(dna_str, table_id):
     """ Translate a DNA sequence using the BioPython package.
 
-        Args:
-            dna_str (str): DNA sequence as string type.
-            table_id (int): translation table identifier.
+    Parameters
+    ----------
+    dna_str : str
+        DNA sequence.
+    table_id : int
+        Translation table identifier.
 
-        Returns:
-            protseq (str): protein sequence created by translating
-            the input DNA sequence.
+    Returns
+    -------
+    protseq : str
+        Protein sequence created by translating
+        the input DNA sequence.
     """
 
     myseq_obj = Seq(dna_str)
@@ -81,78 +99,71 @@ def translate_sequence(dna_str, table_id):
     return protseq
 
 
-def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type,
-                  ignore=None):
+def make_blast_db(input_fasta, output_path, db_type):
     """ Creates a BLAST database.
-        Parameters
-        ----------
-        input_fasta : str
-            Path to the FASTA file that contains the sequences
-            that should be added to the BLAST database.
-        output_path : str
-            Path to the directory where the database files
-            will be created. Database files will have names
-            with the path's basemane.
-        db_type : str
-            Type of the database, nucleotide (nuc) or
-            protein (prot).
-        Returns
-        -------
-        Creates a BLAST database with the input sequences.
+
+    Parameters
+    ----------
+    input_fasta : str
+        Path to a Fasta file.
+    output_path : str
+        Path to the output BLAST database.
+    db_type : str
+        Type of the database, nucleotide (nuc) or
+        protein (prot).
     """
 
-    blastdb_cmd = [makeblastdb_path, '-in', input_fasta, '-out', output_path,
+    blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
                    '-parse_seqids', '-dbtype', db_type]
 
     makedb_cmd = subprocess.Popen(blastdb_cmd,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
 
-    stderr = makedb_cmd.stderr.readlines()
+    stdout, stderr = makedb_cmd.communicate()
+    print(stdout, stderr)
 
-    return stderr
+    makedb_cmd.wait()
 
 
 def run_blast(blast_path, blast_db, fasta_file, blast_output,
               max_hsps=1, threads=1, ids_file=None, blast_task=None,
-              max_targets=None, ignore=None):
-    """ Execute BLAST to align sequences in a FASTA file
-        against a BLAST database.
-        Parameters
-        ----------
-        blast_path : str
-            Path to BLAST executables.
-        blast_db : str
-            Path to the BLAST database.
-        fasta_file : str
-            Path to the FASTA file with sequences to
-            align against the BLAST database.
-        blast_output : str
-            Path to the file that will be created to
-            store BLAST results.
-        max_hsps : int
-            Maximum number of High Scoring Pairs per
-            pair of aligned sequences.
-        threads : int
-            Number of threads/cores used to run BLAST.
-        ids_file : str
-            Path to a file with sequence identifiers,
-            one per line. Sequences will only be aligned
-            to the sequences in the BLAST database that
-            have any of the identifiers in this file.
-        blast_task : str
-            Type of BLAST task.
-        max_targets : int
-            Maximum number of target of subject sequences
-            to align against.
-        Returns
-        -------
-        stderr : str
-            String with errors raised during BLAST execution.
+              max_targets=None):
+    """ Executes BLAST.
+
+    Parameters
+    ----------
+    blast_path : str
+        Path to the BLAST executable.
+    blast_db : str
+        Path to the BLAST database.
+    fasta_file : str
+        Path to the Fasta file that contains the sequences
+        to align against the database.
+    blast_output : str
+        Path to the output file.
+    max_hsps : int
+        Maximum number of High-Scoring Pairs.
+    threads : int
+        Number of threads passed to BLAST.
+    ids_file : path
+        Path to a file with the identifiers of the sequences
+        to align against. Used to specify the database sequences
+        we want to align against.
+    blast_task : str
+        BLAST task. Allows to set default parameters for a specific
+        type of search.
+    max_targets : int
+        Maximum number of targets sequences to align against.
+
+    Returns
+    -------
+    stderr : list
+        List with the warnings/errors reported by BLAST.
     """
 
     blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
-                  '-out', blast_output, '-outfmt', '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore score',
+                  '-out', blast_output, '-outfmt', '6 qseqid sseqid score',
                   '-max_hsps', str(max_hsps), '-num_threads', str(threads),
                   '-evalue', '0.001']
 
@@ -172,66 +183,75 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     return stderr
 
 
-def main(schema_dir, references_dir, output_dir, blast_threads):
+def main(schema_directory, records_directory, output_directory, cpu_cores):
 
-    if os.path.isdir(output_dir) is False:
-        os.mkdir(output_dir)
+    if os.path.isdir(output_directory) is False:
+        os.mkdir(output_directory)
 
-    reps_dir = os.path.join(schema_dir, 'short')
-    rep_files = [os.path.join(reps_dir, f) for f in os.listdir(reps_dir) if f.endswith('.fasta') is True]
+    reps_dir = os.path.join(schema_directory, 'short')
+    rep_files = [os.path.join(reps_dir, f)
+                 for f in os.listdir(reps_dir)
+                 if f.endswith('.fasta') is True]
 
     # get all representative sequences into same file
     reps = []
     for f in rep_files:
+        locus_id = os.path.basename(f).split('_short')[0]
         for rec in SeqIO.parse(f, 'fasta'):
+            seqid = rec.id
+            allele_id = seqid.split('_')[-1]
+            short_seqid = '{0}_{1}'.format(locus_id, allele_id)
             prot = translate_sequence(str(rec.seq), 11)
-            sequence = '>{0}\n{1}'.format(rec.id, prot)
+            sequence = '>{0}\n{1}'.format(short_seqid, prot)
             reps.append(sequence)
 
     # save new reps into same file
-    prot_file = os.path.join(output_dir, 'reps_prots.fasta')
+    prot_file = os.path.join(output_directory, 'reps_prots.fasta')
     with open(prot_file, 'w') as pinfile:
-        pinfile.write('\n'.join(reps))
+        pinfile.write('\n'.join(reps)+'\n')
 
     # BLASTp TrEMBL and Swiss-Prot records
 
     # create TrEMBL BLASTdb
-    tr_file = os.path.join(references_dir, 'trembl_prots.fasta')
-    tr_blastdb_path = os.path.join(output_dir, 'tr_db')
-    tr_blastdb_stderr = make_blast_db('makeblastdb', tr_file, tr_blastdb_path, 'prot')
-    tr_blastout = os.path.join(output_dir, 'tr_blastout.tsv')
+    tr_file = os.path.join(records_directory, 'trembl_prots.fasta')
+    tr_blastdb_path = os.path.join(output_directory, 'tr_db')
+    tr_blastdb_stderr = make_blast_db(tr_file, tr_blastdb_path, 'prot')
+    tr_blastout = os.path.join(output_directory, 'tr_blastout.tsv')
     tr_blast_stderr = run_blast('blastp', tr_blastdb_path, prot_file,
-                                tr_blastout, max_hsps=1, threads=blast_threads,
+                                tr_blastout, max_hsps=1, threads=cpu_cores,
                                 ids_file=None, blast_task=None, max_targets=1)
 
     # create Swiss-Prot BASLTdb
-    sp_file = os.path.join(references_dir, 'sp_prots.fasta')
-    sp_blastdb_path = os.path.join(output_dir, 'sp_db')
-    sp_blastdb_stderr = make_blast_db('makeblastdb', sp_file, sp_blastdb_path, 'prot')
-    sp_blastout = os.path.join(output_dir, 'sp_blastout.tsv')
+    sp_file = os.path.join(records_directory, 'sp_prots.fasta')
+    sp_blastdb_path = os.path.join(output_directory, 'sp_db')
+    sp_blastdb_stderr = make_blast_db(sp_file, sp_blastdb_path, 'prot')
+    sp_blastout = os.path.join(output_directory, 'sp_blastout.tsv')
     sp_blast_stderr = run_blast('blastp', sp_blastdb_path, prot_file,
-                                sp_blastout, max_hsps=1, threads=blast_threads,
+                                sp_blastout, max_hsps=1, threads=cpu_cores,
                                 ids_file=None, blast_task=None, max_targets=1)
 
     # self BLASTp to get reps self Raw Scores
-    reps_blastdb_path = os.path.join(output_dir, os.path.join(output_dir, 'reps_db'))
-    reps_blastdb_stderr = make_blast_db('makeblastdb', prot_file, reps_blastdb_path, 'prot')
-    reps_self_blastout = os.path.join(output_dir, 'reps_self_blastout.tsv')
+    reps_blastdb_path = os.path.join(output_directory, os.path.join(output_directory, 'reps_db'))
+    reps_blastdb_stderr = make_blast_db(prot_file, reps_blastdb_path, 'prot')
+    reps_self_blastout = os.path.join(output_directory, 'reps_self_blastout.tsv')
     reps_blast_stderr = run_blast('blastp', reps_blastdb_path, prot_file,
-                                  reps_self_blastout, max_hsps=1, threads=blast_threads,
-                                  ids_file=None, blast_task=None, max_targets=1)
+                                  reps_self_blastout, max_hsps=1, threads=cpu_cores,
+                                  ids_file=None, blast_task=None, max_targets=10)
 
     # import self_results
     with open(reps_self_blastout, 'r') as at:
         reps_self_results = list(csv.reader(at, delimiter='\t'))
 
-    reps_self_scores = {l[0]: l[-1] for l in reps_self_results}
+    reps_self_scores = {l[0]: l[-1]
+                        for l in reps_self_results
+                        if l[0] == l[1]}
 
     # import Swiss-Prot and TrEMBL records descriptions
-    with open(os.path.join(references_dir, 'descriptions'), 'rb') as dinfile:
+    with open(os.path.join(records_directory, 'descriptions'), 'rb') as dinfile:
         descriptions = pickle.load(dinfile)
 
-    # get TrEMBL and Swiss-Prot results and choose only highest representative hit for each gene    
+    # get TrEMBL and Swiss-Prot results and choose only
+    # highest representative hit for each gene
     with open(tr_blastout, 'r') as at:
         tr_lines = list(csv.reader(at, delimiter='\t'))
 
@@ -293,18 +313,18 @@ def main(schema_dir, references_dir, output_dir, blast_threads):
 
     # save results
     tr_header = 'TrEMBL_ID\tTrEMBL_BSR\tTrEMBL_LNAME\tTrEMBL_SNAME'
-    tr_annotations = os.path.join(output_dir, 'tr_annotations.tsv')
+    tr_annotations = os.path.join(output_directory, 'tr_annotations.tsv')
     with open(tr_annotations, 'w') as trout:
         tr_outlines = [tr_header] + ['{0}\t{1}\t{2}\t{3}'.format(*v) for k, v in tr_selected.items()]
         tr_outtext = '\n'.join(tr_outlines)
-        trout.write(tr_outtext)
+        trout.write(tr_outtext+'\n')
 
     sp_header = 'SwissProt_ID\tSwissProt_BSR\tSwissProt_LNAME\tSwissProt_SNAME'
-    sp_annotations = os.path.join(output_dir, 'sp_annotations.tsv')
+    sp_annotations = os.path.join(output_directory, 'sp_annotations.tsv')
     with open(sp_annotations, 'w') as spout:
         sp_outlines = [sp_header] + ['{0}\t{1}\t{2}\t{3}'.format(*v) for k, v in sp_selected.items()]
         sp_outtext = '\n'.join(sp_outlines)
-        spout.write(sp_outtext)
+        spout.write(sp_outtext+'\n')
 
 
 def parse_arguments():
@@ -312,22 +332,23 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-s', type=str, required=True,
-                        dest='schema_dir',
+    parser.add_argument('-s', '--schema-directory', type=str,
+                        required=True, dest='schema_directory',
                         help='Path to the schema\'s directory.')
 
-    parser.add_argument('-r', type=str, required=True,
-                        dest='references_dir',
-                        help='Path to the directory with Swiss-Prot and'
-                             'and file with descriptions.')
+    parser.add_argument('-p', '--records-directory', type=str, required=True,
+                        dest='records_directory',
+                        help='Path to the directory with the Fasta files '
+                             'with Swiss-Prot and TrEMBL records. It must '
+                             'also contain a file with record descriptions.')
 
-    parser.add_argument('-o', type=str, required=True,
-                        dest='output_dir',
-                        help='Path to output directory.')
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the output directory.')
 
-    parser.add_argument('--bt', type=int, required=False,
-                        dest='blast_threads',
-                        help='Number of threads to pass to BLAST.')
+    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
+                        dest='cpu_cores',
+                        help='Number of CPU cores to pass to BLAST.')
 
     args = parser.parse_args()
 

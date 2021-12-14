@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
+Purpose
+-------
 Determines global and per sequence GC content for a FASTA file.
+
+Code documentation
+------------------
 """
 
 
@@ -43,7 +47,8 @@ def main(input_fasta, output_directory):
 
     detailed_gc = os.path.join(output_directory, output_basename+'_perSeq.tsv')
     with open(detailed_gc, 'w') as outfile:
-        detailed_lines = ['{0}\t{1}'.format(k, v) for k, v in records_gc.items()]
+        detailed_lines = ['{0}\t{1}'.format(k, v)
+                          for k, v in records_gc.items()]
         detailed_text = '\n'.join(detailed_lines)
         outfile.write(detailed_text+'\n')
 

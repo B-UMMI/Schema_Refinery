@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script merges a group of paralogous loci into a single locus.
 
+Code documentation
+------------------
 """
 
 
@@ -30,6 +35,7 @@ def main(input_file, schema_dir, output_dir):
     merged_loci = {}
     for group in loci_groups:
         loci_ids = group
+        # new locus will have the identifier of first locus in list
         new_locus_id = loci_ids[0]
         allele_id = 1
         merged_records = []
@@ -66,15 +72,18 @@ def parse_arguments():
 
     parser.add_argument('-i', type=str, required=True,
                         dest='input_file',
-                        help='')
+                        help='Path to text file with groups of loci '
+                             'to merge. Each line must have a group '
+                             'of loci to merge (identifiers separated '
+                             'by ",").')
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_dir',
-                        help='')
+                        help='Path to the schema\'s directory.')
 
     parser.add_argument('-o', type=str, required=True,
                         dest='output_dir',
-                        help='')
+                        help='Path to the output directory.')
 
     args = parser.parse_args()
 

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script removes loci from a schema.
 
+Code documentation
+------------------
 """
 
 
@@ -9,23 +14,27 @@ import os
 import argparse
 
 
-def main(input_file, schema_dir):
+def main(input_file, schema_directory):
 
     with open(input_file, 'r') as infile:
         loci_list = infile.read().splitlines()
 
     # list loci in schema
-    schema_loci = [f for f in os.listdir(schema_dir) if '.fasta' in f]
+    schema_loci = [f
+                   for f in os.listdir(schema_directory)
+                   if '.fasta' in f]
 
     total = 0
     for locus in schema_loci:
         locus_id = locus.split('.fasta')[0]
         if locus_id in loci_list:
-            os.remove(os.path.join(schema_dir, locus))
-            os.remove(os.path.join(schema_dir, 'short', locus_id+'_short'+'.fasta'))
+            # remove locus file from main schema directory
+            os.remove(os.path.join(schema_directory, locus))
+            # remove from short diretory
+            os.remove(os.path.join(schema_directory, 'short', locus_id+'_short'+'.fasta'))
             total += 1
 
-    print('Removed {0} from schema.'.format(total))
+    print('Removed {0} loci from schema.'.format(total))
 
 
 def parse_arguments():
@@ -33,13 +42,14 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-i', type=str, required=True,
+    parser.add_argument('-i', '--input-file', type=str, required=True,
                         dest='input_file',
-                        help='')
+                        help='Path to input file with the list of loci '
+                             'to remove from the schema.')
 
-    parser.add_argument('-s', type=str, required=True,
-                        dest='schema_dir',
-                        help='')
+    parser.add_argument('-s', '--schema-directory', type=str, required=True,
+                        dest='schema_directory',
+                        help='Path to the schema\'s directory.')
 
     args = parser.parse_args()
 
@@ -49,5 +59,4 @@ def parse_arguments():
 if __name__ == '__main__':
 
     args = parse_arguments()
-
     main(**vars(args))

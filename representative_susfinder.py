@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script determines if any of the locus' representative alleles
+are missing from the locus main file that contains all alleles.
 
+Code documentation
+------------------
 """
 
 
@@ -43,14 +49,16 @@ def main(schema_directory):
                          if k not in locus_records]
 
         if len(absent_recids) > 0:
-            print(locus, absent_recids)
+            print('Locus {0}, representative allele identifiers not in main '
+                  'file:\n{1}'.format(locus, absent_recids))
 
         absent_seqs = [k
                        for k, v in representative_records.items()
-                       if v != locus_records[k]]
+                       if v not in locus_records.values()]
 
         if len(absent_seqs) > 0:
-            print(absent_seqs)
+            print('Locus {0}, representative sequences not in main'
+                  ' file:\n{1}'.format(locus, absent_seqs))
 
 
 def parse_arguments():
@@ -58,9 +66,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-s', type=str, required=True,
-                        dest='schema_directory',
-                        help='')
+    parser.add_argument('-s', '--schema-directory', type=str,
+                        required=True, dest='schema_directory',
+                        help='Path to the schema\'s directory.')
 
     args = parser.parse_args()
 

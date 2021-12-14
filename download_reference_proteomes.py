@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb  4 18:05:20 2021
+Purpose
+-------
+This script accepts a TSV file downloaded from UniProt with
+information about a set of proteomes and downloads the
+proteomes listed in the file.
 
-@author: pcerqueira
+Code documentation
+------------------
 """
+
 
 import os
 import sys
@@ -14,60 +20,74 @@ import socket
 import argparse
 import urllib.request
 import concurrent.futures
+from itertools import repeat
 
 
+# set socket timeout for urllib calls
 socket.setdefaulttimeout(30)
 
+# URL template for proteome download
+proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&format=fasta&compress=yes'
 
-def download_assembly(url, file_name):
-    """ Accepts a url to download a file, retrying up to 7 times
-        if previous attempts are not successful.
 
-        Args:
-            url (str): an url to download a file.
-            file_name (str): the identifier of the file to be downloaded.
+def download_file(url, file_name, retry):
+    """ Accepts a URL to download a file.
 
-        Returns:
-            response: a string indicating that the download failed or
-            an object with the response information for the successful
-            download.
+    Parameters
+    ----------
+    url : str
+        An url to download a file.
+    file_name : str
+        The name of the file to be downloaded.
+    retry : int
+        Maximum number of retries if download fails.
+
+    Returns
+    -------
+    response : str
+        A string indicating that the download failed or
+        an object with the response information for a
+        successful download.
     """
 
     tries = 0
-    download_tries = 7
-    while tries < download_tries:
+    while tries < retry:
         try:
             response = urllib.request.urlretrieve(url, file_name)
-            tries = 7
+            break
         except Exception:
             response = 'Failed: {0}'.format(file_name)
             tries += 1
             print('Retrying {0} ...{1}'.format(file_name.split('/')[-1], tries))
+            time.sleep(1)
 
     return response
 
 
-def main(input_table, output_directory):
+def main(input_table, output_directory, threads, retry):
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
-        
+
     # open table downloaded from Uniprot
     with open(input_table, 'r') as table:
         reader = csv.reader(table, delimiter=',')
+        # exclude header
         next(reader, None)
-        assemblies_ids = [row[0].split("\t")[0] for row in reader]
+        proteomes = [row[0].split("\t")[0] for row in reader]
 
     # Build the Uniprot URLs
-    urls = ["https://www.uniprot.org/uniprot/?query=proteome:{0}&format=fasta&compress=yes".format(assembly_id) for assembly_id in assemblies_ids]
-    
+    urls = [proteome_template_url.format(proteome_id)
+            for proteome_id in proteomes]
+
     files_number = len(urls)
     if files_number == 0:
         sys.exit('No valid URLs.')
-        
-    assemblies_ids = ['{0}.fasta.gz'.format(assembly_id) for assembly_id in assemblies_ids]
-    assemblies_ids = [os.path.join(output_directory, file_name)
-                      for file_name in assemblies_ids]
+
+    local_filenames = ['{0}.fasta.gz'.format(proteome_id)
+                       for proteome_id in proteomes]
+    local_filepaths = [os.path.join(output_directory, filename)
+                       for filename in local_filenames]
 
     print('\nStarting download of {0} fasta.gz files...'.format(len(urls)))
     start = time.time()
@@ -75,14 +95,16 @@ def main(input_table, output_directory):
     # We can use a with statement to ensure threads are cleaned up promptly
     failures = []
     success = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         # Start the load operations and mark each future with its URL
-        for res in executor.map(download_assembly, urls, assemblies_ids):
-            failures.append(res)
-            success += 1
-            print('\r', 'Downloaded {0}'.format(success), end='')
+        for res in executor.map(download_file, urls, local_filepaths, repeat(retry)):
+            if 'Failed' in res:
+                failures.append(res)
+            else:
+                success += 1
+                print('\r', 'Downloaded {0}/{1}'.format(success, files_number), end='')
 
-    failures_number = len([res for res in failures if 'Failed' in res])
+    print('\nFailed download for {0} files.'.format(len(failures)))
 
     end = time.time()
     delta = end - start
@@ -90,7 +112,7 @@ def main(input_table, output_directory):
     seconds = delta % 60
     print('\nFinished downloading {0}/{1} fasta.gz files.'
           '\nElapsed Time: {2}m{3:.0f}s'
-          ''.format(files_number-failures_number,
+          ''.format(files_number-len(failures),
                     files_number, minutes, seconds))
 
 
@@ -109,12 +131,23 @@ def parse_arguments():
                         help='Path to the directory where downloaded '
                              'files will be stored.')
 
+    parser.add_argument('-th', '--threads', type=int,
+                        required=False, default=2,
+                        dest='threads',
+                        help='Number of threads for download.')
+
+    parser.add_argument('-r', '--retry', type=int,
+                        required=False, dest='retry',
+                        default=7,
+                        help='Maximum number of retries when a '
+                             'download fails.')
+
     args = parser.parse_args()
 
-    return [args.input_table, args.output_directory]
+    return args
 
 
 if __name__ == '__main__':
 
     args = parse_arguments()
-    main(args[0], args[1])
+    main(**vars(args))

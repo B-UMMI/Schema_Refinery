@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 19 14:41:38 2021
+Purpose
+-------
+This script splits loci based on sequence size intervals.
+chewBBACA must be installed to adapt the splitted loci and
+determine new representative alleles.
 
-@author: rfm
+Code documentation
+------------------
 """
 
 
@@ -16,6 +21,9 @@ from Bio import SeqIO
 
 
 def main(schema_directory, loci_table, output_directory, adapt_loci):
+
+    if os.path.isdir(output_directory) is False:
+        os.mkdir(output_directory)
 
     # read table with loci to split
     with open(loci_table, 'r') as infile:
@@ -66,8 +74,6 @@ def main(schema_directory, loci_table, output_directory, adapt_loci):
             with open(output_file, 'w') as outfile:
                 outfile.write(fasta_text+'\n')
 
-    # create output with mapping between old and new sequences!
-
     # adapt with PrepExternalSchema
     if adapt_loci is True:
         for d in locus_output_dirs:
@@ -90,19 +96,27 @@ def parse_arguments():
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_directory',
-                        help='')
+                        help='Path to the schema\s directory.')
 
     parser.add_argument('-t', type=str, required=True,
                         dest='loci_table',
-                        help='')
+                        help='Path to TSV file with the list of loci '
+                             'to split. The first columns contains '
+                             'the locus identifier, the second column '
+                             'the new identifiers to attribute to the '
+                             'splitted loci and the third columns '
+                             'includes the sequence size intervals '
+                             'used to split the locus.')
 
     parser.add_argument('-o', type=str, required=True,
                         dest='output_directory',
-                        help='')
+                        help='Path to the output directory.')
 
     parser.add_argument('--adapt', required=False, action='store_true',
                         dest='adapt_loci',
-                        help='')
+                        help='If the splitted loci should be adapted '
+                             'with PrepExternalSchema to determine the'
+                             'representative alleles.')
 
     args = parser.parse_args()
 
