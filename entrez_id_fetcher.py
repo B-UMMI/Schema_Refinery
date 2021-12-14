@@ -258,75 +258,79 @@ def main(input_file, output_file, email):
     database_identifiers = {}
     # detect identifier type
     for i in identifiers:
-        match = determine_id_type(i)
-        if match is not None:
-            print('{0:<} : {1}'.format(i, match.upper()))
-            if match in ['refseq', 'genbank']:
-                match_db = 'assembly'
+        try:
+            match = determine_id_type(i)
+            if match is not None:
+                print('{0:<} : {1}'.format(i, match.upper()))
+                if match in ['refseq', 'genbank']:
+                    match_db = 'assembly'
+                else:
+                    match_db = match
             else:
-                match_db = match
-        else:
-            print('{0:<} : {1}'.format('Could not determine database type.'))
-            # process next identifier
-            continue
+                print('{0:<} : {1}'.format('Could not determine database type.'))
+                # process next identifier
+                continue
 
-        # get record data for identifier
-        record = get_esearch_record(i, match_db)
-        record_ids = record['IdList']
+            # get record data for identifier
+            record = get_esearch_record(i, match_db)
+            record_ids = record['IdList']
 
-        # one Assembly identifier should only match one BioSample record?
-        if match_db == 'assembly':
-            refseq_accessions, genbank_accessions,\
-            biosample_ids, biosample_accessions = fetch_assembly_accessions(record_ids)
+            # one Assembly identifier should only match one BioSample record?
+            if match_db == 'assembly':
+                refseq_accessions, genbank_accessions,\
+                biosample_ids, biosample_accessions = fetch_assembly_accessions(record_ids)
 
-            if len(biosample_ids) > 0:
+                if len(biosample_ids) > 0:
+                    # link to and get SRA accessions
+                    elink_record = get_elink_record(biosample_ids[0], 'biosample', 'sra')
+                    sra_ids = get_elink_id(elink_record)
+                    sra_accessions, sequencing_platforms = fetch_sra_accessions(sra_ids)
+    
+                database_identifiers[i] = [refseq_accessions[0],
+                                           genbank_accessions[0],
+                                           biosample_accessions[0],
+                                           ','.join(sra_accessions),
+                                           ','.join(sequencing_platforms)]
+
+            elif match_db == 'biosample':
+                # link and get Assembly accessions
+                elink_record = get_elink_record(record_ids[0], 'biosample', 'assembly')
+                assembly_ids = get_elink_id(elink_record)
+                refseq_accessions, genbank_accessions = fetch_assembly_accessions(assembly_ids)[0:2]
+
                 # link to and get SRA accessions
-                elink_record = get_elink_record(biosample_ids[0], 'biosample', 'sra')
+                elink_record = get_elink_record(record_ids[0], 'biosample', 'sra')
                 sra_ids = get_elink_id(elink_record)
                 sra_accessions, sequencing_platforms = fetch_sra_accessions(sra_ids)
+    
+                database_identifiers[i] = [','.join(refseq_accessions),
+                                           ','.join(genbank_accessions),
+                                           i,
+                                           ','.join(sra_accessions),
+                                           ','.join(sequencing_platforms)]
 
-            database_identifiers[i] = [refseq_accessions[0],
-                                       genbank_accessions[0],
-                                       biosample_accessions[0],
-                                       ','.join(sra_accessions),
-                                       ','.join(sequencing_platforms)]
+            elif match_db == 'sra':
+                # Get SRA Summary
+                esummary_record = get_esummary_record(record_ids[0], 'sra')
 
-        elif match_db == 'biosample':
-            # link and get Assembly accessions
-            elink_record = get_elink_record(record_ids[0], 'biosample', 'assembly')
-            assembly_ids = get_elink_id(elink_record)
-            refseq_accessions, genbank_accessions = fetch_assembly_accessions(assembly_ids)[0:2]
+                # get Biosample accession number (possible for one SRA Run accession to match multiple BioSample ids?)
+                biosample_accession = esummary_record[0]['ExpXml'].split('<Biosample>')[-1].split('</Biosample>')[0]
+                biosample_record = get_esearch_record(biosample_accession, 'biosample')
+                biosample_id = biosample_record['IdList'][0]
 
-            # link to and get SRA accessions
-            elink_record = get_elink_record(record_ids[0], 'biosample', 'sra')
-            sra_ids = get_elink_id(elink_record)
-            sra_accessions, sequencing_platforms = fetch_sra_accessions(sra_ids)
+                # find links to Assembly database
+                # possible to get multiple RefSeq and GenBank ids
+                elink_record = get_elink_record(biosample_id, 'biosample', 'assembly')
+                assembly_ids = get_elink_id(elink_record)
+                refseq_accessions, genbank_accessions = fetch_assembly_accessions(assembly_ids)[0:2]
 
-            database_identifiers[i] = [','.join(refseq_accessions),
-                                       ','.join(genbank_accessions),
-                                       i,
-                                       ','.join(sra_accessions),
-                                       ','.join(sequencing_platforms)]
-
-        elif match_db == 'sra':
-            # Get SRA Summary
-            esummary_record = get_esummary_record(record_ids[0], 'sra')
-
-            # get Biosample accession number (possible for one SRA Run accession to match multiple BioSample ids?)
-            biosample_accession = esummary_record[0]['ExpXml'].split('<Biosample>')[-1].split('</Biosample>')[0]
-            biosample_record = get_esearch_record(biosample_accession, 'biosample')
-            biosample_id = biosample_record['IdList'][0]
-
-            # find links to Assembly database
-            # possible to get multiple RefSeq and GenBank ids
-            elink_record = get_elink_record(biosample_id, 'biosample', 'assembly')
-            assembly_ids = get_elink_id(elink_record)
-            refseq_accessions, genbank_accessions = fetch_assembly_accessions(assembly_ids)[0:2]
-
-            database_identifiers[i] = [','.join(refseq_accessions),
-                                       ','.join(genbank_accessions),
-                                       biosample_accession,
-                                       i]
+                database_identifiers[i] = [','.join(refseq_accessions),
+                                           ','.join(genbank_accessions),
+                                           biosample_accession,
+                                           i]
+        except Exception:
+            print('Could not retrieve data for {0}'.format(i))
+            continue
 
         print('RefSeq: {0:<}\n'
               'GenBank: {1:<}\n'
