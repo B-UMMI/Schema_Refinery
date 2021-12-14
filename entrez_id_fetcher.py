@@ -330,6 +330,7 @@ def main(input_file, output_file, email):
                                            i]
         except Exception:
             print('Could not retrieve data for {0}'.format(i))
+            time.sleep(15)
             continue
 
         print('RefSeq: {0:<}\n'
