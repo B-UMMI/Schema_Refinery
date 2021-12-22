@@ -312,17 +312,17 @@ def main(schema_directory, records_directory, output_directory, cpu_cores):
         sp_selected[k] = v + [lname, sname]
 
     # save results
-    tr_header = 'TrEMBL_ID\tTrEMBL_BSR\tTrEMBL_LNAME\tTrEMBL_SNAME'
+    tr_header = 'Locus_ID\tTrEMBL_ID\tTrEMBL_BSR\tTrEMBL_LNAME\tTrEMBL_SNAME'
     tr_annotations = os.path.join(output_directory, 'tr_annotations.tsv')
     with open(tr_annotations, 'w') as trout:
-        tr_outlines = [tr_header] + ['{0}\t{1}\t{2}\t{3}'.format(*v) for k, v in tr_selected.items()]
+        tr_outlines = [tr_header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k,*v) for k, v in tr_selected.items()]
         tr_outtext = '\n'.join(tr_outlines)
         trout.write(tr_outtext+'\n')
 
-    sp_header = 'SwissProt_ID\tSwissProt_BSR\tSwissProt_LNAME\tSwissProt_SNAME'
+    sp_header = 'Locus_ID\tSwissProt_ID\tSwissProt_BSR\tSwissProt_LNAME\tSwissProt_SNAME'
     sp_annotations = os.path.join(output_directory, 'sp_annotations.tsv')
     with open(sp_annotations, 'w') as spout:
-        sp_outlines = [sp_header] + ['{0}\t{1}\t{2}\t{3}'.format(*v) for k, v in sp_selected.items()]
+        sp_outlines = [sp_header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k,*v) for k, v in sp_selected.items()]
         sp_outtext = '\n'.join(sp_outlines)
         spout.write(sp_outtext+'\n')
 
