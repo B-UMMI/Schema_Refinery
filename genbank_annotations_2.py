@@ -350,10 +350,10 @@ def main(input_files, schema_dir, output_dir):
     final_best_matches = {k: v for k, v in best_matches.items() if v[5] >= 0.6}
 
     # save annotations
-    header = 'locus\torigin_id\torigin_product\torigin_name\torigin_bsr'
+    header = 'Locus_ID\torigin_id\torigin_product\torigin_name\torigin_bsr'
     annotations_file = os.path.join(output_dir, 'genbank_annotations.tsv')
     with open(annotations_file, 'w') as at:
-        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k, v[0], v[3], v[4], v[5]) for k, v in final_best_matches.items()]
+        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k.split("_")[0], v[0], v[3], v[4], v[5]) for k, v in final_best_matches.items()]
         outtext = '\n'.join(outlines)
         at.write(outtext)
 
