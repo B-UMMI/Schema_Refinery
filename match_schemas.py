@@ -348,7 +348,7 @@ def main(query_schema, subject_schema, output_path, blast_score_ratio,
         mh.write(multiple_lines+'\n')
 
     # save matches between schemas loci
-    matches = ['{0}\t{1}\t{2}'.format(k, v[0], v[1])
+    matches = ['{0}\t{1}\t{2}'.format(k, v[0].split('_')[0], v[1])
                for k, v in bsr_values.items()]
     matches_lines = '\n'.join(matches)
     matches_file = os.path.join(output_path, 'matches.tsv')
