@@ -348,6 +348,7 @@ def parse_arguments():
 
     parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
                         dest='cpu_cores',
+                        default=1,
                         help='Number of CPU cores to pass to BLAST.')
 
     args = parser.parse_args()
