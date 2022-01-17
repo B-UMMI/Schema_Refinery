@@ -121,7 +121,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     else:
         print('{0} already exists, moving on...\n'.format(output_directory))
 
-    # create dictionary with the DNA sequences of all loci alleles
+    # create files with translated alleles for all loci
     fasta_directory = os.path.join(output_directory, 'fastas')
     os.mkdir(fasta_directory)
     reassigned_loci = svf.schema_dictionary(loci_files,
@@ -134,6 +134,43 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
                                             fasta_directory)
     translated_representatives = svf.translate_schema(reassigned_reps,
                                                       fasta_directory)
+
+    # concatenate all representatives
+    rep_concat = os.path.join(fasta_directory, 'rep_concat.fasta')
+    rep_concat = svf.concatenate_files(list(translated_representatives.values()),
+                                       rep_concat)
+
+    # BLAST representatives to determine self-score
+    # It is important to BLAST representatives separately because the
+    # maximum number of reported alignments might be reached if we align
+    # against the full schema and we might not get the self-alignment for
+    # all representatives
+    rep_blastdb = os.path.join(fasta_directory, 'rep_concat_blastdb')
+    stderr = svf.make_blast_db('makeblastdb', rep_concat, rep_blastdb, 'prot')
+
+    rep_blast_output = os.path.join(output_directory,
+                                    'representatives_blastout.tsv')
+    rep_blast_inputs = [['blastp', rep_blastdb, rep_concat,
+                         rep_blast_output, svf.run_blast]]
+
+    # BLAST all against all for each locus
+    print('\r', 'BLASTing representatives...', end='')
+    blast_stderr = svf.map_async_parallelizer(rep_blast_inputs,
+                                              svf.function_helper,
+                                              1,
+                                              show_progress=False)
+
+    blast_stderr = svf.flatten_list(blast_stderr)
+    if len(blast_stderr) > 0:
+        sys.exit(blast_stderr)
+
+    print('done.')
+
+    # read BLAST results
+    representative_results = svf.read_blast_tabular(rep_blast_output)
+
+    # get representatives self-score
+    rep_results = {l[0]: l[2] for l in representative_results if l[0] == l[1]}
 
     # create the FASTA file with all protein sequences for the BLASTp database
     protein_concat = os.path.join(fasta_directory, 'protein_concat.fasta')
@@ -154,7 +191,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
                     for k, v in translated_representatives.items()]
 
     # BLAST all against all for each locus
-    print('Starting BLASTp...')
+    print('BLASTing representatives against schema...')
     blast_stderr = svf.map_async_parallelizer(blast_inputs,
                                               svf.function_helper,
                                               blast_threads,
@@ -164,17 +201,10 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     if len(blast_stderr) > 0:
         sys.exit(blast_stderr)
 
-    print('Finished BLASTp...')
-
     # read BLAST results
     blast_results_per_locus = {}
     for locus, file in blast_files.items():
         blast_results_per_locus[locus] = svf.read_blast_tabular(file)
-
-    # get represetatives
-    rep_results = {l[0]: l[2]
-                   for k, v in blast_results_per_locus.items()
-                   for l in v if l[0] == l[1]}
 
     alleles_results = {k: [l for l in v if l[0] != l[1]]
                        for k, v in blast_results_per_locus.items()}
