@@ -89,8 +89,8 @@ def main(input_table, output_directory, file_extension,
         refseq_assemblies_ids = [url.split('/')[-1]
                                  for url in refseq_urls]
 
-        print('Found URLs for {0}/{1} strains in RefSeq.'
-              ''.format(len(refseq_urls), len(lines[1:])))
+        print('Found URLs for {0} strains in RefSeq.'
+              ''.format(len(refseq_urls)))
 
     genbank_urls = []
     genbank_assemblies_ids = []
@@ -103,6 +103,9 @@ def main(input_table, output_directory, file_extension,
 
         genbank_assemblies_ids = [url.split('/')[-1]
                                   for url in genbank_urls]
+
+        print('Found URLs for {0} strains in GenBank.'
+              ''.format(len(genbank_urls)))
 
     print('Downloading assembly_summary_refseq...', end='')
     assembly_summary_refseq_local = os.path.join(output_directory,
