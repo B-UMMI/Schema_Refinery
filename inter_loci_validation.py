@@ -56,6 +56,9 @@ environment that is used to run this script.
 
 The main function of this module can be imported and used to obtain the
 same results as when the module is called from the CMD.
+
+Code documentation
+------------------
 """
 
 
@@ -66,6 +69,7 @@ import argparse
 
 from Bio import SeqIO
 
+# these modules must be in the same directory
 import schema_validation_functions as svf
 
 
@@ -73,33 +77,33 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     """ Determines BLASTp matches between different loci of a schema
         with a BSR greater than the defined value.
 
-        Parameters
-        ----------
-        schema_directory : str
-            path to the schema with all loci files.
-        output_directory : str
-            path/name of folder that will store output files.
-        blast_score_ratio : float
-            threshold BLAST Score Ratio value that will be used
-            to determine if alleles from different loci share
-            greater than expected similarity.
-        num_threads : str
-            number of threads for BLASTp searches.
+    Parameters
+    ----------
+    schema_directory : str
+        path to the schema with all loci files.
+    output_directory : str
+        path/name of folder that will store output files.
+    blast_score_ratio : float
+        threshold BLAST Score Ratio value that will be used
+        to determine if alleles from different loci share
+        greater than expected similarity.
+    num_threads : str
+        number of threads for BLASTp searches.
 
-        Returns
-        -------
-        Writes a file with matches between alleles of different
-        loci that have a BLAST Score Ratio greater than the defined
-        value. Writes another file that shows, for each locus, if
-        there were high-BSR matches with alleles from other loci,
-        with which alleles and if the loci passed based on the
-        criterion that representative alleles from different loci
-        should not have matches with a BSR greater than the defined
-        value.
+    Returns
+    -------
+    Writes a file with matches between alleles of different
+    loci that have a BLAST Score Ratio greater than the defined
+    value. Writes another file that shows, for each locus, if
+    there were high-BSR matches with alleles from other loci,
+    with which alleles and if the loci passed based on the
+    criterion that representative alleles from different loci
+    should not have matches with a BSR greater than the defined
+    value.
     """
 
     start = time.time()
-    print('\nImporting and processing schemas...')
+    print('\nImporting and processing loci...')
 
     # get list of FASTA files in main schema directory
     loci_files = {file.split('.fasta')[0]: os.path.join(schema_directory, file)
@@ -154,7 +158,8 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
                          rep_blast_output, svf.run_blast]]
 
     # BLAST all against all for each locus
-    print('\r', 'BLASTing representatives...', end='')
+    print('\r', 'BLASTing representative sequences to determine '
+          'self-score...', end='')
     blast_stderr = svf.map_async_parallelizer(rep_blast_inputs,
                                               svf.function_helper,
                                               1,
@@ -191,7 +196,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
                     for k, v in translated_representatives.items()]
 
     # BLAST all against all for each locus
-    print('BLASTing representatives against schema...')
+    print('BLASTing representative sequences against schema...')
     blast_stderr = svf.map_async_parallelizer(blast_inputs,
                                               svf.function_helper,
                                               blast_threads,
@@ -249,6 +254,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     end = time.time()
     delta = end - start
     print('Done!\nTook {0} seconds.\n'.format(delta))
+    print('Results available at {0}'.format(output_file))
 
 
 def parse_arguments():
@@ -258,9 +264,7 @@ def parse_arguments():
 
     parser.add_argument('-s', '--schema-directory', type=str,
                         required=True, dest='schema_directory',
-                        help='Path to the schema\'s directory or to a file '
-                             'that has full paths for the files that should '
-                             'be used, one per line.')
+                        help='Path to the schema\'s directory.')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
@@ -272,14 +276,14 @@ def parse_arguments():
                         required=False, dest='blast_score_ratio',
                         default=0.6,
                         help='The BLAST Score Ratio value that '
-                             'will be used to determine if the '
-                             'schema is valid (default=0.6).')
+                             'will be used to compare '
+                             'loci and identify paralogs.')
 
     parser.add_argument('-bt', '--blast-threads', type=int,
                         required=False, dest='blast_threads',
                         default=1,
-                        help='The number of threads to pass as argument '
-                             'to BLASTp (default=1).')
+                        help='The number of threads to pass '
+                             'to BLASTp.')
 
     args = parser.parse_args()
 

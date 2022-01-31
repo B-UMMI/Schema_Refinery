@@ -4,9 +4,8 @@
 Purpose
 -------
 
-Accepts a matrix with results from the AlleleCall process of
-chewBBACA and masks certain matrix elements by substituting
-those elements with other characters.
+Masks elements in a matrix with allelic profiles created with
+chewBBACA.
 
 The default masking option will substitute all ASM, ALM, NIPH,
 NIPHEM, PLOT3, PLOT5, LOTSC and LNF cases with '0' and the 'INF-'
@@ -24,7 +23,7 @@ should not be substituted.
 
 The '=' character is used to change the default substitution value
 for the right side matrix element (ASM=short --> ASM cases will be
-substituted with the 'short' word) and should only be used for that
+substituted by 'short') and should only be used for that
 purpose.
 
 Execution example:

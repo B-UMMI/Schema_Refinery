@@ -96,7 +96,7 @@ def parse_arguments():
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_directory',
-                        help='Path to the schema\s directory.')
+                        help='Path to the schema\'s directory.')
 
     parser.add_argument('-t', type=str, required=True,
                         dest='loci_table',

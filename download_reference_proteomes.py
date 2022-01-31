@@ -89,7 +89,7 @@ def main(input_table, output_directory, threads, retry):
     local_filepaths = [os.path.join(output_directory, filename)
                        for filename in local_filenames]
 
-    print('\nStarting download of {0} fasta.gz files...'.format(len(urls)))
+    print('\nStarting download of {0} proteomes...'.format(len(urls)))
     start = time.time()
 
     # We can use a with statement to ensure threads are cleaned up promptly
@@ -123,8 +123,8 @@ def parse_arguments():
 
     parser.add_argument('-t', '--input_table', type=str,
                         required=True, dest='input_table',
-                        help='TSV file downloaded from the NCBI '
-                             'Genome Assembly and Annotation report.')
+                        help='TSV file downloaded from UniProt with '
+                             'a list of proteomes.')
 
     parser.add_argument('-o', '--output_directory', type=str,
                         required=True, dest='output_directory',

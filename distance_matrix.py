@@ -31,6 +31,7 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
+# these modules must be in the same directory
 import mask_matrix as mm
 
 

@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Purpose
+-------
+This script aligns schema representative sequences
+against records in Genbank files to extract relevant
+annotations.
 
+Code documentation
+------------------
 """
 
 import os
@@ -17,11 +24,15 @@ from Bio.Seq import Seq
 def reverse_str(string):
     """ Reverse character order in input string.
 
-        Args:
-            string (str): string to be reversed.
+    Parameters
+    ----------
+    string : str
+        String to be reversed.
 
-        Returns:
-            revstr (str): reverse of input string.
+    Returns
+    -------
+    revstr : str
+        Reverse of input string.
     """
 
     revstr = string[::-1]
@@ -32,12 +43,16 @@ def reverse_str(string):
 def reverse_complement(dna_sequence):
     """ Determines the reverse complement of given DNA strand.
 
-        Args:
-            dna_sequence (str): string representing a DNA sequence.
+    Parameters
+    ----------
+    dna_sequence : str
+        String representing a DNA sequence.
 
-        Returns:
-            reverse_complement_strand (str): the reverse complement
-            of the DNA sequence, without lowercase letters.
+    Returns
+    -------
+    reverse_complement_strand : str
+        The reverse complement of the DNA sequence,
+        without lowercase letters.
     """
 
     base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
@@ -65,13 +80,18 @@ def reverse_complement(dna_sequence):
 def translate_sequence(dna_str, table_id):
     """ Translate a DNA sequence using the BioPython package.
 
-        Args:
-            dna_str (str): DNA sequence as string type.
-            table_id (int): translation table identifier.
+    Parameters
+    ----------
+    dna_str : str
+        DNA sequence as string type.
+    table_id : int
+        Translation table identifier.
 
-        Returns:
-            protseq (str): protein sequence created by translating
-            the input DNA sequence.
+    Returns
+    -------
+    protseq : str
+        Protein sequence created by translating
+        the input DNA sequence.
     """
 
     myseq_obj = Seq(dna_str)
@@ -84,21 +104,23 @@ def translate_sequence(dna_str, table_id):
 def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type,
                   ignore=None):
     """ Creates a BLAST database.
-        Parameters
-        ----------
-        input_fasta : str
-            Path to the FASTA file that contains the sequences
-            that should be added to the BLAST database.
-        output_path : str
-            Path to the directory where the database files
-            will be created. Database files will have names
-            with the path's basemane.
-        db_type : str
-            Type of the database, nucleotide (nuc) or
-            protein (prot).
-        Returns
-        -------
-        Creates a BLAST database with the input sequences.
+
+    Parameters
+    ----------
+    input_fasta : str
+        Path to the FASTA file that contains the sequences
+        that should be added to the BLAST database.
+    output_path : str
+        Path to the directory where the database files
+        will be created. Database files will have names
+        with the path's basemane.
+    db_type : str
+        Type of the database, nucleotide (nuc) or
+        protein (prot).
+
+    Returns
+    -------
+    Creates a BLAST database with the input sequences.
     """
 
     blastdb_cmd = [makeblastdb_path, '-in', input_fasta, '-out', output_path,
@@ -118,37 +140,39 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
               max_targets=None, ignore=None):
     """ Execute BLAST to align sequences in a FASTA file
         against a BLAST database.
-        Parameters
-        ----------
-        blast_path : str
-            Path to BLAST executables.
-        blast_db : str
-            Path to the BLAST database.
-        fasta_file : str
-            Path to the FASTA file with sequences to
-            align against the BLAST database.
-        blast_output : str
-            Path to the file that will be created to
-            store BLAST results.
-        max_hsps : int
-            Maximum number of High Scoring Pairs per
-            pair of aligned sequences.
-        threads : int
-            Number of threads/cores used to run BLAST.
-        ids_file : str
-            Path to a file with sequence identifiers,
-            one per line. Sequences will only be aligned
-            to the sequences in the BLAST database that
-            have any of the identifiers in this file.
-        blast_task : str
-            Type of BLAST task.
-        max_targets : int
-            Maximum number of target of subject sequences
-            to align against.
-        Returns
-        -------
-        stderr : str
-            String with errors raised during BLAST execution.
+
+    Parameters
+    ----------
+    blast_path : str
+        Path to BLAST executables.
+    blast_db : str
+        Path to the BLAST database.
+    fasta_file : str
+        Path to the FASTA file with sequences to
+        align against the BLAST database.
+    blast_output : str
+        Path to the file that will be created to
+        store BLAST results.
+    max_hsps : int
+        Maximum number of High Scoring Pairs per
+        pair of aligned sequences.
+    threads : int
+        Number of threads/cores used to run BLAST.
+    ids_file : str
+        Path to a file with sequence identifiers,
+        one per line. Sequences will only be aligned
+        to the sequences in the BLAST database that
+        have any of the identifiers in this file.
+    blast_task : str
+        Type of BLAST task.
+    max_targets : int
+        Maximum number of target of subject sequences
+        to align against.
+
+    Returns
+    -------
+    stderr : str
+        String with errors raised during BLAST execution.
     """
 
     blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
@@ -172,21 +196,6 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     return stderr
 
 
-def concatenate_files(files, output_file, header=None):
-    """
-    """
-
-    with open(output_file, 'w') as of:
-        if header is not None:
-            of.write(header)
-        for f in files:
-            with open(f, 'r') as fd:
-                shutil.copyfileobj(fd, of)
-            of.write('\n')
-
-    return output_file
-
-
 def getProteinAnnotationFasta(seqRecord):
     """ Gets the translated protein from a Genbank file.
     Source: https://github.com/LeeBergstrand/Genbank-Downloaders/blob/d904c92788696b02d9521802ebf1fc999a600e1b/SeqExtract.py#L48
@@ -194,6 +203,7 @@ def getProteinAnnotationFasta(seqRecord):
     Parameters
     ----------
     seqRecord : Biopython SeqRecord
+        BioPython sequence record object.
 
     Returns
     -------
@@ -220,7 +230,7 @@ def getProteinAnnotationFasta(seqRecord):
             if protein_id == 'no_protein_id':
                 continue  # Skips the iteration if protein has no id.
             
-            gene = str(featQualifers.get('gene', 'no_gene_name')).strip('\'[]')
+            gene = str(featQualifers.get('gene', '')).strip('\'[]')
             product = str(featQualifers.get('product', 'no_product_name')).strip('\'[]')
             translated_protein = str(featQualifers.get('translation', 'no_translation')).strip('\'[]')
             
@@ -295,8 +305,6 @@ def main(input_files, schema_dir, output_dir):
         r[1] = reps_ids[int(r[1])]
 
     # create mapping between sequence IDs and sequence
-    # selected_inverse = {v[0]: [k, v[2]] for k, v in selected.items()}
-    
     selected_inverse = {v[0]: [k, v[2]] for k, v in fasta_dict.items()}
 
     best_matches = {}
@@ -309,12 +317,12 @@ def main(input_files, schema_dir, output_dir):
         except KeyError:
             continue
         if subject in best_matches:
-            if best_matches[subject][2] == 'no_gene_name' and query_name != 'NA':
+            if best_matches[subject][2] == '' and query_name != 'NA':
                 best_matches[subject] = [query, score, query_name]
-            elif best_matches[subject][2] != 'no_gene_name' and query_name != 'NA':
+            elif best_matches[subject][2] != '' and query_name != 'NA':
                 if float(score) > float(best_matches[subject][1]):
                     best_matches[subject] = [query, score, query_name]
-            elif best_matches[subject][2] == 'no_gene_name' and query_name == 'NA':
+            elif best_matches[subject][2] == '' and query_name == 'NA':
                 if float(score) > float(best_matches[subject][1]):
                     best_matches[subject] = [query, score, query_name]
         else:
@@ -355,7 +363,7 @@ def main(input_files, schema_dir, output_dir):
     with open(annotations_file, 'w') as at:
         outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k.split("_")[0], v[0], v[3], v[4], v[5]) for k, v in final_best_matches.items()]
         outtext = '\n'.join(outlines)
-        at.write(outtext)
+        at.write(outtext+'\n')
 
 
 def parse_arguments():
@@ -365,15 +373,17 @@ def parse_arguments():
 
     parser.add_argument('-i', type=str, required=True,
                         dest='input_files',
-                        help='')
+                        help='Path to the directory that contains '
+                             'Genbank files with annotations to '
+                             'extract.')
 
     parser.add_argument('-s', type=str, required=True,
                         dest='schema_dir',
-                        help='')
+                        help='Path to the schema\'s directory.')
 
     parser.add_argument('-o', type=str, required=True,
                         dest='output_dir',
-                        help='')
+                        help='Path to the output directory.')
 
     args = parser.parse_args()
 
@@ -383,5 +393,4 @@ def parse_arguments():
 if __name__ == '__main__':
 
     args = parse_arguments()
-
     main(**vars(args))

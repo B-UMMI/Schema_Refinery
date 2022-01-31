@@ -121,7 +121,6 @@ def make_blast_db(input_fasta, output_path, db_type):
                                   stderr=subprocess.PIPE)
 
     stdout, stderr = makedb_cmd.communicate()
-    print(stdout, stderr)
 
     makedb_cmd.wait()
 
@@ -319,12 +318,16 @@ def main(schema_directory, records_directory, output_directory, cpu_cores):
         tr_outtext = '\n'.join(tr_outlines)
         trout.write(tr_outtext+'\n')
 
+    print('TrEMBL annotations available at {0}'.format(tr_annotations))
+
     sp_header = 'Locus_ID\tSwissProt_ID\tSwissProt_BSR\tSwissProt_LNAME\tSwissProt_SNAME'
     sp_annotations = os.path.join(output_directory, 'sp_annotations.tsv')
     with open(sp_annotations, 'w') as spout:
         sp_outlines = [sp_header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k,*v) for k, v in sp_selected.items()]
         sp_outtext = '\n'.join(sp_outlines)
         spout.write(sp_outtext+'\n')
+
+    print('SwissProt annotations available at {0}'.format(sp_annotations))
 
 
 def parse_arguments():
@@ -359,5 +362,4 @@ def parse_arguments():
 if __name__ == '__main__':
 
     args = parse_arguments()
-
     main(**vars(args))

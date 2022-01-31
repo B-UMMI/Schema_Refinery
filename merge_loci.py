@@ -62,7 +62,7 @@ def main(input_file, schema_dir, output_dir):
         locus_file = os.path.join(merged_dir, k+'.fasta')
         records = '\n'.join(v)
         with open(locus_file, 'w') as outfile:
-            outfile.write(records)
+            outfile.write(records+'\n')
 
 
 def parse_arguments():
@@ -93,5 +93,4 @@ def parse_arguments():
 if __name__ == '__main__':
 
     args = parse_arguments()
-
     main(**vars(args))
