@@ -128,12 +128,12 @@ def parse_arguments():
     parser.add_argument('--proteome_trembl', type=str, required=False,
                         dest='proteome_trembl',
                         default = '',
-                        help='proteome matcher file output')
+                        help='proteome output trembl')
 
     parser.add_argument('--proteome_swiss', type=str, required=False,
                         dest='proteome_swiss',
                         default = '',
-                        help='proteome matcher file output')
+                        help='proteome output swiss')
 
     parser.add_argument('--match_to_add', type=str, required=False,
                         dest='match_to_add',
