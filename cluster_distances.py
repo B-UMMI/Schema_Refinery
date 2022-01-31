@@ -3,9 +3,13 @@
 """
 Purpose
 -------
-This script computes intracluster and intercluster
-distances based on predefined clusters and allele
-calling results.
+This script computes intracluster and intercluster distances
+based on predefined clusters and allele calling results. The
+script creates several files per cluster with statistics for
+the wgMLST and the cgMLST and HTML files with interactive plots
+(boxplots with the distribution of distance values, heatmaps
+representing the distance matrix and dendograms representing
+the results of hierarchical clustering).
 
 Code documentation
 ------------------
@@ -13,19 +17,30 @@ Code documentation
 
 
 import os
+import io
 import csv
 import shutil
 import argparse
+import contextlib
 
 import numpy as np
 import pandas as pd
-import mask_matrix as mm
-import distance_matrix as dm
 from plotly.offline import plot
-import Extract_cgAlleles as cg
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
 from scipy.cluster.hierarchy import dendrogram, linkage
+
+# these modules must be in the same directory
+import mask_matrix as mm
+import distance_matrix as dm
+import Extract_cgAlleles as cg
+
+
+def nostdout(function, args):
+    """ Silences stdout from a function. """
+
+    with contextlib.redirect_stdout(io.StringIO()):
+        return function(*args)
 
 
 def simply_return(data):
@@ -138,7 +153,7 @@ def intercluster_stats(distance_matrix, row_id):
 
 
 def select_centroids(cluster_stats):
-    """ Selects cluster centroids based on mean
+    """ Selects cluster centroids based on the mean
         distance between all samples.
 
     Parameters
@@ -671,7 +686,7 @@ def create_dm(input_file, output_directory):
     return [symmetric_allelic_differences, symmetric_shared_loci]
 
 
-def inter_cluster_stats2(stats, distance_matrix):
+def inter_cluster_stats(stats, distance_matrix):
     """ Compute intercluster distance statistics
         for all clusters.
 
@@ -913,8 +928,9 @@ def main(input_data, output_directory, clusters, cpu_cores,
     input_basename = input_basename.split('.tsv')[0]
 
     # mask input matrix
+    print('Masking...')
     masked_results = os.path.join(output_directory, input_basename+'_masked.tsv')
-    mm.main(input_data, masked_results, None)
+    nostdout(mm.main, [input_data, masked_results, None])
 
     # import masked matrix
     allelecall_df = pd.read_csv(masked_results, sep='\t', index_col='FILE')
@@ -922,18 +938,19 @@ def main(input_data, output_directory, clusters, cpu_cores,
     all_results_dir = os.path.join(output_directory, 'all_results')
     create_directory(all_results_dir)
     all_results_file = os.path.join(all_results_dir, 'all_results.tsv')
-    clusters_dirs = divide_results_per_cluster(ordered_clusters, allelecall_df,
-                                   output_directory, all_results_file)
-    # add directory and file with all results
-    clusters_dirs['all_results'] = [all_results_dir, all_results_file]
+    if clusters is not None:
+        clusters_dirs = divide_results_per_cluster(ordered_clusters, allelecall_df,
+                                                   output_directory, all_results_file)
+        clusters_dirs['all_results'] = [all_results_dir, all_results_file]
 
     # determine cgMLST for all clusters
     for k, v in clusters_dirs.items():
+        print('Determining cgMLST for {0}...'.format(k))
         cg_dir = os.path.join(v[0], '{0}_cgMLST'.format(k))
         cg_file = os.path.join(cg_dir, 'cgMLST.tsv')
         # determine cgMLST for each cluster
         if core_genome is None:
-            current_cg = cg.main(v[1], cg_dir, 1.0, [], [])
+            current_cg = nostdout(cg.main, [v[1], cg_dir, 1.0, [], []])
         # use cgMLST provided by user
         else:
             create_directory(cg_dir)
@@ -961,15 +978,18 @@ def main(input_data, output_directory, clusters, cpu_cores,
     # determine distance matrices
     processed = 0
     for k, v in clusters_dirs.items():
+        print('Distance matrix for {0}...'.format(k))
         # wgMLST
-        wgMLST_res = create_dm(v[1], v[3])
+        wgMLST_res = nostdout(create_dm, [v[1], v[3]])
         # cgMLST
-        cgMLST_res = create_dm(v[2], v[4])
+        cgMLST_res = nostdout(create_dm, [v[2], v[4]])
+
         clusters_dirs[k].extend([wgMLST_res[0], cgMLST_res[0]])
 
     # determine intra-cluster stats for all clusters
     all_stats = {}
     for k, v in clusters_dirs.items():
+        print('Computing distance statistics for {0}...'.format(k))
         # determine wg and cg stats for all samples
         if k == 'all_results':
             current_clusters = ordered_clusters
@@ -990,6 +1010,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
     # create plots for all clusters
     traces = {}
     for k, v in clusters_dirs.items():
+
         if k == 'all_results':
             current_clusters = ordered_clusters
         else:
@@ -1047,14 +1068,15 @@ def main(input_data, output_directory, clusters, cpu_cores,
     for c in clusters:
         # wgMLST
         data = all_stats['all_results'][0][c]
-        res = inter_cluster_stats2(data, wgMLST_file)
+        res = inter_cluster_stats(data, wgMLST_file)
         all_stats['all_results'][0][c] = res
         # cgMLST
         data = all_stats['all_results'][1][c]
-        res = inter_cluster_stats2(data, cgMLST_file)
+        res = inter_cluster_stats(data, cgMLST_file)
         all_stats['all_results'][1][c] = res
 
     # Create HTML files with plots
+    print('Creating HTML files...')
     boxplot_title = '{0} comparison at {1}MLST level (number of allelic differences)'
     heatmap_title = 'Distance matrix at {0}MLST level (number of allelic differences)'
     for k, v in traces.items():
@@ -1136,6 +1158,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
     plot(cgMLST_fig, filename=cgMLST_html, auto_open=False)
 
     # Create output files with stats
+    print('Creating TSV files with distance statistics...')
     file_headers = ['FILE', 'min_distance', 'min_ID', 'max_distance',
                     'max_ID', 'mean_distance', 'min_out_distance',
                     'min_out_ID', 'max_out_distance', 'max_out_ID',
@@ -1212,17 +1235,21 @@ def parse_arguments():
                         help='Path to the output directory.')
 
     parser.add_argument('-c', '--clusters', type=str,
-                        required=False, dest='clusters',
-                        help='Path to TSV files with sample '
-                             'identifiers and cluster the samples '
-                             'belong to (sample ids in first columns '
-                             'and cluster ids in second column).')
+                        required=True, dest='clusters',
+                        help='Path to a TSV file with sample '
+                             'identifiers and the cluster the samples '
+                             'belong to (sample ids in the first column '
+                             'and cluster ids in the second column). '
+                             'The analysis groups all samples '
+                             'into a global cluster that will be analysed '
+                             'in the same way as predefined clusters.')
 
     parser.add_argument('-cpu', '--cpu-cores', type=int,
                         required=False, default=1,
                         dest='cpu_cores',
                         help='Number of CPU cores to use.')
 
+    # currently unused
     parser.add_argument('-dt', '--dendogram-threshold', type=float,
                         required=False, default=None,
                         dest='dendogram_threshold',
@@ -1236,14 +1263,19 @@ def parse_arguments():
     parser.add_argument('-cg', '--core-genome', type=str,
                         required=False,
                         dest='core_genome',
-                        help='Path to TXT file with list of loci '
+                        help='Provide list of loci in the cgMLST.'
+                             'Path to TXT file with list of loci '
                              'that constitute the core genome '
-                             '(one locus per line).')
+                             '(one locus per line). The analysis '
+                             'will use the provided cgMLST for all '
+                             'clusters. It determines the cgMLST '
+                             'for each cluster when no cgMLST is '
+                             'provided.')
 
     parser.add_argument('-mn', '--minimum-n', type=int,
                         required=False, default=0,
                         dest='minimum_n',
-                        help='Minimum number of strains that a cluster '
+                        help='Minimum number of isolates that a cluster '
                              'must include to create a boxplot for that '
                              'cluster.')
 
