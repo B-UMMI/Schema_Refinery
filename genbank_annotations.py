@@ -4,7 +4,6 @@
 
 """
 
-
 import os
 import csv
 import shutil
@@ -188,55 +187,73 @@ def concatenate_files(files, output_file, header=None):
     return output_file
 
 
+def getProteinAnnotationFasta(seqRecord):
+    """ Gets the translated protein from a Genbank file.
+    Source: https://github.com/LeeBergstrand/Genbank-Downloaders/blob/d904c92788696b02d9521802ebf1fc999a600e1b/SeqExtract.py#L48
+    
+    Parameters
+    ----------
+    seqRecord : Biopython SeqRecord
+
+    Returns
+    -------
+    fasta : list
+        List containing the protein in fasta format.
+    fasta_dict : dict
+        Dict containing the translated protein as key and the values are
+        list containing the protein_id, the product and the gene name.
+
+    """
+    fasta = []
+    fasta_dict = {}
+    features = seqRecord.features  # Each sequence has a list (called features) that stores seqFeature objects.
+    for feature in features:  # For each feature on the sequence
+        
+        if feature.type == "CDS":  # CDS means coding sequence (These are the only feature we're interested in)
+            featQualifers = feature.qualifiers  # Each feature contains a dictionary called qualifiers which contains
+            # data about the sequence feature (for example the translation)
+
+            # Gets the required qualifier. Uses featQualifers.get to return the qualifier or a default value if the quantifier
+            # is not found. Calls strip to remove unwanted brackets and ' from qualifier before storing it as a string.
+            protein_id = str(featQualifers.get('protein_id', 'no_protein_id')).strip('\'[]')
+            
+            if protein_id == 'no_protein_id':
+                continue  # Skips the iteration if protein has no id.
+            
+            gene = str(featQualifers.get('gene', 'no_gene_name')).strip('\'[]')
+            product = str(featQualifers.get('product', 'no_product_name')).strip('\'[]')
+            translated_protein = str(featQualifers.get('translation', 'no_translation')).strip('\'[]')
+            
+            fasta.append((">" + protein_id + "|" + gene + "|" + product + "\n" + translated_protein))
+            fasta_dict[translated_protein] = [protein_id, product, gene]
+            
+    return fasta, fasta_dict
+
+
 def main(input_files, schema_dir, output_dir):
 
     if os.path.isdir(output_dir) is False:
         os.mkdir(output_dir)
 
     gbk_files = [os.path.join(input_files, f) for f in os.listdir(input_files)]
-
-    # extract features from gbk files and create simple multi-fasta files with
-    # strictly necessary info
-    selected = {}
+    
+    gbk_files.sort()
+        
+    fasta = []
+    fasta_dict = {}
     for f in gbk_files:
         recs = [rec for rec in SeqIO.parse(f, 'genbank')]
-
+        
         for r in recs:
-            rid = r.id
-            seq = str(r.seq)
-            features = r.features
-            # get gene name
-            gene = [f for f in features if f.type == 'gene']
-            if len(gene) > 0:
-                gene_name = gene[0].qualifiers['gene'][0]
-            else:
-                gene_name = 'NA'
+            outl, outd = getProteinAnnotationFasta(r)
+            fasta.extend(outl)
+            fasta_dict.update(outd)
 
-            # get product name
-            product = [f for f in features if f.type == 'Protein']
-            if len(product) > 0:
-                gene_product = product[0].qualifiers['product'][0]
-            else:
-                gene_product = 'NA'
-
-            if gene_name != 'NA':
-                if seq not in selected:
-                    selected[seq] = [rid, gene_product, gene_name]
-                elif seq in selected and selected[seq][2] == 'NA':
-                    selected[seq] = [rid, gene_product, gene_name]
-            elif gene_name == 'NA':
-                if seq not in selected:
-                    selected[seq] = [rid, gene_product, gene_name]
-
-    # create records to save to Fasta file
-    selected_recs = ['>{0}|{1}|{2}\n{3}'.format(*v, k) for k, v in selected.items()]
-
-    # save file with the proteins that have a valid name
-    # do not save repeated
     selected_file = os.path.join(output_dir, 'selected_cds.fasta')
     with open(selected_file, 'w') as outfile:
-        fasta_text = '\n'.join(selected_recs)
+        fasta_text = '\n'.join(fasta)
         outfile.write(fasta_text)
+            
 
     # BLAST alleles for each locus against file with all CDSs from origin genomes
     reps_dir = os.path.join(schema_dir, 'short')
@@ -263,6 +280,7 @@ def main(input_files, schema_dir, output_dir):
     blastdb_path = os.path.join(output_dir, 'reps_db')
     make_blast_db('makeblastdb', prot_file, blastdb_path, 'prot')
 
+    # selected_file = "/home/pcerqueira/DATA/DYSGALACTIAE_SCHEMA/SW/Schema_Refinery/selected_cds.fasta"
     blastout = os.path.join(output_dir, 'blastout.tsv')
     run_blast('blastp', blastdb_path, selected_file, blastout,
               max_hsps=1, threads=6, ids_file=None, blast_task=None,
@@ -277,28 +295,34 @@ def main(input_files, schema_dir, output_dir):
         r[1] = reps_ids[int(r[1])]
 
     # create mapping between sequence IDs and sequence
-    selected_inverse = {v[0]: [k, v[2]] for k, v in selected.items()}
+    # selected_inverse = {v[0]: [k, v[2]] for k, v in selected.items()}
+    
+    selected_inverse = {v[0]: [k, v[2]] for k, v in fasta_dict.items()}
 
     best_matches = {}
     for rec in blast_results:
-        query = rec[0].split('|')[0]
-        subject = rec[1]
-        score = rec[-1]
-        query_name = selected_inverse[query][1]
+        try:
+            query = rec[0].split('|')[0]
+            subject = rec[1]
+            score = rec[-1]
+            query_name = selected_inverse[query][1]
+        except KeyError:
+            continue
         if subject in best_matches:
-            if best_matches[subject][2] == 'NA' and query_name != 'NA':
+            if best_matches[subject][2] == 'no_gene_name' and query_name != 'NA':
                 best_matches[subject] = [query, score, query_name]
-            elif best_matches[subject][2] != 'NA' and query_name != 'NA':
+            elif best_matches[subject][2] != 'no_gene_name' and query_name != 'NA':
                 if float(score) > float(best_matches[subject][1]):
                     best_matches[subject] = [query, score, query_name]
-            elif best_matches[subject][2] == 'NA' and query_name == 'NA':
+            elif best_matches[subject][2] == 'no_gene_name' and query_name == 'NA':
                 if float(score) > float(best_matches[subject][1]):
                     best_matches[subject] = [query, score, query_name]
         else:
             best_matches[subject] = [query, score, query_name]
 
     # get identifiers mapping
-    ids_to_name = {v[0]: v[1:] for k, v in selected.items()}
+    ids_to_name = {v[0]: v[1:] for k, v in fasta_dict.items()}
+    
     # add names
     for k in best_matches:
         best_matches[k].extend(ids_to_name[best_matches[k][0]])
@@ -322,12 +346,14 @@ def main(input_files, schema_dir, output_dir):
 
     for k in best_matches:
         best_matches[k].append(float(best_matches[k][1])/float(reps_scores[k]))
+        
+    final_best_matches = {k: v for k, v in best_matches.items() if v[5] >= 0.6}
 
     # save annotations
-    header = 'locus\torigin_id\torigin_product\torigin_name\torigin_bsr'
+    header = 'Locus_ID\torigin_id\torigin_product\torigin_name\torigin_bsr'
     annotations_file = os.path.join(output_dir, 'genbank_annotations.tsv')
     with open(annotations_file, 'w') as at:
-        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k, v[0], v[3], v[4], v[5]) for k, v in best_matches.items()]
+        outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k.split("_")[0], v[0], v[3], v[4], v[5]) for k, v in final_best_matches.items()]
         outtext = '\n'.join(outlines)
         at.write(outtext)
 
