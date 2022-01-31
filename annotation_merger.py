@@ -1,5 +1,19 @@
 """
-This Script merges annotations from different sources into one single comprehensible
+This Script merges annotations from different sources into one single comprehensible.
+
+Inputs:
+
+    --prot_species and --prot_genus, are outputs received from ProtFinder chewBBACA module
+
+    --genbank_file , output from genebank annotatios script in Schema_refinery
+
+    --proteome_trembl and --proteome_swiss , outputs from proteome_matcher script located in Schema_refinery
+
+    --match_to_add , annotation of another schema, needed with --matched_schemas
+
+    --matched_schemas , schemas matched loci, obtained from match_schemas in Schema_refinery, needed with match_to_add
+
+    -o , path to output file
 """
 
 import os
@@ -16,6 +30,10 @@ def merger(table_1, table_2):
     return merged
 
 def main(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add, matched, output_path):
+    
+    """
+    Imports and convertions to right types, with some changes to columns names
+    """
 
     table_species = pd.read_csv(species, delimiter="\t")
 
@@ -90,10 +108,10 @@ def main(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add
             
     if match_to_add != '' and matched != '':
 
-        #merge columns so that both table to add and reference have locus_ID
+        # merge columns so that both table to add and reference have locus_ID
         merged_match = pd.merge(match_add,matched_table, on = 'Locus', 
                                 how = 'left')
-        #change columns names
+        # change columns names
         merged_match.columns = ['Locus_GAS','User_locus_name_GAS',
                                 'Custom_annotatiom_GAS',
                                 'Locus_ID','BSR_schema_match']
