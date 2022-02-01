@@ -928,9 +928,10 @@ def main(input_data, output_directory, clusters, cpu_cores,
     input_basename = input_basename.split('.tsv')[0]
 
     # mask input matrix
-    print('Masking...')
+    print('Masking input matrix...', end='')
     masked_results = os.path.join(output_directory, input_basename+'_masked.tsv')
     nostdout(mm.main, [input_data, masked_results, None])
+    print('done')
 
     # import masked matrix
     allelecall_df = pd.read_csv(masked_results, sep='\t', index_col='FILE')
@@ -945,7 +946,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
 
     # determine cgMLST for all clusters
     for k, v in clusters_dirs.items():
-        print('Determining cgMLST for {0}...'.format(k))
+        print('Determining cgMLST for {0}...'.format(k), end='')
         cg_dir = os.path.join(v[0], '{0}_cgMLST'.format(k))
         cg_file = os.path.join(cg_dir, 'cgMLST.tsv')
         # determine cgMLST for each cluster
@@ -955,6 +956,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
         else:
             create_directory(cg_dir)
             custom_cgMLST(v[1], core_genome, cg_file)
+        print('done.')
 
         clusters_dirs[k].append(cg_file)
 
@@ -978,18 +980,19 @@ def main(input_data, output_directory, clusters, cpu_cores,
     # determine distance matrices
     processed = 0
     for k, v in clusters_dirs.items():
-        print('Distance matrix for {0}...'.format(k))
+        print('Computing distance matrix for {0}...'.format(k), end='')
         # wgMLST
         wgMLST_res = nostdout(create_dm, [v[1], v[3]])
         # cgMLST
         cgMLST_res = nostdout(create_dm, [v[2], v[4]])
 
         clusters_dirs[k].extend([wgMLST_res[0], cgMLST_res[0]])
+        print('done.')
 
     # determine intra-cluster stats for all clusters
     all_stats = {}
     for k, v in clusters_dirs.items():
-        print('Computing distance statistics for {0}...'.format(k))
+        print('Computing distance statistics for {0}...'.format(k), end='')
         # determine wg and cg stats for all samples
         if k == 'all_results':
             current_clusters = ordered_clusters
@@ -1006,6 +1009,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
         cg_stats = clusters_stats(cgMLST_file, current_clusters)
 
         all_stats[k] = [wg_stats, cg_stats]
+        print('done.')
 
     # create plots for all clusters
     traces = {}
@@ -1076,7 +1080,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
         all_stats['all_results'][1][c] = res
 
     # Create HTML files with plots
-    print('Creating HTML files...')
+    print('Creating TSV files with distance statistics and HTML files...', end='')
     boxplot_title = '{0} comparison at {1}MLST level (number of allelic differences)'
     heatmap_title = 'Distance matrix at {0}MLST level (number of allelic differences)'
     for k, v in traces.items():
@@ -1158,7 +1162,6 @@ def main(input_data, output_directory, clusters, cpu_cores,
     plot(cgMLST_fig, filename=cgMLST_html, auto_open=False)
 
     # Create output files with stats
-    print('Creating TSV files with distance statistics...')
     file_headers = ['FILE', 'min_distance', 'min_ID', 'max_distance',
                     'max_ID', 'mean_distance', 'min_out_distance',
                     'min_out_ID', 'max_out_distance', 'max_out_ID',
@@ -1218,6 +1221,8 @@ def main(input_data, output_directory, clusters, cpu_cores,
         output_file = os.path.join(v[0], 'cgMLST_dendogram.html')
         res = cluster_dendogram(distance_matrix_file, output_file,
                                 linkage_function, distance_function)
+
+    print('done.')
 
 
 def parse_arguments():

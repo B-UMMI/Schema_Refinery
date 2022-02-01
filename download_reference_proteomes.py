@@ -123,8 +123,8 @@ def parse_arguments():
 
     parser.add_argument('-t', '--input_table', type=str,
                         required=True, dest='input_table',
-                        help='TSV file downloaded from UniProt with '
-                             'a list of proteomes.')
+                        help='TSV file downloaded from UniProt '
+                             'that a contains list of proteomes.')
 
     parser.add_argument('-o', '--output_directory', type=str,
                         required=True, dest='output_directory',
@@ -134,7 +134,7 @@ def parse_arguments():
     parser.add_argument('-th', '--threads', type=int,
                         required=False, default=2,
                         dest='threads',
-                        help='Number of threads for download.')
+                        help='Number of threads for concurrent download.')
 
     parser.add_argument('-r', '--retry', type=int,
                         required=False, dest='retry',

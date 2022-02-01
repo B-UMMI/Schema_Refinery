@@ -707,6 +707,7 @@ def main(input_matrix, output_directory, cpu_cores, symmetric):
     common_args = [[l, np_matrix, genome_ids, tmp_directory, compute_distances] for l in parallel_inputs]
 
     # increasing cpu cores can greatly increase memory usage
+    print('Computing pairwise distances...')
     results = map_async_parallelizer(common_args,
                                      function_helper,
                                      cpu_cores,
@@ -748,7 +749,7 @@ def parse_arguments():
 
     parser.add_argument('-i', '--input-matrix', type=str,
                         required=True, dest='input_matrix',
-                        help='Path to the file with the AlleleCall '
+                        help='Path to TSV file with a AlleleCall '
                              'matrix (default name given by chewBBACA'
                              ' is results_alleles.tsv).')
 

@@ -240,7 +240,7 @@ def getProteinAnnotationFasta(seqRecord):
     return fasta, fasta_dict
 
 
-def main(input_files, schema_dir, output_dir):
+def main(input_files, schema_dir, output_dir, cpu_cores):
 
     if os.path.isdir(output_dir) is False:
         os.mkdir(output_dir)
@@ -290,11 +290,10 @@ def main(input_files, schema_dir, output_dir):
     blastdb_path = os.path.join(output_dir, 'reps_db')
     make_blast_db('makeblastdb', prot_file, blastdb_path, 'prot')
 
-    # selected_file = "/home/pcerqueira/DATA/DYSGALACTIAE_SCHEMA/SW/Schema_Refinery/selected_cds.fasta"
     blastout = os.path.join(output_dir, 'blastout.tsv')
     run_blast('blastp', blastdb_path, selected_file, blastout,
-              max_hsps=1, threads=6, ids_file=None, blast_task=None,
-              max_targets=1, ignore=None)
+              max_hsps=1, threads=cpu_cores, ids_file=None,
+              blast_task=None, max_targets=1, ignore=None)
 
     # import BLAST results
     with open(blastout, 'r') as at:
@@ -338,7 +337,7 @@ def main(input_files, schema_dir, output_dir):
     # concatenate reps and get self-score
     reps_blast_out = os.path.join(output_dir, 'concat_reps_self.tsv')
     run_blast('blastp', blastdb_path, prot_file, reps_blast_out,
-              max_hsps=1, threads=6, ids_file=None, blast_task=None,
+              max_hsps=1, threads=cpu_cores, ids_file=None, blast_task=None,
               max_targets=1, ignore=None)
 
     # import self_results
@@ -354,8 +353,9 @@ def main(input_files, schema_dir, output_dir):
 
     for k in best_matches:
         best_matches[k].append(float(best_matches[k][1])/float(reps_scores[k]))
-        
+
     final_best_matches = {k: v for k, v in best_matches.items() if v[5] >= 0.6}
+    print('Extracted annotations for {0} loci.'.format(len(final_best_matches)))
 
     # save annotations
     header = 'Locus_ID\torigin_id\torigin_product\torigin_name\torigin_bsr'
@@ -364,6 +364,8 @@ def main(input_files, schema_dir, output_dir):
         outlines = [header] + ['{0}\t{1}\t{2}\t{3}\t{4}'.format(k.split("_")[0], v[0], v[3], v[4], v[5]) for k, v in final_best_matches.items()]
         outtext = '\n'.join(outlines)
         at.write(outtext+'\n')
+
+    print('Results available at {0}'.format(annotations_file))
 
 
 def parse_arguments():
@@ -384,6 +386,10 @@ def parse_arguments():
     parser.add_argument('-o', type=str, required=True,
                         dest='output_dir',
                         help='Path to the output directory.')
+
+    parser.add_argument('-cpu', type=int, required=False,
+                        default=1, dest='cpu_cores',
+                        help='Number of CPU cores used by BLAST.')
 
     args = parser.parse_args()
 

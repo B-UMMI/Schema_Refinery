@@ -101,12 +101,13 @@ def parse_arguments():
     parser.add_argument('-t', type=str, required=True,
                         dest='loci_table',
                         help='Path to TSV file with the list of loci '
-                             'to split. The first columns contains '
+                             'to split. The first column contains '
                              'the locus identifier, the second column '
                              'the new identifiers to attribute to the '
-                             'splitted loci and the third columns '
-                             'includes the sequence size intervals '
-                             'used to split the locus.')
+                             'splitted loci (separated by ",") and the '
+                             'third column includes the sequence size '
+                             'intervals used to split the locus '
+                             '(e.g.: "100-500,501-1000").')
 
     parser.add_argument('-o', type=str, required=True,
                         dest='output_directory',

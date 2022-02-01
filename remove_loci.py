@@ -45,7 +45,7 @@ def parse_arguments():
     parser.add_argument('-i', '--input-file', type=str, required=True,
                         dest='input_file',
                         help='Path to input file with the list of loci '
-                             'to remove from the schema.')
+                             'to remove from the schema (one per line).')
 
     parser.add_argument('-s', '--schema-directory', type=str, required=True,
                         dest='schema_directory',
