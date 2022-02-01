@@ -1,6 +1,15 @@
-'''
-This scripts merges paralagous loci in to groups, and takes output file from from inter_loci_validation 
-'''
+"""
+This scripts merges paralagous loci in to groups, and takes output file from from inter_loci_validation.
+
+Inputs:
+    -t , path to the inter_loci_validation output file
+
+    -o , path to the output folder
+
+Outputs:
+    TSV file containing paralogous groups one per row, each loci is contained in one column.
+
+"""
 
 import os
 import argparse
@@ -31,6 +40,7 @@ def main(table_path, output_path):
         append_list = []
         
         if unique not in merged_loci:
+            
             for match in table[table['loci'].str.contains(unique)]['match']:
 
                 if match.split('_')[0] not in append_list:
@@ -53,16 +63,24 @@ def main(table_path, output_path):
     """
 
     for loci in merged_loci:
+
         for loci2 in merged_loci:
+
             if loci == loci2:
                 continue
+
             elif set(loci).issubset(set(loci2)):
+
                 if loci in merged_loci:
                     merged_loci.remove(loci)
+
             elif len(set(loci).intersection(set(loci2)))>0:    
+
                 merged_loci.append(list(set(loci).union(set(loci2))))
+
                 if loci in merged_loci:
                     merged_loci.remove(loci)
+
                 if loci2 in merged_loci:
                     merged_loci.remove(loci2)
     
@@ -74,6 +92,7 @@ def main(table_path, output_path):
 
     with open(os.path.join(output_path,'merged_paralogous_loci.tsv'), 'w', newline='') as f_output:
         tsv_output = csv.writer(f_output, delimiter='\t')
+
         for i in merged_loci:
             tsv_output.writerow(i)
 

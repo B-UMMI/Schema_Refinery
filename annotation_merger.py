@@ -14,6 +14,9 @@ Inputs:
     --matched_schemas , schemas matched loci, obtained from match_schemas in Schema_refinery, needed with match_to_add
 
     -o , path to output file
+
+Outputs:
+    Annotation TSV file with selected merged items.
 """
 
 import os
@@ -21,6 +24,21 @@ import pandas as pd
 import argparse
 
 def merger(table_1, table_2):
+
+    """
+    merges two annotation os Locus_ID:
+
+    Arguments:
+        table_1 : pandas table
+            main table
+
+        table_2 : pandas table
+            table that will be added
+
+    Returns :
+        locus_mean : pandas table
+            merged table
+    """
 
     merged = pd.merge(table_1,
                         table_2,
