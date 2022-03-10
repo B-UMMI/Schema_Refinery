@@ -18,11 +18,12 @@ DESCRIPTION
 import argparse
 import os
 import csv
+import copy
 
 
 def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_threshold):
 
-    processed_table_1 = []
+    processed_matches = []
     dict = {}
     final_table = []
 
@@ -33,18 +34,18 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
 
     # open input_table_1 "matches.tsv" outputed from "match_schemas.py" script
     with open(input_table_1, 'r') as table1:
-        lines_table_1 = list(csv.reader(table1, delimiter='\t'))
+        lines_matches = list(csv.reader(table1, delimiter='\t'))
 
     # open input_table_2 with loci annotations
     with open(input_table_2, 'r') as table2:
-        lines_table_2 = list(csv.reader(table2, delimiter='\t'))
+        lines_loci = list(csv.reader(table2, delimiter='\t'))
     
      # open input_table_3 "no_match.tsv" outputed from "match_schemas.py" script
     with open(input_table_3, 'r') as table3:
-        lines_table_3 = list(csv.reader(table3, delimiter='\t'))
+        lines_no_match = list(csv.reader(table3, delimiter='\t'))
 
     #processing first table
-    for row in lines_table_1:
+    for row in lines_matches:
         if ( float(row[2]) >= bsr_threshold ):
             new_list = []
             new_list.append(row[0])
@@ -53,27 +54,28 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
             new_list.append(strs[0])
             new_list.append(row[2])
 
-            processed_table_1.append(new_list)
+            processed_matches.append(new_list)
  
 
     #processing second table
-    for row in lines_table_2:
+    for row in lines_loci:
         row[0] = row[0].split('.fasta')[0]
         dict[row[0]] = row
 
     #creating "new_annotations" table 
-    for row in processed_table_1:
+    for row in processed_matches:
 
         entry = dict.get(row[1])
 
         if entry:
-            entry[0] = row[0]
-            final_table.append(entry)
+            entry2 = copy.deepcopy(entry)
+            entry2[0] = row[0]
+            final_table.append(entry2)
         else:
             final_table.append([row[0]])
 
     #adding the no_match genes to the "new_annotations" table
-    for row in lines_table_3:
+    for row in lines_no_match:
         final_table.append([row[0]])
 
 
@@ -83,7 +85,7 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
         csvwriter = csv.writer(csvfile, delimiter='\t') 
 
         # writing the data rows 
-        csvwriter.writerow(lines_table_2[0]) #put the collumn names
+        csvwriter.writerow(lines_loci[0]) #put the collumn names
         csvwriter.writerows(final_table)
 
 
@@ -92,7 +94,7 @@ def main(input_table_1, input_table_2, input_table_3, output_directory, bsr_thre
         # creating a csv writer object 
         csvwriter = csv.writer(csvfile, delimiter='\t') 
 
-        csvwriter.writerows(processed_table_1)
+        csvwriter.writerows(processed_matches)
 
       
 
