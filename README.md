@@ -133,3 +133,51 @@ This script removes loci from a schema.
 ## schema_validation_functions.py
 
 This script contains a collection of fucntions that are used to validade schemas.
+
+## annotation_merger.py
+
+This script merges annotations from different sources into one single comprehensible file.
+
+## assembly_statistics.py
+
+This script calculates statistics for input assemblies.
+
+## paralogous_interloci_validation_merger.py
+
+This script merges paralagous loci into groups obtained from inter_loci_validation.py.
+
+## allele_call_paralogous_merger.py
+
+This script merges paralagous loci into group from allele call module output.
+
+## split_locus.py
+
+This script splits loci based on sequence size intervals.
+
+## reassign_ids.py
+
+This script reassigns allele identifiers to ensure that the set of alleles for a locus have sequential identifiers.
+
+## new_loci_annotations.py
+
+This script uses ids identifiers to match with older annotations creating annotation table for newer schemas.
+
+## missing_ids.py
+
+This script determines if any locus in a schema does not have sequential allele identifiers.
+
+## mask_matrix.py
+
+Masks elements in a matrix with allelic profiles created with chewBBACA.
+
+## locus_length_variability.py
+
+This scripts computes allele length statistics for all loci in a schema, identifying loci with multimodal allele length distributions and loci with alleles that deviate from the mode value.
+
+## gc_content.py
+
+This script outputs a more detailed GC content information than assembly_statistics.py.
+
+## Extract_cgAlleles.py
+
+This module determines the set of genes in the core genome based on a matrix with allelic profiles and a threshold that defines the proportion of genomes a gene must be present in to be included in the core genome.
