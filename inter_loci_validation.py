@@ -152,24 +152,37 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     rep_blastdb = os.path.join(fasta_directory, 'rep_concat_blastdb')
     stderr = svf.make_blast_db('makeblastdb', rep_concat, rep_blastdb, 'prot')
 
-    rep_blast_output = os.path.join(output_directory,
-                                    'representatives_blastout.tsv')
-    rep_blast_inputs = [['blastp', rep_blastdb, rep_concat,
-                         rep_blast_output, svf.run_blast]]
+    rep_blast_inputs = []
+    for k, v in translated_representatives.items():
+        locus_id = k
+        locus_blastout = os.path.join(output_directory, locus_id+'_blastout.tsv')
+        # create file with representative identifiers
+        locus_ids_file = os.path.join(output_directory, locus_id+'_ids.txt')
+        locus_ids = [rec.id for rec in SeqIO.parse(v, 'fasta')]
+        with open(locus_ids_file, 'w') as outfile:
+            outfile.write('\n'.join(locus_ids)+'\n')
+
+        rep_blast_inputs.append(['blastp', rep_blastdb, v, locus_blastout, 1, 1, locus_ids_file, svf.run_blast])
 
     # BLAST all against all for each locus
-    print('\r', 'BLASTing representative sequences to determine '
-          'self-score...', end='')
+    print('BLASTing representative sequences to determine self-score...')
     blast_stderr = svf.map_async_parallelizer(rep_blast_inputs,
                                               svf.function_helper,
-                                              1,
-                                              show_progress=False)
+                                              blast_threads,
+                                              show_progress=True)
 
     blast_stderr = svf.flatten_list(blast_stderr)
     if len(blast_stderr) > 0:
         sys.exit(blast_stderr)
 
-    print('done.')
+    # concatenate all files with BLAST results
+    rep_blastout_files = [os.path.join(output_directory, file)
+                          for file in os.listdir(output_directory)
+                          if file.endswith('blastout.tsv') is True]
+
+    # concatenate all BLAST output files
+    rep_blast_output = os.path.join(output_directory, 'reps_blastout_concat.tsv')
+    rep_blast_output = svf.concatenate_files(rep_blastout_files, rep_blast_output)
 
     # read BLAST results
     representative_results = svf.read_blast_tabular(rep_blast_output)
@@ -188,12 +201,10 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
 
     # create list of inputs to distribute with multiprocessing
     # for BLASTp
-    blast_files = {k: os.path.join(output_directory, k+'_blastout.tsv')
-                   for k in translated_representatives}
-    blast_inputs = [['blastp', blastdb, v,
-                     blast_files[k],
-                     svf.run_blast]
-                    for k, v in translated_representatives.items()]
+    blast_inputs = []
+    for i in rep_blast_inputs:
+        locus_blastout = i[3].replace('.tsv', '_main.tsv')
+        blast_inputs.append(['blastp', blastdb, i[2], locus_blastout, svf.run_blast])
 
     # BLAST all against all for each locus
     print('BLASTing representative sequences against schema...')
