@@ -366,20 +366,21 @@ def map_async_parallelizer(inputs, function, cpu, callback='extend',
     """
 
     results = []
-    pool = Pool(cpu)
-    if callback == 'extend':
-        rawr = pool.map_async(function, inputs,
-                              callback=results.extend, chunksize=chunksize)
-    elif callback == 'append':
-        rawr = pool.map_async(function, inputs,
-                              callback=results.append, chunksize=chunksize)
+    # use context manager to join and close pool automatically
+    with Pool(cpu) as pool:
+        if callback == 'extend':
+            rawr = pool.map_async(function, inputs,
+                                  callback=results.extend, chunksize=chunksize)
+        elif callback == 'append':
+            rawr = pool.map_async(function, inputs,
+                                  callback=results.append, chunksize=chunksize)
 
-    if show_progress is True:
-        completed = False
-        while completed is False:
-            completed = progress_bar(rawr, len(inputs))
+        if show_progress is True:
+            completed = False
+            while completed is False:
+                completed = progress_bar(rawr, len(inputs))
 
-    rawr.wait()
+        rawr.wait()
 
     return results
 
