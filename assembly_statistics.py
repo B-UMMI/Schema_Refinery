@@ -364,14 +364,14 @@ def analyse_assembly(assembly):
     n_blocks = []
     
     for rec in records:
-        if 'N' in rec.seq!= 0:
+        if 'N' in rec.seq != 0:
             
             n_blocks.append(list(re.findall('N+',str(rec.seq))))
         
     if len(n_blocks) == 0:
-        num_blocks = "NA"
-        min_missing_data = "NA"
-        max_missing_data = "NA"
+        num_blocks = 0
+        min_missing_data = 0
+        max_missing_data = 0
         
     else:
         n_blocks = list(itertools.chain(*n_blocks))
