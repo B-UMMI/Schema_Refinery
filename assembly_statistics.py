@@ -138,6 +138,7 @@ def check_if_list_or_folder(folder_or_list):
         Raises Exception if it is not possible to determine if
         the input path represents a file or a directory.
     """
+
     # check if input argument is a file or a directory
     if os.path.isfile(folder_or_list):
         list_files = folder_or_list
@@ -192,11 +193,16 @@ def verify_cpu_usage(cpu_to_use):
         The number of CPU cores adjusted to avoid using all
         available cores.
     """
+    
     total_cpu = cpu_count()
     # do not allow a value of cpuToUse greater than the number of
     # cores/threads
     
     if cpu_to_use > total_cpu:
+        """
+        Detects present cpu and adjusts value so that machine doesn't crash 
+        """
+
         print('Warning! You have provided a CPU core count value that '
               'exceeds the number of cores in your machine!')
         print('Setting a different value for the CPU core count...')
@@ -220,6 +226,7 @@ def verify_cpu_usage(cpu_to_use):
 
 def track_job(job, update_interval=3):
     """ Tracks multiprocessing jobs. """
+
     while job._number_left > 0:
         remaining_tasks = job._number_left * job._chunksize
         print('Tasks remaining = {0}'.format(remaining_tasks))
@@ -236,9 +243,10 @@ def flatten_list(list_to_flatten):
     flattened list : list
         Flattened list.
     """
+
     return list(itertools.chain(*list_to_flatten))
 
-def analyse_report(report, nr_contigs, min_bp, max_bp, min_gc, max_gc):
+def analyse_report(report, nr_contigs, min_bp, max_bp, min_gc, max_gc, missing_data):
     """ Determine if samples are of high quality based
         on provided thresholds.
     Parameters
@@ -262,20 +270,29 @@ def analyse_report(report, nr_contigs, min_bp, max_bp, min_gc, max_gc):
         a list with the issues found for each sample as
         values.
     """
+
     for i, record in enumerate(report):
         
         current_results = []
         
         if record['Total assembly length'] < min_bp:
             current_results.append('Low_BP')
+
         elif record['Total assembly length'] > max_bp:
             current_results.append('High_BP')
+
         if record['GC content'] < min_gc:
             current_results.append('Low_GC')
+
         elif record['GC content'] > max_gc:
             current_results.append('High_GC')
+
         if record['Number of contigs'] > nr_contigs:
             current_results.append('Nr_contigs')
+
+        if record['Missing_Data'] > missing_data:
+            current_results.append('Too_many_N')
+
         report[i]['Warnings'] = ','.join(current_results)
         
     return report
@@ -292,6 +309,7 @@ def calc_n50(contig_sizes):
     l : int
         Calculated N50.
     """
+
     # Sort the contig sizes in descending order
     contig_sizes.sort(reverse=True)
     
@@ -319,6 +337,7 @@ def analyse_assembly(assembly):
         average contig size, N50, total assembly length,
         GC content and missing data.
     """
+
     assembly_file = assembly
   
     # Get the sample name from the file
@@ -362,16 +381,20 @@ def analyse_assembly(assembly):
     missing_data = sum([rec.seq.count('N') for rec in records])
  
     n_blocks = []
-    
+
+    # Find all N blocks    
     for rec in records:
+
         if 'N' in rec.seq != 0:
             
             n_blocks.append(list(re.findall('N+',str(rec.seq))))
-        
+    
+    # N stats
     if len(n_blocks) == 0:
         num_blocks = 0
         min_missing_data = 0
         max_missing_data = 0
+        median_missing_data = 0
         
     else:
         n_blocks = list(itertools.chain(*n_blocks))
@@ -385,19 +408,21 @@ def analyse_assembly(assembly):
         #max missing data
         max_missing_data = len(max(n_blocks))
         
-    
+        #median value
+        median_missing_data = stats.median(n_blocks.match)
 
     # Save the results in a dictionary
     results = {'Sample': sample,
-               'Number of contigs': nr_contigs,
-               'Average contig size': round(avg_size, 2),
+               'Number_of_contigs': nr_contigs,
+               'Average_contig_size': round(avg_size, 2),
                'N50': n50,
-               'Total assembly length': total_length,
-               'GC content': round(gc_content, 3),
-               'Missing Data': missing_data,
+               'Total_assembly_length': total_length,
+               'GC_content': round(gc_content, 3),
+               'Missing_Data': missing_data,
                'number_of_N_blocks' : num_blocks,
                'min_N' : min_missing_data,
-               'max_N' : max_missing_data}
+               'max_N' : max_missing_data,
+               'median_missing_data': median_missing_data}
     
     return results
 
@@ -455,12 +480,15 @@ def main(output_path, assembly_path, cpu, nr_contigs,
               'of {1} assemblies. Check the report for more '
               'details.\n'.format(failed, len(listGenes)))
         print('Writing report...\n')
+
         # Convert dictionary into pandas DataFrame
         report = pd.DataFrame(results)
+
         # Write the final report
         output_report = os.path.join(output_path, 'final_report.tsv')
         report.to_csv(output_report, sep='\t',
                       encoding='utf-8', index=False)
+                      
     print('Execution Finished')
     
 def parse_arguments():
@@ -506,10 +534,17 @@ def parse_arguments():
     parser.add_argument('--max_gc', type=float, required=False,
                         dest='maximum_gc_content', default=1.0,
                         help='Maximum GC content value.')
+
+    parser.add_argument('--min_N', type=int, required=False,
+                        dest='missing_data', default=500,
+                        help='Min number of N.')
     
     args = parser.parse_args()
+
     return args
 
 if __name__ == '__main__':
+
     args = parse_arguments()
+
     main(**vars(args))
