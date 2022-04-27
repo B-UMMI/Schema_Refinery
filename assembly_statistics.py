@@ -275,19 +275,19 @@ def analyse_report(report, nr_contigs, min_bp, max_bp, min_gc, max_gc, missing_d
         
         current_results = []
         
-        if record['Total assembly length'] < min_bp:
+        if record['Total_assembly_length'] < min_bp:
             current_results.append('Low_BP')
 
-        elif record['Total assembly length'] > max_bp:
+        elif record['Total_assembly_length'] > max_bp:
             current_results.append('High_BP')
 
-        if record['GC content'] < min_gc:
+        if record['GC_content'] < min_gc:
             current_results.append('Low_GC')
 
-        elif record['GC content'] > max_gc:
+        elif record['GC_content'] > max_gc:
             current_results.append('High_GC')
 
-        if record['Number of contigs'] > nr_contigs:
+        if record['Number_of_contigs'] > nr_contigs:
             current_results.append('Nr_contigs')
 
         if record['Missing_Data'] > missing_data:
@@ -429,7 +429,7 @@ def analyse_assembly(assembly):
 
 def main(output_path, assembly_path, cpu, nr_contigs,
          minimum_number_of_bases, maximum_number_of_bases,
-         minimum_gc_content, maximum_gc_content):
+         minimum_gc_content, maximum_gc_content,missing_data):
     
     # avoid using all available cores
     # can lead to system unresponsiveness
@@ -472,7 +472,8 @@ def main(output_path, assembly_path, cpu, nr_contigs,
                                  minimum_number_of_bases,
                                  maximum_number_of_bases,
                                  minimum_gc_content,
-                                 maximum_gc_content)
+                                 maximum_gc_content,
+                                 missing_data)
         
         # Print amount of Fails to console
         failed = sum([1 for k in results if len(k['Warnings']) > 0])
