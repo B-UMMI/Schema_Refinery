@@ -50,18 +50,16 @@ def split(fasta, min_N):
         locus_mean : list
             containing ordered contigs, fasta path and identifier to add to new contigs
     """
+    if sum([rec.seq.count('N') for rec in SeqIO.parse(fasta, 'fasta')]) != 0:
 
-    print(fasta.split("/")[-1])
+        records = SeqIO.parse(fasta, 'fasta')
 
-    records = SeqIO.parse(fasta, 'fasta')
+        contigs = {rec.id : re.split("N{"+ str(min_N) + ",100000}", str(rec.seq.upper())) for rec in records}
 
-    contigs = [re.split("N{"+ str(min_N) + ",100000}", str(rec.seq.upper())) for rec in records]
+        return [contigs,fasta]
 
-    contigs = [j for i in contigs for j in i]
-
-    contigs_id = [str(rec.id) for rec in SeqIO.parse(fasta, 'fasta')][0]
-
-    return [contigs,fasta,contigs_id]
+    else:
+        return [None,fasta]
 
 def main(inputs, outputs, min_N,threads):
     """
@@ -99,16 +97,35 @@ def main(inputs, outputs, min_N,threads):
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         
         for res in executor.map(split, fastas,repeat(min_N)):
+
+
+            newcontigs = 0
+
+            if res[0] != None:
             
-            with open(os.path.join(outputs,res[1].split("/")[-1]),'w+') as file:
+                with open(os.path.join(outputs,res[1].split("/")[-1]),'w+') as file:
 
-                for number, contig in enumerate(res[0]):
+                    for (id,contigs) in res[0].items():
+                        index = 0
+                        for fasta in contigs:
 
-                    if len(contig) > 0 :
+                            if len(fasta) > 0 :
+                                    
+                                file.write(f">{id}_{index}\n")
+                                file.write(fasta + "\n")
 
-                        file.write(f">{res[2]}_{number}\n")
-                        file.write(contig + "\n")    
-                
+                                if index != 0:
+                                    newcontigs += 1
+                                
+                                index += 1
+
+                print(res[1].split("/")[-1])
+                print("new contigs = {}".format(newcontigs))
+            
+            else:
+
+                print(res[1].split("/")[-1])
+                print("No Ns detected.")
 
 def parse_arguments():
 
