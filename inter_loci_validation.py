@@ -201,6 +201,8 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
 
     # create list of inputs to distribute with multiprocessing
     # for BLASTp
+    blast_files = {k: os.path.join(output_directory, k+'_blastout.tsv')
+        for k in translated_representatives}
     blast_inputs = []
     for i in rep_blast_inputs:
         locus_blastout = i[3].replace('.tsv', '_main.tsv')
