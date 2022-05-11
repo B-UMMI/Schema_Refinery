@@ -21,6 +21,12 @@ from Bio import SeqIO
 import statistics
 import math
 
+np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+
+def checkAndMakeDirectory(outdir: str):
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+
 def mean_dict_calc(locus_path):
 
     """
@@ -164,7 +170,8 @@ def main(table_path, schema_path, output_path):
 
     merged_table_all = np.unique(merged_table_all)
 
-
+    
+    checkAndMakeDirectory(output_path)
     with open(os.path.join(output_path,'merged_paralog_loci.tsv'), 'w', newline='') as f_output:
 
         tsv_output = csv.writer(f_output, delimiter='\t')
