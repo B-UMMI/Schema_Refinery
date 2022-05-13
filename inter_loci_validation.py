@@ -72,7 +72,6 @@ from Bio import SeqIO
 # these modules must be in the same directory
 import schema_validation_functions as svf
 
-
 def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     """ Determines BLASTp matches between different loci of a schema
         with a BSR greater than the defined value.
@@ -201,7 +200,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
 
     # create list of inputs to distribute with multiprocessing
     # for BLASTp
-    blast_files = {k: os.path.join(output_directory, k+'_blastout.tsv')
+    blast_files = {k: os.path.join(output_directory, k+'_blastout_main.tsv')
         for k in translated_representatives}
     blast_inputs = []
     for i in rep_blast_inputs:
@@ -240,7 +239,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
                    and float(r[-1]) >= 0.6]
         if len(current) > 0:
             high_bsr.extend(current)
-
+    
     # index Fasta
     index = SeqIO.index(protein_concat, 'fasta')
     for r in high_bsr:
@@ -259,10 +258,9 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
 
     # save results
     high_bsr_lines = ['\t'.join(l) for l in high_bsr]
-    high_bsr_text = '\n'.join(high_bsr_lines)
     output_file = os.path.join(output_directory, 'high_bsr.tsv')
     with open(output_file, 'w') as outfile:
-        outfile.write(high_bsr_text+'\n')
+        outfile.writelines(high_bsr_lines)
 
     end = time.time()
     delta = end - start
