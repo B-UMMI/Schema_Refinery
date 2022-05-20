@@ -66,11 +66,22 @@ import os
 import sys
 import time
 import argparse
+import csv
 
 from Bio import SeqIO
 
 # these modules must be in the same directory
 import schema_validation_functions as svf
+
+def exportListToTSVFile(filename: str, list: list, first_row: list = None):
+
+    with open(filename, 'w') as csvfile: 
+        # creating a csv writer object 
+        csvwriter = csv.writer(csvfile, delimiter='\t') 
+
+        # writing the data rows 
+        if first_row: csvwriter.writerow(first_row) #put the collumn names
+        csvwriter.writerows(list)
 
 def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     """ Determines BLASTp matches between different loci of a schema
@@ -257,10 +268,8 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
         r.append(default)
 
     # save results
-    high_bsr_lines = ['\t'.join(l) for l in high_bsr]
     output_file = os.path.join(output_directory, 'high_bsr.tsv')
-    with open(output_file, 'w') as outfile:
-        outfile.writelines(high_bsr_lines)
+    exportListToTSVFile(output_file, high_bsr)
 
     end = time.time()
     delta = end - start
