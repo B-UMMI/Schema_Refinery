@@ -17,7 +17,14 @@ import pandas as pd
 import csv
 import numpy as np
 
+np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+
+def checkAndMakeDirectory(outdir: str):
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+
 def main(table_path, output_path):
+    checkAndMakeDirectory(output_path)
 
     table = pd.read_csv(table_path, delimiter="\t")
     table.columns = ['loci','match','a','b','size']
