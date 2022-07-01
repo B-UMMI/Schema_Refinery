@@ -11,7 +11,6 @@ Code documentation
 ------------------
 """
 
-
 import os
 import sys
 import csv
@@ -163,7 +162,7 @@ def download_ftp_file(file_url, out_file, original_hash, retry, verify=True, pro
 def main(metadata_table, paths_table, species_name, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, mlst_species, known_st, any_quality, stride,
-         retry):
+         retry,st):
 
     # read file with metadata
     metadata_lines = read_table(metadata_table)
@@ -235,6 +234,15 @@ def main(metadata_table, paths_table, species_name, output_directory,
 
         print('{0} with known ST.'.format(len(species_lines)))
 
+    if st is not None:
+        with open(st,'r') as desired_st:
+            d_st = desired_st.read().splitlines()
+            mlst = metadata_header.index('mlst')           
+            species_lines = [line
+                            for line in species_lines
+                            if line[mlst] in d_st]
+            print('{0} with desired ST'.format(len(species_lines)))
+            
     # filter based on quality level
     if any_quality is False:
         quality_index = metadata_header.index('high_quality')
@@ -428,6 +436,12 @@ def parse_arguments():
                         default=7,
                         help='Maximum number of retries when a '
                              'download fails.')
+
+    parser.add_argument('--st', type=str,
+                        required=False, dest='st',
+                        default=None,
+                        help='Desired ST in a txt file,'
+                             ' one ST per line')
 
     args = parser.parse_args()
 
