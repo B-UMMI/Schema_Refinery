@@ -75,14 +75,16 @@ def loadGroups(filename):
             if "" in p:                
                 name_trait = p[""]                
                 del p[""]            
+            
             elif "Name" in p:                
                 name_trait = p["name"]                
                 del p["Name"]            
+            
             else:                
                 sys.exit("Make sure the top-left cell in the traits file is either empty or 'Name'.")            
             
             for key, value in list(p.items()):                
-                if value == '0':                    
+                if int(value) == 0:                    
                     del p[key]            
             
             group_dic[name_trait] = list(p.keys())    
@@ -113,29 +115,37 @@ def loadProfile(filename, dataStructure):
             profile = line[1:]  # has the same order as in genes            
             
             for key, value in list(dataStructure.items()):                
+                
                 if strain in value:                   
                     group = key                    
                     skipIsolate = False                    
                     break                
+                
                 else:                    
                     pass            
             
             if not skipIsolate:                
+                
                 for i in range(0, len(genes)):                    
+                    
                     if genes[i] not in list(profileDic.keys()):                        
                         temp = {}                        
                         temp[group] = [profile[i]]                        
                         profileDic[genes[i]] = temp                    
+                    
                     else:                        
                         temp = profileDic[genes[i]]                       
                         
                         if group in list(temp.keys()):                            
                             temp[group].append(profile[i])                        
+                        
                         else:                            
                             temp[group] = [profile[i]]                        
                             profileDic[genes[i]] = temp            
+            
             else:                
                 pass    
+    
     print(("profile size: " + str(len(profileDic))))        
     
     return profileDic
@@ -149,6 +159,7 @@ def proCompare(dataStructure, key1, key2,absent):
     # performing counts
 
     for gene, value in list(dataStructure.items()):
+        
         if absent in dataStructure[gene][key1] or absent in dataStructure[gene][key2]:			
             pass
 
