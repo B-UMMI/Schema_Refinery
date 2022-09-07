@@ -100,39 +100,15 @@ def stacked_barplot_classes(matrix_counts_t, matrix_counts_sum, assembly_ids):
     
     stacked_bar = px.bar(matrix_counts_t)
     
-    stacked_bar.update_layout(barmode = "stack")
+    stacked_bar.update_layout(barmode = "stack",bargap = 0)
     
     stacked_bar.update_xaxes(showticklabels = False)
     
     stacked_bar.add_scatter(x = matrix_counts_sum.sort_values(by="Missing_assemblies").index, 
                             y = matrix_counts_sum.sort_values(by="Missing_assemblies")["Missing_assemblies"], 
-                            mode = "lines", line = dict(color="MediumPurple"), name="Total_assemblies_with_missing_alleles")
-    
-    stacked_bar.add_vline(x=len(matrix_counts_t)*0.5, line = dict(dash = "dash", width = 1), 
-                          annotation_text = "50% of loci")
-    
-    stacked_bar.add_vline(x=int(matrix_counts_sum[matrix_counts_sum == 0].count()), 
-                          line = dict(dash = "dash", width = 1), annotation_text = "CGMLST100")
-    
-    stacked_bar.add_hline(y=len(assembly_ids)*0.5,
-                          line = dict(dash = "dash", width = 1), annotation_text = "50% of assemblies")
+                            mode = "lines", line = dict(color="MediumPurple"), name="Total_assemblies_with_missing_alleles")   
     
     return stacked_bar
-
-def problematic_assemblies(matrix,matrix_counts,matrix_counts_sum):
-    
-    num_loci = round(len(matrix)*0.001)
-    
-    loci = matrix_counts_sum.index[matrix_counts_sum.Missing_assemblies <= num_loci]
-    
-    matrix_p_assemblies = matrix[loci]
-    
-    matrix_p_assemblies.set_index(assembly_ids,inplace = True)
-    
-    n_alleles_missing_assemblies = matrix_p_assemblies.apply(pd.to_numeric, 
-                                                             errors='coerce').isna().sum(axis=1)
-    
-    n_alleles_missing_assemblies[n_alleles_missing_assemblies > 1]
 
 def main(matrix_path,output_directory):
     
