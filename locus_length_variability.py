@@ -25,7 +25,7 @@ from plotly.subplots import make_subplots
 
 
 def import_sequences(fasta_path):
-    """ Imports sequences from a FASTA file.
+    """Import sequences from a FASTA file.
 
     Parameters
     ----------
@@ -38,15 +38,14 @@ def import_sequences(fasta_path):
         Dictionary that has sequence identifiers as
         keys and sequences as values.
     """
-
     records = SeqIO.parse(fasta_path, 'fasta')
     seqs_dict = {rec.id: str(rec.seq.upper()) for rec in records}
 
     return seqs_dict
 
 
-def histogram_trace(xdata, ydata, marker_color):
-    """ Creates a histogram (go.Bar) trace.
+def histogram_trace(xdata, ydata, marker_colors):
+    """Create a histogram (go.Bar) trace.
 
     Parameters
     ----------
@@ -56,24 +55,23 @@ def histogram_trace(xdata, ydata, marker_color):
     ydata : list
         Sets the y coordinates (counts for
         each sequence length value).
-    marker_color : str
-        Color to fill the bars.
+    marker_colors : str
+        Colors to fill the bars.
 
     Returns
     -------
     trace : plotly.graph_objects.Bar
         Trace with data to display histogram.
     """
-
     trace = go.Bar(x=xdata,
                    y=ydata,
-                   marker_color=marker_color)
+                   marker_color=marker_colors)
 
     return trace
 
 
 def create_subplots(nplots, ncols, titles):
-    """ Create a Figure objcet with predefined subplots.
+    """Create a Figure objcet with predefined subplots.
 
     Parameters
     ----------
@@ -89,7 +87,6 @@ def create_subplots(nplots, ncols, titles):
     subplots_fig : plotly.graph_objs._figure.Figure
         Figure object with predefined subplots.
     """
-
     # determine number of rows
     nrows = statistics.math.ceil((nplots / ncols))
     subplots_fig = make_subplots(rows=nrows, cols=ncols,
@@ -99,15 +96,14 @@ def create_subplots(nplots, ncols, titles):
 
 
 def add_multiple_traces(traces, fig, max_cols):
-    """ Add traces to Figure object based on the number
-        of cols per row.
+    """Add traces to Figure object based on the number of cols per row.
 
     Parameters
     ----------
     traces : list
         List with trace objects to add.
     fig : plotly.graph_objs._figure.Figure
-        Figure object with predefined subplots.        
+        Figure object with predefined subplots.
     max_cols : int
         Maximum number of columns per row.
 
@@ -117,7 +113,6 @@ def add_multiple_traces(traces, fig, max_cols):
         Figure object with the data to display the
         traces.
     """
-
     row_start = 1
     col_start = 1
     for t in traces:
@@ -132,7 +127,7 @@ def add_multiple_traces(traces, fig, max_cols):
 
 
 def write_text(text, output_file, end='\n'):
-    """ Writes text to a file.
+    """Write text to a file.
 
     Parameters
     ----------
@@ -143,7 +138,6 @@ def write_text(text, output_file, end='\n'):
     end : str
         Characters to add to end of file.
     """
-
     with open(output_file, 'w') as outfile:
         outfile.write(text+end)
 
@@ -182,10 +176,8 @@ def main(schema_directory, output_directory, size_threshold):
         # determine mode and create histograms for loci with single mode
         try:
             locus_mode = statistics.mode(lengths_list)
-        # locus does not have a unique mode
+        # locus has at least two length values that are equally frequent
         except Exception as e:
-            locus_id = os.path.basename(locus).split('.fasta')[0]
-            print(locus_id, '\n', e)
             locus_mode = 'None'
 
         # determine if there are other values that are very frequent
@@ -193,10 +185,11 @@ def main(schema_directory, output_directory, size_threshold):
         # get values ordered starting with most frequent
         freq_ordered = length_counts.most_common()
         most_frequent = freq_ordered[0]
-        # select length values that are also very frequent
+        # select length values that are also very frequent (>=0.3)
         high_freq = [v
                      for v in freq_ordered[1:]
                      if v[1] >= (0.3*most_frequent[1])]
+
         frequent_values = [most_frequent] + high_freq
 
         # determine if there are alleles outside (mode +/- (mode*size_threshold))
@@ -206,25 +199,44 @@ def main(schema_directory, output_directory, size_threshold):
                    for v in freq_ordered[1:]
                    if (v[0] >= alm or v[0] <= asm)]
 
-        xdata = [v[0] for v in freq_ordered]
-        ydata = [v[1] for v in freq_ordered]
+        # sort by length value
+        sorted_freq = sorted(freq_ordered, key=lambda x: x[0])
+        xdata = [v[0] for v in sorted_freq]
+        ydata = [v[1] for v in sorted_freq]
+        colors = []
+        for v in xdata:
+            if v <= asm:
+                colors.append('#fec44f')
+            elif v >= alm:
+                colors.append('#bd0026')
+            elif v == most_frequent[0]:
+                colors.append('#238b45')
+            elif len(high_freq) > 0 and v in [f[0] for f in high_freq]:
+                colors.append('#0868ac')
+            else:
+                colors.append('#969696')
 
         loci_stats[locus] = [total_alleles, locus_mean,
                              locus_median, locus_mode,
                              frequent_values, locus_id]
 
+        # create histogram for loci that have multimodal distribution or
+        # loci that have alleles outside the acceptable length interval
         if locus_mode == 'None' or len(outlier) > 0:
             # create histogram object
-            trace = histogram_trace(xdata, ydata, '#0868ac')
-            if locus_mode == 'None':
-                loci_stats[locus].extend([trace, 'multimodal'])
+            trace = histogram_trace(xdata, ydata, colors)
+            if len(outlier) > 0 and locus_mode == 'None':
+                loci_stats[locus].extend([trace, 'outlier+multimodal'])
             elif len(outlier) > 0:
                 loci_stats[locus].extend([trace, 'outlier'])
+            elif locus_mode == 'None':
+                loci_stats[locus].extend([trace, 'multimodal'])
         else:
             loci_stats[locus].extend([None, 'single'])
 
     # header for file with statistics
-    header = 'locus\tnum_alleles\tmean\tmedian\tmode\tmost_frequent\tcategory'
+    header = ('locus\tnum_alleles\tmean\tmedian\tmode\t'
+              'most_frequent (length, count)\tcategory')
     # template for file path
     file_template = '{0}/{1}'
 
@@ -241,66 +253,33 @@ def main(schema_directory, output_directory, size_threshold):
     write_text(text, stats_outfile)
 
     # create HTML with subplots for loci with alleles outside length threshold
+    # and loci with multiple mode values
     # get list of loci
-    outlier_loci = [v[5]
-                    for k, v in loci_stats.items()
-                    if v[-1] == 'outlier']
-
-    # get traces
-    outlier_traces = [v[-2]
-                      for k, v in loci_stats.items()
-                      if v[-1] == 'outlier']
+    subplot_traces = [(v[5], v[6]) for k, v in loci_stats.items()
+                      if v[6] is not None]
 
     # create Figure object for subplots
-    outlier_mode_fig = create_subplots(len(outlier_traces), 2, outlier_loci)
-    outlier_mode_fig = add_multiple_traces(outlier_traces, outlier_mode_fig,
-                                           2)
+    subplot_fig = create_subplots(len(subplot_traces), 2, [v[0] for v in subplot_traces])
+    subplot_fig = add_multiple_traces([v[1] for v in subplot_traces], subplot_fig, 2)
 
     # adjust figure height and layout
-    fig_height = (statistics.math.ceil(len(outlier_mode_fig.data)/2))*300
-    outlier_mode_fig.update_layout(title='Loci with alleles 20% smaller or '
-                                         'larger than the allele length mode',
+    fig_height = (statistics.math.ceil(len(subplot_fig.data)/2))*300
+    subplot_fig.update_layout(title='Length distribution for loci that contain alleles '
+                                         '20% smaller or larger than the allele length mode '
+                                         'and/or multimodal distributions.',
                                    height=fig_height,
                                    showlegend=False,
                                    bargap=0.1,
                                    template='ggplot2')
 
     # log transform axes for more compact scaling
-    outlier_mode_fig.update_xaxes(type='log',
+    subplot_fig.update_xaxes(type='log',
                                   title_text='Allele length (log)')
-    outlier_mode_fig.update_yaxes(type='log',
+    subplot_fig.update_yaxes(type='log',
                                   title_text='Number of alleles (log)')
 
-    outlier_mode_plotfile = file_template.format(output_directory,
-                                                 'outlier.html')
-    plot(outlier_mode_fig, filename=outlier_mode_plotfile, auto_open=False)
-
-    # create HTML with subplots for loci with multiple modes
-    multimodal_loci = [v[5]
-                       for k, v in loci_stats.items()
-                       if v[-1] == 'multimodal']
-
-    multimodal_traces = [v[-2]
-                         for k, v in loci_stats.items()
-                         if v[-1] == 'multimodal']
-
-    multimodal_fig = create_subplots(len(multimodal_traces), 2, multimodal_loci)
-    multimodal_fig = add_multiple_traces(multimodal_traces, multimodal_fig,
-                                         2)
-
-    fig_height = (statistics.math.ceil(len(multimodal_fig.data)/2))*300
-    multimodal_fig.update_layout(title='Loci with multimodal allele length distributions',
-                                 height=fig_height,
-                                 showlegend=False,
-                                 bargap=0.1,
-                                 template='ggplot2')
-
-    multimodal_fig.update_xaxes(type='log', title_text='Allele length (log)')
-    multimodal_fig.update_yaxes(type='log', title_text='Number of alleles (log)')
-
-    plot_file = file_template.format(output_directory,
-                                     'multimodal.html')
-    plot(multimodal_fig, filename=plot_file, auto_open=False)
+    subplot_fig_plotfile = file_template.format(output_directory, 'outlier.html')
+    plot(subplot_fig, filename=subplot_fig_plotfile, auto_open=False)
 
 
 def parse_arguments():
@@ -317,7 +296,7 @@ def parse_arguments():
                         required=True,
                         dest='output_directory',
                         help='Path to the output directory.')
-    
+
     parser.add_argument('-s', '--size-threshold', type=float,
                         required=False, default=0.2,
                         dest='size_threshold',
