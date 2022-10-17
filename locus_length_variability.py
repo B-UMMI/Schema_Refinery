@@ -142,7 +142,7 @@ def write_text(text, output_file, end='\n'):
         outfile.write(text+end)
 
 
-def main(schema_directory, output_directory, size_threshold):
+def main(schema_directory, output_directory, size_threshold, frequency_threshold):
 
     if os.path.isdir(output_directory) is not True:
         os.mkdir(output_directory)
@@ -188,7 +188,7 @@ def main(schema_directory, output_directory, size_threshold):
         # select length values that are also very frequent (>=0.3)
         high_freq = [v
                      for v in freq_ordered[1:]
-                     if v[1] >= (0.3*most_frequent[1])]
+                     if v[1] >= (frequency_threshold*most_frequent[1])]
 
         frequent_values = [most_frequent] + high_freq
 
@@ -258,28 +258,37 @@ def main(schema_directory, output_directory, size_threshold):
     subplot_traces = [(v[5], v[6]) for k, v in loci_stats.items()
                       if v[6] is not None]
 
-    # create Figure object for subplots
-    subplot_fig = create_subplots(len(subplot_traces), 2, [v[0] for v in subplot_traces])
-    subplot_fig = add_multiple_traces([v[1] for v in subplot_traces], subplot_fig, 2)
+    if len(subplot_traces) > 0:
+        # create Figure object for subplots
+        subplot_fig = create_subplots(len(subplot_traces),
+                                      2,
+                                      [v[0] for v in subplot_traces])
+        subplot_fig = add_multiple_traces([v[1] for v in subplot_traces],
+                                          subplot_fig,
+                                          2)
 
-    # adjust figure height and layout
-    fig_height = (statistics.math.ceil(len(subplot_fig.data)/2))*300
-    subplot_fig.update_layout(title='Length distribution for loci that contain alleles '
-                                         '20% smaller or larger than the allele length mode '
-                                         'and/or multimodal distributions.',
-                                   height=fig_height,
-                                   showlegend=False,
-                                   bargap=0.1,
-                                   template='ggplot2')
+        # adjust figure height and layout
+        fig_height = (statistics.math.ceil(len(subplot_fig.data)/2))*300
+        subplot_fig.update_layout(title='Length distribution for loci that '
+                                        'contain alleles 20% smaller or '
+                                        'larger than the allele length mode '
+                                        'and/or multimodal distributions.',
+                                  height=fig_height,
+                                  showlegend=False,
+                                  bargap=0.1,
+                                  template='ggplot2')
 
-    # log transform axes for more compact scaling
-    subplot_fig.update_xaxes(type='log',
-                                  title_text='Allele length (log)')
-    subplot_fig.update_yaxes(type='log',
-                                  title_text='Number of alleles (log)')
+        # log transform axes for more compact scaling
+        subplot_fig.update_xaxes(type='log',
+                                 title_text='Allele length (log)')
+        subplot_fig.update_yaxes(type='log',
+                                 title_text='Number of alleles (log)')
 
-    subplot_fig_plotfile = file_template.format(output_directory, 'outlier.html')
-    plot(subplot_fig, filename=subplot_fig_plotfile, auto_open=False)
+        subplot_fig_plotfile = file_template.format(output_directory,
+                                                    'loci_barplots.html')
+        plot(subplot_fig,
+             filename=subplot_fig_plotfile,
+             auto_open=False)
 
 
 def parse_arguments():
@@ -302,6 +311,11 @@ def parse_arguments():
                         dest='size_threshold',
                         help='Locus length mode variation '
                              'threshold for outliers.')
+
+    parser.add_argument('-ft', '--frequency-threshold', type=float,
+                        required=False, default=0.3,
+                        dest='frequency_threshold',
+                        help='')
 
     args = parser.parse_args()
 
