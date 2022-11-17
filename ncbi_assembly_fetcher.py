@@ -19,7 +19,6 @@ import time
 import socket
 import argparse
 import urllib.request
-import copy
 import concurrent.futures
 from itertools import repeat
 
@@ -33,7 +32,7 @@ assembly_summary_refseq = 'https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS
 
 
 def download_file(url, file_name, retry):
-    """ Accepts a URL to download a file.
+    """Accept a URL to download a file.
 
     Parameters
     ----------
@@ -51,7 +50,6 @@ def download_file(url, file_name, retry):
         an object with the response information for a
         successful download.
     """
-
     tries = 0
     while tries < retry:
         try:

@@ -37,20 +37,18 @@ import Extract_cgAlleles as cg
 
 
 def nostdout(function, args):
-    """ Silences stdout from a function. """
-
+    """Silence stdout from a function."""
     with contextlib.redirect_stdout(io.StringIO()):
         return function(*args)
 
 
 def simply_return(data):
-    """ Returns provided argument. """
-
+    """Return provided argument."""
     return data
 
 
 def read_tabular(input_file, delimiter='\t'):
-    """ Read tabular file.
+    """Read a tabular file.
 
     Parameters
     ----------
@@ -66,7 +64,6 @@ def read_tabular(input_file, delimiter='\t'):
         Each sublist has the fields that were separated by
         the defined delimiter.
     """
-
     with open(input_file, 'r') as infile:
         reader = csv.reader(infile, delimiter=delimiter)
         lines = [line for line in reader]
@@ -75,8 +72,7 @@ def read_tabular(input_file, delimiter='\t'):
 
 
 def intracluster_stats(distance_matrix, row_id):
-    """ Computes the minimum, maximum and mean distances
-        to samples in the same cluster.
+    """Compute the min, max and mean distances to samples in same cluster.
 
     Parameters
     ----------
@@ -93,7 +89,6 @@ def intracluster_stats(distance_matrix, row_id):
         between the sample with provided identifier and
         samples in the same cluster.
     """
-
     # get row
     current_row = distance_matrix.loc[row_id]
     # drop self
@@ -116,8 +111,7 @@ def intracluster_stats(distance_matrix, row_id):
 
 
 def intercluster_stats(distance_matrix, row_id):
-    """ Computes the minimum, maximum and mean distances
-        to samples in other clusters.
+    """Compute the min, max and mean distances to samples in other clusters.
 
     Parameters
     ----------
@@ -134,7 +128,6 @@ def intercluster_stats(distance_matrix, row_id):
         between the sample with provided identifier and
         samples in other clusters.
     """
-
     # get minimum distance to strains in other clusters
     minimum_distance = distance_matrix[row_id].nsmallest(1, keep='all')
     stats_min = (list(minimum_distance.index),
@@ -153,21 +146,19 @@ def intercluster_stats(distance_matrix, row_id):
 
 
 def select_centroids(cluster_stats):
-    """ Selects cluster centroids based on the mean
-        distance between all samples.
+    """Select cluster centroids based on the mean distance between all samples.
 
     Parameters
     ----------
     cluster_stats : dict
         Dictionary with distance statistics for all
         samples in a cluster.
-        
+
     Returns
     -------
     centroid : str
         Identifier of the sample selected as centroid.
     """
-
     if len(cluster_stats) > 1:
         means = [(i, j['mean']) for i, j in cluster_stats.items()]
         # sort based on decreasing mean distance
@@ -181,7 +172,7 @@ def select_centroids(cluster_stats):
 
 
 def centroids_inter_dists(distance_matrix, centroids_ids, identifier):
-    """ Computes distances between cluster centroids.
+    """Compute distances between cluster centroids.
 
     Parameters
     ----------
@@ -189,7 +180,7 @@ def centroids_inter_dists(distance_matrix, centroids_ids, identifier):
         Path to a TSV file that contains a distance matrix
         with the number of allelic differences.
     centroids_ids : list
-        List with the identifiers for all centroids.        
+        List with the identifiers for all centroids.
     identifier : str
         Sample identifier for the current centroid.
 
@@ -199,7 +190,6 @@ def centroids_inter_dists(distance_matrix, centroids_ids, identifier):
         List with the minimum, maximum and mean distance
         to centroids from other clusters.
     """
-
     current_cols = ['FILE', identifier]
     df = pd.read_csv(distance_matrix, sep='\t',
                      usecols=current_cols, index_col='FILE')
@@ -223,10 +213,10 @@ def centroids_inter_dists(distance_matrix, centroids_ids, identifier):
 
 
 def compute_intracluster_stats(distance_matrix, cluster_ids):
-    """ Computes the minimum, maximum and mean distance
-        between all samples in a cluster. Also selects
-        the cluster centroid based on the minimum mean
-        intracluster distance.
+    """Compute the min, max and mean distance between all samples in a cluster.
+
+    Also selects the cluster centroid based on the minimum mean
+    intracluster distance.
 
     Parameters
     ----------
@@ -246,7 +236,6 @@ def compute_intracluster_stats(distance_matrix, cluster_ids):
         also includes a key:value pair for the selected
         centroid.
     """
-
     # only read columns for the samples that belong to current cluster
     current_cols = ['FILE'] + cluster_ids
     df = pd.read_csv(distance_matrix, sep='\t',
@@ -278,7 +267,7 @@ def compute_intracluster_stats(distance_matrix, cluster_ids):
 
 
 def clusters_stats(distance_matrix, clusters):
-    """ Computes intracluser stats for all clusters.
+    """Compute intracluser stats for all clusters.
 
     Parameters
     ----------
@@ -297,7 +286,6 @@ def clusters_stats(distance_matrix, clusters):
         a dictionary with the intracluster stats for all
         samples in each cluster as values.
     """
-
     # use Pandas to get columns for each cluster
     stats = {}
     for k, v in clusters.items():
@@ -308,8 +296,7 @@ def clusters_stats(distance_matrix, clusters):
 
 
 def clusters_boxplot(distance_matrix, clusters):
-    """ Creates Boxplot (go.Box) traces to plot the
-        distribution of intracluster allelic distances.
+    """Create Boxplots to plot the distribution of intracluster distances.
 
     Parameters
     ----------
@@ -326,7 +313,6 @@ def clusters_boxplot(distance_matrix, clusters):
     traces : list
         List with one Boxplot trace per cluster.
     """
-
     # use Pandas to get columns for each cluster
     traces = []
     for k, v in clusters.items():
@@ -367,9 +353,7 @@ def clusters_boxplot(distance_matrix, clusters):
 
 
 def clusters_heatmap(distance_matrix):
-    """ Creates a Heatmap (go.Heatmap) trace to plot
-        a Heatmap represeting the distance matrix of
-        allelic distances.
+    """Create a Heatmap represeting a distance matrix.
 
     Parameters
     ----------
@@ -383,7 +367,6 @@ def clusters_heatmap(distance_matrix):
         Heatmap trace to represent the distance matrix
         of allelic distances for the cluster.
     """
-
     df = pd.read_csv(distance_matrix,
                      sep='\t',
                      index_col='FILE')
@@ -406,8 +389,7 @@ def clusters_heatmap(distance_matrix):
 
 def cluster_dendogram(distance_matrix, output_file,
                       linkage_function, distance_function):
-    """ Clusters samples based on a linkage function and
-        a distance function.
+    """Clusters samples based on a linkage function and a distance function.
 
     Parameters
     ----------
@@ -425,7 +407,6 @@ def cluster_dendogram(distance_matrix, output_file,
     -------
     True
     """
-
     # Read distance matrix
     distance_df = pd.read_csv(distance_matrix,
                               sep='\t',
@@ -486,10 +467,10 @@ def cluster_dendogram(distance_matrix, output_file,
         for j, l2 in enumerate(ordered_labels):
             heatmap_hovertext[-1].append('x: {0}<br>y: {1}<br>Distance: {2}'.format(l, l2, heat_data[i][j]))
 
-    heatmap = [go.Heatmap(x = dendro_leaves,
-                          y = dendro_leaves,
-                          z = heat_data,
-                          colorscale = 'Blues',
+    heatmap = [go.Heatmap(x=dendro_leaves,
+                          y=dendro_leaves,
+                          z=heat_data,
+                          colorscale='Blues',
                           hoverinfo='text',
                           text=heatmap_hovertext)]
 
@@ -503,7 +484,7 @@ def cluster_dendogram(distance_matrix, output_file,
 
     # Edit Layout
     fig.update_layout({'width': 1200, 'height': 900,
-                       'showlegend':False, 'hovermode': 'closest'})
+                       'showlegend': False, 'hovermode': 'closest'})
 
     # Edit xaxis with heatmap
     fig.update_layout(xaxis={'domain': [.15, 1],
@@ -512,7 +493,7 @@ def cluster_dendogram(distance_matrix, output_file,
                              'showline': False,
                              'zeroline': False,
                              'showticklabels': False,
-                             'ticks':''})
+                             'ticks': ''})
 
     # Edit xaxis2 with dendogram
     fig.update_layout(xaxis2={'domain': [0, .15],
@@ -521,7 +502,7 @@ def cluster_dendogram(distance_matrix, output_file,
                               'showline': False,
                               'zeroline': False,
                               'showticklabels': False,
-                              'ticks':''})
+                              'ticks': ''})
 
     # Edit yaxis with heatmap and side dendogram
     fig.update_layout(yaxis={'domain': [0, 1],
@@ -533,13 +514,13 @@ def cluster_dendogram(distance_matrix, output_file,
                              'ticks': ''})
 
     # Edit yaxis2 with top dendogram
-    fig.update_layout(yaxis2={'domain':[.825, .975],
+    fig.update_layout(yaxis2={'domain': [.825, .975],
                               'mirror': False,
                               'showgrid': False,
                               'showline': False,
                               'zeroline': False,
                               'showticklabels': False,
-                              'ticks':''})
+                              'ticks': ''})
 
     # change layout design and add title
     fig.update_layout(template='seaborn', paper_bgcolor='rgba(0,0,0,0)',
@@ -553,8 +534,9 @@ def cluster_dendogram(distance_matrix, output_file,
 
 
 def write_list(input_list, output_file, mode='w'):
-    """ Writes list to file. Each nested list is joined
-        with '\t' and written as a single line.
+    r"""Write list to file.
+
+    Each nested list is joined with '\t' and written as a single line.
 
     Parameters
     ----------
@@ -565,7 +547,6 @@ def write_list(input_list, output_file, mode='w'):
     mode : str
         Write mode ('w' for write, 'a' for append).
     """
-
     joined_lines = ['\t'.join(l) for l in input_list]
     joined_text = '\n'.join(joined_lines)
     with open(output_file, mode) as outfile:
@@ -573,15 +554,14 @@ def write_list(input_list, output_file, mode='w'):
 
 
 def create_directory(directory_path):
-    """ Create a directory if it does not exist. """
-
+    """Create a directory if it does not exist."""
     if os.path.isdir(directory_path) is False:
         os.mkdir(directory_path)
 
 
 def divide_results_per_cluster(clusters, allelecall_df,
                                output_directory, concat_file):
-    """ Divides allele call results into one file per cluster.
+    """Divide allele call results into one file per cluster.
 
     Parameters
     ----------
@@ -605,7 +585,6 @@ def divide_results_per_cluster(clusters, allelecall_df,
         a list that contains the path to the cluster directory
         and the TSV file with allele calling results as values.
     """
-
     clusters_files = {}
     include_header = True
     for k, v in clusters.items():
@@ -630,7 +609,7 @@ def divide_results_per_cluster(clusters, allelecall_df,
 
 
 def create_dm(input_file, output_directory):
-    """ Compute distance matrix from allele calling results.
+    """Compute distance matrix from allele calling results.
 
     Parameters
     ----------
@@ -645,7 +624,6 @@ def create_dm(input_file, output_directory):
     based on the allelic differences and path to a TSV
     file with the matrix for the number fo shared loci.
     """
-
     input_basename = os.path.basename(input_file)
     # remove extension that is after last '.'
     input_basename = '.'.join(input_basename.split('.')[0:-1])
@@ -687,8 +665,7 @@ def create_dm(input_file, output_directory):
 
 
 def inter_cluster_stats(stats, distance_matrix):
-    """ Compute intercluster distance statistics
-        for all clusters.
+    """Compute intercluster distance statistics for all clusters.
 
     Parameters
     ----------
@@ -704,7 +681,6 @@ def inter_cluster_stats(stats, distance_matrix):
         Dictionary with statistics updated with the
         intercluster distance values.
     """
-
     cluster_ids = [k for k in stats if 'centroid' not in k]
     current_cols = ['FILE'] + cluster_ids
 
@@ -728,7 +704,7 @@ def inter_cluster_stats(stats, distance_matrix):
 def boxplot_html(data, output_file, title, xaxis_title,
                  yaxis_title, legend_title, boxplot_min,
                  fontsize):
-    """ Creates a HTML file with boxplots.
+    """Create HTML file with boxplots.
 
     Parameters
     ----------
@@ -745,7 +721,6 @@ def boxplot_html(data, output_file, title, xaxis_title,
     legend_title : str
         Title for the legend.
     """
-
     # Create HTML with Boxplots
     fig = go.Figure()
     for t in data:
@@ -767,7 +742,7 @@ def boxplot_html(data, output_file, title, xaxis_title,
 
 
 def heatmap_html(data, output_file, title):
-    """ Creates file with a heatmap.
+    """Create HTML file with a heatmap.
 
     Parameters
     ----------
@@ -778,7 +753,6 @@ def heatmap_html(data, output_file, title):
     title : str
         Title to display at the top of the page.
     """
-
     # Heatmap
     fig = go.Figure()
     fig.add_trace(data)
@@ -788,7 +762,7 @@ def heatmap_html(data, output_file, title):
 
 
 def write_intracluster_stats(data, output_file, headers):
-    """ Writes TSV file with intracluster statistics.
+    """Write TSV file with intracluster statistics.
 
     Parameters
     ----------
@@ -800,7 +774,6 @@ def write_intracluster_stats(data, output_file, headers):
     headers : list
         File headers.
     """
-
     lines = [headers]
     for h, j in data.items():
         if 'centroid' not in h:
@@ -825,8 +798,7 @@ def write_intracluster_stats(data, output_file, headers):
 
 
 def global_stats_lines(data, cluster_id):
-    """ Writes TSV file with cluster statistics for the
-        combined analysis of all clusters.
+    """Write TSV file with cluster statistics for the analysis of all clusters.
 
     Parameters
     ----------
@@ -835,7 +807,6 @@ def global_stats_lines(data, cluster_id):
         a dictionary with intracluster and intercluster
         statistics as values.
     """
-
     lines = []
     for h, j in data.items():
         if 'centroid' not in h:
@@ -873,7 +844,7 @@ def global_stats_lines(data, cluster_id):
 
 
 def custom_cgMLST(allelecall_results, core_genome, output_file):
-    """ Reads allele call results for a set of loci.
+    """Read allele call results for a set of loci.
 
     Parameters
     ----------
@@ -885,7 +856,6 @@ def custom_cgMLST(allelecall_results, core_genome, output_file):
     output_file : str
         Path to the output file.
     """
-
     # read list of loci in cgMLST
     with open(core_genome, 'r') as infile:
         cgMLST_loci = infile.read().splitlines()
@@ -910,7 +880,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
 
     clusters_dict = {}
     if clusters is not None:
-        # read clusters    
+        # read clusters
         clusters_lines = read_tabular(clusters)
         for l in clusters_lines:
             clusters_dict.setdefault(l[1], []).append(l[0])
@@ -919,7 +889,7 @@ def main(input_data, output_directory, clusters, cpu_cores,
     clusters_size = [(k, len(v))
                      for k, v in clusters_dict.items()]
     clusters_size = sorted(clusters_size,
-                           key = lambda x: x[1], reverse=True)
+                           key=lambda x: x[1], reverse=True)
     ordered_clusters = {c[0]: clusters_dict[c[0]]
                         for c in clusters_size}
 
@@ -1245,7 +1215,7 @@ def parse_arguments():
                              'identifiers and the cluster the samples '
                              'belong to (sample ids in the first column '
                              'and cluster ids in the second column). '
-                             'The analysis groups all samples '
+                             'The analysis also groups all samples '
                              'into a global cluster that will be analysed '
                              'in the same way as predefined clusters.')
 

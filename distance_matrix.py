@@ -36,7 +36,7 @@ import mask_matrix as mm
 
 
 def pickle_dumper(content, output_file):
-    """ Use the Pickle module to serialize an object.
+    """Use the Pickle module to serialize an object.
 
     Parameters
     ----------
@@ -50,13 +50,12 @@ def pickle_dumper(content, output_file):
     -------
     None.
     """
-
     with open(output_file, 'wb') as po:
         pickle.dump(content, po)
 
 
 def pickle_loader(input_file):
-    """ Use the Pickle module to de-serialize an object.
+    """Use the Pickle module to de-serialize an object.
 
     Parameters
     ----------
@@ -69,7 +68,6 @@ def pickle_loader(input_file):
         Variable that refers to the de-serialized
         object.
     """
-
     with open(input_file, 'rb') as pi:
         content = pickle.load(pi)
 
@@ -77,7 +75,7 @@ def pickle_loader(input_file):
 
 
 def progress_bar(process, total, tickval=5, ticknum=20, completed=False):
-    """ Creates and prints progress bar to stdout.
+    """Create and print progress bar to stdout.
 
     Parameters
     ----------
@@ -98,7 +96,6 @@ def progress_bar(process, total, tickval=5, ticknum=20, completed=False):
     completed : bool
         Boolean indicating if process has completed.
     """
-
     # check if process has finished
     if (process.ready()):
         # print full progress bar and satisfy stopping condition
@@ -125,8 +122,7 @@ def progress_bar(process, total, tickval=5, ticknum=20, completed=False):
 
 
 def function_helper(input_args):
-    """ Runs function by passing set of provided inputs and
-        captures exceptions raised during function execution.
+    """Run function with provided inputs and captures exceptions.
 
     Parameters
     ----------
@@ -141,7 +137,6 @@ def function_helper(input_args):
         If an exception is raised it returns a list with
         the name of the function and the exception traceback.
     """
-
     try:
         results = input_args[-1](*input_args[0:-1])
     except Exception as e:
@@ -157,8 +152,7 @@ def function_helper(input_args):
 
 def map_async_parallelizer(inputs, function, cpu, callback='extend',
                            chunksize=1, show_progress=False):
-    """ Parallelizes function calls by creating several processes
-        and distributing inputs.
+    """Parallelize function calls.
 
     Parameters
     ----------
@@ -188,7 +182,6 @@ def map_async_parallelizer(inputs, function, cpu, callback='extend',
         List with the results returned for each function
         call.
     """
-
     results = []
     # use context manager to join and close pool automatically
     with Pool(cpu) as pool:
@@ -210,10 +203,10 @@ def map_async_parallelizer(inputs, function, cpu, callback='extend',
 
 
 def tsv_to_nparray(input_file, array_dtype='int32'):
-    """ Reads a TSV file with a matrix of allelic profiles.
-        File lines are read as a generator to exclude the
-        sample identifier and avoid loading huge files
-        into memory.
+    """Read matrix of allelic profiles and convert to Numpy array.
+
+    File lines are read as a generator to exclude the sample identifier
+    and avoid loading huge files into memory.
 
     Parameters
     ----------
@@ -229,7 +222,6 @@ def tsv_to_nparray(input_file, array_dtype='int32'):
         Numpy array with the numeric values for
         all allelic profiles.
     """
-
     # import matrix without column and row identifiers
     with open(input_file, 'r') as infile:
         lines = ('\t'.join(line.split('\t')[1:])
@@ -240,7 +232,7 @@ def tsv_to_nparray(input_file, array_dtype='int32'):
         # should be safe even when arrays are multiplied
         np_array = np.genfromtxt(fname=lines, delimiter='\t',
                                  dtype=array_dtype, skip_header=1)
-        
+
         # need to reshape array to 2D if it only has info for one sample
         try:
             # if it does not have columns it needs to be reshaped
@@ -252,8 +244,7 @@ def tsv_to_nparray(input_file, array_dtype='int32'):
 
 
 def compute_distances(indexes, np_matrix, genome_ids, tmp_directory):
-    """ Computes pairwise allelic differences and number
-        of shared loci for a matrix of allelic profiles.
+    """Compute pairwise allelic differences and number of shared loci.
 
     Parameters
     ----------
@@ -274,7 +265,6 @@ def compute_distances(indexes, np_matrix, genome_ids, tmp_directory):
         List with the paths to all pickle files that were created
         to store results.
     """
-
     # multiply one row per cycle to avoid memory overflow
     # read only part of the matrix for huge files and process in chunks?
     output_files = {}
@@ -307,7 +297,7 @@ def compute_distances(indexes, np_matrix, genome_ids, tmp_directory):
 
 
 def divide_list_into_n_chunks(list_to_divide, n):
-    """ Divides a list into a defined number of sublists.
+    """Divide a list into a defined number of sublists.
 
     Parameters
     ----------
@@ -322,7 +312,6 @@ def divide_list_into_n_chunks(list_to_divide, n):
         List with the sublists created by dividing
         the input list.
     """
-
     sublists = []
     d, r = divmod(len(list_to_divide), n)
     for i in range(n):
@@ -333,10 +322,10 @@ def divide_list_into_n_chunks(list_to_divide, n):
     sublists = [i for i in sublists if len(i) > 0]
 
     return sublists
-    
+
 
 def join_iterable(iterable, delimiter='\t'):
-    """ Joins the elements of an iterable.
+    r"""Join the elements of an iterable.
 
     Parameters
     ----------
@@ -350,14 +339,13 @@ def join_iterable(iterable, delimiter='\t'):
     joined : str
         A string with all elements joined by the delimiter.
     """
-
     joined = delimiter.join(iterable)
 
     return joined
 
 
 def write_text(text, output_file, mode='w'):
-    """ Writes a string to a file.
+    """Write a string to a file.
 
     Parameters
     ----------
@@ -372,14 +360,13 @@ def write_text(text, output_file, mode='w'):
     -------
     None.
     """
-
     # write matrix to output file
     with open(output_file, mode) as outfile:
         outfile.write(text+'\n')
 
 
 def write_lines(lines, output_file, mode='w'):
-    """ Writes a matrix to a file.
+    """Write a matrix to a file.
 
     Parameters
     ----------
@@ -397,7 +384,6 @@ def write_lines(lines, output_file, mode='w'):
     Writes matrix rows (each sublist of the input list is
     a row) to the output file.
     """
-
     # join matrix lines into chunk of text
     concat_lines = [join_iterable(line, '\t')
                     for line in lines]
@@ -407,8 +393,7 @@ def write_lines(lines, output_file, mode='w'):
 
 
 def get_sample_ids(input_file, delimiter='\t'):
-    """ Extracts the sample identifiers from a
-        matrix with allelic profiles.
+    r"""Extract the sample identifiers from a matrix with allelic profiles.
 
     Parameters
     ----------
@@ -423,7 +408,6 @@ def get_sample_ids(input_file, delimiter='\t'):
     sample_ids : list
         List with the sample identifiers.
     """
-
     with open(input_file, 'r') as infile:
         reader = csv.reader(infile, delimiter=delimiter)
         sample_ids = [line[0] for line in reader][1:]
@@ -432,7 +416,7 @@ def get_sample_ids(input_file, delimiter='\t'):
 
 
 def merge_dictionaries(dictionaries):
-    """ Merges several dictionaries.
+    """Merge several dictionaries.
 
     Parameters
     ----------
@@ -446,7 +430,6 @@ def merge_dictionaries(dictionaries):
         all input dictionaries. Common keys will
         be overwritten.
     """
-
     merged = {}
     for d in dictionaries:
         merged = {**merged, **d}
@@ -456,8 +439,7 @@ def merge_dictionaries(dictionaries):
 
 def write_matrices(pickled_results, genome_ids, output_pairwise,
                    output_p, col_ids):
-    """ Write matrices with number of allelic differences and
-        number of shared loci above the diagonal.
+    """Write above diagonal matrices with allelic differences and shared loci.
 
     Parameters
     ----------
@@ -480,7 +462,6 @@ def write_matrices(pickled_results, genome_ids, output_pairwise,
     -------
     None.
     """
-
     sl_lines = [col_ids]
     ad_lines = [col_ids]
     limit = 300
@@ -511,7 +492,7 @@ def write_matrices(pickled_results, genome_ids, output_pairwise,
 
 
 def concatenate_files(files, output_file, header=None):
-    """ Concatenates the contents of a set of files.
+    """Concatenate the contents of a set of files.
 
     Parameters
     ----------
@@ -530,7 +511,6 @@ def concatenate_files(files, output_file, header=None):
         Path to the output file that was created with
         the concatenation of input files.
     """
-
     with open(output_file, 'w') as of:
         if header is not None:
             of.write(header)
@@ -542,7 +522,7 @@ def concatenate_files(files, output_file, header=None):
 
 
 def transpose_matrix(input_file, output_directory):
-    """ Transposes lines in a TSV file.
+    """Transpose lines in a TSV file.
 
     Parameters
     ----------
@@ -559,7 +539,6 @@ def transpose_matrix(input_file, output_directory):
         This file is created by concatenating all
         files saved into `output_directory`.
     """
-
     file_id = 1
     transpose_files = []
     input_basename = os.path.basename(input_file)
@@ -590,8 +569,7 @@ def transpose_matrix(input_file, output_directory):
 
 
 def merge_triangular_matrices(upper_matrix, lower_matrix, output_file, matrix_size):
-    """ Merge two triangular matrices with the same dimensions
-        to create a symmetric matrix.
+    """Merge two triangular matrices to create a symmetric matrix.
 
     Parameters
     ----------
@@ -611,7 +589,6 @@ def merge_triangular_matrices(upper_matrix, lower_matrix, output_file, matrix_si
     -------
     None.
     """
-
     with open(upper_matrix, 'r') as upper_handle, open(lower_matrix, 'r') as lower_handle:
         upper_reader = csv.reader(upper_handle, delimiter='\t')
         lower_reader = csv.reader(lower_handle, delimiter='\t')
@@ -632,7 +609,7 @@ def merge_triangular_matrices(upper_matrix, lower_matrix, output_file, matrix_si
 
 
 def symmetrify_matrix(input_matrix, matrix_size, tmp_directory):
-    """ Symmetrify a triangular matrix.
+    """Symmetrify a triangular matrix.
 
     Parameters
     ----------
@@ -649,7 +626,6 @@ def symmetrify_matrix(input_matrix, matrix_size, tmp_directory):
         Path to the output file that contains the symmetric
         matrix.
     """
-
     output_transpose = transpose_matrix(input_matrix, tmp_directory)
 
     # merge upper and lower diagonal matrices into symmetric matrix

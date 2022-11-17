@@ -28,19 +28,20 @@ purpose.
 
 Execution example:
 
-    >>> python mask_matrix.py -i <allele_call_matrix_file> 
+    >>> python mask_matrix.py -i <allele_call_matrix_file>
         -o <masked_output_matrix> -mc ASM=short ALM=large LNF=pop
 
     Will substitute ASM elements with 'short' and ALM elements with 'large'.
     LNF cases will not be substituted due to the use of the 'pop' expression.
-    NIPH, NIPHEM, PLOT3, PLOT5 and LOTSC cases will be substituted by the default
-    '0' character. All 'INF-' prefixes will be removed from inferred alleles.
+    NIPH, NIPHEM, PLOT3, PLOT5 and LOTSC cases will be substituted by the
+    default '0' character. All 'INF-' prefixes will be removed from inferred
+    alleles.
 
     >>> python mask_matrix.py -i <allele_call_matrix_file>
         -o <masked_output_matrix> -mc sub
 
-    Will change the default subtitution value from '0' to 'sub' and all 
-    ASM, ALM, NIPH, NIPHEM, PLOT3, PLOT5, LOTSC and LNF cases will be 
+    Will change the default subtitution value from '0' to 'sub' and all
+    ASM, ALM, NIPH, NIPHEM, PLOT3, PLOT5, LOTSC and LNF cases will be
     substituted by 'sub'.
 """
 
@@ -51,7 +52,7 @@ import argparse
 
 
 def join_iterable(iterable, delimiter='\t'):
-    """ Joins elements in an iterable into one string.
+    """Join elements in an iterable into single string.
 
     Parameters
     ----------
@@ -65,14 +66,13 @@ def join_iterable(iterable, delimiter='\t'):
     joined : str
         String representing all elements in input iterable joined.
     """
-
     joined = delimiter.join(iterable)
 
     return joined
 
 
 def write_text(text, output_file, mode='w'):
-    """ Writes a string to a file.
+    """Write a string to a file.
 
     Parameters
     ----------
@@ -83,14 +83,13 @@ def write_text(text, output_file, mode='w'):
     mode : str
         Write mode ('w' to write, 'a' to append).
     """
-
     # write matrix to output file
     with open(output_file, mode) as outfile:
         outfile.write(text+'\n')
 
 
 def write_lines(lines, output_file, mode='w'):
-    """ Writes a list of rows to a file.
+    """Write a list of strings/rows to a file.
 
     Parameters
     ----------
@@ -100,7 +99,6 @@ def write_lines(lines, output_file, mode='w'):
     output_file : str
         Path to the output file.
     """
-
     # join matrix lines into chunk of text
     concat_lines = [join_iterable(line, '\t')
                     for line in lines]
@@ -110,9 +108,11 @@ def write_lines(lines, output_file, mode='w'):
 
 
 def change_masking_chars(masking_dict, masking_characters):
-    """ Parses list of masking instructions to modify dictionary
-        with word substitution mapping according to the instructions
-        passed by the user.
+    """Parse list of mapping instructions provided by the user.
+
+    Parses list of masking instructions to modify dictionary
+    with word substitution mapping according to the instructions
+    passed by the user.
 
     Parameters
     ----------
@@ -128,7 +128,6 @@ def change_masking_chars(masking_dict, masking_characters):
     masking_dict : dict
         Dictionary with updated substitution instructions.
     """
-
     for char in masking_characters:
         c = char.split('=')
         if c[1] != 'pop':
@@ -150,8 +149,7 @@ def change_masking_chars(masking_dict, masking_characters):
 
 
 def mask_matrix(input_matrix, masking_chars_dict, output_matrix):
-    """ Masks matrix values. Masked values are substituted by
-        either a default character or user-defined characters.
+    """Mask matrix with allelic profiles.
 
     Parameters
     ----------
@@ -169,7 +167,6 @@ def mask_matrix(input_matrix, masking_chars_dict, output_matrix):
     total_masked : int
         Total number of allelic profiles that were masked.
     """
-
     limit = 200
     total_masked = 0
     with open(input_matrix, 'r') as infile:
@@ -251,8 +248,9 @@ def main(input_matrix, output_file, masking_characters):
 
     print('Masking matrix...', end='')
     # mask matrix
-    masked_matrix = mask_matrix(input_matrix, masking_dict, output_file)
-    print('masked matrix available at {0}'.format(os.path.abspath(output_file)))
+    total_masked = mask_matrix(input_matrix, masking_dict, output_file)
+    print('masked {0} profiles.'.format(total_masked))
+    print('Masked matrix available at {0}'.format(os.path.abspath(output_file)))
 
 
 def parse_arguments():
@@ -269,7 +267,7 @@ def parse_arguments():
     parser.add_argument('-o', '--output-file', type=str,
                         required=True, dest='output_file',
                         help='Path to the output file that will be '
-                             'created to store the new matrix.')
+                             'created to store the masked matrix.')
 
     parser.add_argument('-mc', '--masking-characters', type=str,
                         nargs='+', required=False,

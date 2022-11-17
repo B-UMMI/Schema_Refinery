@@ -31,7 +31,7 @@ proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&for
 
 
 def download_file(url, file_name, retry):
-    """ Accepts a URL to download a file.
+    """Accept a URL to download a file.
 
     Parameters
     ----------
@@ -124,7 +124,7 @@ def parse_arguments():
     parser.add_argument('-t', '--input_table', type=str,
                         required=True, dest='input_table',
                         help='TSV file downloaded from UniProt '
-                             'that a contains list of proteomes.')
+                             'that contains list of proteomes.')
 
     parser.add_argument('-o', '--output_directory', type=str,
                         required=True, dest='output_directory',

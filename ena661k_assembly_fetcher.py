@@ -47,28 +47,29 @@ url_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 
 # function passed to urllib.request.urlretrieve to track progress
 def HandleProgress(block_num, block_size, total_size):
-    read_data= 0
+    read_data = 0
     # calculating the progress
-    # storing a temporary value  to store downloaded bytesso that we can add it later to the overall downloaded data
+    # storing a temporary value to store downloaded bytes so that we can
+    # add it later to the overall downloaded data
     temp = block_num * block_size
     read_data = temp + read_data
-    #calculating the remaining size
+    # calculating the remaining size
     remaining_size = total_size - read_data
-    if(remaining_size<=0):
+    if (remaining_size <= 0):
         downloaded_percentage = 100
         remaining_size = 0
     else:
         downloaded_percentage = int(((total_size-remaining_size) / total_size)*(100))
 
     if downloaded_percentage == 100:
-        print( f'Downloaded: {downloaded_percentage}%  ' , end="\n")
+        print(f'Downloaded: {downloaded_percentage}% ', end="\n")
     else:
-        print(" ", end="\r")   
-        print( f'Downloaded: {downloaded_percentage}%  ' , end="\r")
+        print(" ", end="\r")
+        print(f'Downloaded: {downloaded_percentage}% ', end="\r")
 
 
-def checkDownload(file:str, file_hash:str, remove=False):
-    """ Checks the integrity of a downloaded file.
+def checkDownload(file: str, file_hash: str, remove=False):
+    """Check the integrity of a downloaded file.
 
     Parameters
     ----------
@@ -82,7 +83,6 @@ def checkDownload(file:str, file_hash:str, remove=False):
     True if the hash determined for the file contents matches
     the expected hash, False otherwise.
     """
-
     with open(file, 'rb') as infile:
         data = infile.read()
         md5 = hashlib.md5(data).hexdigest()
@@ -96,7 +96,7 @@ def checkDownload(file:str, file_hash:str, remove=False):
 
 
 def read_table(file_path, delimiter='\t'):
-    """ Reads a tabular file.
+    """Read a tabular file.
 
     Parameters
     ----------
@@ -111,15 +111,15 @@ def read_table(file_path, delimiter='\t'):
         List that contains one sublist per
         line in the input tabular file.
     """
-
     with open(file_path, 'r') as infile:
         lines = list(csv.reader(infile, delimiter=delimiter))
 
     return lines
 
 
-def download_ftp_file(file_url, out_file, original_hash, retry, verify=True, progress=False):
-    """ Downloads a file from a FTP server.
+def download_ftp_file(file_url, out_file, original_hash, retry,
+                      verify=True, progress=False):
+    """Download a file from a FTP server.
 
     Parameter
     ---------
@@ -136,7 +136,6 @@ def download_ftp_file(file_url, out_file, original_hash, retry, verify=True, pro
     downloaded : bool
         True if file was successfully downloaded, False otherwise.
     """
-
     tries = 0
     downloaded = False
     while downloaded is False and tries < retry:
@@ -162,7 +161,7 @@ def download_ftp_file(file_url, out_file, original_hash, retry, verify=True, pro
 def main(metadata_table, paths_table, species_name, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, mlst_species, known_st, any_quality, stride,
-         retry,st):
+         retry, st):
 
     # read file with metadata
     metadata_lines = read_table(metadata_table)
@@ -235,14 +234,14 @@ def main(metadata_table, paths_table, species_name, output_directory,
         print('{0} with known ST.'.format(len(species_lines)))
 
     if st is not None:
-        with open(st,'r') as desired_st:
+        with open(st, 'r') as desired_st:
             d_st = desired_st.read().splitlines()
-            mlst = metadata_header.index('mlst')           
+            mlst = metadata_header.index('mlst')
             species_lines = [line
-                            for line in species_lines
-                            if line[mlst] in d_st]
+                             for line in species_lines
+                             if line[mlst] in d_st]
             print('{0} with desired ST'.format(len(species_lines)))
-            
+
     # filter based on quality level
     if any_quality is False:
         quality_index = metadata_header.index('high_quality')
@@ -300,10 +299,11 @@ def main(metadata_table, paths_table, species_name, output_directory,
 
         if stride:
             interval_list = stride.split(':')
-            low = int(interval_list[0]) -1
+            low = int(interval_list[0])-1
             high = int(interval_list[1])
-        
-            # make sure the interval doesnt go outside of the sample_ids list bounds
+
+            # make sure the interval doesn't go outside of the
+            # sample_ids list bounds
             if high > len(sample_ids):
                 high = len(sample_ids)
                 # update the stride string for the zip archive name
@@ -338,7 +338,9 @@ def main(metadata_table, paths_table, species_name, output_directory,
             res = download_ftp_file(*url, retry)
             if res is True:
                 downloaded += 1
-                print('\r', 'Downloaded {0}/{1}'.format(downloaded, len(remote_urls)), end='')
+                print('\r', 'Downloaded {0}/{1}'.format(downloaded,
+                                                        len(remote_urls)),
+                      end='')
             else:
                 failed += 1
 
