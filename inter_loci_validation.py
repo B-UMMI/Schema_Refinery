@@ -63,25 +63,26 @@ Code documentation
 
 
 import os
+import csv
 import sys
 import time
 import argparse
-import csv
 
 from Bio import SeqIO
 
 # these modules must be in the same directory
 import schema_validation_functions as svf
 
-def exportListToTSVFile(filename: str, list: list, first_row: list = None):
 
-    with open(filename, 'w') as csvfile: 
-        # creating a csv writer object 
-        csvwriter = csv.writer(csvfile, delimiter='\t') 
+def exportListToTSVFile(filename: str, lines_list: list):
 
-        # writing the data rows 
-        if first_row: csvwriter.writerow(first_row) #put the collumn names
-        csvwriter.writerows(list)
+    with open(filename, 'w') as csvfile:
+        # creating a csv writer object
+        csvwriter = csv.writer(csvfile, delimiter='\t')
+
+        # writing the data rows
+        csvwriter.writerows(lines_list)
+
 
 def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     """ Determines BLASTp matches between different loci of a schema
@@ -125,7 +126,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     # discard files with values of self BSR
     representative_files = {file.split('_short.fasta')[0]: os.path.join(short_directory, file)
                             for file in os.listdir(short_directory)
-                            if 'bsr' not in file}
+                            if file.endswith('fasta')}
 
     # create working directory
     if not os.path.exists(output_directory):
@@ -246,7 +247,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     for k, v in alleles_results.items():
         current = [r
                    for r in v
-                   if r[0].split('_')[0] != r[1].split('_')[0]
+                   if '_'.join(r[0].split('_')[0:-1]) != '_'.join(r[1].split('_')[0:-1])
                    and float(r[-1]) >= 0.6]
         if len(current) > 0:
             high_bsr.extend(current)

@@ -43,7 +43,6 @@ def schema_dictionary(schema_files, output_directory):
     """
 
     loci_reassigned = {}
-    # for each FASTA file that has the alleles for a locus
     for locus, file in schema_files.items():
         records = [((rec.id).split('_')[-1], str(rec.seq))
                    for rec in SeqIO.parse(file, 'fasta')]
