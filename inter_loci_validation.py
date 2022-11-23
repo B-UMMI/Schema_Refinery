@@ -85,8 +85,7 @@ def exportListToTSVFile(filename: str, lines_list: list):
 
 
 def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
-    """ Determines BLASTp matches between different loci of a schema
-        with a BSR greater than the defined value.
+    """Identify alleles from different loci that are highly similar.
 
     Parameters
     ----------
@@ -112,7 +111,6 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
     should not have matches with a BSR greater than the defined
     value.
     """
-
     start = time.time()
     print('\nImporting and processing loci...')
 
@@ -251,7 +249,7 @@ def main(schema_directory, output_directory, blast_score_ratio, blast_threads):
                    and float(r[-1]) >= 0.6]
         if len(current) > 0:
             high_bsr.extend(current)
-    
+
     # index Fasta
     index = SeqIO.index(protein_concat, 'fasta')
     for r in high_bsr:
