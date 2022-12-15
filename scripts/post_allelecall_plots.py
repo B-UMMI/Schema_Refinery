@@ -100,13 +100,13 @@ def stacked_barplot_classes(matrix_counts_t, matrix_counts_sum, assembly_ids):
     
     stacked_bar = px.bar(matrix_counts_t)
     
-    stacked_bar.update_layout(barmode = "stack",bargap = 0)
+    stacked_bar.update_layout(barmode = "stack",bargap = 0, xaxis_title = "loci", yaxis_title = "Number of assemblies")
     
     stacked_bar.update_xaxes(showticklabels = False)
     
     stacked_bar.add_scatter(x = matrix_counts_sum.sort_values(by="Missing_assemblies").index, 
                             y = matrix_counts_sum.sort_values(by="Missing_assemblies")["Missing_assemblies"], 
-                            mode = "lines", line = dict(color="MediumPurple"), name="Total_assemblies_with_missing_alleles")   
+                            mode = "lines", line = dict(color="MediumPurple"), name="Sum of all missing alleles")   
     
     return stacked_bar
 
