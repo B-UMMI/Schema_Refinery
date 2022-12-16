@@ -257,7 +257,7 @@ def flatten_list(list_to_flatten):
     return list(itertools.chain(*list_to_flatten))
 
 
-def analyse_report(report, nr_contigs, min_bp, max_bp, min_gc, max_gc, missing_data):
+def analyse_results(results, nr_contigs, min_bp, max_bp, min_gc, max_gc, missing_data):
     """Determine if samples are of high quality based on provided thresholds.
 
     Parameters
@@ -282,30 +282,30 @@ def analyse_report(report, nr_contigs, min_bp, max_bp, min_gc, max_gc, missing_d
         a list with the issues found for each sample as
         values.
     """
-    for i, record in enumerate(report):
+    for i, sample in enumerate(results):
         current_results = []
 
-        if record['Total_assembly_length'] < min_bp:
+        if sample['Total_assembly_length'] < min_bp:
             current_results.append('Low_BP')
 
-        elif record['Total_assembly_length'] > max_bp:
+        elif sample['Total_assembly_length'] > max_bp:
             current_results.append('High_BP')
 
-        if record['GC_content'] < min_gc:
+        if sample['GC_content'] < min_gc:
             current_results.append('Low_GC')
 
-        elif record['GC_content'] > max_gc:
+        elif sample['GC_content'] > max_gc:
             current_results.append('High_GC')
 
-        if record['Number_of_contigs'] > nr_contigs:
+        if sample['Number_of_contigs'] > nr_contigs:
             current_results.append('Nr_contigs')
 
-        if record['Missing_Data'] > missing_data:
+        if sample['Missing_Data'] > missing_data:
             current_results.append('Too_many_N')
 
-        report[i]['Warnings'] = ','.join(current_results)
+        results[i]['Warnings'] = ','.join(current_results)
 
-    return report
+    return results
 
 
 def calc_n50(contig_sizes):
@@ -336,7 +336,7 @@ def calc_n50(contig_sizes):
             return l
 
 
-def analyse_assembly(assembly):
+def analyse_assembly(assembly_file):
     """Analyse an assembly file.
 
     Parameters
@@ -352,10 +352,22 @@ def analyse_assembly(assembly):
         average contig size, N50, total assembly length,
         GC content and missing data.
     """
-    assembly_file = assembly
+    # Save the results in a dictionary
+    results = {'Sample': None,
+               'Number_of_contigs': None,
+               'Average_contig_size': None,
+               'N50': None,
+               'Total_assembly_length': None,
+               'GC_content': None,
+               'Missing_Data': None,
+               'number_of_N_blocks': None,
+               'min_N': None,
+               'max_N': None,
+               'median_missing_data': None}
 
     # Get the sample name from the file
-    sample = os.path.basename(assembly_file).split(".")[0]
+    sample_basename = os.path.basename(assembly_file).split('.')[0]
+    results['Sample'] = sample_basename
 
     # Guess the file compression
     ftype = guess_file_compression(assembly_file)
@@ -374,72 +386,55 @@ def analyse_assembly(assembly):
     # Calculate the GC content
     all_gc_content = [GC(seq.seq) for seq in records]
     gc_content = stats.mean(all_gc_content) / 100
+    results['GC_content'] = round(gc_content, 3)
 
     # Get the total number of contigs in the assembly file
     nr_contigs = len(records)
+    results['Number_of_contigs'] = nr_contigs
 
     # Get the contig sizes
     sizes = [len(seq) for seq in records]
 
     # Calculate the average contig size
     avg_size = stats.mean(sizes)
+    results['Average_contig_size'] = round(avg_size, 2)
 
     # Calculate the total assembly length
     total_length = sum(sizes)
+    results['Total_assembly_length'] = total_length
 
     # Calculate the N50
     n50 = calc_n50(sizes)
+    results['N50'] = n50
 
     # Determine missing data
     missing_data = sum([rec.seq.count('N') for rec in records])
+    results['Missing_Data'] = missing_data
 
     n_blocks = []
-
     # Find all N blocks
     for rec in records:
+        sequence = str(rec.seq)
+        if 'N' in sequence:
+            n_blocks.extend(list(re.findall('N+', sequence)))
 
-        if 'N' in rec.seq != 0:
-            n_blocks.append(list(re.findall('N+', str(rec.seq))))
-
-    # N stats
-    if len(n_blocks) == 0:
-        num_blocks = 0
-        min_missing_data = 0
-        max_missing_data = 0
-        median_missing_data = 0
-
-    else:
-        n_blocks = list(itertools.chain(*n_blocks))
-
-        # real contigs
-        num_blocks = len(n_blocks)
-
-        # min missing data
-        min_missing_data = len(min(n_blocks))
-
-        # max missing data
-        max_missing_data = len(max(n_blocks))
-
-        # median value
-        median_missing_data = stats.median(n_blocks.match)
-
-    # Save the results in a dictionary
-    results = {'Sample': sample,
-               'Number_of_contigs': nr_contigs,
-               'Average_contig_size': round(avg_size, 2),
-               'N50': n50,
-               'Total_assembly_length': total_length,
-               'GC_content': round(gc_content, 3),
-               'Missing_Data': missing_data,
-               'number_of_N_blocks': num_blocks,
-               'min_N': min_missing_data,
-               'max_N': max_missing_data,
-               'median_missing_data': median_missing_data}
+    # real contigs
+    num_blocks = len(n_blocks)
+    results['number_of_N_blocks'] = num_blocks
+    # min missing data
+    min_missing_data = len(min(n_blocks)) if len(n_blocks) > 0 else 0
+    results['min_N'] = min_missing_data
+    # max missing data
+    max_missing_data = len(max(n_blocks)) if len(n_blocks) > 0 else 0
+    results['max_N'] = max_missing_data
+    # median value
+    median_missing_data = stats.median(list(map(len, n_blocks))) if len(n_blocks) > 0 else 0
+    results['median_missing_data'] = median_missing_data
 
     return results
 
 
-def main(output_path, assembly_path, cpu, nr_contigs,
+def main(input_files, output_path, cpu, nr_contigs,
          minimum_number_of_bases, maximum_number_of_bases,
          minimum_gc_content, maximum_gc_content, missing_data):
 
@@ -451,54 +446,48 @@ def main(output_path, assembly_path, cpu, nr_contigs,
     if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    if assembly_path:
-        assemblies_file = check_if_list_or_folder(assembly_path)
-        listGenes = []
-        with open(assemblies_file, 'r') as gf:
-            for gene in gf:
-                gene = gene.rstrip('\n')
-                listGenes.append(gene)
-        listGenes.sort()
-        os.remove('listGenes.txt')
-        # List to save the results of the multiprocessing
+    assemblies_file = check_if_list_or_folder(input_files)
+    listGenes = []
+    with open(assemblies_file, 'r') as gf:
+        for gene in gf:
+            gene = gene.rstrip('\n')
+            listGenes.append(gene)
+    listGenes.sort()
+    os.remove('listGenes.txt')
 
-        assembly_analysis_results = []
+    # List to save the results of the multiprocessing
+    assembly_analysis_results = []
+    print('Calculating assembly statistics...\n')
+    p = Pool(processes=cpu_to_apply)
+    r = p.map_async(analyse_assembly, listGenes,
+                    callback=assembly_analysis_results.extend)
+    track_job(r)
+    r.wait()
 
-        print('Calculating assembly statistics...\n')
+    print('\nAnalysing results...\n')
+    # Analyse results
+    results = analyse_results(assembly_analysis_results,
+                              nr_contigs,
+                              minimum_number_of_bases,
+                              maximum_number_of_bases,
+                              minimum_gc_content,
+                              maximum_gc_content,
+                              missing_data)
 
-        p = Pool(processes=cpu_to_apply)
-        r = p.map_async(analyse_assembly, listGenes,
-                        callback=assembly_analysis_results.append)
-        track_job(r)
-        r.wait()
+    # Print amount of Fails to console
+    failed = sum([1 for k in results if len(k['Warnings']) > 0])
+    print('The analysis detected {0} FAILS on a total '
+          'of {1} assemblies. Check the report for more '
+          'details.\n'.format(failed, len(listGenes)))
+    print('Writing report...\n')
 
-        print('\nAnalysing results...\n')
+    # Convert dictionary into pandas DataFrame
+    report = pd.DataFrame(results)
 
-        # Flatten result nested list by one level
-        results = flatten_list(assembly_analysis_results)
-
-        # Analyse results
-        results = analyse_report(results, nr_contigs,
-                                 minimum_number_of_bases,
-                                 maximum_number_of_bases,
-                                 minimum_gc_content,
-                                 maximum_gc_content,
-                                 missing_data)
-
-        # Print amount of Fails to console
-        failed = sum([1 for k in results if len(k['Warnings']) > 0])
-        print('The analysis detected {0} FAILS on a total '
-              'of {1} assemblies. Check the report for more '
-              'details.\n'.format(failed, len(listGenes)))
-        print('Writing report...\n')
-
-        # Convert dictionary into pandas DataFrame
-        report = pd.DataFrame(results)
-
-        # Write the final report
-        output_report = os.path.join(output_path, 'final_report.tsv')
-        report.to_csv(output_report, sep='\t',
-                      encoding='utf-8', index=False)
+    # Write the final report
+    output_report = os.path.join(output_path, 'final_report.tsv')
+    report.to_csv(output_report, sep='\t',
+                  encoding='utf-8', index=False)
 
     print('Execution Finished')
 
@@ -508,49 +497,49 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-o', '--output', type=str, required=True,
-                        dest='output_path', default=False,
+    parser.add_argument('-i', '--input-files', type=str,
+                        required=True, dest='input_files',
+                        help='Path to the directory containing the '
+                             'genome assemblies in FASTA format.')
+
+    parser.add_argument('-o', '--output-path', type=str,
+                        required=True, dest='output_path',
                         help='Path to the output directory.')
 
-    parser.add_argument('-i', '--assemblies', type=str, required=False,
-                        dest='assembly_path', default=False,
-                        help='Path to the directory containing the '
-                             'geneome assemblies.')
-
     parser.add_argument('--cpu', type=int, required=False,
-                        dest='cpu', default=2,
+                        default=1, dest='cpu',
                         help='Number of CPU cores to use. Adjusts '
                              'the provided value if the it exceeds '
                              'the maximum number of available cores '
                              '(subtracts 2).')
 
-    parser.add_argument('--nr_contigs', type=int, required=False,
+    parser.add_argument('--nr-contigs', type=int, required=False,
                         dest='nr_contigs', default=350,
                         help='Maximum number of contigs allowed for '
                              'each assembly.')
 
-    parser.add_argument('--min_bps', type=int, required=False,
+    parser.add_argument('--min-bps', type=int, required=False,
                         dest='minimum_number_of_bases', default=1,
                         help='Minimum number of total bases '
                              'accepted for a genome assembly.')
 
-    parser.add_argument('--max_bps', type=int, required=False,
+    parser.add_argument('--max-bps', type=int, required=False,
                         dest='maximum_number_of_bases',
                         default=9999999999999999,
                         help='Maximum number of total bases '
                              'accepted for a genome assembly.')
 
-    parser.add_argument('--min_gc', type=float, required=False,
+    parser.add_argument('--min-gc', type=float, required=False,
                         dest='minimum_gc_content', default=0.0,
                         help='Minimum GC content value.')
 
-    parser.add_argument('--max_gc', type=float, required=False,
+    parser.add_argument('--max-gc', type=float, required=False,
                         dest='maximum_gc_content', default=1.0,
                         help='Maximum GC content value.')
 
-    parser.add_argument('--min_N', type=int, required=False,
+    parser.add_argument('--min-N', type=int, required=False,
                         dest='missing_data', default=500,
-                        help='Min number of N.')
+                        help='Min number of N bases.')
 
     args = parser.parse_args()
 
