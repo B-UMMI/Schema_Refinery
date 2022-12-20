@@ -3,6 +3,7 @@
 """
 Purpose
 -------
+
 This script accepts a TSV file downloaded from UniProt with
 information about a set of proteomes and downloads the
 proteomes listed in the file.
@@ -11,17 +12,15 @@ Code documentation
 ------------------
 """
 
-
 import os
 import sys
 import csv
 import time
 import socket
-import argparse
-import urllib.request
 import concurrent.futures
 from itertools import repeat
 
+from utils.download_functions import download_file
 
 # set socket timeout for urllib calls
 socket.setdefaulttimeout(30)
@@ -29,42 +28,7 @@ socket.setdefaulttimeout(30)
 # URL template for proteome download
 proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&format=fasta&compress=yes'
 
-
-def download_file(url, file_name, retry):
-    """Accept a URL to download a file.
-
-    Parameters
-    ----------
-    url : str
-        An url to download a file.
-    file_name : str
-        The name of the file to be downloaded.
-    retry : int
-        Maximum number of retries if download fails.
-
-    Returns
-    -------
-    response : str
-        A string indicating that the download failed or
-        an object with the response information for a
-        successful download.
-    """
-
-    tries = 0
-    while tries < retry:
-        try:
-            response = urllib.request.urlretrieve(url, file_name)
-            break
-        except Exception:
-            response = 'Failed: {0}'.format(file_name)
-            tries += 1
-            print('Retrying {0} ...{1}'.format(file_name.split('/')[-1], tries))
-            time.sleep(1)
-
-    return response
-
-
-def main(input_table, output_directory, threads, retry):
+def proteomeFetcher(input_table:str, output_directory:str, threads:int, retry:int):
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
@@ -114,40 +78,3 @@ def main(input_table, output_directory, threads, retry):
           '\nElapsed Time: {2}m{3:.0f}s'
           ''.format(files_number-len(failures),
                     files_number, minutes, seconds))
-
-
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-t', '--input_table', type=str,
-                        required=True, dest='input_table',
-                        help='TSV file downloaded from UniProt '
-                             'that contains list of proteomes.')
-
-    parser.add_argument('-o', '--output_directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the directory where downloaded '
-                             'files will be stored.')
-
-    parser.add_argument('-th', '--threads', type=int,
-                        required=False, default=2,
-                        dest='threads',
-                        help='Number of threads for concurrent download.')
-
-    parser.add_argument('-r', '--retry', type=int,
-                        required=False, dest='retry',
-                        default=7,
-                        help='Maximum number of retries when a '
-                             'download fails.')
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-    main(**vars(args))
