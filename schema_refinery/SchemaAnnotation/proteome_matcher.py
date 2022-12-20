@@ -3,6 +3,7 @@
 """
 Purpose
 -------
+
 This script translates loci representative alleles and
 aligns them against Swiss-Prot and TrEMBL records to
 select annotation terms based on the BSR computed for
@@ -12,177 +13,18 @@ Code documentation
 ------------------
 """
 
-
 import os
 import csv
 import pickle
-import argparse
-import subprocess
 
 from Bio import SeqIO
-from Bio.Seq import Seq
 
+from utils.blast_functions import make_blast_db, run_blast
+from utils.sequence_functions import translate_sequence
 
-def reverse_str(string):
-    """ Reverse character order in input string.
-
-    Parameters
-    ----------
-    string : str
-        String to be reversed.
-
-    Returns
-    -------
-    revstr : str
-        Reverse of input string.
-    """
-
-    revstr = string[::-1]
-
-    return revstr
-
-
-def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of a DNA sequence.
-
-    Parameters
-    ----------
-    dna_sequence : str
-        String representing a DNA sequence.
-
-    Returns
-    -------
-    reverse_complement : str
-        The reverse complement of the input DNA
-        sequence.
-    """
-
-    base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-
-    # convert string into list with each character as a separate element
-    bases = list(dna_sequence.upper())
-
-    # determine complement strand
-    complement_bases = []
-    for base in bases:
-        complement_bases.append(base_complement.get(base, base))
-
-    complement_strand = ''.join(complement_bases)
-
-    # reverse strand
-    reverse_complement = reverse_str(complement_strand)
-
-    return reverse_complement
-
-
-def translate_sequence(dna_str, table_id):
-    """ Translate a DNA sequence using the BioPython package.
-
-    Parameters
-    ----------
-    dna_str : str
-        DNA sequence.
-    table_id : int
-        Translation table identifier.
-
-    Returns
-    -------
-    protseq : str
-        Protein sequence created by translating
-        the input DNA sequence.
-    """
-
-    myseq_obj = Seq(dna_str)
-    # sequences must be a complete and valid CDS
-    protseq = Seq.translate(myseq_obj, table=table_id, cds=True)
-
-    return protseq
-
-
-def make_blast_db(input_fasta, output_path, db_type):
-    """ Creates a BLAST database.
-
-    Parameters
-    ----------
-    input_fasta : str
-        Path to a Fasta file.
-    output_path : str
-        Path to the output BLAST database.
-    db_type : str
-        Type of the database, nucleotide (nuc) or
-        protein (prot).
-    """
-
-    blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
-                   '-parse_seqids', '-dbtype', db_type]
-
-    makedb_cmd = subprocess.Popen(blastdb_cmd,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-
-    stdout, stderr = makedb_cmd.communicate()
-
-    makedb_cmd.wait()
-
-
-def run_blast(blast_path, blast_db, fasta_file, blast_output,
-              max_hsps=1, threads=1, ids_file=None, blast_task=None,
-              max_targets=None):
-    """ Executes BLAST.
-
-    Parameters
-    ----------
-    blast_path : str
-        Path to the BLAST executable.
-    blast_db : str
-        Path to the BLAST database.
-    fasta_file : str
-        Path to the Fasta file that contains the sequences
-        to align against the database.
-    blast_output : str
-        Path to the output file.
-    max_hsps : int
-        Maximum number of High-Scoring Pairs.
-    threads : int
-        Number of threads passed to BLAST.
-    ids_file : path
-        Path to a file with the identifiers of the sequences
-        to align against. Used to specify the database sequences
-        we want to align against.
-    blast_task : str
-        BLAST task. Allows to set default parameters for a specific
-        type of search.
-    max_targets : int
-        Maximum number of targets sequences to align against.
-
-    Returns
-    -------
-    stderr : list
-        List with the warnings/errors reported by BLAST.
-    """
-
-    blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
-                  '-out', blast_output, '-outfmt', '6 qseqid sseqid score',
-                  '-max_hsps', str(max_hsps), '-num_threads', str(threads),
-                  '-evalue', '0.001']
-
-    if ids_file is not None:
-        blast_args.extend(['-seqidlist', ids_file])
-    if blast_task is not None:
-        blast_args.extend(['-task', blast_task])
-    if max_targets is not None:
-        blast_args.extend(['-max_target_seqs', str(max_targets)])
-
-    blast_proc = subprocess.Popen(blast_args,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-
-    stderr = blast_proc.stderr.readlines()
-
-    return stderr
-
-
-def main(schema_directory, records_directory, output_directory, cpu_cores):
+# proteome_splitter_files_list has the TrEMBL file in index 0,
+# Swiss-Prot in index 1 and descriptions file in index 2
+def proteomeMatcher(schema_directory:str, proteome_splitter_files_list:list, output_directory:str, cpu_cores:int):
 
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)
@@ -212,7 +54,7 @@ def main(schema_directory, records_directory, output_directory, cpu_cores):
     # BLASTp TrEMBL and Swiss-Prot records
 
     # create TrEMBL BLASTdb
-    tr_file = os.path.join(records_directory, 'trembl_prots.fasta')
+    tr_file = proteome_splitter_files_list[0]
     tr_blastdb_path = os.path.join(output_directory, 'tr_db')
     tr_blastdb_stderr = make_blast_db(tr_file, tr_blastdb_path, 'prot')
     tr_blastout = os.path.join(output_directory, 'tr_blastout.tsv')
@@ -221,7 +63,7 @@ def main(schema_directory, records_directory, output_directory, cpu_cores):
                                 ids_file=None, blast_task=None, max_targets=1)
 
     # create Swiss-Prot BASLTdb
-    sp_file = os.path.join(records_directory, 'sp_prots.fasta')
+    sp_file = proteome_splitter_files_list[1]
     sp_blastdb_path = os.path.join(output_directory, 'sp_db')
     sp_blastdb_stderr = make_blast_db(sp_file, sp_blastdb_path, 'prot')
     sp_blastout = os.path.join(output_directory, 'sp_blastout.tsv')
@@ -246,7 +88,7 @@ def main(schema_directory, records_directory, output_directory, cpu_cores):
                         if l[0] == l[1]}
 
     # import Swiss-Prot and TrEMBL records descriptions
-    with open(os.path.join(records_directory, 'descriptions'), 'rb') as dinfile:
+    with open(proteome_splitter_files_list[2], 'rb') as dinfile:
         descriptions = pickle.load(dinfile)
 
     # get TrEMBL and Swiss-Prot results and choose only
@@ -328,38 +170,3 @@ def main(schema_directory, records_directory, output_directory, cpu_cores):
         spout.write(sp_outtext+'\n')
 
     print('SwissProt annotations available at {0}'.format(sp_annotations))
-
-
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-s', '--schema-directory', type=str,
-                        required=True, dest='schema_directory',
-                        help='Path to the schema\'s directory.')
-
-    parser.add_argument('-p', '--records-directory', type=str, required=True,
-                        dest='records_directory',
-                        help='Path to the directory with the Fasta files '
-                             'with Swiss-Prot and TrEMBL records. It must '
-                             'also contain a file with record descriptions.')
-
-    parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the output directory.')
-
-    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
-                        dest='cpu_cores',
-                        default=1,
-                        help='Number of CPU cores to pass to BLAST.')
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-    main(**vars(args))
