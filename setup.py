@@ -2,7 +2,9 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import setup
+
+import Schema_refinery
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -35,10 +37,14 @@ setup(
     include_package_data=True,
     keywords='schema_refinery',
     name='schema_refinery',
-    packages=find_packages(include=['schema_refinery', 'schema_refinery.*']),
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/B-UMMI/schema_refinery',
     version='0.1.0',
     zip_safe=False,
+    
+    packages = ['Schema_refinery','Schema_refinery.Download_module'],
+    
+    entry_points={'console_scripts': ["schema_refinery.py = Schema_refinery.schema_refinery:main",
+                                    "SR = Schema_refinery.schema_refinery:main"]}
 )
