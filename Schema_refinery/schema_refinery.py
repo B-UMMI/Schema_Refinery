@@ -66,7 +66,15 @@ def download_module():
                         default = True,
                         help='Do not fetch metadata if toggled')
     
-
+    parser.add_argument('-f', '--filter_criteria_path',type=str,
+                        required=False, dest='filter_criteria_path',
+                        help='TSV file containing filter parameters for choosen' 
+                             'assemblies before downloading')    
+    
+    parser.add_argument('--download', action='store_true',
+                        required=False, dest='download',
+                        help='If the assemblies from the selected samples'
+                             'should be downloaded.')
     #Arguments specific for NCBI
     
     parser.add_argument('-i', '--input-table', type=str,
@@ -74,86 +82,18 @@ def download_module():
                         help='TSV file downloaded from the '
                              'NCBI Genome Assembly and Annotation '
                              'report.')
-              
-    parser.add_argument('--fe', '--file-extension', type=str,
-                        required=False,
-                        choices=['genomic.fna.gz', 'assembly_report.txt',
-                                 'assembly_status.txt', 'cds_from_genomic.fna.gz',
-                                 'feature_count.txt.gz', 'feature_table.txt.gz',
-                                 'genomic.gbff.gz', 'genomic.gff.gz',
-                                 'genomic.gtf.gz', 'protein.faa.gz',
-                                 'protein.gpff.gz', 'rna_from_genomic.fna.gz',
-                                 'translated_cds.faa.gz'],
-                        default='genomic.fna.gz',
-                        dest='file_extension',
-                        help='Choose file type to download through '
-                             'extension.')
-    
-    parser.add_argument('--ftp', type=str, 
-                        required=False,
-                        choices=['refseq+genbank', 'refseq', 'genbank'],
-                        default='refseq+genbank', dest='ftp',
-                        help='The script can search for the files to '
-                             'download in RefSeq or Genbank or both '
-                             '(will only search in Genbank if download '
-                             'from RefSeq fails).')
 
     #Specific for ENA661k database
     
     parser.add_argument('-p', '--paths_ena', type=str,
-                        required=True, dest='paths_table',
+                        required=False, dest='paths_table',
                         help='Maximum number of retries when a '
                              'download fails.')
     
     parser.add_argument('-m', '--metadata_ena', type=str,
-                        required=True, dest='metadata_table',
+                        required=False, dest='metadata_table',
                         help='Maximum number of retries when a '
                              'download fails.')
-
-    parser.add_argument('--ftp-download', action='store_true',
-                        required=False, dest='ftp_download',
-                        help='If the assemblies from the selected samples'
-                             'should be downloaded.')
-
-    parser.add_argument('-a', '--abundance', type=float,
-                        required=False,
-                        dest='abundance',
-                        help='Minimum species abundance. Samples with species'
-                             ' abundance below this value are not selected.')
-
-    parser.add_argument('-gs', '--genome-size', type=int,
-                        required=False,
-                        dest='genome_size',
-                        help='Expected genome size.')
-
-    parser.add_argument('-st', '--size-threshold', type=float,
-                        required=False,
-                        dest='size_threshold',
-                        help='Genome size can vary in size +/- this value.')
-
-    parser.add_argument('-mc', '--max_contig_number', type=int,
-                        required=False,
-                        dest='max_contig_number',
-                        help='Maximum number of contigs. Assemblies with '
-                             'a number of contigs greater than this value '
-                             'are not selected.')
-
-    parser.add_argument('--mlst-species', type=str,
-                        required=False,
-                        dest='mlst_species',
-                        help='The species predicted by the MLST tool.')
-
-    parser.add_argument('--known-st', action='store_true',
-                        required=False,
-                        dest='known_st',
-                        help='If the samples must have a known ST.'
-                             'Invalid or unkown STs will be "-".')
-
-    parser.add_argument('--any-quality', action='store_true',
-                        required=False,
-                        dest='any_quality',
-                        help='Download all assemblies, even the ones '
-                             'that are not high quality.')
 
     parser.add_argument('-stride', '--stride', type=str,
                         required=False,
@@ -164,12 +104,6 @@ def download_module():
                              'you want to download from the first id, '
                              'you have to put "1", not "0" in the lower '
                              'value.')
-
-    parser.add_argument('--st', type=str,
-                        required=False, dest='st',
-                        default=None,
-                        help='Desired ST in a txt file,'
-                             ' one ST per line')
     
     args = parser.parse_args()
     
