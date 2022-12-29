@@ -14,6 +14,18 @@ from itertools import repeat
 
 def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
                     genome_size):
+    """
+    This function verifies assemblies by certain inputa criteria.
+        
+        Input: 
+            metadata_assembly: json object (dict) for a single assembly
+            size_threshold: float (0 >= x >= 1)
+            max_contig_number: int (>0)
+            genome_size: int (>0)
+            
+        Output:
+            return : Boolean value (in order to see if passed or failed)
+    """
     
     if genome_size is not None and size_threshold is not None:
         
@@ -41,18 +53,32 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
                 
 
 def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
+    """
+    This function based on an input id fetches json object (dict).
+    
+        Input:
+            input_id: string (starts with GCF_ or GCA_)
+            assembly_level: string (containing assembly levels separated by ",")
+            reference: Boolean value
+            api_key: string
+            
+        Output:
+            return: 
+                Input_id: string (starts with GCF_ or GCA_)
+                metadata_assembly: json object (dict) for a single assembly
+    """
     
     arguments = ['datasets','summary','genome','accession',input_id]
     
-    if api_key != None:
+    if api_key is not None:
         
-        arguments = arguments + ['--api-key',api_key]
+        arguments += ['--api-key',api_key]
     
-    if assembly_level != None:
-        arguments = arguments + ['--assembly-level',assembly_level]
+    if assembly_level is not None:
+        arguments += ['--assembly-level',assembly_level]
     
-    if reference and reference != None:
-        arguments = arguments + ['--reference']
+    if reference and reference is not None:
+        arguments += ['--reference']
         
     try:
         metadata = subprocess.run(arguments,stdout=subprocess.PIPE)
@@ -66,6 +92,24 @@ def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
 
 def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_size,
                           assembly_level,reference,threads,api_key):
+    """
+    Function that from a list of ids and filtering criterea, filters the id list.
+    
+        Input:
+            id_list_path:
+            size_threshold: float (0 >= x >= 1)
+            max_contig_number: int (>0)
+            genome_size: int (>0)
+            assembly_level: string (containing assembly levels separated by ",")
+            reference: Boolean value
+            threads: int (>0)
+            api_key: string
+        
+        Output:
+            return:
+                failed_list: list (containing assemblies that failed criteria)
+                accepted_list: list (containing assemblies that passed criteria)
+    """
 
     with open(id_list_path,'r') as id_list:
         ids = list(csv.reader(id_list,delimiter='\t'))
@@ -76,8 +120,8 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
     if (genome_size is not None
         or size_threshold is not None 
         or max_contig_number is not None 
-        or assembly_level != None
-        or reference and reference != None):
+        or assembly_level is not None
+        or reference and reference is not None):
         
         print("Verifying assemblies to be downloaded by specified criteria")
         
@@ -88,10 +132,10 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
         if max_contig_number is not None:
             print("Maximum number of contigs: {}".format(max_contig_number))
             
-        if assembly_level != None:
+        if assembly_level is not None:
             print("assembly level at: {}".format(assembly_level))
             
-        if reference and reference != None:
+        if reference and reference is not None:
             print("Only reference genomes: True")
         
         verify_list = True
@@ -128,7 +172,23 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
 
     return [failed_list,accepted_list]
 
-def metadata_fetcher_specie(species,assembly_level,reference,api_key):
+def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
+                            api_key):
+    """
+    This function based on an input species fetches json object (dict).
+    
+        Input:
+            species: string
+            assembly_level: string (containing assembly levels separated by ",")
+            reference: Boolean value
+            assembly_source: string (GCF_ or GCA_)
+            api_key: string
+            
+        Output:
+            all_assemblies: list (containing all ids)
+            metadata_filtered: json object (dict) for a all assemblies that
+                                passed the criteria.
+    """
     
     arguments = ['datasets','summary','genome','taxon',species]
     
@@ -143,17 +203,20 @@ def metadata_fetcher_specie(species,assembly_level,reference,api_key):
         
         all_assemblies.append(m['accession'])
     
-    if api_key != None:
+    if api_key is not None:
         
-        arguments = arguments + ['--api-key',api_key]
+        arguments += ['--api-key',api_key]
     
-    if assembly_level != None:
-        arguments = arguments + ['--assembly-level',assembly_level]
+    if assembly_level is not None:
+        arguments += ['--assembly-level',assembly_level]
     
-    if reference and reference != None:
-        arguments = arguments + ['--reference']
+    if reference and reference is not None:
+        arguments += ['--reference']
         
-
+    if assembly_source is not None:
+        arguments += ['--assembly-source',assembly_source]
+        
+    # find all metadata that pass initial criterias
     metadata = subprocess.run(arguments,stdout=subprocess.PIPE)
                                    
     metadata_filtered = json.loads(metadata.stdout)['reports']      
@@ -161,26 +224,49 @@ def metadata_fetcher_specie(species,assembly_level,reference,api_key):
     return [all_assemblies,metadata_filtered]
     
 def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
-                          assembly_level,reference,api_key):
+                          assembly_level,reference,assembly_source,api_key):
+    """
+    Fetches the ids that pass the filtering criteria.
     
+        Input:
+            species: string
+            size_threshold: float (0 >= x >= 1)
+            max_contig_number: int (>0)
+            genome_size: int (>0)
+            assembly_level: string (containing assembly levels separated by ",")
+            reference: Boolean value
+            assembly_source: string (GCF_ or GCA_)
+            api_key: string
+            
+        Output:
+            return:
+                failed_list: list (containing assemblies that failed criteria)
+                accepted_list: list (containing assemblies that passed criteria)
+    """
     #if verification is needed
     if (genome_size is not None
         or size_threshold is not None 
         or max_contig_number is not None):
         
-        print("Verifying assemblies to be downloaded by specified criteria")
+        print("\nVerifying assemblies to be downloaded by specified criteria")
+        
+        if assembly_source is not None:
+            print("Fetching assemblies starting with: {}".format(assembly_source))
+            
+        else:
+            print("Downloading both GCF_ and GCA_ assemblies")
         
         if genome_size is not None and size_threshold is not None:
-            print("\nGenome size of: {}".format(genome_size))
-            print("\and size threshold of: {}".format(size_threshold))
+            print("Genome size of: {}".format(genome_size))
+            print("and size threshold of: {}".format(size_threshold))
             
         if max_contig_number is not None:
             print("Maximum number of contigs: {}".format(max_contig_number))
             
-        if assembly_level != None:
+        if assembly_level is not None:
             print("assembly level at: {}".format(assembly_level))
             
-        if reference and reference != None:
+        if reference and reference is not None:
             print("Only reference genomes: True")
         
         verify_list = True
@@ -193,6 +279,7 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
     all_ids,metadata_filtered = metadata_fetcher_specie(species,
                                                         assembly_level,
                                                         reference,
+                                                        assembly_source,
                                                         api_key)
     
     accepted_list = []
@@ -217,7 +304,8 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
             
             accepted_list.append(metadata['accession'])
     
-    #add ids that were initially removed
+    #add ids that were initially removed by assembly_level or reference to failed
+    #list
     failed_list = [x for x in all_ids if x not in accepted_list] + failed_list
             
     return [failed_list,accepted_list]

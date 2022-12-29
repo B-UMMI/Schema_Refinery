@@ -11,18 +11,22 @@ import subprocess
 import ast
 
 def tryeval(val):
-  try:
-    val = ast.literal_eval(val)
-  except ValueError:
-    pass
-  return val
+    """
+    Evaluates the type of the input.
+    """
+    
+    try:
+      val = ast.literal_eval(val)
+    except ValueError:
+      pass
+    return val
 
 def main(args):
     
     print("Fetching assemblies from {}".format(args.database))    
     
-    if args.filter_criteria_path != None:
-        
+    if args.filter_criteria_path is not None:
+        #import filtering criterias file
         with open(args.filter_criteria_path,'r') as filters:
             criterias = dict(csv.reader(filters, delimiter='\t'))
         
@@ -48,7 +52,7 @@ def main(args):
         table exists then script downloads them otherwise it downloads all 
         assemblies for the desired species.
         """
-        
+        #Import modules
         try:
             from Download_module import ncbi_datasets_summary
             from Download_module import ncbi_linked_ids
@@ -60,7 +64,7 @@ def main(args):
             from Schema_refinery.Download_module import fetch_metadata    
         
         if args.input_table is not None:
-            
+            #If assemblies ids list is present
             failed_list,list_to_download = ncbi_datasets_summary.metadata_from_id_list(args.input_table,
                                                           size_threshold,
                                                           max_contig_number,
@@ -86,8 +90,11 @@ def main(args):
                          os.path.join(args.output_directory,
                                       'assemblies_ids_to_download.tsv')]
             
-            if args.api_key != None:
-                arguments = arguments + ['--api-key',args.api_key]
+            if args.api_key is not None:
+                arguments += ['--api-key',args.api_key]
+                
+            if file_extension is not None:
+                arguments += ['--include',file_extension]
             
             #download assemblies
             if args.download:
@@ -96,13 +103,14 @@ def main(args):
 
                 
         else:
-            
+            #Fetch from species identifier
             failed_list,list_to_download = ncbi_datasets_summary.metadata_from_species(args.species,
                                                           size_threshold,
                                                           max_contig_number,
                                                           genome_size,
                                                           assembly_level,
                                                           reference,
+                                                          assembly_source,
                                                           args.api_key)
             
             
@@ -122,7 +130,7 @@ def main(args):
                          os.path.join(args.output_directory,
                                       'assemblies_ids_to_download.tsv')]
             
-            if args.api_key != None:
+            if args.api_key is not None:
                 arguments = arguments + ['--api-key',args.api_key]
             
             if args.download:
