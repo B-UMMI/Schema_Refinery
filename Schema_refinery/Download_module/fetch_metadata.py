@@ -89,9 +89,6 @@ def get_metadata(xml_root):
         metadata_dict.update(xml_root[0].attrib)
             
         metadata_dict.update(xml_root.find(".//Organism").attrib)
-            
-        metadata_dict["SRA"] = xml_root.findall(".//Id")[1].text
-
                           
         for attributes in xml_root.iter('Attributes'):
                 

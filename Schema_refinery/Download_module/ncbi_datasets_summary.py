@@ -181,7 +181,7 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
             species: string
             assembly_level: string (containing assembly levels separated by ",")
             reference: Boolean value
-            assembly_source: string (GCF_ or GCA_)
+            assembly_source: string (RefSeq or GenBank)
             api_key: string
             
         Output:
@@ -235,7 +235,7 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
             genome_size: int (>0)
             assembly_level: string (containing assembly levels separated by ",")
             reference: Boolean value
-            assembly_source: string (GCF_ or GCA_)
+            assembly_source: string (RefSeq or GenBank)
             api_key: string
             
         Output:

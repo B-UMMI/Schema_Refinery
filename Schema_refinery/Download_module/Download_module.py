@@ -9,6 +9,7 @@ import os
 import csv
 import subprocess
 import ast
+import pandas as pd
 
 def tryeval(val):
     """
@@ -43,7 +44,7 @@ def main(args):
         assembly_source = tryeval(criterias['assembly_source'])
         file_extension = tryeval(criterias['file_extension'])
 
-           
+        #Verify variables integrity and validity
     
     if args.database == 'NCBI':
         """
@@ -126,7 +127,7 @@ def main(args):
                 
                 ids_to_txt.write("\n".join(map(str, failed_list)))
  
-            arguments = ['datasets','download','genome','taxon','--inputfile',
+            arguments = ['datasets','download','genome','accession','--inputfile',
                          os.path.join(args.output_directory,
                                       'assemblies_ids_to_download.tsv')]
             
@@ -150,15 +151,27 @@ def main(args):
                                  args.threads, 
                                  args.retry, 
                                  args.api_key)
+            
+            print("\nFetching additional metadata...") 
+            
+            biosamples = pd.read_csv(os.path.join(args.output_directory,'metadata/id_matches.tsv'),
+                        delimiter = '\t')['BioSample'].values.tolist()
+            
+            #create file with biosamples ids
+            with open(os.path.join(args.output_directory,
+                                   'metadata/biosamples.tsv'),'w+') as ids:
                 
-            print("\nFetching additional metadata...")                
-            fetch_metadata.main(os.path.join(args.output_directory,'assemblies_ids_to_download.tsv'),
+                ids.write("\n".join(map(str, biosamples)))
+                           
+            fetch_metadata.main(os.path.join(args.output_directory,'metadata/biosamples.tsv'),
                                 os.path.join(args.output_directory,'metadata'),
                                 args.email,
                                 args.threads,
                                 args.api_key,
                                 args.retry)
             
+            #remove biosamples file
+            os.remove(os.path.join(args.output_directory,'metadata/biosamples.tsv'))
     else:
         try:
             from Download_module import ena661k_assembly_fetcher
