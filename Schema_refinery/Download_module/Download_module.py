@@ -23,9 +23,7 @@ def tryeval(val):
     return val
 
 def main(args):
-    
-    print("Fetching assemblies from {}".format(args.database))    
-    
+        
     if args.filter_criteria_path is not None:
         #import filtering criterias file
         with open(args.filter_criteria_path,'r') as filters:
@@ -45,7 +43,76 @@ def main(args):
         file_extension = tryeval(criterias['file_extension'])
 
         #Verify variables integrity and validity
-    
+        print("\nVerifying filtering criteria input table")
+        
+        wrong_inputs = []
+        
+        if abundance is not None:
+            if (not 0 < abundance <= 1):
+                wrong_inputs.append('abundance: float values between 0 < x <= 1')
+                
+        if genome_size is not None:
+            if (genome_size < 0 or type(genome_size) is not int):
+                wrong_inputs.append('genome_size: int value > 0')
+                
+        if size_threshold is not None:
+            if (not 0 < size_threshold <= 1):
+                wrong_inputs.append('size_threshold: float values between 0 < x <= 1')
+                
+        if max_contig_number is not None:
+            if (max_contig_number < 0 or type(max_contig_number) is not int):
+                wrong_inputs.append('max_contig_number: int value > 0')
+                
+        if known_st is not None:        
+            if (type(known_st) is not bool):
+                wrong_inputs.append('known_st: bool value')
+                
+        if any_quality is not None:             
+            if (type(any_quality) is not bool):
+                wrong_inputs.append('any_quality: bool value')
+                
+        if ST_list_path is not None:   
+            if (not os.path.exists(ST_list_path) or type(ST_list_path) is not str):
+                wrong_inputs.append('ST_list_path: path to the file with ST list')
+                
+        if assembly_level is not None:
+            if assembly_level is str:
+                if (assembly_level.split(',') not in ['chromosome','complete',
+                                                      'contig','scaffold']):
+                    wrong_inputs.append('assembly_level: ' 
+                                        'one ore more of the following separated '
+                                        'by a comma: '
+                                        'chromosome,complete,contig,scaffold')
+            else:
+                wrong_inputs.append('assembly_level: ' 
+                                    'one ore more of the following separated '
+                                    'by a comma: '
+                                    'chromosome,complete,contig,scaffold')
+                
+        if reference is not None:                
+            if (type(reference) is not bool):
+                wrong_inputs.append('reference: bool value')
+                
+        if assembly_source is not None:        
+            if (assembly_source not in ['RefSeq','GenBank','all']):
+                wrong_inputs.append('assembly_source: one of the following:' 
+                                    'RefSeq,GenBank,all')
+                
+        if file_extension is not None:        
+            if (file_extension not in ['genome','rna','protein','cds','gff3','gtf',
+                                       'gbff','seq-report','none']):
+                wrong_inputs.append('file_extension: one or more of the following separated '
+                                    'by comma: genome,rna,protein,cds,gff3,gtf, '
+                                    'gbff,seq-report,none')
+            
+        if len(wrong_inputs) > 0:
+            print('\nFiltering table inputs have wrong values or types:')
+            for inputs in wrong_inputs:
+                print('\n' + inputs)
+            os.sys.exit()
+        
+    print("Fetching assemblies from {}".format(args.database))
+      
     if args.database == 'NCBI':
         """
         If Database option is set to NCBI, run one of the two tools depending
