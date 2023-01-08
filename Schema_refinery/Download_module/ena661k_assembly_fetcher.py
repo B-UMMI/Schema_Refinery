@@ -341,7 +341,7 @@ def main(metadata_table, paths_table, species, output_directory,
         failed = 0
         downloaded = 0
 
-    with open(os.path.join(output_directory,"assemblies_ids.tsv"),'w+') as ids_to_tsv:
+    with open(os.path.join(output_directory,"assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, sample_ids)))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:

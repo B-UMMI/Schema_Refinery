@@ -6,6 +6,7 @@ Created on Thu Dec 15 18:18:38 2022
 @author: mykyta
 """
 import os
+import sys
 import csv
 import subprocess
 import ast
@@ -30,20 +31,27 @@ def main(args):
             criterias = dict(csv.reader(filters, delimiter='\t'))
         
         #Transform dictionary keys and values into variables
-        abundance = tryeval(criterias['abundance'])
-        genome_size = tryeval(criterias['genome_size'])
-        size_threshold = tryeval(criterias['size_threshold'])
-        max_contig_number = tryeval(criterias['max_contig_number'])
-        known_st = tryeval(criterias['known_st'])
-        any_quality = tryeval(criterias['any_quality'])
-        ST_list_path = tryeval(criterias['ST_list_path'])
-        assembly_level = tryeval(criterias['assembly_level'])
-        reference = tryeval(criterias['reference_genome'])
-        assembly_source = tryeval(criterias['assembly_source'])
-        file_extension = tryeval(criterias['file_extension'])
+        try:
+            abundance = tryeval(criterias['abundance'])
+            genome_size = tryeval(criterias['genome_size'])
+            size_threshold = tryeval(criterias['size_threshold'])
+            max_contig_number = tryeval(criterias['max_contig_number'])
+            known_st = tryeval(criterias['known_st'])
+            any_quality = tryeval(criterias['any_quality'])
+            ST_list_path = tryeval(criterias['ST_list_path'])
+            assembly_level = tryeval(criterias['assembly_level'])
+            reference = tryeval(criterias['reference_genome'])
+            assembly_source = tryeval(criterias['assembly_source'])
+            file_extension = tryeval(criterias['file_extension'])
+            
+        except KeyError:
+            sys.exit("\nError: Missing parameters in the filtering criteria file.")
+        
+        finally:
+            print("\nLoaded filtering criteria file successfully.")
 
         #Verify variables integrity and validity
-        print("\nVerifying filtering criteria input table")
+        print("\nVerifying filtering criteria input table.")
         
         wrong_inputs = []
         
@@ -111,7 +119,7 @@ def main(args):
                 print('\n' + inputs)
             os.sys.exit()
         
-    print("Fetching assemblies from {}".format(args.database))
+    print("\nFetching assemblies from {}.".format(args.database))
       
     if args.database == 'NCBI':
         """
@@ -129,7 +137,7 @@ def main(args):
         except ModuleNotFoundError:
             from Schema_refinery.Download_module import ncbi_datasets_summary
             from Schema_refinery.Download_module import ncbi_linked_ids
-            from Schema_refinery.Download_module import fetch_metadata    
+            from Schema_refinery.Download_module import fetch_metadata
         
         if args.input_table is not None:
             #If assemblies ids list is present
@@ -141,6 +149,13 @@ def main(args):
                                                           reference,
                                                           args.threads,
                                                           args.api_key)
+            #if list to download assemblies is empty
+            if not list_to_download:
+                print("\nNo assemblies meet the desired filtering criterias.")
+                
+                sys.exit("\nAssemblies that failed are in the following" 
+                         "TSV file: {}".format(os.path.join(args.output_directory,
+                                                            "id_failed_criteria.tsv.tsv")))
             
             #save ids to download
             with open(os.path.join(args.output_directory,
@@ -166,8 +181,13 @@ def main(args):
             
             #download assemblies
             if args.download:
+                print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
                 subprocess.run(arguments)
+                
+            else:
+                print("\nAssemblies to be downloaded are in the following TSV file: {}".format(
+                    os.path.join(args.output_directory,"assemblies_ids_to_download.tsv")))
 
                 
         else:
@@ -181,7 +201,13 @@ def main(args):
                                                           assembly_source,
                                                           args.api_key)
             
-            
+            if not list_to_download:
+                print("\nNo assemblies meet the desired filtering criterias.")
+                
+                sys.exit("\nAssemblies that failed are in the following" 
+                         "TSV file: {}".format(os.path.join(args.output_directory,
+                                                            "id_failed_criteria.tsv.tsv")))
+                
             #save ids to download
             with open(os.path.join(args.output_directory,
                                    "assemblies_ids_to_download.tsv"),'w+') as ids_to_txt:
@@ -202,8 +228,13 @@ def main(args):
                 arguments = arguments + ['--api-key',args.api_key]
             
             if args.download:
+                print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
                 subprocess.run(arguments)
+            
+            else:
+                print("\nAssemblies to be downloaded are in the following TSV file: {}".format(
+                    os.path.join(args.output_directory,"assemblies_ids_to_download.tsv")))
         
         if args.f_metadata:
                 
@@ -272,7 +303,7 @@ def main(args):
             if not os.path.exists(os.path.join(args.output_directory,'metadata')):
                 os.mkdir(os.path.join(args.output_directory,'metadata'))  
             
-            ncbi_linked_ids.main(os.path.join(args.output_directory,'assemblies_ids.tsv'),
+            ncbi_linked_ids.main(os.path.join(args.output_directory,'assemblies_ids_to_download.tsv'),
                                  os.path.join(args.output_directory,'metadata/id_matches.tsv'),
                                  args.email, 
                                  args.threads, 
