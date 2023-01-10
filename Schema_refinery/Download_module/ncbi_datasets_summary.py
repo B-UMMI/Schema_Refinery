@@ -3,7 +3,10 @@
 """
 Created on Tue Dec 27 13:05:38 2022
 
-@author: mykyta
+AUTHOR
+
+    Mykyta Forofontov
+    github: @MForofontov
 """
 
 import subprocess

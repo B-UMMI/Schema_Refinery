@@ -324,7 +324,7 @@ def multi_threading(i, retry):
             break
 
     if rtry == retry:
-        print("Failed to fetch ids for {}").format(i)
+        print("Failed to fetch ids for {}".format(i))
         
     else:
         print('{0:<} : {1}'.format(i, match.upper()))

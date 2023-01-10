@@ -3,7 +3,10 @@
 """
 Created on Thu Dec 15 18:18:38 2022
 
-@author: mykyta
+AUTHOR
+
+    Mykyta Forofontov
+    github: @MForofontov
 """
 import os
 import sys
@@ -84,11 +87,12 @@ def main(args):
                 wrong_inputs.append('ST_list_path: path to the file with ST list')
                 
         if assembly_level is not None:
-            if assembly_level is str:
-                if (assembly_level.split(',') not in ['chromosome','complete',
-                                                      'contig','scaffold']):
+            if type(assembly_level) is str:
+                if (not all(level in ['chromosome','complete','contig','scaffold']
+                        for level in assembly_level.split(','))):
+                    
                     wrong_inputs.append('assembly_level: ' 
-                                        'one ore more of the following separated '
+                                        'one or more of the following separated '
                                         'by a comma: '
                                         'chromosome,complete,contig,scaffold')
             else:
@@ -149,13 +153,6 @@ def main(args):
                                                           reference,
                                                           args.threads,
                                                           args.api_key)
-            #if list to download assemblies is empty
-            if not list_to_download:
-                print("\nNo assemblies meet the desired filtering criterias.")
-                
-                sys.exit("\nAssemblies that failed are in the following" 
-                         "TSV file: {}".format(os.path.join(args.output_directory,
-                                                            "id_failed_criteria.tsv.tsv")))
             
             #save ids to download
             with open(os.path.join(args.output_directory,
@@ -167,8 +164,18 @@ def main(args):
             with open(os.path.join(args.output_directory,
                                    "id_failed_criteria.tsv"),'w+') as ids_to_txt:
                 
-                ids_to_txt.write("\n".join(map(str, failed_list)))                
-            
+                ids_to_txt.write("\n".join(map(str, failed_list)))       
+                
+
+            #If any assembly passed filtering criteria
+            if not list_to_download:
+                print("\nNo assemblies meet the desired filtering criterias.")
+                
+                sys.exit("\nAssemblies that failed are in the following" 
+                         "TSV file: {}".format(os.path.join(args.output_directory,
+                                                            "id_failed_criteria.tsv.tsv")))
+                
+            #Build initial arguments for the subprocess run of datasets
             arguments = ['datasets','download','genome','accession','--inputfile',
                          os.path.join(args.output_directory,
                                       'assemblies_ids_to_download.tsv')]
@@ -200,13 +207,6 @@ def main(args):
                                                           reference,
                                                           assembly_source,
                                                           args.api_key)
-            
-            if not list_to_download:
-                print("\nNo assemblies meet the desired filtering criterias.")
-                
-                sys.exit("\nAssemblies that failed are in the following" 
-                         "TSV file: {}".format(os.path.join(args.output_directory,
-                                                            "id_failed_criteria.tsv.tsv")))
                 
             #save ids to download
             with open(os.path.join(args.output_directory,
@@ -219,7 +219,16 @@ def main(args):
                                    "id_failed_criteria.tsv"),'w+') as ids_to_txt: 
                 
                 ids_to_txt.write("\n".join(map(str, failed_list)))
- 
+            
+            #If any assembly passed filtering criteria
+            if not list_to_download:
+                print("\nNo assemblies meet the desired filtering criterias.")
+                
+                sys.exit("\nAssemblies that failed are in the following " 
+                         "TSV file: {}".format(os.path.join(args.output_directory,
+                                                            "id_failed_criteria.tsv.tsv")))
+                
+            #Build initial arguments for the subprocess run of datasets
             arguments = ['datasets','download','genome','accession','--inputfile',
                          os.path.join(args.output_directory,
                                       'assemblies_ids_to_download.tsv')]
@@ -243,6 +252,7 @@ def main(args):
                     
                 
             print("\nFetching related ids...")
+            
             ncbi_linked_ids.main(os.path.join(args.output_directory,'assemblies_ids_to_download.tsv'),
                                  os.path.join(args.output_directory,'metadata/id_matches.tsv'),
                                  args.email, 

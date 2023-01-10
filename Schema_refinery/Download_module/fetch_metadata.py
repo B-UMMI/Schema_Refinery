@@ -3,7 +3,10 @@
 """
 Created on Mon Nov 28 13:28:18 2022
 
-@author: Mykyta Forofontov
+AUTHOR
+
+    Mykyta Forofontov
+    github: @MForofontov
 """
 
 import os
