@@ -13,6 +13,7 @@ import subprocess
 import json
 import concurrent.futures
 import csv
+import sys
 from itertools import repeat
 
 def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
@@ -117,6 +118,11 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
 
     ids = [item for sublist in ids for item in sublist]
     
+    #if input list has corrects format ids.
+    if not all(i.startswith(['GCF_','GCA_']) for i in ids):
+        sys.exit('One or more ids in the input list have wrong format. Must '
+                 'start with either GCF_ or GCA_')
+    
     #if verification is needed
     if (genome_size is not None
         or size_threshold is not None 
@@ -130,9 +136,14 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
             print("Genome size of: {}".format(genome_size))
             print("Size threshold of: {}".format(size_threshold))
             
-        else:
+        elif genome_size is None and size_threshold is None:
             print("Genome size of: Not specified")
             print("Size threshold of: Not specified")
+        else:
+            print("Both genome size and size threshold need to be specified.")
+            print("Setting as:")
+            print("    Genome size of: Not specified")
+            print("    Size threshold of: Not specified")
             
         if max_contig_number is not None:
             print("Maximum number of contigs: {}".format(max_contig_number))
@@ -284,9 +295,14 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
             print("Genome size of: {}".format(genome_size))
             print("Size threshold of: {}".format(size_threshold))
             
-        else:
+        elif genome_size is None and size_threshold is None:
             print("Genome size of: Not specified")
             print("Size threshold of: Not specified")
+        else:
+            print("Both genome size and size threshold need to be specified.")
+            print("Setting as:")
+            print("    Genome size of: Not specified")
+            print("    Size threshold of: Not specified")
             
         if max_contig_number is not None:
             print("Maximum number of contigs: {}".format(max_contig_number))

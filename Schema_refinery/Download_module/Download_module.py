@@ -123,7 +123,7 @@ def main(args):
                 print('\n' + inputs)
             os.sys.exit()
         
-    print("\nFetching assemblies from {}.".format(args.database))
+    print("\nFetching assemblies from {} datasets.".format(args.database))
       
     if args.database == 'NCBI':
         """
@@ -300,7 +300,6 @@ def main(args):
                                       genome_size, 
                                       size_threshold,
                                       max_contig_number, 
-                                      args.species, 
                                       known_st, 
                                       any_quality, 
                                       args.stride,
@@ -320,7 +319,7 @@ def main(args):
                                  args.retry, 
                                  args.api_key)
             
-            fetch_metadata.main(os.path.join(args.output_directory,'assemblies_ids.tsv'),
+            fetch_metadata.main(os.path.join(args.output_directory,'assemblies_ids_to_download.tsv'),
                                 os.path.join(args.output_directory,'metadata'),
                                 args.email,
                                 args.threads,

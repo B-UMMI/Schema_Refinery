@@ -163,11 +163,11 @@ def download_ftp_file(data, retry, verify=True, progress=False):
 
 def main(metadata_table, paths_table, species, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
-         max_contig_number, mlst_species, known_st, any_quality, stride,
+         max_contig_number, known_st, any_quality, stride,
          retry, st, threads):
 
     # read file with metadata
-    print("\nreading metadata table...")
+    print("\nReading metadata table...")
     metadata_lines = read_table(metadata_table)
 
     metadata_header = metadata_lines[0]
@@ -186,9 +186,49 @@ def main(metadata_table, paths_table, species, output_directory,
         print('Did not find matches for {0}.'.format(species))
         sys.exit(0)
 
-    print("\nFiltering by chosen criteria")
+    print("\nFiltering by chosen criteria:")
+    
+    #Print filtering criteria.
+    if genome_size is not None and size_threshold is not None:
+        print("Genome size of: {}".format(genome_size))
+        print("Size threshold of: {}".format(size_threshold))
+        
+    elif genome_size is None and size_threshold is None:
+        print("Genome size of: Not specified")
+        print("Size threshold of: Not specified")
+    else:
+        print("Both genome size and size threshold need to be specified.")
+        print("Setting as:")
+        print("    Genome size of: Not specified")
+        print("    Size threshold of: Not specified")
+            
+    if abundance is not None:
+        print("Abundance of: {}".format(abundance))
+    else:
+        print("Abundance of: Not specified")
+    
+    if max_contig_number is not None:
+        print("Maximum number of contigs: {}".format(max_contig_number))
+    else:
+        print("Maximum number of contigs: Not specified")
+        
+    if known_st is True:
+        print("ST must be known: True")
+    else:
+        print("ST must be known: False")
+    
+    if st is not None:
+        print("Filtering assemblies by specified ST list: True")
+    else:
+        print("Filtering assemblies by specified ST list: False")
+    
+    if any_quality is True:
+        print("Can have any quality: True")
+    else:
+        print("Can have any quality: False")
+    
     # filter based on genome size
-    if genome_size is not None:
+    if genome_size is not None and size_threshold is not None:
         bot_limit = genome_size - (genome_size*size_threshold)
         top_limit = genome_size + (genome_size*size_threshold)
         size_index = metadata_header.index('total_length')
@@ -219,17 +259,7 @@ def main(metadata_table, paths_table, species, output_directory,
 
         print('{0} with <= {1} contigs.'.format(len(species_lines),
                                                 max_contig_number))
-
-    # filter based on MLST species
-    if mlst_species is not None:
-        st_species_index = metadata_header.index('mlst-species')
-        species_lines = [line
-                         for line in species_lines
-                         if line[st_species_index] == mlst_species]
-
-        print('{0} with MLST species == {1}.'.format(len(species_lines),
-                                                     mlst_species))
-
+        
     # filter based on known ST
     if known_st is True:
         st_index = metadata_header.index('mlst')
@@ -260,8 +290,7 @@ def main(metadata_table, paths_table, species, output_directory,
     # get sample identifiers
     sample_ids = [line[0] for line in species_lines]
     if len(sample_ids) == 0:
-        sys.exit('Did not find samples/assemblies that passed '
-                 'filtering criteria.')
+        sys.exit('No assemblies meet the desired filtering criterias.')
     else:
         print('Selected {0} samples/assemblies that meet filtering '
               'criteria.'.format(len(sample_ids)))
@@ -340,25 +369,24 @@ def main(metadata_table, paths_table, species, output_directory,
         print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
         failed = 0
         downloaded = 0
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        
+            for res in executor.map(download_ftp_file, remote_urls, repeat(retry)):
+                
+                if res is True:
+                    downloaded += 1
+                    print('\r', 'Downloaded {0}/{1}'.format(downloaded,
+                                                            len(remote_urls)),
+                          end='')
+                else:
+                    failed += 1
+        
+            print('\nFailed download for {0} files.'.format(failed))
 
     with open(os.path.join(output_directory,"assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, sample_ids)))
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-
-        for res in executor.map(download_ftp_file, remote_urls, repeat(retry)):
-            
-            if res is True:
-                downloaded += 1
-                print('\r', 'Downloaded {0}/{1}'.format(downloaded,
-                                                        len(remote_urls)),
-                      end='')
-            else:
-                failed += 1
-
-        print('\nFailed download for {0} files.'.format(failed))
-
-        
+    
 
 def parse_arguments():
 
