@@ -124,6 +124,33 @@ def main(args):
             os.sys.exit()
         
     print("\nFetching assemblies from {} datasets.".format(args.database))
+    
+    #find local schema refinery path
+    path_ = subprocess.Popen(['conda','info'],stdout=subprocess.PIPE)
+    
+    stdout, stderr = path_.communicate()
+    
+    conda_info = stdout.decode("utf-8").splitlines()
+    
+    info_dict = {}
+
+    for info in conda_info:
+        
+        if info == '':
+            continue
+        
+        key_value = info.strip().split(':')
+        
+        if len(key_value) == 2:
+            info_dict[key_value[0].strip()] = [key_value[1].strip()]
+            
+            out_key = key_value[0].strip()
+        else:
+            info_dict[out_key].append(key_value[0].strip())
+        
+    sr_path = info_dict['active env location'][0]
+    
+    sr_path = os.path.join(sr_path,'ena661k_files')
       
     if args.database == 'NCBI':
         """
@@ -291,8 +318,7 @@ def main(args):
             from Schema_refinery.Download_module import ncbi_linked_ids
             from Schema_refinery.Download_module import fetch_metadata
             
-        ena661k_assembly_fetcher.main(args.metadata_table,
-                                      args.paths_table,
+        ena661k_assembly_fetcher.main(sr_path,
                                       args.species, 
                                       args.output_directory,
                                       args.download, 

@@ -84,16 +84,6 @@ def download_module():
                              'report.')
 
     #Specific for ENA661k database
-    
-    parser.add_argument('-p', '--paths_ena', type=str,
-                        required=False, dest='paths_table',
-                        help='Maximum number of retries when a '
-                             'download fails.')
-    
-    parser.add_argument('-m', '--metadata_ena', type=str,
-                        required=False, dest='metadata_table',
-                        help='Maximum number of retries when a '
-                             'download fails.')
 
     parser.add_argument('-stride', '--stride', type=str,
                         required=False,

@@ -20,6 +20,8 @@ import hashlib
 import argparse
 import urllib.request
 import concurrent.futures
+import gzip
+import shutil
 from itertools import repeat
 
 
@@ -38,13 +40,6 @@ while True:
 
 # set socket timeout for urllib calls
 socket.setdefaulttimeout(60)
-
-# EBI ftp path
-ebi_ftp = 'http://ftp.ebi.ac.uk'
-
-# URL to download "checklist.chk" file with md5 hashes
-url_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
-
 
 # function passed to urllib.request.urlretrieve to track progress
 def HandleProgress(block_num, block_size, total_size):
@@ -161,14 +156,60 @@ def download_ftp_file(data, retry, verify=True, progress=False):
     return downloaded
 
 
-def main(metadata_table, paths_table, species, output_directory,
+def main(sr_path, species, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, known_st, any_quality, stride,
          retry, st, threads):
-
+    
+    #Initial path for ftp path builder
+    ebi_ftp = 'http://ftp.ebi.ac.uk'
+    
+    #FTP paths and local location for files needed to download assemblies
+    assembly_ftp_path = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/sampleid_assembly_paths.txt'
+    assembly_ftp_file = os.path.join(sr_path,'assembly_ftp_file.txt')
+    
+    assembly_metadata_path = 'https://figshare.com/ndownloader/files/26578601'
+    assembly_metadata_file = os.path.join(sr_path,'metadata_file.txt')
+    
+    local_checklist = os.path.join(sr_path, 'checklist.chk')
+    ftp_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
+    
+    #Verify if dir is present in conda env
+    if not os.path.exists(sr_path):
+        os.mkdir(sr_path)
+    
+    #Verify if files are present in the conda dir env~
+    if os.path.exists(assembly_ftp_file):
+        print('File with FTP links already exists...')
+    else:
+        print('Downloading ENA661K ftp paths file...')
+        download_ftp_file([assembly_ftp_path, assembly_ftp_file, None],
+                          retry, False, True)
+        
+    if os.path.exists(assembly_metadata_file):
+        print('File with ENA661K metadata already exists...')
+    else:
+        print('Downloading ENA661K metadata file...')
+        download_ftp_file([assembly_metadata_path, assembly_metadata_file + '.gz', None],
+                          retry, False, True)
+        
+        print('Unzipping metadata...')
+        with gzip.open(assembly_metadata_file + '.gz', 'rb') as f_in:
+            with open(assembly_metadata_file, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        
+        os.remove(assembly_metadata_file + '.gz')
+        
+    if os.path.exists(local_checklist):
+        print('File with ENA661K checklist already exists...')
+    else:
+        print('Downloading ENA661K checklist.chk...')
+        download_ftp_file([ftp_hash_file, local_checklist, None],
+                          retry, False, True)
+    
     # read file with metadata
     print("\nReading metadata table...")
-    metadata_lines = read_table(metadata_table)
+    metadata_lines = read_table(assembly_metadata_file)
 
     metadata_header = metadata_lines[0]
 
@@ -306,13 +347,6 @@ def main(metadata_table, paths_table, species, output_directory,
         selected_text = '\n'.join(selected_lines)
         outfile.write(selected_text+'\n')
 
-    # download hashes file
-    local_checklist = os.path.join(output_directory, 'checklist.chk')
-    if os.path.isfile(local_checklist) is False:
-        print('Downloading checklist.chk...')
-        download_ftp_file([url_hash_file, local_checklist, None],
-                          retry, False, True)
-
     # Putting checksums in dictionary
     hashes_dict = {}
     with open(local_checklist, 'r') as table:
@@ -327,7 +361,7 @@ def main(metadata_table, paths_table, species, output_directory,
 
     if ftp_download is True:
         # read table with FTP paths
-        ftp_lines = read_table(paths_table)
+        ftp_lines = read_table(assembly_ftp_file)
         sample_paths = {l[0]: l[1].split('/ebi/ftp')[1] for l in ftp_lines}
         # get FTP paths only for selected samples
         species_paths = {i: sample_paths[i] for i in sample_ids}
