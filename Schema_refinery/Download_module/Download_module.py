@@ -26,109 +26,20 @@ def tryeval(val):
       pass
     return val
 
-def main(args):
+def find_local_conda_env():
+    """
+    This function fetches current conda env path by using 'conda info'.
         
-    if args.filter_criteria_path is not None:
-        #import filtering criterias file
-        with open(args.filter_criteria_path,'r') as filters:
-            criterias = dict(csv.reader(filters, delimiter='\t'))
+        Input: None
         
-        #Transform dictionary keys and values into variables
-        try:
-            abundance = tryeval(criterias['abundance'])
-            genome_size = tryeval(criterias['genome_size'])
-            size_threshold = tryeval(criterias['size_threshold'])
-            max_contig_number = tryeval(criterias['max_contig_number'])
-            known_st = tryeval(criterias['known_st'])
-            any_quality = tryeval(criterias['any_quality'])
-            ST_list_path = tryeval(criterias['ST_list_path'])
-            assembly_level = tryeval(criterias['assembly_level'])
-            reference = tryeval(criterias['reference_genome'])
-            assembly_source = tryeval(criterias['assembly_source'])
-            file_extension = tryeval(criterias['file_extension'])
-            
-        except KeyError:
-            sys.exit("\nError: Missing parameters in the filtering criteria file.")
-        
-        finally:
-            print("\nLoaded filtering criteria file successfully.")
-
-        #Verify variables integrity and validity
-        print("\nVerifying filtering criteria input table.")
-        
-        wrong_inputs = []
-        
-        if abundance is not None:
-            if (not 0 < abundance <= 1):
-                wrong_inputs.append('abundance: float values between 0 < x <= 1')
-                
-        if genome_size is not None:
-            if (genome_size < 0 or type(genome_size) is not int):
-                wrong_inputs.append('genome_size: int value > 0')
-                
-        if size_threshold is not None:
-            if (not 0 < size_threshold <= 1):
-                wrong_inputs.append('size_threshold: float values between 0 < x <= 1')
-                
-        if max_contig_number is not None:
-            if (max_contig_number < 0 or type(max_contig_number) is not int):
-                wrong_inputs.append('max_contig_number: int value > 0')
-                
-        if known_st is not None:        
-            if (type(known_st) is not bool):
-                wrong_inputs.append('known_st: bool value')
-                
-        if any_quality is not None:             
-            if (type(any_quality) is not bool):
-                wrong_inputs.append('any_quality: bool value')
-                
-        if ST_list_path is not None:   
-            if (not os.path.exists(ST_list_path) or type(ST_list_path) is not str):
-                wrong_inputs.append('ST_list_path: path to the file with ST list')
-                
-        if assembly_level is not None:
-            if type(assembly_level) is str:
-                if (not all(level in ['chromosome','complete','contig','scaffold']
-                        for level in assembly_level.split(','))):
-                    
-                    wrong_inputs.append('assembly_level: ' 
-                                        'one or more of the following separated '
-                                        'by a comma: '
-                                        'chromosome,complete,contig,scaffold')
-            else:
-                wrong_inputs.append('assembly_level: ' 
-                                    'one ore more of the following separated '
-                                    'by a comma: '
-                                    'chromosome,complete,contig,scaffold')
-                
-        if reference is not None:                
-            if (type(reference) is not bool):
-                wrong_inputs.append('reference: bool value')
-                
-        if assembly_source is not None:        
-            if (assembly_source not in ['RefSeq','GenBank','all']):
-                wrong_inputs.append('assembly_source: one of the following:' 
-                                    'RefSeq,GenBank,all')
-                
-        if file_extension is not None:        
-            if (file_extension not in ['genome','rna','protein','cds','gff3','gtf',
-                                       'gbff','seq-report','none']):
-                wrong_inputs.append('file_extension: one or more of the following separated '
-                                    'by comma: genome,rna,protein,cds,gff3,gtf, '
-                                    'gbff,seq-report,none')
-            
-        if len(wrong_inputs) > 0:
-            print('\nFiltering table inputs have wrong values or types:')
-            for inputs in wrong_inputs:
-                print('\n' + inputs)
-            os.sys.exit()
-        
-    print("\nFetching assemblies from {} datasets.".format(args.database))
+        Output:
+            return: str value containing path to folder inside schema refinery
+                    env, may not exist if this module was not used to download
+                    assemblies from ENA661K.´
+    """
+    conda_path = subprocess.Popen(['conda','info'],stdout=subprocess.PIPE)
     
-    #find local schema refinery path
-    path_ = subprocess.Popen(['conda','info'],stdout=subprocess.PIPE)
-    
-    stdout, stderr = path_.communicate()
+    stdout, stderr = conda_path.communicate()
     
     conda_info = stdout.decode("utf-8").splitlines()
     
@@ -150,7 +61,129 @@ def main(args):
         
     sr_path = info_dict['active env location'][0]
     
-    sr_path = os.path.join(sr_path,'ena661k_files')
+    return os.path.join(sr_path,'ena661k_files')
+    
+def filtering_criteria_variables(filtering_criteria_path):
+    """
+    This function imports and verifies filtering criteria obtained from an input
+    table.
+        
+        Input: str (filtering criteria path)
+        
+        Output:
+            return: 11 filtering criteria variables, with their type and format
+                    verified, some may be None values.
+    """
+    
+    with open(filtering_criteria_path,'r') as filters:
+        criterias = dict(csv.reader(filters, delimiter='\t'))
+    
+    #Transform dictionary keys and values into variables
+    try:
+        abundance = tryeval(criterias['abundance'])
+        genome_size = tryeval(criterias['genome_size'])
+        size_threshold = tryeval(criterias['size_threshold'])
+        max_contig_number = tryeval(criterias['max_contig_number'])
+        known_st = tryeval(criterias['known_st'])
+        any_quality = tryeval(criterias['any_quality'])
+        ST_list_path = tryeval(criterias['ST_list_path'])
+        assembly_level = tryeval(criterias['assembly_level'])
+        reference = tryeval(criterias['reference_genome'])
+        assembly_source = tryeval(criterias['assembly_source'])
+        file_extension = tryeval(criterias['file_extension'])
+        
+    except KeyError:
+        sys.exit("\nError: Missing parameters in the filtering criteria file.")
+    
+    finally:
+        print("\nLoaded filtering criteria file successfully.")
+
+    #Verify variables integrity and validity
+    print("\nVerifying filtering criteria input table.")
+    
+    wrong_inputs = []
+    
+    if abundance is not None:
+        if (not 0 < abundance <= 1):
+            wrong_inputs.append('abundance: float values between 0 < x <= 1')
+            
+    if genome_size is not None:
+        if (genome_size < 0 or type(genome_size) is not int):
+            wrong_inputs.append('genome_size: int value > 0')
+            
+    if size_threshold is not None:
+        if (not 0 < size_threshold <= 1):
+            wrong_inputs.append('size_threshold: float values between 0 < x <= 1')
+            
+    if max_contig_number is not None:
+        if (max_contig_number < 0 or type(max_contig_number) is not int):
+            wrong_inputs.append('max_contig_number: int value > 0')
+            
+    if known_st is not None:        
+        if (type(known_st) is not bool):
+            wrong_inputs.append('known_st: bool value')
+            
+    if any_quality is not None:             
+        if (type(any_quality) is not bool):
+            wrong_inputs.append('any_quality: bool value')
+            
+    if ST_list_path is not None:   
+        if (not os.path.exists(ST_list_path) or type(ST_list_path) is not str):
+            wrong_inputs.append('ST_list_path: path to the file with ST list')
+            
+    if assembly_level is not None:
+        if type(assembly_level) is str:
+            if (not all(level in ['chromosome','complete','contig','scaffold']
+                    for level in assembly_level.split(','))):
+                
+                wrong_inputs.append('assembly_level: ' 
+                                    'one or more of the following separated '
+                                    'by a comma: '
+                                    'chromosome,complete,contig,scaffold')
+        else:
+            wrong_inputs.append('assembly_level: ' 
+                                'one ore more of the following separated '
+                                'by a comma: '
+                                'chromosome,complete,contig,scaffold')
+            
+    if reference is not None:                
+        if (type(reference) is not bool):
+            wrong_inputs.append('reference: bool value')
+            
+    if assembly_source is not None:        
+        if (assembly_source not in ['RefSeq','GenBank','all']):
+            wrong_inputs.append('assembly_source: one of the following:' 
+                                'RefSeq,GenBank,all')
+            
+    if file_extension is not None:        
+        if (file_extension not in ['genome','rna','protein','cds','gff3','gtf',
+                                   'gbff','seq-report','none']):
+            wrong_inputs.append('file_extension: one or more of the following separated '
+                                'by comma: genome,rna,protein,cds,gff3,gtf, '
+                                'gbff,seq-report,none')
+        
+    if len(wrong_inputs) > 0:
+        print('\nFiltering table inputs have wrong values or types:')
+        for inputs in wrong_inputs:
+            print('\n' + inputs)
+        os.sys.exit()
+        
+    return (abundance, genome_size, size_threshold, max_contig_number, known_st, 
+            any_quality, ST_list_path, assembly_level, reference, assembly_source, 
+            file_extension)
+
+def main(args):
+    
+    if args.input_table is not None and args.database == 'ENA661K':
+        sys.exit("\nError: Only assemblies from NCBI can be fetched from a input file.")
+    
+    if args.filter_criteria_path is not None:
+        #import filtering criterias file
+        (abundance, genome_size, size_threshold, max_contig_number, known_st, 
+         any_quality, ST_list_path, assembly_level, reference, assembly_source, 
+         file_extension) = filtering_criteria_variables(args.filter_criteria_path)
+             
+    print("\nFetching assemblies from {} datasets.".format(args.database))
       
     if args.database == 'NCBI':
         """
@@ -225,6 +258,7 @@ def main(args):
 
                 
         else:
+            
             #Fetch from species identifier
             failed_list,list_to_download = ncbi_datasets_summary.metadata_from_species(args.species,
                                                           size_threshold,
@@ -317,6 +351,14 @@ def main(args):
             from Schema_refinery.Download_module import ena661k_assembly_fetcher
             from Schema_refinery.Download_module import ncbi_linked_ids
             from Schema_refinery.Download_module import fetch_metadata
+            
+            #Path for ena661k files
+            try:
+                #Find local conda path
+                sr_path = find_local_conda_env()
+            except:
+                #if not using conda, use output directory instead
+                sr_path = os.path.join(args.output_directory, 'ena661k_files')
             
         ena661k_assembly_fetcher.main(sr_path,
                                       args.species, 

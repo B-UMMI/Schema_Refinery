@@ -83,7 +83,7 @@ def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
         arguments += ['--reference']
         
     try:
-        metadata = subprocess.run(arguments,stdout=subprocess.PIPE)
+        metadata = subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                                    
         metadata_assembly = json.loads(metadata.stdout)['reports'][0]['assembly_stats']         
                   
@@ -119,8 +119,8 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
     ids = [item for sublist in ids for item in sublist]
     
     #if input list has corrects format ids.
-    if not all(i.startswith(['GCF_','GCA_']) for i in ids):
-        sys.exit('One or more ids in the input list have wrong format. Must '
+    if not all(i.startswith(('GCF_','GCA_')) for i in ids):
+        sys.exit('\nOne or more ids in the input list have wrong format. Must '
                  'start with either GCF_ or GCA_')
     
     #if verification is needed
@@ -220,7 +220,7 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
     arguments = ['datasets','summary','genome','taxon', species]
     
     #find all possible assemblies ids
-    metadata = subprocess.run(arguments,stdout=subprocess.PIPE)
+    metadata = subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                                    
     metadata_all = json.loads(metadata.stdout)['reports']
     
@@ -244,7 +244,7 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
         arguments += ['--assembly-source',assembly_source]
         
     # find all metadata that pass initial criterias
-    metadata = subprocess.run(arguments,stdout=subprocess.PIPE)
+    metadata = subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                                    
     metadata_filtered = json.loads(metadata.stdout)['reports']      
     

@@ -171,8 +171,8 @@ def main(sr_path, species, output_directory,
     assembly_metadata_path = 'https://figshare.com/ndownloader/files/26578601'
     assembly_metadata_file = os.path.join(sr_path,'metadata_file.txt')
     
-    local_checklist = os.path.join(sr_path, 'checklist.chk')
     ftp_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
+    local_checklist = os.path.join(sr_path, 'checklist.chk')
     
     #Verify if dir is present in conda env
     if not os.path.exists(sr_path):
@@ -268,6 +268,10 @@ def main(sr_path, species, output_directory,
     else:
         print("Can have any quality: False")
     
+    
+    #get all ids:
+    all_sample_ids = [line[0] for line in species_lines]
+    
     # filter based on genome size
     if genome_size is not None and size_threshold is not None:
         bot_limit = genome_size - (genome_size*size_threshold)
@@ -330,8 +334,19 @@ def main(sr_path, species, output_directory,
 
     # get sample identifiers
     sample_ids = [line[0] for line in species_lines]
+    
+    #Assebmlies that failed filtering criteria
+    failed_list = [x for x in all_sample_ids if x not in sample_ids]
+    
+    #write failed and accepted ids to file
+    with open(os.path.join(output_directory,"assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
+        ids_to_tsv.write("\n".join(map(str, sample_ids)))
+    
+    with open(os.path.join(output_directory,"id_failed_criteria.tsv"),'w+') as ids_to_tsv:
+        ids_to_tsv.write("\n".join(map(str, failed_list)))
+        
     if len(sample_ids) == 0:
-        sys.exit('No assemblies meet the desired filtering criterias.')
+        sys.exit('\nNo assemblies meet the desired filtering criterias.')
     else:
         print('Selected {0} samples/assemblies that meet filtering '
               'criteria.'.format(len(sample_ids)))
@@ -417,9 +432,6 @@ def main(sr_path, species, output_directory,
                     failed += 1
         
             print('\nFailed download for {0} files.'.format(failed))
-
-    with open(os.path.join(output_directory,"assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
-        ids_to_tsv.write("\n".join(map(str, sample_ids)))
     
 
 def parse_arguments():

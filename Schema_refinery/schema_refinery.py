@@ -75,6 +75,7 @@ def download_module():
                         required=False, dest='download',
                         help='If the assemblies from the selected samples'
                              'should be downloaded.')
+    
     #Arguments specific for NCBI
     
     parser.add_argument('-i', '--input-table', type=str,
