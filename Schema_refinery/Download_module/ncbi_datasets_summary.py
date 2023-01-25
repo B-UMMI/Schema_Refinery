@@ -270,13 +270,16 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
                 failed_list: list (containing assemblies that failed criteria)
                 accepted_list: list (containing assemblies that passed criteria)
     """
-    #if verification is needed
+
     if (assembly_source is not None
         or genome_size is not None
         or size_threshold is not None 
         or max_contig_number is not None
         or assembly_level is not None
         or reference is not None):
+        """
+        if verification is needed
+        """
         
         print("\nVerifying assemblies to be downloaded by specified criteria:")
         
@@ -325,6 +328,9 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
         verify_list = True
     
     else:
+        """
+        If no verification is needed.
+        """
         verify_list = False
         print("No assembly verification criteria was specified...")
         print("Using default Criterias.")

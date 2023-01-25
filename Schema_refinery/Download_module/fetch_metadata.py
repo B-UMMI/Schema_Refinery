@@ -15,6 +15,7 @@ import argparse
 import xml.etree.ElementTree as ET
 import concurrent.futures
 import time
+from tqdm import tqdm
 from Bio import Entrez
 from itertools import repeat
 
@@ -126,7 +127,6 @@ def multi_thread_run(query,retry):
     output: dictionary containg metadata for the input Biosample
     """
     
-    print("\rDownloading {}".format(query),end=' ')
 
     rtry = 0
     
@@ -166,7 +166,7 @@ def main(id_table_path,output_directory,email,threads,api_key,retry):
     #multithreading function
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
 
-        for res in executor.map(multi_thread_run, queries, repeat(retry)):
+        for res in list(tqdm(executor.map(multi_thread_run, queries, repeat(retry)),total=len(queries))):
             if 'Failed' in res:
                 failures.append(res)
             metadata_list_dict.append(res)

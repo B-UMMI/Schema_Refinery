@@ -17,7 +17,7 @@ import re
 import time
 import argparse
 import concurrent.futures
-
+from tqdm import tqdm
 from itertools import repeat
 from Bio import Entrez
 
@@ -322,18 +322,6 @@ def multi_threading(i, retry):
             
         else:
             break
-
-    if rtry == retry:
-        print("Failed to fetch ids for {}".format(i))
-        
-    else:
-        print('{0:<} : {1}'.format(i, match.upper()))
-            
-        print('RefSeq: {0:<}\n'
-              'GenBank: {1:<}\n'
-              'BioSample: {2:<}\n'
-              'SRA: {3:<}\n'
-              'SequencingPlatform: {4:<}\n'.format(*identifiers))
         
     return [i,identifiers]
         
@@ -353,7 +341,7 @@ def main(input_file, output_file, email, threads, retry, api_key):
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
 
-        for res in executor.map(multi_threading, identifiers,repeat(retry)):
+        for res in list(tqdm(executor.map(multi_threading, identifiers,repeat(retry)),total=len(identifiers))):
             database_identifiers[res[0]] = res[1]
 
     # write output table

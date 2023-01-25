@@ -18,6 +18,10 @@ import pandas as pd
 def tryeval(val):
     """
     Evaluates the type of the input.
+        
+        Input: value (any type)
+        
+        Output: values (converter to the right type)
     """
     
     try:
@@ -63,12 +67,14 @@ def find_local_conda_env():
     
     return os.path.join(sr_path,'ena661k_files')
     
-def filtering_criteria_variables(filtering_criteria_path):
+def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
     """
     This function imports and verifies filtering criteria obtained from an input
     table.
         
-        Input: str (filtering criteria path)
+        Input: 
+             str (filtering criteria path)
+             list ( with expected criterias)
         
         Output:
             return: 11 filtering criteria variables, with their type and format
@@ -78,63 +84,72 @@ def filtering_criteria_variables(filtering_criteria_path):
     with open(filtering_criteria_path,'r') as filters:
         criterias = dict(csv.reader(filters, delimiter='\t'))
     
-    #Transform dictionary keys and values into variables
-    try:
-        abundance = tryeval(criterias['abundance'])
-        genome_size = tryeval(criterias['genome_size'])
-        size_threshold = tryeval(criterias['size_threshold'])
-        max_contig_number = tryeval(criterias['max_contig_number'])
-        known_st = tryeval(criterias['known_st'])
-        any_quality = tryeval(criterias['any_quality'])
-        ST_list_path = tryeval(criterias['ST_list_path'])
-        assembly_level = tryeval(criterias['assembly_level'])
-        reference = tryeval(criterias['reference_genome'])
-        assembly_source = tryeval(criterias['assembly_source'])
-        file_extension = tryeval(criterias['file_extension'])
+    for key, value in criterias.items():
+        criterias[key] = tryeval(value)
         
-    except KeyError:
-        sys.exit("\nError: Missing parameters in the filtering criteria file.")
+    unexpected_keys = [x for x in criterias if x not in expected_criterias]
     
-    finally:
-        print("\nLoaded filtering criteria file successfully.")
+    exit_bool = False
+    
+    if len(unexpected_keys) > 0:
+        print("\nError: Following unexpected parameters:")
+        for k in unexpected_keys:
+            print(k)
+        
+        exit_bool = True
+            
+    missing_keys = [x for x in expected_criterias if x not in criterias]
+    
+    if len(missing_keys) > 0:
+        print("\nError: Missing following parameters:")
+        for k in missing_keys:
+            print(k)
+        
+        exit_bool = True
+
+    if exit_bool == True:
+        os.sys.exit()
+        
+
+    print("\nLoaded filtering criteria file successfully.")
 
     #Verify variables integrity and validity
     print("\nVerifying filtering criteria input table.")
     
     wrong_inputs = []
     
-    if abundance is not None:
-        if (not 0 < abundance <= 1):
+    if criterias['abundance'] is not None:
+        if (not 0 < criterias['abundance'] <= 1):
             wrong_inputs.append('abundance: float values between 0 < x <= 1')
             
-    if genome_size is not None:
-        if (genome_size < 0 or type(genome_size) is not int):
+    if criterias['genome_size'] is not None:
+        if (criterias['genome_size'] < 0 or type(criterias['genome_size']) is not int):
             wrong_inputs.append('genome_size: int value > 0')
             
-    if size_threshold is not None:
-        if (not 0 < size_threshold <= 1):
+    if criterias['size_threshold'] is not None:
+        if (not 0 < criterias['size_threshold'] <= 1):
             wrong_inputs.append('size_threshold: float values between 0 < x <= 1')
             
-    if max_contig_number is not None:
-        if (max_contig_number < 0 or type(max_contig_number) is not int):
+    if criterias['max_contig_number'] is not None:
+        if (criterias['max_contig_number'] < 0 or type(criterias['max_contig_number']) is not int):
             wrong_inputs.append('max_contig_number: int value > 0')
             
-    if known_st is not None:        
-        if (type(known_st) is not bool):
+    if criterias['known_st']  is not None:        
+        if (type(criterias['known_st'] ) is not bool):
             wrong_inputs.append('known_st: bool value')
             
-    if any_quality is not None:             
-        if (type(any_quality) is not bool):
+    if criterias['any_quality'] is not None:             
+        if (type(criterias['any_quality']) is not bool):
             wrong_inputs.append('any_quality: bool value')
             
-    if ST_list_path is not None:   
-        if (not os.path.exists(ST_list_path) or type(ST_list_path) is not str):
+    if criterias['ST_list_path'] is not None:   
+        if (not os.path.exists(criterias['ST_list_path']) or type(criterias['ST_list_path']) is not str):
             wrong_inputs.append('ST_list_path: path to the file with ST list')
             
-    if assembly_level is not None:
-        if type(assembly_level) is str:
+    if criterias['assembly_level'] is not None:
+        if type(criterias['assembly_level']) is str:
             if (not all(level in ['chromosome','complete','contig','scaffold']
-                    for level in assembly_level.split(','))):
+                    for level in criterias['assembly_level'].split(','))):
                 
                 wrong_inputs.append('assembly_level: ' 
                                     'one or more of the following separated '
@@ -146,18 +161,18 @@ def filtering_criteria_variables(filtering_criteria_path):
                                 'by a comma: '
                                 'chromosome,complete,contig,scaffold')
             
-    if reference is not None:                
-        if (type(reference) is not bool):
+    if criterias['reference_genome'] is not None:                
+        if (type(criterias['reference_genome']) is not bool):
             wrong_inputs.append('reference: bool value')
             
-    if assembly_source is not None:        
-        if (assembly_source not in ['RefSeq','GenBank','all']):
+    if criterias['assembly_source'] is not None:        
+        if (criterias['assembly_source'] not in ['RefSeq','GenBank','all']):
             wrong_inputs.append('assembly_source: one of the following:' 
                                 'RefSeq,GenBank,all')
             
-    if file_extension is not None:        
-        if (file_extension not in ['genome','rna','protein','cds','gff3','gtf',
-                                   'gbff','seq-report','none']):
+    if criterias['file_extension']  is not None:        
+        if (criterias['file_extension']  not in ['genome','rna','protein','cds','gff3','gtf',
+                                                 'gbff','seq-report','none']):
             wrong_inputs.append('file_extension: one or more of the following separated '
                                 'by comma: genome,rna,protein,cds,gff3,gtf, '
                                 'gbff,seq-report,none')
@@ -168,20 +183,29 @@ def filtering_criteria_variables(filtering_criteria_path):
             print('\n' + inputs)
         os.sys.exit()
         
-    return (abundance, genome_size, size_threshold, max_contig_number, known_st, 
-            any_quality, ST_list_path, assembly_level, reference, assembly_source, 
-            file_extension)
+    else:  
+        return criterias
 
 def main(args):
     
     if args.input_table is not None and args.database == 'ENA661K':
         sys.exit("\nError: Only assemblies from NCBI can be fetched from a input file.")
     
+    
+    expected_criterias = ['abundance', 'genome_size', 'size_threshold', 'max_contig_number', 
+                          'known_st', 'any_quality', 'ST_list_path', 'assembly_level', 
+                          'reference_genome', 'assembly_source', 'file_extension']
+    
+    criterias = {}
+    
     if args.filter_criteria_path is not None:
         #import filtering criterias file
-        (abundance, genome_size, size_threshold, max_contig_number, known_st, 
-         any_quality, ST_list_path, assembly_level, reference, assembly_source, 
-         file_extension) = filtering_criteria_variables(args.filter_criteria_path)
+        criterias = filtering_criteria_variables(args.filter_criteria_path,
+                                                 expected_criterias)
+        
+    else:
+        for criteria in expected_criterias:
+            criterias[criteria] = None
              
     print("\nFetching assemblies from {} datasets.".format(args.database))
       
@@ -204,13 +228,23 @@ def main(args):
             from Schema_refinery.Download_module import fetch_metadata
         
         if args.input_table is not None:
-            #If assemblies ids list is present
+            """
+            If input table with ids is present.
+            Based on the table, executes ncbi_datasets_summary.metadata_from_id_list
+            function to obtain ids of assemblies that fail and pass the 
+            filtering criteria creating 2 output TSV files in the output folder.
+            
+            Based on ids that passed the filtering criterias, if --download is
+            triggered download will be executed by running a subprocess of
+            datasets.
+            
+            """
             failed_list,list_to_download = ncbi_datasets_summary.metadata_from_id_list(args.input_table,
-                                                          size_threshold,
-                                                          max_contig_number,
-                                                          genome_size,
-                                                          assembly_level,
-                                                          reference,
+                                                          criterias['size_threshold'],
+                                                          criterias['max_contig_number'],
+                                                          criterias['genome_size'],
+                                                          criterias['assembly_level'],
+                                                          criterias['reference_genome'],
                                                           args.threads,
                                                           args.api_key)
             
@@ -243,8 +277,8 @@ def main(args):
             if args.api_key is not None:
                 arguments += ['--api-key',args.api_key]
                 
-            if file_extension is not None:
-                arguments += ['--include',file_extension]
+            if criterias['file_extension'] is not None:
+                arguments += ['--include',criterias['file_extension']]
             
             #download assemblies
             if args.download:
@@ -258,15 +292,24 @@ def main(args):
 
                 
         else:
+            """
+            If no table is present.
+            Executes ncbi_datasets_summary.metadata_from_species function to
+            obtain two list of assemblies that passed or failed the filtering
+            criteria creating 2 output TSV files in the output folder.
             
+            Based on ids that passed the filtering criterias, if --download is
+            triggered download will be executed by running a subprocess of
+            datasets. 
+            """
             #Fetch from species identifier
             failed_list,list_to_download = ncbi_datasets_summary.metadata_from_species(args.species,
-                                                          size_threshold,
-                                                          max_contig_number,
-                                                          genome_size,
-                                                          assembly_level,
-                                                          reference,
-                                                          assembly_source,
+                                                          criterias['size_threshold'],
+                                                          criterias['max_contig_number'],
+                                                          criterias['genome_size'],
+                                                          criterias['assembly_level'],
+                                                          criterias['reference_genome'],
+                                                          criterias['assembly_source'],
                                                           args.api_key)
                 
             #save ids to download
@@ -307,7 +350,15 @@ def main(args):
                     os.path.join(args.output_directory,"assemblies_ids_to_download.tsv")))
         
         if args.f_metadata:
-                
+            """
+            If -fm is not triggered, this block of code executes two functions,
+            ncbi_linked_ids.main and fetch_metadata.main, the first one associates
+            the input ids with other SRA, Biosample ids, while the second one
+            based on Biosample id obtainded previously fetches metadata related to
+            that Biosample.
+            """
+            
+            
             if not os.path.exists(os.path.join(args.output_directory,'metadata')):
                 os.mkdir(os.path.join(args.output_directory,'metadata'))  
                     
@@ -342,6 +393,13 @@ def main(args):
             #remove biosamples file
             os.remove(os.path.join(args.output_directory,'metadata/biosamples.tsv'))
     else:
+        """
+        This block of code executes everything related to ENA661K assemblies
+        download.
+        Apart from downloading assemblies if --download  is triggered, it also 
+        creates two TSV files at output directory, one containing ids of assemblies
+        that failes filtering criteria other file that passed.
+        """
         try:
             from Download_module import ena661k_assembly_fetcher
             from Download_module import ncbi_linked_ids
@@ -364,19 +422,24 @@ def main(args):
                                       args.species, 
                                       args.output_directory,
                                       args.download, 
-                                      abundance, 
-                                      genome_size, 
-                                      size_threshold,
-                                      max_contig_number, 
-                                      known_st, 
-                                      any_quality, 
+                                      criterias['abundance'],
+                                      criterias['genome_size'], 
+                                      criterias['size_threshold'],
+                                      criterias['max_contig_number'], 
+                                      criterias['known_st'], 
+                                      criterias['any_quality'],
                                       args.stride,
                                       args.retry, 
-                                      ST_list_path, 
+                                      criterias['ST_list_path'],
                                       args.threads)
 
         if args.f_metadata:
-            
+            """
+            If -fm is not triggered, this block of code executes two functions,
+            ncbi_linked_ids.main and fetch_metadata.main, the first one associates
+            the input ids with other SRA, Biosample ids, while the second one
+            based on Biosample id fetches metadata related to that Biosample.
+            """
             if not os.path.exists(os.path.join(args.output_directory,'metadata')):
                 os.mkdir(os.path.join(args.output_directory,'metadata'))  
             
