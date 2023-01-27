@@ -11,13 +11,11 @@ AUTHOR
 
 import subprocess
 import json
-import concurrent.futures
 import csv
 import sys
-from itertools import repeat
 
 def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
-                    genome_size):
+                    genome_size,verify_status):
     """
     This function verifies assemblies by certain inputa criteria.
         
@@ -26,36 +24,43 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
             size_threshold: float (0 >= x >= 1)
             max_contig_number: int (>0)
             genome_size: int (>0)
+            verify_status: bool
             
         Output:
             return : Boolean value (in order to see if passed or failed)
     """
+    assembly_stats = metadata_assembly['assembly_stats']
+    assembly_info = metadata_assembly['assembly_info']
     
     if genome_size is not None and size_threshold is not None:
         
         bot_limit = genome_size - (genome_size*size_threshold)
         top_limit = genome_size + (genome_size*size_threshold)
         
-        if int(metadata_assembly['total_sequence_length']) >= top_limit:
+        if int(assembly_stats['total_sequence_length']) >= top_limit:
             
             return False
         
-        if int(metadata_assembly['total_sequence_length']) <= bot_limit:
+        if int(assembly_stats['total_sequence_length']) <= bot_limit:
             
             return False
     
     if max_contig_number is not None:
         
-        if metadata_assembly['number_of_contigs'] >= max_contig_number:
+        if assembly_stats['number_of_contigs'] >= max_contig_number:
             
             return False
 
+    if verify_status is True or verify_status is None:
+        if assembly_info['assembly_status'] == 'suppressed':
+            return False
+            
     return True
 
                 
-
+"""
 def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
-    """
+
     This function based on an input id fetches json object (dict).
     
         Input:
@@ -68,7 +73,6 @@ def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
             return: 
                 Input_id: string (starts with GCF_ or GCA_)
                 metadata_assembly: json object (dict) for a single assembly
-    """
     
     arguments = ['datasets','summary','genome','accession',input_id]
     
@@ -84,16 +88,72 @@ def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
         
     try:
         metadata = subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                                   
-        metadata_assembly = json.loads(metadata.stdout)['reports'][0]['assembly_stats']         
+                           
+        metadata_assembly = json.loads(metadata.stdout)['reports'][0]       
                   
     except:
         return [input_id,'Failed']
 
     return [input_id,metadata_assembly]
+"""
+
+def metadata_fetcher_ids(input_ids,assembly_level,reference,api_key):
+
+    """
+    This function based on an input id fetches json object (dict) for all 
+    assemblies.
+    
+        Input:
+            input_id: list of strings (starts with GCF_ or GCA_)
+            assembly_level: string (containing assembly levels separated by ",")
+            reference: Boolean value
+            api_key: string
+            
+        Output:
+            return:
+                found_metadata: bool
+                failed_list: list containing ids that failed initial processing
+                metadata_assembly: json object (dict) for all assemblies
+    """
+    
+    arguments = ['datasets','summary','genome','accession'] + input_ids
+    
+        
+    if api_key is not None:
+        
+        arguments += ['--api-key',api_key]
+    
+    if assembly_level is not None:
+        arguments += ['--assembly-level',assembly_level]
+    
+    if reference and reference is not None:
+        arguments += ['--reference']
+        
+
+    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
+    
+    assemblies_ids = []
+    
+    if metadata['total_count'] != 0:
+        #if any metadata with specified criteria were found                       
+        metadata_all = metadata['reports']
+        for m in metadata_all:
+            assemblies_ids.append(m['accession'])
+            
+        found_metadata = True
+    else:
+        #if no metadata was found, return json with {"total_count": 0}
+        metadata_all = metadata
+        found_metadata = False
+        
+    assemblies_ids = []
+        
+    failed_list = [x for x in assemblies_ids if x not in input_ids]
+
+    return [found_metadata,failed_list,metadata_all]
 
 def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_size,
-                          assembly_level,reference,threads,api_key):
+                          assembly_level,reference,verify_status,threads,api_key):
     """
     Function that from a list of ids and filtering criterea, filters the id list.
     
@@ -172,30 +232,34 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
         print("Proceeding...")
     
     accepted_list = []
-    failed_list = []
     
     #Verify list of ids
-    if verify_list:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+    """
+    Use multi threading to fetch individual metadata json for each assembly
+    and verify it according to filtering criteria.
+    """
     
-            for metadata_assembly in executor.map(metadata_fetcher_id, 
-                                                  ids,
-                                                  repeat(assembly_level),
-                                                  repeat(reference),
-                                                  repeat(api_key)):
+    
+    found_metadata,failed_list,metadata_all = metadata_fetcher_ids(ids,
+                                                                   assembly_level,
+                                                                   reference,
+                                                                   api_key)
+
+    if found_metadata:
+        if verify_list:
+                for metadata in metadata_all:
+                    if verify_assembly(metadata,
+                                       size_threshold,
+                                       max_contig_number,
+                                       genome_size,
+                                       verify_status):
+                                        
+                            accepted_list.append(metadata['accession'])
+                    else:
+                        failed_list.append(metadata['accession'])
                 
-                if 'Failed' not in metadata_assembly:
-                    
-                    if verify_assembly(metadata_assembly[1],
-                                           size_threshold,
-                                           max_contig_number,genome_size):
-                        
-                        accepted_list.append(metadata_assembly[0])
-                else:
-                    failed_list.append(metadata_assembly[0])
-        
-    else:
-        accepted_list = ids
+        else:
+            accepted_list = ids
 
     return [failed_list,accepted_list]
 
@@ -212,6 +276,7 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
             api_key: string
             
         Output:
+            found_metadata: bool
             all_assemblies: list (containing all ids)
             metadata_filtered: json object (dict) for a all assemblies that
                                 passed the criteria.
@@ -220,9 +285,9 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
     arguments = ['datasets','summary','genome','taxon', species]
     
     #find all possible assemblies ids
-    metadata = subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                                   
-    metadata_all = json.loads(metadata.stdout)['reports']
+    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
+                           
+    metadata_all = metadata['reports']
     
     all_assemblies = []
     
@@ -244,14 +309,22 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
         arguments += ['--assembly-source',assembly_source]
         
     # find all metadata that pass initial criterias
-    metadata = subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                                   
-    metadata_filtered = json.loads(metadata.stdout)['reports']      
+    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
+ 
+    if metadata['total_count'] != 0:
+        #if any metadata with specified criteria were found                       
+        metadata_filtered = metadata['reports']
+        found_metadata = True
+    else:
+        #if no metadata was found, return json with {"total_count": 0}
+        metadata_filtered = metadata
+        found_metadata = False
     
-    return [all_assemblies,metadata_filtered]
+    return [found_metadata,all_assemblies,metadata_filtered]
     
 def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
-                          assembly_level,reference,assembly_source,api_key):
+                          assembly_level,reference,assembly_source,verify_status,
+                          api_key):
     """
     Fetches the ids that pass the filtering criteria.
     
@@ -276,7 +349,8 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
         or size_threshold is not None 
         or max_contig_number is not None
         or assembly_level is not None
-        or reference is not None):
+        or reference is not None
+        or verify_status is not None):
         """
         if verification is needed
         """
@@ -325,6 +399,11 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
         else:
             print("Only reference genomes: False")
         
+        if verify_status is not None:
+            print("Remove suppresed assemblies: {}".format(verify_status))
+        else:
+            print("Remove suppresed assemblies: True")
+        
         verify_list = True
     
     else:
@@ -337,33 +416,31 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
         print("Proceeding...")
 
     #get all possible ids and all ids filtered by assembly_level or reference
-    all_ids,metadata_filtered = metadata_fetcher_specie(species,
-                                                        assembly_level,
-                                                        reference,
-                                                        assembly_source,
-                                                        api_key)
-    
+    found_metadata,all_ids,metadata_filtered = metadata_fetcher_specie(species,
+                                                                       assembly_level,
+                                                                       reference,
+                                                                       assembly_source,
+                                                                       api_key)
     accepted_list = []
     failed_list = []
     
     #verify by certain criteria
-    if verify_list:
-        
-        for metadata in metadata_filtered:
-            
-            if verify_assembly(metadata['assembly_stats'],size_threshold,
-                               max_contig_number,genome_size):
+    if found_metadata:
+        if verify_list:
+            for metadata in metadata_filtered:
                 
-                accepted_list.append(metadata['accession'])
-            
-            else:
+                if verify_assembly(metadata,size_threshold,max_contig_number,
+                                   genome_size,verify_status):
+                    
+                    accepted_list.append(metadata['accession'])
                 
-                failed_list.append(metadata['accession'])
-    else:
-        
-        for metadata in metadata_filtered:
-            
-            accepted_list.append(metadata['accession'])
+                else:
+                    
+                    failed_list.append(metadata['accession'])
+        else:
+                for metadata in metadata_filtered:
+                    
+                    accepted_list.append(metadata['accession'])
     
     #add ids that were initially removed by assembly_level or reference to failed
     #list

@@ -176,6 +176,10 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
             wrong_inputs.append('file_extension: one or more of the following separated '
                                 'by comma: genome,rna,protein,cds,gff3,gtf, '
                                 'gbff,seq-report,none')
+            
+    if criterias['verify_status'] is not None:
+        if type(criterias['verify_status']) is not bool:
+            wrong_inputs.append('verify_status: bool or None')
         
     if len(wrong_inputs) > 0:
         print('\nFiltering table inputs have wrong values or types:')
@@ -194,7 +198,8 @@ def main(args):
     
     expected_criterias = ['abundance', 'genome_size', 'size_threshold', 'max_contig_number', 
                           'known_st', 'any_quality', 'ST_list_path', 'assembly_level', 
-                          'reference_genome', 'assembly_source', 'file_extension']
+                          'reference_genome', 'assembly_source', 'file_extension',
+                          'verify_status']
     
     criterias = {}
     
@@ -245,6 +250,7 @@ def main(args):
                                                           criterias['genome_size'],
                                                           criterias['assembly_level'],
                                                           criterias['reference_genome'],
+                                                          criterias['verify_status'],
                                                           args.threads,
                                                           args.api_key)
             
@@ -310,6 +316,7 @@ def main(args):
                                                           criterias['assembly_level'],
                                                           criterias['reference_genome'],
                                                           criterias['assembly_source'],
+                                                          criterias['verify_status'],
                                                           args.api_key)
                 
             #save ids to download
