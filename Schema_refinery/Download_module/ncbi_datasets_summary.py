@@ -97,7 +97,7 @@ def metadata_fetcher_id(input_id,assembly_level,reference,api_key):
     return [input_id,metadata_assembly]
 """
 
-def metadata_fetcher_ids(input_ids,assembly_level,reference,api_key):
+def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key):
 
     """
     This function based on an input id fetches json object (dict) for all 
@@ -116,9 +116,8 @@ def metadata_fetcher_ids(input_ids,assembly_level,reference,api_key):
                 metadata_assembly: json object (dict) for all assemblies
     """
     
-    arguments = ['datasets','summary','genome','accession'] + input_ids
+    arguments = ['datasets','summary','genome','accession', '--inputfile', id_list_path] 
     
-        
     if api_key is not None:
         
         arguments += ['--api-key',api_key]
@@ -136,21 +135,19 @@ def metadata_fetcher_ids(input_ids,assembly_level,reference,api_key):
     
     if metadata['total_count'] != 0:
         #if any metadata with specified criteria were found                       
-        metadata_all = metadata['reports']
-        for m in metadata_all:
+        metadata_all = metadata
+        for m in metadata_all['reports']:
             assemblies_ids.append(m['accession'])
             
-        found_metadata = True
     else:
         #if no metadata was found, return json with {"total_count": 0}
         metadata_all = metadata
-        found_metadata = False
         
     assemblies_ids = []
         
     failed_list = [x for x in assemblies_ids if x not in input_ids]
 
-    return [found_metadata,failed_list,metadata_all]
+    return [failed_list,metadata_all]
 
 def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_size,
                           assembly_level,reference,verify_status,threads,api_key):
@@ -222,6 +219,11 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
             
         else:
             print("Only reference genomes: False")
+            
+        if verify_status is not None:
+            print("Remove suppressed assemblies: {}".format(verify_status))
+        else:
+            print("Remove suppressed assemblies: True")
         
         verify_list = True
     
@@ -240,14 +242,15 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
     """
     
     
-    found_metadata,failed_list,metadata_all = metadata_fetcher_ids(ids,
-                                                                   assembly_level,
-                                                                   reference,
-                                                                   api_key)
+    failed_list,metadata_all = metadata_fetcher_ids(ids,
+                                                    id_list_path,
+                                                    assembly_level,
+                                                    reference,
+                                                    api_key)
 
-    if found_metadata:
+    if metadata_all['total_count'] != 0:
         if verify_list:
-                for metadata in metadata_all:
+                for metadata in metadata_all['reports']:
                     if verify_assembly(metadata,
                                        size_threshold,
                                        max_contig_number,
@@ -311,18 +314,9 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
         arguments += ['--reference']
         
     # find all metadata that pass initial criterias
-    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
- 
-    if metadata['total_count'] != 0:
-        #if any metadata with specified criteria were found                       
-        metadata_filtered = metadata['reports']
-        found_metadata = True
-    else:
-        #if no metadata was found, return json with {"total_count": 0}
-        metadata_filtered = metadata
-        found_metadata = False
+    metadata_filtered = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
     
-    return [found_metadata,all_assemblies,metadata_filtered]
+    return [all_assemblies,metadata_filtered]
     
 def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
                           assembly_level,reference,assembly_source,verify_status,
@@ -418,18 +412,18 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
         print("Proceeding...")
 
     #get all possible ids and all ids filtered by assembly_level or reference
-    found_metadata,all_ids,metadata_filtered = metadata_fetcher_specie(species,
-                                                                       assembly_level,
-                                                                       reference,
-                                                                       assembly_source,
-                                                                       api_key)
+    all_ids,metadata_filtered = metadata_fetcher_specie(species,
+                                                        assembly_level,
+                                                        reference,
+                                                        assembly_source,
+                                                        api_key)
     accepted_list = []
     failed_list = []
     
     #verify by certain criteria
-    if found_metadata:
+    if metadata_filtered['total_count'] != 0:
         if verify_list:
-            for metadata in metadata_filtered:
+            for metadata in metadata_filtered['reports']:
                 
                 if verify_assembly(metadata,size_threshold,max_contig_number,
                                    genome_size,verify_status):
@@ -440,7 +434,7 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
                     
                     failed_list.append(metadata['accession'])
         else:
-                for metadata in metadata_filtered:
+                for metadata in metadata_filtered['reports']:
                     
                     accepted_list.append(metadata['accession'])
     

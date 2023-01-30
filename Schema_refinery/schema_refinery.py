@@ -62,8 +62,8 @@ def download_module():
     
     parser.add_argument('-fm', '--f_metadata',
                         required=False, dest='f_metadata',
-                        action='store_false',
-                        default = True,
+                        action='store_true',
+                        default = False,
                         help='Do not fetch metadata if toggled')
     
     parser.add_argument('-f', '--filter_criteria_path',type=str,
