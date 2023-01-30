@@ -243,7 +243,7 @@ def fetch_assembly_accessions(identifiers):
 def multi_threading(i, retry):
 
     rtry = 0
-    
+    identifiers = []    
     while rtry < retry:
         try:
             
@@ -256,7 +256,6 @@ def multi_threading(i, retry):
                     match_db = match
             else:
                 print('{0:<} : {1}'.format(i,'Could not determine database type.'))
-                identifiers = []
                 match_db = None
 
             # get record data for identifier

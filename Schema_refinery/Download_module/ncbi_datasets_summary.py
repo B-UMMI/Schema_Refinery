@@ -47,7 +47,7 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
     
     if max_contig_number is not None:
         
-        if assembly_stats['number_of_contigs'] >= max_contig_number:
+        if assembly_stats['number_of_contigs'] > max_contig_number:
             
             return False
 
@@ -281,8 +281,12 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
             metadata_filtered: json object (dict) for a all assemblies that
                                 passed the criteria.
     """
-    
+        
     arguments = ['datasets','summary','genome','taxon', species]
+    
+    #filter by choosen assembly source
+    if assembly_source is not None:
+        arguments += ['--assembly-source',assembly_source]
     
     #find all possible assemblies ids
     metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
@@ -295,6 +299,7 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
         
         all_assemblies.append(m['accession'])
     
+    #Filter by other datasets criteria
     if api_key is not None:
         
         arguments += ['--api-key',api_key]
@@ -304,9 +309,6 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
     
     if reference and reference is not None:
         arguments += ['--reference']
-        
-    if assembly_source is not None:
-        arguments += ['--assembly-source',assembly_source]
         
     # find all metadata that pass initial criterias
     metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
@@ -400,9 +402,9 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
             print("Only reference genomes: False")
         
         if verify_status is not None:
-            print("Remove suppresed assemblies: {}".format(verify_status))
+            print("Remove suppressed assemblies: {}".format(verify_status))
         else:
-            print("Remove suppresed assemblies: True")
+            print("Remove suppressed assemblies: True")
         
         verify_list = True
     
