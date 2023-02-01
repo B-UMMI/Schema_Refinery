@@ -268,7 +268,8 @@ def main(sr_path, species, output_directory,
     else:
         print("Can have any quality: False")
 
-
+    print('\n')
+    
     #get all ids:
     all_sample_ids = [line[0] for line in species_lines]
 
@@ -437,7 +438,7 @@ def main(sr_path, species, output_directory,
                 else:
                     failed += 1
 
-            print('\nFailed download for {0} files.'.format(failed))
+            print('\nFailed download for {0} files.\n'.format(failed))
 
 
 def parse_arguments():

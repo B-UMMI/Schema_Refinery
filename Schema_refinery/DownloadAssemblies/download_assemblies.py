@@ -453,14 +453,18 @@ def main(args):
             """
             if not os.path.exists(os.path.join(args.output_directory,'metadata_ena661k')):
                 os.mkdir(os.path.join(args.output_directory,'metadata_ena661k'))
-
+                
+            print("\nFetching related ids...")
+            
             ncbi_linked_ids.main(os.path.join(args.output_directory,'metadata_ena661k/assemblies_ids_to_download.tsv'),
                                  os.path.join(args.output_directory,'metadata_ena661k/id_matches.tsv'),
                                  args.email,
                                  args.threads,
                                  args.retry,
                                  args.api_key)
-
+            
+            print("\nFetching additional metadata...")
+            
             fetch_metadata.main(os.path.join(args.output_directory,'metadata_ena661k/assemblies_ids_to_download.tsv'),
                                 os.path.join(args.output_directory,'metadata_ena661k'),
                                 args.email,
