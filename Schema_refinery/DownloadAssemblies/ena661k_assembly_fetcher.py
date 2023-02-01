@@ -42,7 +42,7 @@ while True:
 socket.setdefaulttimeout(60)
 
 # function passed to urllib.request.urlretrieve to track progress
-def HandleProgress(block_num, block_size, total_size):
+def handle_progress(block_num, block_size, total_size):
     read_data = 0
     # calculating the progress
     # storing a temporary value to store downloaded bytes so that we can
@@ -51,7 +51,7 @@ def HandleProgress(block_num, block_size, total_size):
     read_data = temp + read_data
     # calculating the remaining size
     remaining_size = total_size - read_data
-    if (remaining_size <= 0):
+    if remaining_size <= 0:
         downloaded_percentage = 100
         remaining_size = 0
     else:
@@ -64,7 +64,7 @@ def HandleProgress(block_num, block_size, total_size):
         print(f'Downloaded: {downloaded_percentage}% ', end="\r")
 
 
-def checkDownload(file: str, file_hash: str, remove=False):
+def check_download(file: str, file_hash: str, remove=False):
     """Check the integrity of a downloaded file.
 
     Parameters
@@ -141,14 +141,14 @@ def download_ftp_file(data, retry, verify=True, progress=False):
             if progress is False:
                 res = urllib.request.urlretrieve(file_url, out_file)
             else:
-                res = urllib.request.urlretrieve(file_url, out_file, HandleProgress)
+                res = urllib.request.urlretrieve(file_url, out_file, handle_progress)
         except:
             time.sleep(1)
         tries += 1
 
         if os.path.isfile(out_file) is True:
             if verify is True:
-                if checkDownload(out_file, original_hash, True):
+                if check_download(out_file, original_hash, True):
                     downloaded = True
             else:
                 downloaded = True
@@ -160,53 +160,53 @@ def main(sr_path, species, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, known_st, any_quality, stride,
          retry, st, threads):
-    
+
     #Initial path for ftp path builder
     ebi_ftp = 'http://ftp.ebi.ac.uk'
-    
+
     #FTP paths and local location for files needed to download assemblies
     assembly_ftp_path = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/sampleid_assembly_paths.txt'
     assembly_ftp_file = os.path.join(sr_path,'assembly_ftp_file.txt')
-    
+
     assembly_metadata_path = 'https://figshare.com/ndownloader/files/26578601'
     assembly_metadata_file = os.path.join(sr_path,'metadata_file.txt')
-    
+
     ftp_hash_file = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
     local_checklist = os.path.join(sr_path, 'checklist.chk')
-    
+
     #Verify if dir is present in conda env
     if not os.path.exists(sr_path):
         os.mkdir(sr_path)
-    
+
     #Verify if files are present in the conda dir env~
     if os.path.exists(assembly_ftp_file):
-        print('File with FTP links already exists...')
+        print('\nFile with FTP links already exists...')
     else:
         print('Downloading ENA661K ftp paths file...')
         download_ftp_file([assembly_ftp_path, assembly_ftp_file, None],
                           retry, False, True)
-        
+
     if os.path.exists(assembly_metadata_file):
         print('File with ENA661K metadata already exists...')
     else:
         print('Downloading ENA661K metadata file...')
         download_ftp_file([assembly_metadata_path, assembly_metadata_file + '.gz', None],
                           retry, False, True)
-        
+
         print('Unzipping metadata...')
         with gzip.open(assembly_metadata_file + '.gz', 'rb') as f_in:
             with open(assembly_metadata_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
-        
+
         os.remove(assembly_metadata_file + '.gz')
-        
+
     if os.path.exists(local_checklist):
         print('File with ENA661K checklist already exists...')
     else:
         print('Downloading ENA661K checklist.chk...')
         download_ftp_file([ftp_hash_file, local_checklist, None],
                           retry, False, True)
-    
+
     # read file with metadata
     print("\nReading metadata table...")
     metadata_lines = read_table(assembly_metadata_file)
@@ -228,12 +228,12 @@ def main(sr_path, species, output_directory,
         sys.exit(0)
 
     print("\nFiltering by chosen criteria:")
-    
+
     #Print filtering criteria.
     if genome_size is not None and size_threshold is not None:
         print("Genome size of: {}".format(genome_size))
         print("Size threshold of: {}".format(size_threshold))
-        
+
     elif genome_size is None and size_threshold is None:
         print("Genome size of: Not specified")
         print("Size threshold of: Not specified")
@@ -242,36 +242,36 @@ def main(sr_path, species, output_directory,
         print("Setting as:")
         print("    Genome size of: Not specified")
         print("    Size threshold of: Not specified")
-            
+
     if abundance is not None:
         print("Abundance of: {}".format(abundance))
     else:
         print("Abundance of: Not specified")
-    
+
     if max_contig_number is not None:
         print("Maximum number of contigs: {}".format(max_contig_number))
     else:
         print("Maximum number of contigs: Not specified")
-        
+
     if known_st is True:
         print("ST must be known: True")
     else:
         print("ST must be known: False")
-    
+
     if st is not None:
         print("Filtering assemblies by specified ST list: True")
     else:
         print("Filtering assemblies by specified ST list: False")
-    
+
     if any_quality is True:
         print("Can have any quality: True")
     else:
         print("Can have any quality: False")
-    
-    
+
+
     #get all ids:
     all_sample_ids = [line[0] for line in species_lines]
-    
+
     # filter based on genome size
     if genome_size is not None and size_threshold is not None:
         bot_limit = genome_size - (genome_size*size_threshold)
@@ -304,7 +304,7 @@ def main(sr_path, species, output_directory,
 
         print('{0} with <= {1} contigs.'.format(len(species_lines),
                                                 max_contig_number))
-        
+
     # filter based on known ST
     if known_st is True:
         st_index = metadata_header.index('mlst')
@@ -334,17 +334,20 @@ def main(sr_path, species, output_directory,
 
     # get sample identifiers
     sample_ids = [line[0] for line in species_lines]
-    
+
     #Assebmlies that failed filtering criteria
     failed_list = [x for x in all_sample_ids if x not in sample_ids]
-    
-    #write failed and accepted ids to file
-    with open(os.path.join(output_directory,"assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
-        ids_to_tsv.write("\n".join(map(str, sample_ids)))
-    
-    with open(os.path.join(output_directory,"id_failed_criteria.tsv"),'w+') as ids_to_tsv:
-        ids_to_tsv.write("\n".join(map(str, failed_list)))
+
+    if not os.path.exists(os.path.join(output_directory,'metadata_ena661k')):
+        os.mkdir(os.path.join(output_directory,'metadata_ena661k'))
         
+    #write failed and accepted ids to file
+    with open(os.path.join(output_directory,"metadata_ena661k/assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
+        ids_to_tsv.write("\n".join(map(str, sample_ids)))
+
+    with open(os.path.join(output_directory,"metadata_ena661k/id_failed_criteria.tsv"),'w+') as ids_to_tsv:
+        ids_to_tsv.write("\n".join(map(str, failed_list)))
+
     if len(sample_ids) == 0:
         sys.exit('\nNo assemblies meet the desired filtering criterias.')
     else:
@@ -354,8 +357,8 @@ def main(sr_path, species, output_directory,
     # create output directory
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)
-
-    selected_file = os.path.join(output_directory, 'selected_samples.tsv')
+        
+    selected_file = os.path.join(output_directory, 'metadata_ena661k/selected_samples.tsv')
     with open(selected_file, 'w') as outfile:
         selected_lines = ['\t'.join(line)
                           for line in [metadata_header]+species_lines]
@@ -399,13 +402,16 @@ def main(sr_path, species, output_directory,
         # list files in output directory
         local_files = os.listdir(output_directory)
 
+        if not os.path.exists(os.path.join(output_directory,'ena661k_assemblies')):
+            os.mkdir(os.path.join(output_directory,'ena661k_assemblies'))
+
         # create URLs to download
         remote_urls = []
         for i in range(low, high):
             sample_basename = sample_paths[sample_ids[i]].split('/')[-1]
             # do not download files that have already been downloaded
             if sample_basename not in local_files and sample_basename.split('.gz')[0] not in local_files:
-                sample_file = os.path.join(output_directory, sample_basename)
+                sample_file = os.path.join(output_directory, 'ena661k_assemblies/' + sample_basename)
                 sample_url = ebi_ftp + sample_paths[sample_ids[i]]
                 remote_urls.append([sample_url, sample_file, hashes_dict[sample_ids[i]]])
 
@@ -418,11 +424,11 @@ def main(sr_path, species, output_directory,
         print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
         failed = 0
         downloaded = 0
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-        
+
             for res in executor.map(download_ftp_file, remote_urls, repeat(retry)):
-                
+
                 if res is True:
                     downloaded += 1
                     print('\r', 'Downloaded {0}/{1}'.format(downloaded,
@@ -430,9 +436,9 @@ def main(sr_path, species, output_directory,
                           end='')
                 else:
                     failed += 1
-        
+
             print('\nFailed download for {0} files.'.format(failed))
-    
+
 
 def parse_arguments():
 

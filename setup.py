@@ -12,16 +12,13 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
-
 test_requirements = ['pytest>=3', ]
 
 setup(
     author="UMMI",
     author_email='microbiologia@fm.ul.pt',
     python_requires='>=3.6',
-    install_requires = ['tdqm>=4.64.1','biopython>=1.78','requests>=2.27.1',
-                        'pandas>=1.5.1',],
+    install_requires = [],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -33,7 +30,6 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     description="Set of scripts and instructions to refine wg/cgMLST schemas. ",
-    install_requires=requirements,
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
@@ -45,7 +41,7 @@ setup(
     version='0.1.0',
     zip_safe=False,
     
-    packages = ['Schema_refinery','Schema_refinery.Download_module'],
+    packages = ['Schema_refinery','Schema_refinery.DownloadAssemblies'],
     
     entry_points={'console_scripts': ["schema_refinery.py = Schema_refinery.schema_refinery:main",
                                     "SR = Schema_refinery.schema_refinery:main"]}

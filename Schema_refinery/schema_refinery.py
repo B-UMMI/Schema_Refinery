@@ -8,10 +8,10 @@ import hashlib
 import argparse
 
 try:
-    from Download_module import Download_module
+    from DownloadAssemblies import download_assemblies
 
 except ModuleNotFoundError:
-    from Schema_refinery.Download_module import Download_module
+    from Schema_refinery.DownloadAssemblies import download_assemblies
     
 def download_module():
     
@@ -29,6 +29,7 @@ def download_module():
     #Common arguments between databases
     parser.add_argument('-db', '--database', type=str,
                         required=True, dest='database',
+                        nargs='+',
                         choices = ['NCBI','ENA661K'],
                         help='Database where to fetch assemblies '
                              'ENA661K or NCBI')
@@ -100,7 +101,7 @@ def download_module():
     
     del args.Download_module
 
-    Download_module.main(args)
+    download_assemblies.main(args)
 
 def main():
     
