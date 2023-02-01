@@ -20,6 +20,8 @@ setup(
     author="UMMI",
     author_email='microbiologia@fm.ul.pt',
     python_requires='>=3.6',
+    install_requires = ['tdqm>=4.64.1','biopython>=1.78','requests>=2.27.1',
+                        'pandas>=1.5.1',],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
