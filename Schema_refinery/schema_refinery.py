@@ -1,25 +1,26 @@
-"""Main module."""
+"""
+Purpose
+-------
+This file call all other modules of the packages, containing several arguments
+as input depending on the desired module.
 
-import os
+Code documentation
+------------------
+"""
 import sys
-import pickle
-import shutil
-import hashlib
 import argparse
 
 try:
     from DownloadAssemblies import download_assemblies
-
 except ModuleNotFoundError:
     from Schema_refinery.DownloadAssemblies import download_assemblies
-    
-def download_module():
-    
-    def msg(name=None):
-        #Download assembles from NCBI
-        usage_msg = "write_stuff"
-        return usage_msg
 
+def download_module():
+    """
+    Function that contains the required arguments for the download_module of the
+    schema refinery package, this function exports the arguments to
+    download_asseblies.py
+    """
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -31,8 +32,7 @@ def download_module():
                         required=True, dest='database',
                         nargs='+',
                         choices = ['NCBI','ENA661K'],
-                        help='Database where to fetch assemblies '
-                             'ENA661K or NCBI')
+                        help='Databases from which assemblies will be downloaded. ')
 
     parser.add_argument('-s', '--species', type=str,
                         required=True, dest='species',
@@ -41,7 +41,7 @@ def download_module():
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
                         help='Output Path')
-    
+
     parser.add_argument('-th', '--threads', type=int,
                         required=False, default=2,
                         dest='threads',
@@ -52,33 +52,33 @@ def download_module():
                         default=7,
                         help='Maximum number of retries when a '
                              'download fails.')
-    
+
     parser.add_argument('-e', '--email', type=str,
                         required=True, dest='email',
                         help='email for entrez NCBI')
-    
+
     parser.add_argument('-k', '--api_key', type=str,
                         required=False, dest='api_key',
                         help='API key to increase the mumber of requests')
-    
+
     parser.add_argument('-fm', '--f_metadata',
                         required=False, dest='f_metadata',
                         action='store_true',
                         default = False,
                         help='Do not fetch metadata if toggled')
-    
+
     parser.add_argument('-f', '--filter_criteria_path',type=str,
                         required=False, dest='filter_criteria_path',
-                        help='TSV file containing filter parameters for choosen' 
-                             'assemblies before downloading')    
-    
+                        help='TSV file containing filter parameters for choosen'
+                             'assemblies before downloading')
+
     parser.add_argument('--download', action='store_true',
                         required=False, dest='download',
                         help='If the assemblies from the selected samples'
                              'should be downloaded.')
-    
+
     #Arguments specific for NCBI
-    
+
     parser.add_argument('-i', '--input-table', type=str,
                         required=False, dest='input_table',
                         help='TSV file downloaded from the '
@@ -96,15 +96,18 @@ def download_module():
                              'you want to download from the first id, '
                              'you have to put "1", not "0" in the lower '
                              'value.')
-    
+
     args = parser.parse_args()
-    
+
     del args.Download_module
 
     download_assemblies.main(args)
 
 def main():
-    
+    """
+    Main call function that sorts depending on the arguments what module of the
+    schema_rifinery package to use.
+    """
     module_info = {"Download_module":['Downloads assemblies from either NCBI '
                                       'or ENA661K database',download_module]}
 
@@ -114,7 +117,7 @@ def main():
 
     module = sys.argv[1]
     module_info[module][1]()
-    
+
 
 
 if __name__ == "__main__":

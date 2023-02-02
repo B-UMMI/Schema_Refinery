@@ -43,6 +43,8 @@ socket.setdefaulttimeout(60)
 
 # function passed to urllib.request.urlretrieve to track progress
 def handle_progress(block_num, block_size, total_size):
+    """Calculate %the progress of the downloads that have been made.
+    """
     read_data = 0
     # calculating the progress
     # storing a temporary value to store downloaded bytes so that we can
@@ -65,7 +67,8 @@ def handle_progress(block_num, block_size, total_size):
 
 
 def check_download(file: str, file_hash: str, remove=False):
-    """Check the integrity of a downloaded file.
+    """
+    Check the integrity of a downloaded file.
 
     Parameters
     ----------
@@ -92,7 +95,8 @@ def check_download(file: str, file_hash: str, remove=False):
 
 
 def read_table(file_path, delimiter='\t'):
-    """Read a tabular file.
+    """
+    Read a tabular file.
 
     Parameters
     ----------
@@ -114,7 +118,8 @@ def read_table(file_path, delimiter='\t'):
 
 
 def download_ftp_file(data, retry, verify=True, progress=False):
-    """Download a file from a FTP server.
+    """
+    Download a file from a FTP server.
 
     Parameter
     ---------
@@ -155,11 +160,43 @@ def download_ftp_file(data, retry, verify=True, progress=False):
 
     return downloaded
 
-
 def main(sr_path, species, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, known_st, any_quality, stride,
          retry, st, threads):
+    """
+    Main function of the ena661k_assembly_fetcher.
+    
+    Parameter
+    ---------
+    sr_path: str
+        Path to the schema_refinery to download files for ENA661k, 
+        may be in conda env or output_dir.
+    species: str
+        Species name.
+    output_directory: str
+        Path to output dir.
+    ftp_download: bool
+        If to dry run or to download.
+    abundance: float
+    genome_size: int
+    size_threshold: float
+        Between 0 and 1.
+    max_contig_number: int
+    known_st: bool
+        If assemblies to be downloaded must have ST.
+    any_quality: bool
+    stride: int
+    retry: int
+    st: str
+        Path to the file containing desired ST.
+    threads: int
+    
+    Returns
+    -------
+    Two files containg failed and accepted assemblies in the output directory.
+    Assemblies that were downloaded.
+    """
 
     #Initial path for ftp path builder
     ebi_ftp = 'http://ftp.ebi.ac.uk'
@@ -269,7 +306,7 @@ def main(sr_path, species, output_directory,
         print("Can have any quality: False")
 
     print('\n')
-    
+
     #get all ids:
     all_sample_ids = [line[0] for line in species_lines]
 
@@ -341,7 +378,7 @@ def main(sr_path, species, output_directory,
 
     if not os.path.exists(os.path.join(output_directory,'metadata_ena661k')):
         os.mkdir(os.path.join(output_directory,'metadata_ena661k'))
-        
+
     #write failed and accepted ids to file
     with open(os.path.join(output_directory,"metadata_ena661k/assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, sample_ids)))
@@ -358,7 +395,7 @@ def main(sr_path, species, output_directory,
     # create output directory
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)
-        
+
     selected_file = os.path.join(output_directory, 'metadata_ena661k/selected_samples.tsv')
     with open(selected_file, 'w') as outfile:
         selected_lines = ['\t'.join(line)
@@ -438,7 +475,7 @@ def main(sr_path, species, output_directory,
                 else:
                     failed += 1
 
-            print('\nFailed download for {0} files.\n'.format(failed))
+            print('\nFailed download for {0} files.'.format(failed))
 
 
 def parse_arguments():

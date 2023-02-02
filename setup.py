@@ -1,15 +1,23 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Purpose
+-------
+This script installs the schema_refinery package in the local files, giving the
+option to call schema_rifinery in the command line by typing SR or schema_refinery.
 
-"""The setup script."""
+Code documentation
+------------------
+"""
 
 from setuptools import setup
 
 import Schema_refinery
 
-with open('README.rst') as readme_file:
+with open('README.rst',encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('HISTORY.rst',encoding='utf-8') as history_file:
     history = history_file.read()
 
 test_requirements = ['pytest>=3', ]
@@ -40,9 +48,9 @@ setup(
     url='https://github.com/B-UMMI/schema_refinery',
     version='0.1.0',
     zip_safe=False,
-    
+
     packages = ['Schema_refinery','Schema_refinery.DownloadAssemblies'],
-    
+
     entry_points={'console_scripts': ["schema_refinery.py = Schema_refinery.schema_refinery:main",
                                     "SR = Schema_refinery.schema_refinery:main"]}
 )

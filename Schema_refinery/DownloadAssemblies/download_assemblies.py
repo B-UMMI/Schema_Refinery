@@ -15,13 +15,30 @@ import subprocess
 import ast
 import pandas as pd
 
+try:
+    from DownloadAssemblies import ena661k_assembly_fetcher
+    from DownloadAssemblies import ncbi_datasets_summary
+    from DownloadAssemblies import ncbi_linked_ids
+    from DownloadAssemblies import fetch_metadata
+
+except ModuleNotFoundError:
+    from Schema_refinery.DownloadAssemblies import ena661k_assembly_fetcher
+    from Schema_refinery.DownloadAssemblies import ncbi_datasets_summary
+    from Schema_refinery.DownloadAssemblies import ncbi_linked_ids
+    from Schema_refinery.DownloadAssemblies import fetch_metadata
+
 def tryeval(val):
     """
     Evaluates the type of the input.
 
-        Input: value (any type)
+    Parameter
+    --------- 
+    val : any
 
-        Output: values (converter to the right type)
+    Returns
+    ------- 
+    val : any
+        converted to the right type.
     """
 
     try:
@@ -34,12 +51,16 @@ def find_local_conda_env():
     """
     This function fetches current conda env path by using 'conda info'.
 
-        Input: None
+    Parameter
+    ---------
+    None
 
-        Output:
-            return: str value containing path to folder inside schema refinery
-                    env, may not exist if this module was not used to download
-                    assemblies from ENA661K.´
+    Returns
+    ------- 
+    return: str
+        containing path to folder inside schema refinery
+        env, may not exist if this module was not used to download
+        assemblies from ENA661K.´
     """
     conda_path = subprocess.Popen(['conda','info'],stdout=subprocess.PIPE)
 
@@ -72,16 +93,20 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
     This function imports and verifies filtering criteria obtained from an input
     table.
 
-        Input:
-             str (filtering criteria path)
-             list ( with expected criterias)
+    Parameter
+    ---------
+    filtering_criteria_path : str 
+        filtering criteria path.
+    expected_criterias : list 
+        with expected criterias.
 
-        Output:
-            return: 11 filtering criteria variables, with their type and format
-                    verified, some may be None values.
+    Returns
+    ------- 
+    return: 11 filtering criteria variables, with their type and format
+            verified, some may be None values.
     """
 
-    with open(filtering_criteria_path,'r') as filters:
+    with open(filtering_criteria_path,'r',encoding='utf-8') as filters:
         criterias = dict(csv.reader(filters, delimiter='\t'))
 
     for key, value in criterias.items():
@@ -227,17 +252,6 @@ def main(args):
         table exists then script downloads them otherwise it downloads all
         assemblies for the desired species.
         """
-        #Import modules
-        try:
-            from DownloadAssemblies import ncbi_datasets_summary
-            from DownloadAssemblies import ncbi_linked_ids
-            from DownloadAssemblies import fetch_metadata
-
-        except ModuleNotFoundError:
-            from Schema_refinery.DownloadAssemblies import ncbi_datasets_summary
-            from Schema_refinery.DownloadAssemblies import ncbi_linked_ids
-            from Schema_refinery.DownloadAssemblies import fetch_metadata
-
         if args.input_table is not None:
             """
             If input table with ids is present.
@@ -262,13 +276,15 @@ def main(args):
                 os.mkdir(os.path.join(args.output_directory,'metadata_ncbi'))
             #save ids to download
             with open(os.path.join(args.output_directory,
-                                   "metadata_ncbi/assemblies_ids_to_download.tsv"),'w+') as ids_to_txt:
+                                   "metadata_ncbi/assemblies_ids_to_download.tsv"),
+                      'w+', encoding='utf-8') as ids_to_txt:
 
                 ids_to_txt.write("\n".join(map(str, list_to_download)))
 
             #save ids that failed criteria
             with open(os.path.join(args.output_directory,
-                                   "metadata_ncbi/id_failed_criteria.tsv"),'w+') as ids_to_txt:
+                                   "metadata_ncbi/id_failed_criteria.tsv"),
+                      'w+',encoding='utf-8') as ids_to_txt:
 
                 ids_to_txt.write("\n".join(map(str, failed_list)))
 
@@ -296,7 +312,7 @@ def main(args):
             if args.download:
                 print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
-                subprocess.run(arguments)
+                subprocess.run(arguments, check=False)
 
             else:
                 print("\nAssemblies to be downloaded are in the following TSV file: {}".format(
@@ -326,7 +342,7 @@ def main(args):
 
             if not os.path.exists(os.path.join(args.output_directory,'metadata_ncbi')):
                 os.mkdir(os.path.join(args.output_directory,'metadata_ncbi'))
-                
+
             #save ids to download
             with open(os.path.join(args.output_directory,
                                    "metadata_ncbi/assemblies_ids_to_download.tsv"),'w+') as ids_to_txt:
@@ -358,7 +374,7 @@ def main(args):
             if args.download:
                 print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
-                subprocess.run(arguments)
+                subprocess.run(arguments, check=False)
 
             else:
                 print("\nAssemblies to be downloaded are in the following TSV file: {}".format(
@@ -390,7 +406,8 @@ def main(args):
 
             #create file with biosamples ids
             with open(os.path.join(args.output_directory,
-                                   'metadata_ncbi/biosamples.tsv'),'w+') as ids:
+                                   'metadata_ncbi/biosamples.tsv'),
+                      encoding='utf-8''w+') as ids:
 
                 ids.write("\n".join(map(str, biosamples)))
 
@@ -411,16 +428,6 @@ def main(args):
         creates two TSV files at output directory, one containing ids of assemblies
         that failes filtering criteria other file that passed.
         """
-        try:
-            from DownloadAssemblies import ena661k_assembly_fetcher
-            from DownloadAssemblies import ncbi_linked_ids
-            from DownloadAssemblies import fetch_metadata
-
-        except ModuleNotFoundError:
-            from Schema_refinery.DownloadAssemblies import ena661k_assembly_fetcher
-            from Schema_refinery.DownloadAssemblies import ncbi_linked_ids
-            from Schema_refinery.DownloadAssemblies import fetch_metadata
-
         #Path for ena661k files
         try:
             #Find local conda path
@@ -453,18 +460,18 @@ def main(args):
             """
             if not os.path.exists(os.path.join(args.output_directory,'metadata_ena661k')):
                 os.mkdir(os.path.join(args.output_directory,'metadata_ena661k'))
-                
+
             print("\nFetching related ids...")
-            
+
             ncbi_linked_ids.main(os.path.join(args.output_directory,'metadata_ena661k/assemblies_ids_to_download.tsv'),
                                  os.path.join(args.output_directory,'metadata_ena661k/id_matches.tsv'),
                                  args.email,
                                  args.threads,
                                  args.retry,
                                  args.api_key)
-            
+
             print("\nFetching additional metadata...")
-            
+
             fetch_metadata.main(os.path.join(args.output_directory,'metadata_ena661k/assemblies_ids_to_download.tsv'),
                                 os.path.join(args.output_directory,'metadata_ena661k'),
                                 args.email,

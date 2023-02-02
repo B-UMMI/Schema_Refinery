@@ -24,6 +24,7 @@ def read_table(id_table_path):
     Reads TSV file containing Biosample id and transforms into pandas dataframe.
 
     input: TSV file path
+    
     output: pandas dataframe object
     """
     with open(id_table_path) as id_table:
@@ -39,6 +40,7 @@ def find_internal_id(query_id):
     for that Biosample.
 
     input: Biosample id
+    
     output: internal id
     """
     try:
@@ -60,6 +62,7 @@ def download_query(internal_id):
     the metadata related to that Biosample in xml object tree.
 
     input: internal id
+    
     output: xml tree object
     """
 
@@ -83,6 +86,7 @@ def get_metadata(xml_root):
     metadata inside a dictionary, where key is column and value is metadata
 
     input: xml tree object
+    
     output: dictionary
     """
 
@@ -112,6 +116,7 @@ def write_to_file(metadata_df,output_directory):
     Writes dataframe into TSV file format at output directory.
 
     input: pandas dataframe object
+    
     output: TSV file inside output path
     """
     metadata_df.to_csv(os.path.join(output_directory, "metadata.tsv"),
@@ -124,6 +129,7 @@ def multi_thread_run(query,retry):
     fetching
 
     input: Biosample id
+    
     output: dictionary containg metadata for the input Biosample
     """
 

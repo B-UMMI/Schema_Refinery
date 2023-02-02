@@ -17,8 +17,8 @@ import re
 import time
 import argparse
 import concurrent.futures
-from tqdm import tqdm
 from itertools import repeat
+from tqdm import tqdm
 from Bio import Entrez
 
 
@@ -241,14 +241,24 @@ def fetch_assembly_accessions(identifiers):
 # (Bio.Entrez might support requests to get info for several IDs)
 
 def multi_threading(i, retry):
+    """
+    This functions is called by concurrent.futures in order to increase the
+    number of downloads per second.
+    Parameters
+    ----------
+    i : str
+        Assembly id.
+    retry: int
+        number of retries per download
+    """
 
     rtry = 0
-    identifiers = []    
+    identifiers = []
     while rtry < retry:
         try:
-            
+
             match = determine_id_type(i)
-            
+
             if match is not None:
                 if match in ['refseq', 'genbank']:
                     match_db = 'assembly'
@@ -318,26 +328,42 @@ def multi_threading(i, retry):
         except Exception:
             rtry += 1
             time.sleep(1)
-            
+
         else:
             break
-        
+
     return [i,identifiers]
-        
+
 def main(input_file, output_file, email, threads, retry, api_key):
+    """
+    Main functon if ncbi_linkedIds.py, this function links the input ids to
+    other ids present in the databases.
+
+    Parameters
+    ----------
+    input_file : str
+        File containing assembleis ids.
+    output_file : str
+        string containing output file path.
+    email : str
+    threads : int
+    retry : int
+    api_key : str
+        string key for api of the NCBI.
+    """
 
     # read identifiers
-    with open(input_file, 'r') as infile:
+    with open(input_file, 'r', encoding='utf-8') as infile:
         identifiers = infile.read().splitlines()
 
     # define email to make requests
     Entrez.email = email
-    
-    if api_key != None:
+
+    if api_key is not None:
         Entrez.api_key = api_key
 
     database_identifiers = {}
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
 
         for res in list(tqdm(executor.map(multi_threading, identifiers,repeat(retry)),total=len(identifiers))):
@@ -348,7 +374,7 @@ def main(input_file, output_file, email, threads, retry, api_key):
     output_lines = [output_header]
     output_lines.extend(['\t'.join([k]+v) for k, v in database_identifiers.items()])
     output_text = '\n'.join(output_lines)
-    with open(output_file, 'w') as outfile:
+    with open(output_file, 'w', encoding='utf-8') as outfile:
         outfile.write(output_text+'\n')
 
     # delete .dtd files
@@ -360,7 +386,9 @@ def main(input_file, output_file, email, threads, retry, api_key):
 
 
 def parse_arguments():
-
+    """
+    Arguments.
+    """
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 

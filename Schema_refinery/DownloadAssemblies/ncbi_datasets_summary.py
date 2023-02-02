@@ -19,15 +19,21 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
     """
     This function verifies assemblies by certain inputa criteria.
 
-        Input:
-            metadata_assembly: json object (dict) for a single assembly
-            size_threshold: float (0 >= x >= 1)
-            max_contig_number: int (>0)
-            genome_size: int (>0)
-            verify_status: bool
+    Parameters
+    ----------
+    metadata_assembly : json object (dict)
+        For a single assembly.
+    size_threshold : float
+        (0 >= x >= 1).
+    max_contig_number: int
+        (>0).
+    genome_size: int
+        (>0).
+    verify_status: bool
 
-        Output:
-            return : Boolean value (in order to see if passed or failed)
+    Returns
+    -------
+    Boolean value (in order to see if passed or failed)
     """
     assembly_stats = metadata_assembly['assembly_stats']
     assembly_info = metadata_assembly['assembly_info']
@@ -64,17 +70,22 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
     This function based on an input id fetches json object (dict) for all
     assemblies.
 
-        Input:
-            input_id: list of strings (starts with GCF_ or GCA_)
-            assembly_level: string (containing assembly levels separated by ",")
-            reference: Boolean value
-            api_key: string
+    Parameters
+    ----------
+    input_id : list of str
+        starts with GCF_ or GCA_ .
+    assembly_level : str
+        containing assembly levels separated by ",".
+    reference: Bool
+    api_key: str
 
-        Output:
-            return:
-                found_metadata: bool
-                failed_list: list containing ids that failed initial processing
-                metadata_assembly: json object (dict) for all assemblies
+    Returns
+    -------
+    found_metadata: bool
+    failed_list: list
+        containing ids that failed initial processing.
+    metadata_assembly: json object (dict)
+        for all assemblies.
     """
 
     arguments = ['datasets','summary','genome','accession', '--inputfile', id_list_path]
@@ -90,15 +101,17 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
         arguments += ['--reference']
 
 
-    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
+    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE, 
+                                         check=False).stdout)
 
     assemblies_ids = []
 
     if metadata['total_count'] != 0:
         #if any metadata with specified criteria were found
         metadata_all = metadata
-        for m in metadata_all['reports']:
-            assemblies_ids.append(m['accession'])
+        for meta in metadata_all['reports']:
+            assemblies_ids.append(meta['accession'])
 
     else:
         #if no metadata was found, return json with {"total_count": 0}
@@ -115,22 +128,29 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
     """
     Function that from a list of ids and filtering criterea, filters the id list.
 
-        Input:
-            id_list_path:
-            size_threshold: float (0 >= x >= 1)
-            max_contig_number: int (>0)
-            genome_size: int (>0)
-            assembly_level: string (containing assembly levels separated by ",")
-            reference: Boolean value
-            api_key: string
+    Parameters
+    ----------
+    id_list_path:
+    size_threshold: float
+        (0 >= x >= 1).
+    max_contig_number: int
+        (>0).
+    genome_size: int
+        (>0).
+    assembly_level: string
+        containing assembly levels separated by "," .
+    reference: Bool
+    api_key: str
 
-        Output:
-            return:
-                failed_list: list (containing assemblies that failed criteria)
-                accepted_list: list (containing assemblies that passed criteria)
+    Returns
+    -------
+    failed_list: list
+        containing assemblies that failed criteria.
+    accepted_list: list
+        containing assemblies that passed criteria.
     """
 
-    with open(id_list_path,'r') as id_list:
+    with open(id_list_path,'r',encoding='utf-8') as id_list:
         ids = list(csv.reader(id_list,delimiter='\t'))
 
     ids = [item for sublist in ids for item in sublist]
@@ -231,18 +251,22 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
     """
     This function based on an input species fetches json object (dict).
 
-        Input:
-            species: string
-            assembly_level: string (containing assembly levels separated by ",")
-            reference: Boolean value
-            assembly_source: string (RefSeq or GenBank)
-            api_key: string
+    Parameters
+    ----------
+    species: string
+    assembly_level: str
+        containing assembly levels separated by "," .
+    reference: Bool
+    assembly_source: str
+        'RefSeq' or 'GenBank'
+    api_key: str
 
-        Output:
-            found_metadata: bool
-            all_assemblies: list (containing all ids)
-            metadata_filtered: json object (dict) for a all assemblies that
-                                passed the criteria.
+    Returns
+    -------
+    found_metadata: bool
+    all_assemblies: list (containing all ids)
+    metadata_filtered: json object (dict) for a all assemblies that
+                        passed the criteria.
     """
 
     arguments = ['datasets','summary','genome','taxon', species]
@@ -252,15 +276,17 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
         arguments += ['--assembly-source',assembly_source]
 
     #find all possible assemblies ids
-    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
+    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE,
+                                         check=False).stdout)
 
     metadata_all = metadata['reports']
 
     all_assemblies = []
 
-    for m in metadata_all:
+    for meta in metadata_all:
 
-        all_assemblies.append(m['accession'])
+        all_assemblies.append(meta['accession'])
 
     #Filter by other datasets criteria
     if api_key is not None:
@@ -274,7 +300,9 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
         arguments += ['--reference']
 
     # find all metadata that pass initial criterias
-    metadata_filtered = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,stderr=subprocess.PIPE).stdout)
+    metadata_filtered = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE,
+                                                  check=False).stdout)
 
     return [all_assemblies,metadata_filtered]
 
@@ -284,20 +312,28 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
     """
     Fetches the ids that pass the filtering criteria.
 
-        Input:
-            species: string
-            size_threshold: float (0 >= x >= 1)
-            max_contig_number: int (>0)
-            genome_size: int (>0)
-            assembly_level: string (containing assembly levels separated by ",")
-            reference: Boolean value
-            assembly_source: string (RefSeq or GenBank)
-            api_key: string
+    Parameters
+    ----------
+    species: str
+    size_threshold: float
+        (0 >= x >= 1).
+    max_contig_number: int
+        (>0).
+    genome_size: int
+        (>0).
+    assembly_level: string
+        containing assembly levels separated by "," .
+    reference: Bool
+    assembly_source: string
+        'RefSeq' or 'GenBank'
+    api_key: str
 
-        Output:
-            return:
-                failed_list: list (containing assemblies that failed criteria)
-                accepted_list: list (containing assemblies that passed criteria)
+    Returns
+    -------
+    failed_list: list
+        containing assemblies that failed criteria
+    accepted_list: list
+        containing assemblies that passed criteria
     """
 
     if (assembly_source is not None
