@@ -32,11 +32,11 @@ def tryeval(val):
     Evaluates the type of the input.
 
     Parameter
-    --------- 
+    ---------
     val : any
 
     Returns
-    ------- 
+    -------
     val : any
         converted to the right type.
     """
@@ -56,7 +56,7 @@ def find_local_conda_env():
     None
 
     Returns
-    ------- 
+    -------
     return: str
         containing path to folder inside schema refinery
         env, may not exist if this module was not used to download
@@ -95,13 +95,13 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
 
     Parameter
     ---------
-    filtering_criteria_path : str 
+    filtering_criteria_path : str
         filtering criteria path.
-    expected_criterias : list 
+    expected_criterias : list
         with expected criterias.
 
     Returns
-    ------- 
+    -------
     return: 11 filtering criteria variables, with their type and format
             verified, some may be None values.
     """
@@ -407,7 +407,7 @@ def main(args):
             #create file with biosamples ids
             with open(os.path.join(args.output_directory,
                                    'metadata_ncbi/biosamples.tsv'),
-                      encoding='utf-8''w+') as ids:
+                      'w+', encoding='utf-8') as ids:
 
                 ids.write("\n".join(map(str, biosamples)))
 

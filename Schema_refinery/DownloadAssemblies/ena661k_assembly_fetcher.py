@@ -111,7 +111,7 @@ def read_table(file_path, delimiter='\t'):
         List that contains one sublist per
         line in the input tabular file.
     """
-    with open(file_path, 'r') as infile:
+    with open(file_path, 'r', encoding='utf-8') as infile:
         lines = list(csv.reader(infile, delimiter=delimiter))
 
     return lines
@@ -166,11 +166,11 @@ def main(sr_path, species, output_directory,
          retry, st, threads):
     """
     Main function of the ena661k_assembly_fetcher.
-    
+
     Parameter
     ---------
     sr_path: str
-        Path to the schema_refinery to download files for ENA661k, 
+        Path to the schema_refinery to download files for ENA661k,
         may be in conda env or output_dir.
     species: str
         Species name.
@@ -191,7 +191,7 @@ def main(sr_path, species, output_directory,
     st: str
         Path to the file containing desired ST.
     threads: int
-    
+
     Returns
     -------
     Two files containg failed and accepted assemblies in the output directory.
@@ -353,7 +353,7 @@ def main(sr_path, species, output_directory,
         print('{0} with known ST.'.format(len(species_lines)))
 
     if st is not None:
-        with open(st, 'r') as desired_st:
+        with open(st, 'r', encoding='utf-8') as desired_st:
             d_st = desired_st.read().splitlines()
             mlst = metadata_header.index('mlst')
             species_lines = [line
@@ -380,10 +380,12 @@ def main(sr_path, species, output_directory,
         os.mkdir(os.path.join(output_directory,'metadata_ena661k'))
 
     #write failed and accepted ids to file
-    with open(os.path.join(output_directory,"metadata_ena661k/assemblies_ids_to_download.tsv"),'w+') as ids_to_tsv:
+    with open(os.path.join(output_directory,"metadata_ena661k/assemblies_ids_to_download.tsv"),
+              'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, sample_ids)))
 
-    with open(os.path.join(output_directory,"metadata_ena661k/id_failed_criteria.tsv"),'w+') as ids_to_tsv:
+    with open(os.path.join(output_directory,"metadata_ena661k/id_failed_criteria.tsv"),
+              'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, failed_list)))
 
     if len(sample_ids) == 0:
@@ -397,7 +399,7 @@ def main(sr_path, species, output_directory,
         os.mkdir(output_directory)
 
     selected_file = os.path.join(output_directory, 'metadata_ena661k/selected_samples.tsv')
-    with open(selected_file, 'w') as outfile:
+    with open(selected_file, 'w', encoding='utf-8') as outfile:
         selected_lines = ['\t'.join(line)
                           for line in [metadata_header]+species_lines]
         selected_text = '\n'.join(selected_lines)
@@ -405,7 +407,7 @@ def main(sr_path, species, output_directory,
 
     # Putting checksums in dictionary
     hashes_dict = {}
-    with open(local_checklist, 'r') as table:
+    with open(local_checklist, 'r', encoding='utf-8') as table:
         lines = table.readlines()
         for line in lines:
             md5_hash, file_path = line.split('  ')
