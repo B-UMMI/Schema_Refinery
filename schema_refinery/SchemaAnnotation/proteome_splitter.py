@@ -18,7 +18,7 @@ import pickle
 
 from Bio import SeqIO
 
-def proteomeSplitter(proteomes_directory:str, output_directory:str):
+def proteome_splitter(proteomes_directory:str, output_directory:str):
 
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)

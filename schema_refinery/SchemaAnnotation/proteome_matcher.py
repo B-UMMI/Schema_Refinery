@@ -24,7 +24,7 @@ from utils.sequence_functions import translate_sequence
 
 # proteome_splitter_files_list has the TrEMBL file in index 0,
 # Swiss-Prot in index 1 and descriptions file in index 2
-def proteomeMatcher(schema_directory:str, proteome_splitter_files_list:list, output_directory:str, cpu_cores:int):
+def proteome_matcher(schema_directory:str, proteome_splitter_files_list:list, output_directory:str, cpu_cores:int):
 
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)
