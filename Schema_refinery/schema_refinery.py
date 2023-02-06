@@ -34,13 +34,13 @@ def download_module():
                         choices = ['NCBI','ENA661K'],
                         help='Databases from which assemblies will be downloaded. ')
 
-    parser.add_argument('-s', '--species', type=str,
-                        required=True, dest='species',
-                        help='Desired species to fetch')
+    parser.add_argument('-t', '--taxon', type=str,
+                        required=True, dest='taxon',
+                        help='Scientific name of the taxon.')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
-                        help='Output Path')
+                        help='Path to the output directory.')
 
     parser.add_argument('-th', '--threads', type=int,
                         required=False, default=2,
@@ -61,7 +61,7 @@ def download_module():
                         required=False, dest='api_key',
                         help='API key to increase the mumber of requests')
 
-    parser.add_argument('-fm', '--f_metadata',
+    parser.add_argument('-fm', '--fetch-metadata',
                         required=False, dest='f_metadata',
                         action='store_true',
                         default = False,

@@ -215,13 +215,11 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
 
     accepted_list = []
 
-    #Verify list of ids
-    """
-    Use multi threading to fetch individual metadata json for each assembly
-    and verify it according to filtering criteria.
-    """
 
-
+    """
+    Fetch metadata for all assemblies and verify according to desired fitering
+    criteria
+    """
     failed_list,metadata_all = metadata_fetcher_ids(ids,
                                                     id_list_path,
                                                     assembly_level,
@@ -246,14 +244,14 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
 
     return [failed_list,accepted_list]
 
-def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
+def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
                             api_key):
     """
-    This function based on an input species fetches json object (dict).
+    This function based on an input taxon fetches json object (dict).
 
     Parameters
     ----------
-    species: string
+    taxon: string
     assembly_level: str
         containing assembly levels separated by "," .
     reference: Bool
@@ -269,17 +267,17 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
                         passed the criteria.
     """
 
-    arguments = ['datasets','summary','genome','taxon', species]
+    arguments = ['datasets','summary','genome','taxon', taxon]
 
     #filter by choosen assembly source
     if assembly_source is not None:
         arguments += ['--assembly-source',assembly_source]
 
     #find all possible assemblies ids
-    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE,
-                                         check=False).stdout)
-
+        metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE,
+                                             check=False).stdout)
+        
     metadata_all = metadata['reports']
 
     all_assemblies = []
@@ -306,7 +304,7 @@ def metadata_fetcher_specie(species,assembly_level,reference,assembly_source,
 
     return [all_assemblies,metadata_filtered]
 
-def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
+def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
                           assembly_level,reference,assembly_source,verify_status,
                           api_key):
     """
@@ -314,7 +312,7 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
 
     Parameters
     ----------
-    species: str
+    taxon: str
     size_threshold: float
         (0 >= x >= 1).
     max_contig_number: int
@@ -408,7 +406,7 @@ def metadata_from_species(species,size_threshold,max_contig_number,genome_size,
         print("Proceeding...")
 
     #get all possible ids and all ids filtered by assembly_level or reference
-    all_ids,metadata_filtered = metadata_fetcher_specie(species,
+    all_ids,metadata_filtered = metadata_fetcher_taxon(taxon,
                                                         assembly_level,
                                                         reference,
                                                         assembly_source,

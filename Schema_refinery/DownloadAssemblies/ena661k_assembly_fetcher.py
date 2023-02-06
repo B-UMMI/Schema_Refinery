@@ -160,7 +160,7 @@ def download_ftp_file(data, retry, verify=True, progress=False):
 
     return downloaded
 
-def main(sr_path, species, output_directory,
+def main(sr_path, taxon, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
          max_contig_number, known_st, any_quality, stride,
          retry, st, threads):
@@ -172,8 +172,8 @@ def main(sr_path, species, output_directory,
     sr_path: str
         Path to the schema_refinery to download files for ENA661k,
         may be in conda env or output_dir.
-    species: str
-        Species name.
+    taxon: str
+        taxon name.
     output_directory: str
         Path to output dir.
     ftp_download: bool
@@ -250,18 +250,18 @@ def main(sr_path, species, output_directory,
 
     metadata_header = metadata_lines[0]
 
-    # select lines based on species name
-    print("\nFiltering by chosen specie...")
-    species_index = metadata_header.index('species')
-    species_lines = [line
+    # select lines based on taxon name, e.g Brucella, Streptococcus pneumonia
+    print("\nFiltering by chosen taxon...")
+    taxon_index = metadata_header.index('species')
+    taxon_lines = [line
                      for line in metadata_lines[1:]
-                     if line[species_index] == species]
+                     if all(t in line[taxon_index].split() for t in taxon.split())]
 
-    print('\nFound {0} samples for species={1}.'
-          ''.format(len(species_lines), species))
+    print('\nFound {0} samples for taxon={1}.'
+          ''.format(len(taxon_lines), taxon))
 
-    if len(species_lines) == 0:
-        print('Did not find matches for {0}.'.format(species))
+    if len(taxon_lines) == 0:
+        print('Did not find matches for {0}.'.format(taxon))
         sys.exit(0)
 
     print("\nFiltering by chosen criteria:")
@@ -308,70 +308,70 @@ def main(sr_path, species, output_directory,
     print('\n')
 
     #get all ids:
-    all_sample_ids = [line[0] for line in species_lines]
+    all_sample_ids = [line[0] for line in taxon_lines]
 
     # filter based on genome size
     if genome_size is not None and size_threshold is not None:
         bot_limit = genome_size - (genome_size*size_threshold)
         top_limit = genome_size + (genome_size*size_threshold)
         size_index = metadata_header.index('total_length')
-        species_lines = [line
-                         for line in species_lines
+        taxon_lines = [line
+                         for line in taxon_lines
                          if int(line[size_index]) >= bot_limit
                          and int(line[size_index]) <= top_limit]
 
         print('{0} with genome size >= {1} and '
-              '<= {2}.'.format(len(species_lines), bot_limit, top_limit))
+              '<= {2}.'.format(len(taxon_lines), bot_limit, top_limit))
 
-    # filter based on species abundance
+    # filter based on taxon abundance
     if abundance is not None:
         abundance_index = metadata_header.index('adjust_abundance')
-        species_lines = [line
-                         for line in species_lines
+        taxon_lines = [line
+                         for line in taxon_lines
                          if float(line[abundance_index]) >= abundance]
 
-        print('{0} with abundance >= {1}.'.format(len(species_lines),
+        print('{0} with abundance >= {1}.'.format(len(taxon_lines),
                                                   abundance))
 
     # filter based on number of contigs
     if max_contig_number is not None:
         contigs_index = metadata_header.index('total_contigs')
-        species_lines = [line
-                         for line in species_lines
+        taxon_lines = [line
+                         for line in taxon_lines
                          if int(line[contigs_index]) <= max_contig_number]
 
-        print('{0} with <= {1} contigs.'.format(len(species_lines),
+        print('{0} with <= {1} contigs.'.format(len(taxon_lines),
                                                 max_contig_number))
 
     # filter based on known ST
     if known_st is True:
         st_index = metadata_header.index('mlst')
-        species_lines = [line
-                         for line in species_lines
+        taxon_lines = [line
+                         for line in taxon_lines
                          if line[st_index] != '-']
 
-        print('{0} with known ST.'.format(len(species_lines)))
+        print('{0} with known ST.'.format(len(taxon_lines)))
 
     if st is not None:
         with open(st, 'r', encoding='utf-8') as desired_st:
             d_st = desired_st.read().splitlines()
             mlst = metadata_header.index('mlst')
-            species_lines = [line
-                             for line in species_lines
+            taxon_lines = [line
+                             for line in taxon_lines
                              if line[mlst] in d_st]
-            print('{0} with desired ST'.format(len(species_lines)))
+            print('{0} with desired ST'.format(len(taxon_lines)))
 
     # filter based on quality level
     if any_quality is False:
         quality_index = metadata_header.index('high_quality')
-        species_lines = [line
-                         for line in species_lines
+        taxon_lines = [line
+                         for line in taxon_lines
                          if line[quality_index] == 'TRUE']
 
-        print('{0} with high quality.'.format(len(species_lines)))
+        print('{0} with high quality.'.format(len(taxon_lines)))
 
     # get sample identifiers
-    sample_ids = [line[0] for line in species_lines]
+    sample_ids = [line[0] for line in taxon_lines]
 
     #Assebmlies that failed filtering criteria
     failed_list = [x for x in all_sample_ids if x not in sample_ids]
@@ -401,7 +401,7 @@ def main(sr_path, species, output_directory,
     selected_file = os.path.join(output_directory, 'metadata_ena661k/selected_samples.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
         selected_lines = ['\t'.join(line)
-                          for line in [metadata_header]+species_lines]
+                          for line in [metadata_header]+taxon_lines]
         selected_text = '\n'.join(selected_lines)
         outfile.write(selected_text+'\n')
 
@@ -414,15 +414,15 @@ def main(sr_path, species, output_directory,
             file_basename = file_path.split('/')[-1].split('.')[0]
             hashes_dict[file_basename] = md5_hash
 
-    # get hashes for species samples
-    species_hashes = {i: hashes_dict[i] for i in sample_ids}
+    # get hashes for taxon samples
+    taxon_hashes = {i: hashes_dict[i] for i in sample_ids}
 
     if ftp_download is True:
         # read table with FTP paths
         ftp_lines = read_table(assembly_ftp_file)
         sample_paths = {l[0]: l[1].split('/ebi/ftp')[1] for l in ftp_lines}
         # get FTP paths only for selected samples
-        species_paths = {i: sample_paths[i] for i in sample_ids}
+        taxon_paths = {i: sample_paths[i] for i in sample_ids}
 
         if stride:
             interval_list = stride.split(':')
@@ -437,7 +437,7 @@ def main(sr_path, species, output_directory,
                 stride = str(low + 1) + ':' + str(high)
         else:
             low = 0
-            high = len(species_paths)
+            high = len(taxon_paths)
 
         # list files in output directory
         local_files = os.listdir(output_directory)
@@ -501,10 +501,10 @@ def parse_arguments():
                              'mapping (available at http://ftp.ebi.ac.uk/'
                              'pub/databases/ENA2018-bacteria-661k/).')
 
-    parser.add_argument('-s', '--species', type=str,
-                        required=True, dest='species',
-                        help='Name of the species. Must match one of the '
-                             'species names in the "species" column in the '
+    parser.add_argument('-s', '--taxon', type=str,
+                        required=True, dest='taxon',
+                        help='Name of the taxon. Must match one of the '
+                             'taxon names in the "taxon" column in the '
                              'metadata table.')
 
     parser.add_argument('-o', '--output-directory', type=str,
@@ -519,7 +519,7 @@ def parse_arguments():
     parser.add_argument('-a', '--abundance', type=float,
                         required=False,
                         dest='abundance',
-                        help='Minimum species abundance. Samples with species'
+                        help='Minimum taxon abundance. Samples with taxon'
                              ' abundance below this value are not selected.')
 
     parser.add_argument('-gs', '--genome-size', type=int,
@@ -539,10 +539,10 @@ def parse_arguments():
                              'a number of contigs greater than this value '
                              'are not selected.')
 
-    parser.add_argument('--mlst-species', type=str,
+    parser.add_argument('--mlst-taxon', type=str,
                         required=False,
-                        dest='mlst_species',
-                        help='The species predicted by the MLST tool.')
+                        dest='mlst_taxon',
+                        help='The taxon predicted by the MLST tool.')
 
     parser.add_argument('--known-st', action='store_true',
                         required=False,

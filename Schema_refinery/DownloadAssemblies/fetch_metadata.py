@@ -187,7 +187,6 @@ def main(id_table_path,output_directory,email,threads,api_key,retry):
     metadata_df = pd.DataFrame(metadata_list_dict)
 
     #Organise metadata and associate with input id
-    metadata_df.insert(0,"accession",metadata_df.pop("accession"))
     metadata_df.insert(0,"File",queries)
 
     #Write to TSV in output directory

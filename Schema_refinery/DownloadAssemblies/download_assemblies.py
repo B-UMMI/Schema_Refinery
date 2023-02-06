@@ -250,7 +250,7 @@ def main(args):
         If Database option is set to NCBI, run one of the two tools depending
         if there is a input table containing the ids of desired assemblies, if
         table exists then script downloads them otherwise it downloads all
-        assemblies for the desired species.
+        assemblies for the desired taxon.
         """
         if args.input_table is not None:
             """
@@ -321,7 +321,7 @@ def main(args):
         else:
             """
             If no table is present.
-            Executes ncbi_datasets_summary.metadata_from_species function to
+            Executes ncbi_datasets_summary.metadata_from_taxon function to
             obtain two list of assemblies that passed or failed the filtering
             criteria creating 2 output TSV files in the output folder.
 
@@ -329,8 +329,8 @@ def main(args):
             triggered download will be executed by running a subprocess of
             datasets.
             """
-            #Fetch from species identifier
-            failed_list,list_to_download = ncbi_datasets_summary.metadata_from_species(args.species,
+            #Fetch from taxon identifier
+            failed_list,list_to_download = ncbi_datasets_summary.metadata_from_taxon(args.taxon,
                                                           criterias['size_threshold'],
                                                           criterias['max_contig_number'],
                                                           criterias['genome_size'],
@@ -345,13 +345,15 @@ def main(args):
 
             #save ids to download
             with open(os.path.join(args.output_directory,
-                                   "metadata_ncbi/assemblies_ids_to_download.tsv"),'w+') as ids_to_txt:
+                                   "metadata_ncbi/assemblies_ids_to_download.tsv"),
+                      'w+', encoding='utf-8') as ids_to_txt:
 
                 ids_to_txt.write("\n".join(map(str, list_to_download)))
 
             #save ids that failed criteria
             with open(os.path.join(args.output_directory,
-                                   "metadata_ncbi/id_failed_criteria.tsv"),'w+') as ids_to_txt:
+                                   "metadata_ncbi/id_failed_criteria.tsv"),
+                      'w+', encoding='utf-8') as ids_to_txt:
 
                 ids_to_txt.write("\n".join(map(str, failed_list)))
 
@@ -437,7 +439,7 @@ def main(args):
             sr_path = os.path.join(args.output_directory, 'ena661k_files')
 
         ena661k_assembly_fetcher.main(sr_path,
-                                      args.species,
+                                      args.taxon,
                                       args.output_directory,
                                       args.download,
                                       criterias['abundance'],
