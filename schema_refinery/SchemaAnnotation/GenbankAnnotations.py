@@ -14,13 +14,14 @@ Code documentation
 
 import os
 import csv
+import sys
 
 from Bio import SeqIO
 
 from utils.blast_functions import make_blast_db, run_blast
 from utils.sequence_functions import translate_sequence
 
-def getProteinAnnotationFasta(seqRecord):
+def get_protein_annotation_fasta(seqRecord):
     """ Gets the translated protein from a Genbank file.
     Source: https://github.com/LeeBergstrand/Genbank-Downloaders/blob/d904c92788696b02d9521802ebf1fc999a600e1b/SeqExtract.py#L48
 
@@ -63,7 +64,7 @@ def getProteinAnnotationFasta(seqRecord):
 
     return fasta, fasta_dict
 
-def genbankAnnotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
+def run_genbank_annotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
 
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)
@@ -78,7 +79,7 @@ def genbankAnnotations(input_files:str, schema_directory:str, output_directory:s
         recs = [rec for rec in SeqIO.parse(f, 'genbank')]
 
         for r in recs:
-            outl, outd = getProteinAnnotationFasta(r)
+            outl, outd = get_protein_annotation_fasta(r)
             fasta.extend(outl)
             fasta_dict.update(outd)
 
@@ -190,3 +191,18 @@ def genbankAnnotations(input_files:str, schema_directory:str, output_directory:s
 
     print('Results available at {0}'.format(annotations_file))
 
+
+def genbank_annotations(input_files, schema_directory, output_directory, cpu_cores):
+
+    # Check if all the necessary arguments have been received
+    if not input_files:
+        sys.exit("\nError: Genbank annotations need an input file argument. -i")
+
+    if not schema_directory:
+        sys.exit("\nError: Genbank annotations need a schema directory argument. -s")
+    
+    if not output_directory:
+        sys.exit("\nError: Genbank annotations need an output directory argument. -o")
+
+    # finally run the main genbankAnnotations function
+    #run_genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
