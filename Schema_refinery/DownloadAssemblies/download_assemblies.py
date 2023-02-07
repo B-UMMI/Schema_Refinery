@@ -196,10 +196,13 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
             wrong_inputs.append('assembly_source: one of the following:'
                                 'RefSeq,GenBank,all')
 
-    if criterias['file_extension']  is not None:
-        if (criterias['file_extension']  not in ['genome','rna','protein','cds','gff3','gtf',
-                                                 'gbff','seq-report','none']):
-            wrong_inputs.append('file_extension: one or more of the following separated '
+    if criterias['file_to_include']  is not None:
+        if (all(ext in criterias['file_to_include'].split(',')  
+                for ext in ['genome',
+                            'rna','protein','cds','gff3','gtf',
+                            'gbff','seq-report','none'])):
+            
+            wrong_inputs.append('file_to_include: one or more of the following separated '
                                 'by comma: genome,rna,protein,cds,gff3,gtf, '
                                 'gbff,seq-report,none')
 
@@ -229,7 +232,7 @@ def main(args):
 
     expected_criterias = ['abundance', 'genome_size', 'size_threshold', 'max_contig_number',
                           'known_st', 'any_quality', 'ST_list_path', 'assembly_level',
-                          'reference_genome', 'assembly_source', 'file_extension',
+                          'reference_genome', 'assembly_source', 'file_to_include',
                           'verify_status']
 
     criterias = {}
@@ -296,20 +299,20 @@ def main(args):
                 sys.exit("\nAssemblies that failed are in the following"
                          "TSV file: {}".format(os.path.join(args.output_directory,
                                                             "metadata_ncbi/id_failed_criteria.tsv.tsv")))
-
-            #Build initial arguments for the subprocess run of datasets
-            arguments = ['datasets','download','genome','accession','--inputfile',
-                         os.path.join(args.output_directory,
-                                      'metadata_ncbi/assemblies_ids_to_download.tsv')]
-
-            if args.api_key is not None:
-                arguments += ['--api-key',args.api_key]
-
-            if criterias['file_extension'] is not None:
-                arguments += ['--include',criterias['file_extension']]
-
             #download assemblies
             if args.download:
+                
+                #Build initial arguments for the subprocess run of datasets
+                arguments = ['datasets','download','genome','accession','--inputfile',
+                             os.path.join(args.output_directory,
+                                          'metadata_ncbi/assemblies_ids_to_download.tsv')]
+
+                if args.api_key is not None:
+                    arguments += ['--api-key', args.api_key]
+
+                if criterias['file_to_include'] is not None:
+                    arguments += ['--include', criterias['file_to_include']]
+                
                 print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
                 subprocess.run(arguments, check=False)
@@ -365,15 +368,19 @@ def main(args):
                          "TSV file: {}".format(os.path.join(args.output_directory,
                                                             "metadata_ncbi/id_failed_criteria.tsv.tsv")))
 
-            #Build initial arguments for the subprocess run of datasets
-            arguments = ['datasets','download','genome','accession','--inputfile',
-                         os.path.join(args.output_directory,
-                                      'metadata_ncbi/assemblies_ids_to_download.tsv')]
-
-            if args.api_key is not None:
-                arguments = arguments + ['--api-key',args.api_key]
-
             if args.download:
+                
+                #Build initial arguments for the subprocess run of datasets
+                arguments = ['datasets','download','genome','accession','--inputfile',
+                             os.path.join(args.output_directory,
+                                          'metadata_ncbi/assemblies_ids_to_download.tsv')]
+
+                if args.api_key is not None:
+                    arguments = arguments + ['--api-key', args.api_key]
+                    
+                if criterias['file_to_include'] is not None:
+                    arguments += ['--include', criterias['file_to_include']]
+                    
                 print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
                 subprocess.run(arguments, check=False)

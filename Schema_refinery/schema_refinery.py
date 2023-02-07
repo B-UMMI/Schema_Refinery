@@ -55,11 +55,12 @@ def download_module():
 
     parser.add_argument('-e', '--email', type=str,
                         required=True, dest='email',
-                        help='email for entrez NCBI')
+                        help='Entrez email parameter.')
 
-    parser.add_argument('-k', '--api_key', type=str,
+    parser.add_argument('-k', '--api-key', type=str,
                         required=False, dest='api_key',
-                        help='API key to increase the mumber of requests')
+                        help='Personal API key from NCBI. If not set, only 3 queries per second are allowed. ' 
+                        '10 queries per second otherwise with a valid API key.')
 
     parser.add_argument('-fm', '--fetch-metadata',
                         required=False, dest='f_metadata',
@@ -67,7 +68,7 @@ def download_module():
                         default = False,
                         help='Do not fetch metadata if toggled')
 
-    parser.add_argument('-f', '--filter_criteria_path',type=str,
+    parser.add_argument('-f', '--filter-criteria-path',type=str,
                         required=False, dest='filter_criteria_path',
                         help='TSV file containing filter parameters for choosen'
                              'assemblies before downloading')
@@ -85,18 +86,6 @@ def download_module():
                              'NCBI Genome Assembly and Annotation '
                              'report.')
 
-    #Specific for ENA661k database
-
-    parser.add_argument('-stride', '--stride', type=str,
-                        required=False,
-                        dest='stride',
-                        help='Interval specifying which sample ids to '
-                             'download. Example: "1:2000" - This will '
-                             'download the first 2000 samples. Note: If '
-                             'you want to download from the first id, '
-                             'you have to put "1", not "0" in the lower '
-                             'value.')
-
     args = parser.parse_args()
 
     del args.Download_module
@@ -104,10 +93,6 @@ def download_module():
     download_assemblies.main(args)
 
 def main():
-    """
-    Main call function that sorts depending on the arguments what module of the
-    schema_rifinery package to use.
-    """
     module_info = {"Download_module":['Downloads assemblies from either NCBI '
                                       'or ENA661K database',download_module]}
 

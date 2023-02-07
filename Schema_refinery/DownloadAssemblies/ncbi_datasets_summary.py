@@ -89,7 +89,8 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
     """
 
     arguments = ['datasets','summary','genome','accession', '--inputfile', id_list_path]
-
+    
+    #add other choosen parameters
     if api_key is not None:
 
         arguments += ['--api-key',api_key]
@@ -274,10 +275,10 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
         arguments += ['--assembly-source',assembly_source]
 
     #find all possible assemblies ids
-        metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE,
-                                             check=False).stdout)
-        
+    metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE,
+                                         check=False).stdout)
+
     metadata_all = metadata['reports']
 
     all_assemblies = []
@@ -286,7 +287,7 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
 
         all_assemblies.append(meta['accession'])
 
-    #Filter by other datasets criteria
+    #add other choosen parameters
     if api_key is not None:
 
         arguments += ['--api-key',api_key]
