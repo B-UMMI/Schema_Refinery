@@ -5,7 +5,7 @@ Inputs:
 
     --prot_species and --prot_genus, are outputs received from ProtFinder chewBBACA module
 
-    --genbank_file , output from genebank annotatios script in Schema_refinery
+    --genbank_file , output from genbank annotations script in Schema_refinery
 
     --proteome_trembl and --proteome_swiss , outputs from proteome_matcher script located in Schema_refinery
 
@@ -20,6 +20,7 @@ Outputs:
 """
 
 import os
+import sys
 import pandas as pd
 import argparse
 
@@ -47,15 +48,16 @@ def merger(table_1, table_2):
 
     return merged
 
-def main(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add, matched, output_path):
+def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add, matched, output_path):
     
     """
     Imports and convertions to right types, with some changes to columns names
     """
 
-    table_species = pd.read_csv(species, delimiter="\t")
+    if species != '':
+        table_species = pd.read_csv(species, delimiter="\t")
 
-    table_species.convert_dtypes()
+        table_species.convert_dtypes()
 
     if genus != '':
         table_genus = pd.read_csv(genus, delimiter="\t")
@@ -94,40 +96,44 @@ def main(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add
         os.mkdir(output_path)
 
     
-    merged_table = table_species
+    merged_table = pd.DataFrame({'Locus_ID': []})
 
     """
     Following lines merges the inputs mostly by using Locus_ID similiarities,
     choosing only the essential columns from each table.
     """
 
+    if species != '':
+
+        merged_table = merger(table_species, merged_table)
+
     if genus != '':
 
-        merged_table = pd.merge(merged_table,
-                                table_genus[['Locus_ID','Proteome_ID','Proteome_Product',
+        merged_table = pd.merge(table_genus[['Locus_ID','Proteome_ID','Proteome_Product',
                                 'Proteome_Gene_Name','Proteome_Species','Proteome_BSR']],
+                                merged_table,
                                 suffixes=("_species","_genus"),
                                 on =['Locus_ID'],
                                 how ='left')
 
     if genebank != '':
 
-        merged_table = merger(merged_table,table_genebank)
+        merged_table = merger(table_genebank, merged_table)
 
 
     if proteome_trembl != '':
 
-        merged_table = merger(merged_table,table_proteome_t)
+        merged_table = merger(table_proteome_t, merged_table)
 
     if proteome_swiss != '':
 
-        merged_table = merger(merged_table,table_proteome_s)  
+        merged_table = merger(table_proteome_s, merged_table)  
 
             
     if match_to_add != '' and matched != '':
 
         # merge columns so that both table to add and reference have locus_ID
-        merged_match = pd.merge(match_add,matched_table, on = 'Locus', 
+        merged_match = pd.merge(match_add, matched_table, on = 'Locus', 
                                 how = 'left')
         # change columns names
         merged_match.columns = ['Locus_GAS','User_locus_name_GAS',
@@ -135,64 +141,13 @@ def main(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add
                                 'Locus_ID','BSR_schema_match']
 
 
-        merged_table = pd.merge(merged_table,
-                                merged_match,
+        merged_table = pd.merge(merged_match,
+                                merged_table,
                                 on = ['Locus_ID'],
                                 how = 'left')
         
     return merged_table.to_csv(os.path.join(output_path,"merged_file.tsv"),sep='\t',index=False)
 
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('--prot_species', type=str, required=True,
-                        dest='species',
-                        help='protfinder output for species')
-
-    parser.add_argument('--prot_genus', type=str, required=False,
-                        dest='genus',
-                        default = '',
-                        help='protfinder output for genus')
-
-    parser.add_argument('--genbank_file', type=str, required=False,
-                        dest='genebank',
-                        default = '',
-                        help='genebank file')
-
-    parser.add_argument('--proteome_trembl', type=str, required=False,
-                        dest='proteome_trembl',
-                        default = '',
-                        help='proteome output trembl')
-
-    parser.add_argument('--proteome_swiss', type=str, required=False,
-                        dest='proteome_swiss',
-                        default = '',
-                        help='proteome output swiss')
-
-    parser.add_argument('--match_to_add', type=str, required=False,
-                        dest='match_to_add',
-                        default = '',
-                        help='proteome matcher file output')
-
-    parser.add_argument('--matched_schemas', type=str, required=False,
-                        dest='matched',
-                        default = '',
-                        help='proteome matcher file output')
-    
-    parser.add_argument('-o', type=str, required=True,
-                        dest='output_path',
-                        help='output dir')
-    
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-
-    main(**vars(args))
+def check_uniprot_arguments(species):
+    if not species:
+        sys.exit("\nError: Uniprot annotations need a species file argument, outputted by Uniprot Finder. -ps")
