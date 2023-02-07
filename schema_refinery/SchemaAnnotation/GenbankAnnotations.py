@@ -191,18 +191,34 @@ def run_genbank_annotations(input_files:str, schema_directory:str, output_direct
 
     print('Results available at {0}'.format(annotations_file))
 
+    return annotations_file
+
 
 def genbank_annotations(input_files, schema_directory, output_directory, cpu_cores):
 
+    necessary_arguments = {
+        "input_files": "\tGenbank annotations need an input file argument. -i",
+        "schema_directory": "\tGenbank annotations need a schema directory argument. -s",
+        "output_directory": "\tGenbank annotations need an output directory argument. -o"
+    }
+
+    missing_arguments = []
+
     # Check if all the necessary arguments have been received
     if not input_files:
-        sys.exit("\nError: Genbank annotations need an input file argument. -i")
+        missing_arguments.append("input_files")
 
     if not schema_directory:
-        sys.exit("\nError: Genbank annotations need a schema directory argument. -s")
+        missing_arguments.append("schema_directory")
     
     if not output_directory:
-        sys.exit("\nError: Genbank annotations need an output directory argument. -o")
+        missing_arguments.append("output_directory")
+
+    if len(missing_arguments > 0):
+        print("\nError: ")
+        for arg in missing_arguments:
+            print(necessary_arguments[arg])
+        sys.exit(0)
 
     # finally run the main genbankAnnotations function
-    #run_genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
+    run_genbank_annotations(input_files, schema_directory, output_directory, cpu_cores)

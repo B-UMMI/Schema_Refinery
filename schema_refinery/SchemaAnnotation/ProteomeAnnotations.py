@@ -25,22 +25,39 @@ except ModuleNotFoundError:
 
 def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
 
+    necessary_arguments = {
+        "input_table": "\tProteome annotations need an input table argument. -t",
+        "proteomes_directory": "\tProteome annotations need a proteomes directory argument. -d",
+        "schema_directory": "\tProteome annotations need a schema directory argument. -s",
+        "output_directory": "\tProteome annotations need an output directory argument. -o"
+    }
+
+    missing_arguments = []
+
     # Check if all the necessary arguments have been received
     if not input_table:
-        sys.exit("\nError: Proteome annotations need an input table argument. -t")
+        missing_arguments.append("input_table")
     
     if not proteomes_directory:
-        sys.exit("\nError: Proteome annotations need a proteomes directory argument. -d")
-
+        missing_arguments.append("proteomes_directory")
+    
     if not schema_directory:
-        sys.exit("\nError: Proteome annotations need a schema directory argument. -s")
+        missing_arguments.append("schema_directory")
     
     if not output_directory:
-        sys.exit("\nError: Proteome annotations need an output directory argument. -o")
+        missing_arguments.append("output_directory")
+
+    if len(missing_arguments > 0):
+        print("\nError: ")
+        for arg in missing_arguments:
+            print(necessary_arguments[arg])
+        sys.exit(0)
 
     # proteomes are downloaded to proteomes_directory
-    # proteome_fetcher(args.input_table, args.proteomes_directory, args.threads, args.retry)
+    proteome_fetcher(input_table, proteomes_directory, threads, retry)
 
-    # tr_file, sp_file, descriptions_file = proteome_splitter(args.proteomes_directory, args.output_directory)
+    tr_file, sp_file, descriptions_file = proteome_splitter(proteomes_directory, output_directory)
 
-    # proteomeMatcher(args.schema_directory, [tr_file, sp_file, descriptions_file], args.output_directory, args.cpu_cores)
+    proteome_matcher(schema_directory, [tr_file, sp_file, descriptions_file], output_directory, cpu_cores)
+
+    return tr_file, sp_file # TODO some matcher files are missing

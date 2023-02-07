@@ -13,18 +13,24 @@ Code documentation
 """
 
 try:
-    from SchemaAnnotation.GenbankAnnotations import genbank_annotations
-    from SchemaAnnotation.ProteomeAnnotations import proteome_annotations
+    from GenbankAnnotations import genbank_annotations
+    from ProteomeAnnotations import proteome_annotations
+    from AnnotationMerger import annotation_merger
 
 except ModuleNotFoundError:
     from SchemaAnnotation.GenbankAnnotations import genbank_annotations
     from SchemaAnnotation.ProteomeAnnotations import proteome_annotations
+    from SchemaAnnotation.AnnotationMerger import annotation_merger, check_uniprot_arguments
 
 def schema_annotation(args):
     if 'genbank' in args.annotation_options:
-        genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
+        genbank_file = genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
 
     if 'proteomes' in args.annotation_options:
         proteome_annotations(args.input_table, args.proteomes_directory, args.threads, args.retry, args.schema_directory, args.output_directory, args.cpu_cores)
 
-   # TODO run annotation_merger
+    if 'uniprot' in args.annotation_options:
+        check_uniprot_arguments(args.species)
+
+    # TODO complete these arguments
+    annotation_merger(args.species, args.genus, genbank_file, "trembl", "swiss", "match_to_add matcher", "matched matcher", args.output_directory)
