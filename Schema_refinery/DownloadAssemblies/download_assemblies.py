@@ -197,13 +197,11 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
                                 'RefSeq,GenBank,all')
 
     if criterias['file_to_include']  is not None:
-        if (all(ext in criterias['file_to_include'].split(',')  
-                for ext in ['genome',
-                            'rna','protein','cds','gff3','gtf',
-                            'gbff','seq-report','none'])):
-            
+        if not (all(ext in ['genome','rna','protein','cds','gff3','gtf','gbff','seq-report','none'] 
+                for ext in criterias['file_to_include'].split(','))):
+
             wrong_inputs.append('file_to_include: one or more of the following separated '
-                                'by comma: genome,rna,protein,cds,gff3,gtf, '
+                                'by comma: genome,rna,protein,cds,gff3,gtf,'
                                 'gbff,seq-report,none')
 
     if criterias['verify_status'] is not None:
@@ -246,7 +244,7 @@ def main(args):
         for criteria in expected_criterias:
             criterias[criteria] = None
 
-    print("\nFetching assemblies from {} datasets.".format(args.database))
+    print(f"\nFetching assemblies from {args.database} datasets.")
 
     if 'NCBI' in args.database:
         """
@@ -296,12 +294,12 @@ def main(args):
             if not list_to_download:
                 print("\nNo assemblies meet the desired filtering criterias.")
 
-                sys.exit("\nAssemblies that failed are in the following"
+                sys.exit("\nAssemblies that failed are in the following "
                          "TSV file: {}".format(os.path.join(args.output_directory,
-                                                            "metadata_ncbi/id_failed_criteria.tsv.tsv")))
+                                                            "metadata_ncbi/id_failed_criteria.tsv")))
             #download assemblies
             if args.download:
-                
+
                 #Build initial arguments for the subprocess run of datasets
                 arguments = ['datasets','download','genome','accession','--inputfile',
                              os.path.join(args.output_directory,
@@ -312,7 +310,7 @@ def main(args):
 
                 if criterias['file_to_include'] is not None:
                     arguments += ['--include', criterias['file_to_include']]
-                
+
                 print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
                 subprocess.run(arguments, check=False)
@@ -369,7 +367,7 @@ def main(args):
                                                             "metadata_ncbi/id_failed_criteria.tsv.tsv")))
 
             if args.download:
-                
+
                 #Build initial arguments for the subprocess run of datasets
                 arguments = ['datasets','download','genome','accession','--inputfile',
                              os.path.join(args.output_directory,
@@ -377,10 +375,10 @@ def main(args):
 
                 if args.api_key is not None:
                     arguments = arguments + ['--api-key', args.api_key]
-                    
+
                 if criterias['file_to_include'] is not None:
                     arguments += ['--include', criterias['file_to_include']]
-                    
+
                 print("\nDownloading assemblies...")
                 os.chdir(args.output_directory)
                 subprocess.run(arguments, check=False)

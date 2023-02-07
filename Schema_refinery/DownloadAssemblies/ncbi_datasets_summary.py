@@ -13,6 +13,7 @@ import subprocess
 import json
 import csv
 import sys
+import os
 
 def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
                     genome_size,verify_status):
@@ -89,7 +90,7 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
     """
 
     arguments = ['datasets','summary','genome','accession', '--inputfile', id_list_path]
-    
+
     #add other choosen parameters
     if api_key is not None:
 
@@ -103,7 +104,7 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
 
 
     metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE, 
+                                         stderr=subprocess.PIPE,
                                          check=False).stdout)
 
     assemblies_ids = []
@@ -155,7 +156,10 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
         ids = list(csv.reader(id_list,delimiter='\t'))
 
     ids = [item for sublist in ids for item in sublist]
-
+    
+    if len(ids) == 0:
+        os.sys.exit("\nInput file has no assemblies IDs.")
+        
     #if input list has corrects format ids.
     if not all(i.startswith(('GCF_','GCA_')) for i in ids):
         sys.exit('\nOne or more ids in the input list have wrong format. Must '
@@ -171,8 +175,8 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
         print("Verifying assemblies to be downloaded by specified criteria:")
 
         if genome_size is not None and size_threshold is not None:
-            print("Genome size of: {}".format(genome_size))
-            print("Size threshold of: {}".format(size_threshold))
+            print(f"Genome size of: {genome_size}")
+            print(f"Size threshold of: {size_threshold}")
 
         elif genome_size is None and size_threshold is None:
             print("Genome size of: Not specified")
@@ -184,13 +188,13 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
             print("    Size threshold of: Not specified")
 
         if max_contig_number is not None:
-            print("Maximum number of contigs: {}".format(max_contig_number))
+            print(f"Maximum number of contigs: {max_contig_number}")
 
         else:
             print("Maximum number of contigs: Not specified")
 
         if assembly_level is not None:
-            print("assembly level at: {}".format(assembly_level))
+            print(f"assembly level at: {assembly_level}")
 
         else:
             print("assembly level at: Not specified (using Defaut: all)")
@@ -202,7 +206,7 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
             print("Only reference genomes: False")
 
         if verify_status is not None:
-            print("Remove suppressed assemblies: {}".format(verify_status))
+            print(f"Remove suppressed assemblies: {verify_status}")
         else:
             print("Remove suppressed assemblies: True")
 
@@ -279,13 +283,18 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
                                          stderr=subprocess.PIPE,
                                          check=False).stdout)
 
-    metadata_all = metadata['reports']
+    try:
+        metadata_all = metadata['reports']
+        has_summary = True
+    except KeyError:
+        all_assemblies = []
+        has_summary = False
+    else:
+        all_assemblies = []
 
-    all_assemblies = []
+        for meta in metadata_all:
 
-    for meta in metadata_all:
-
-        all_assemblies.append(meta['accession'])
+            all_assemblies.append(meta['accession'])
 
     #add other choosen parameters
     if api_key is not None:
@@ -298,10 +307,13 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
     if reference and reference is not None:
         arguments += ['--reference']
 
-    # find all metadata that pass initial criterias
-    metadata_filtered = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
-                                                  stderr=subprocess.PIPE,
-                                                  check=False).stdout)
+    if has_summary:
+        # find all metadata that pass initial criterias
+        metadata_filtered = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE,
+                                                      check=False).stdout)
+    else:
+        metadata_filtered = {'total_count': 0}
 
     return [all_assemblies,metadata_filtered]
 
@@ -348,10 +360,12 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
 
         print("\nVerifying assemblies to be downloaded by specified criteria:")
 
+        print(f"Taxon : {taxon}")
+
         if assembly_source is not None:
 
             if assembly_source != "all":
-                print("Fetching assemblies from: {}".format(assembly_source))
+                print(f"Fetching assemblies from: {assembly_source}")
 
             else:
                 print("Fetching assemblies from: RefSeq,GenBank")
@@ -360,8 +374,8 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
             print("Fetching assemblies from: RefSeq,GenBank")
 
         if genome_size is not None and size_threshold is not None:
-            print("Genome size of: {}".format(genome_size))
-            print("Size threshold of: {}".format(size_threshold))
+            print(f"Genome size of: {genome_size}")
+            print(f"Size threshold of: {size_threshold}")
 
         elif genome_size is None and size_threshold is None:
             print("Genome size of: Not specified")
@@ -373,13 +387,13 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
             print("    Size threshold of: Not specified")
 
         if max_contig_number is not None:
-            print("Maximum number of contigs: {}".format(max_contig_number))
+            print(f"Maximum number of contigs: {max_contig_number}")
 
         else:
             print("Maximum number of contigs: Not specified")
 
         if assembly_level is not None:
-            print("assembly level at: {}".format(assembly_level))
+            print(f"assembly level at: {assembly_level}")
 
         else:
             print("assembly level at: Not specified (using Defaut: all)")
@@ -391,7 +405,7 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
             print("Only reference genomes: False")
 
         if verify_status is not None:
-            print("Remove suppressed assemblies: {}".format(verify_status))
+            print(f"Remove suppressed assemblies: {verify_status}")
         else:
             print("Remove suppressed assemblies: True")
 
