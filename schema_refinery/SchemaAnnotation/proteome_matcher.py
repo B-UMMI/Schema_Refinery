@@ -170,3 +170,5 @@ def proteome_matcher(schema_directory:str, proteome_splitter_files_list:list, ou
         spout.write(sp_outtext+'\n')
 
     print('SwissProt annotations available at {0}'.format(sp_annotations))
+
+    return tr_annotations, sp_annotations
