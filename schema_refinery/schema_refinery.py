@@ -37,6 +37,16 @@ def schema_annotation_module():
                         default = '',
                         help='Uniprot Finder output for genus')
 
+    parser.add_argument('-ma', '--match_to_add', type=str, required=False,
+                        dest='match_to_add',
+                        default = '',
+                        help='Annotation of another schema, needed with --matched_schemas')
+
+    parser.add_argument('-ms', '--matched_schemas', type=str, required=False,
+                        dest='matched_schemas',
+                        default = '',
+                        help='Schemas matched loci. Needed with match_to_add')
+
     parser.add_argument('-i', type=str, required=False,
                             dest='input_files',
                             help='Path to the directory that contains '
@@ -74,7 +84,7 @@ def schema_annotation_module():
                             help='Number of CPU cores to pass to BLAST.')
 
     parser.add_argument('-o', '--output-directory', type=str,
-                        required=False, dest='output_directory',
+                        required=True, dest='output_directory',
                         help='Path to the output directory.')
 
     args = parser.parse_args()
@@ -111,7 +121,6 @@ def main():
 
     process = sys.argv[1]
     modules_info[process][1]()
-
 
 if __name__ == '__main__':
 

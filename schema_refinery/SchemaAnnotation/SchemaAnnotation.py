@@ -27,10 +27,9 @@ def schema_annotation(args):
         genbank_file = genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
 
     if 'proteomes' in args.annotation_options:
-        proteome_annotations(args.input_table, args.proteomes_directory, args.threads, args.retry, args.schema_directory, args.output_directory, args.cpu_cores)
+        trembl, swiss =proteome_annotations(args.input_table, args.proteomes_directory, args.threads, args.retry, args.schema_directory, args.output_directory, args.cpu_cores)
 
     if 'uniprot' in args.annotation_options:
-        check_uniprot_arguments(args.species)
+        check_uniprot_arguments(args.species, args.match_to_add, args.matched_schemas)
 
-    # TODO complete these arguments
-    annotation_merger(args.species, args.genus, genbank_file, "trembl", "swiss", "match_to_add matcher", "matched matcher", args.output_directory)
+    annotation_merger(args.species, args.genus, genbank_file, trembl, swiss, args.match_to_add, args.matched_schemas, args.output_directory)

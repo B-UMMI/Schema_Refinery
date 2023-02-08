@@ -148,6 +148,29 @@ def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss,
         
     return merged_table.to_csv(os.path.join(output_path,"merged_file.tsv"),sep='\t',index=False)
 
-def check_uniprot_arguments(species):
+def check_uniprot_arguments(species, match_to_add, matched_schemas):
+
+    necessary_arguments = {
+        "species": "\tUniprot annotations need a species file argument, outputted by Uniprot Finder. -ps",
+        "match_to_add": "\tUniprot annotations need a matches to add file alongside the matched schemas file. -ma",
+        "matched_schemas": "\tUniprot annotations need a matched schemas file alongside the matches to add file. -ms",
+        "output_directory": "\tUniprot annotations need an output directory argument. -o"
+    }
+
+    missing_arguments = []
+
     if not species:
-        sys.exit("\nError: Uniprot annotations need a species file argument, outputted by Uniprot Finder. -ps")
+        missing_arguments.append("species")
+
+    if match_to_add and not matched_schemas:
+        missing_arguments.append("matched_schemas")
+
+    if not match_to_add and matched_schemas:
+        missing_arguments.append("match_to_add")
+
+    if len(missing_arguments > 0):
+        print("\nError: ")
+        for arg in missing_arguments:
+            print(necessary_arguments[arg])
+        sys.exit(0)
+

@@ -58,6 +58,6 @@ def proteome_annotations(input_table, proteomes_directory, threads, retry, schem
 
     tr_file, sp_file, descriptions_file = proteome_splitter(proteomes_directory, output_directory)
 
-    proteome_matcher(schema_directory, [tr_file, sp_file, descriptions_file], output_directory, cpu_cores)
+    tr_annotations, sp_annotations = proteome_matcher(schema_directory, [tr_file, sp_file, descriptions_file], output_directory, cpu_cores)
 
-    return tr_file, sp_file # TODO some matcher files are missing
+    return tr_annotations, sp_annotations
