@@ -23,9 +23,15 @@ def read_table(id_table_path):
     """
     Reads TSV file containing Biosample id and transforms into pandas dataframe.
 
-    input: TSV file path
-    
-    output: pandas dataframe object
+    Parameter
+    ---------
+
+    id_table_path : str
+
+    Returns
+    -------
+
+    return : pandas dataframe object
     """
     with open(id_table_path) as id_table:
 
@@ -36,12 +42,18 @@ def find_internal_id(query_id):
     To extract all metadata from the chosen Biosample it is needed to obtain
     internal id for all of the Biosamples.
 
-    This function with an input of Biosample fetches the internal id
+    This function with an input of Biosample id fetches the internal id in NCBI
     for that Biosample.
 
-    input: Biosample id
-    
-    output: internal id
+    Parameter
+    ---------
+    query_id : str
+        Biosample id
+
+    Returns
+    -------
+    internal_id : int
+        internal id used by NCBI entrez
     """
     try:
         handle = Entrez.esearch(db="biosample", term=query_id)
@@ -61,9 +73,15 @@ def download_query(internal_id):
     This function with and input of an internal id for a Biosample, fetches
     the metadata related to that Biosample in xml object tree.
 
-    input: internal id
-    
-    output: xml tree object
+    Parameter
+    ---------
+    internal_id : int
+        internal id used by NCBI entrez
+
+    Returns
+    -------
+
+    return : xml tree object
     """
 
     try:
@@ -85,9 +103,16 @@ def get_metadata(xml_root):
     This function based on input of an xml object tree, extracts relevant
     metadata inside a dictionary, where key is column and value is metadata
 
-    input: xml tree object
-    
-    output: dictionary
+    Parameter
+    ---------
+
+    xml_root : xml tree object
+
+    Returns
+    -------
+
+    return : dict
+        that contains metadata
     """
 
     if not "Failed" in xml_root:
@@ -115,9 +140,16 @@ def write_to_file(metadata_df,output_directory):
     """
     Writes dataframe into TSV file format at output directory.
 
-    input: pandas dataframe object
-    
-    output: TSV file inside output path
+    Parameter
+    ---------
+
+    metadata_df : pandas dataframe object
+    output_directory: str
+
+    Returns
+    -------
+
+    Creates file in the output directory
     """
     metadata_df.to_csv(os.path.join(output_directory, "metadata.tsv"),
                        mode='a', header=not os.path.exists(os.path.join(
@@ -126,11 +158,21 @@ def write_to_file(metadata_df,output_directory):
 def multi_thread_run(query,retry):
     """
     Function that enables main function to run multithreading for faster metadata
-    fetching
+    fetching.
 
-    input: Biosample id
-    
-    output: dictionary containg metadata for the input Biosample
+    Parameter
+    ---------
+
+    query : str
+        Biosample id
+    retry : int
+        number of retries if fetching fails
+
+    Returns
+    -------
+
+    return : dict
+        that contains metadata
     """
 
 

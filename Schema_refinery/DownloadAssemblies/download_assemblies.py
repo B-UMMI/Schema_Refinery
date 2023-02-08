@@ -197,7 +197,7 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
                                 'RefSeq,GenBank,all')
 
     if criterias['file_to_include']  is not None:
-        if not (all(ext in ['genome','rna','protein','cds','gff3','gtf','gbff','seq-report','none'] 
+        if not (all(ext in ['genome','rna','protein','cds','gff3','gtf','gbff','seq-report','none']
                 for ext in criterias['file_to_include'].split(','))):
 
             wrong_inputs.append('file_to_include: one or more of the following separated '
@@ -224,10 +224,20 @@ def main(args):
     From the input arguments this function determines which function to use to
     download assemblies.
     """
-    if args.input_table is not None and args.database == 'ENA661K':
-        sys.exit("\nError: Only assemblies from NCBI can be fetched from a input file.")
+    #if both input table and taxon are present
+    if args.input_table is not None and args.taxon is not None:
+        sys.exit("\nError: Downloading from input table or downloading by taxon are "
+              "mutually exclusive.")
+    #Table or taxon name must be present
+    elif args.input_table is None and args.taxon is None:
+        sys.exit("\nError: Either input table must be parsed or taxon.")
 
+    #if input table and database is set as ENA661k.
+    elif args.input_table is not None and 'ENA661K' in args.database:
+        sys.exit("\nError: Only assemblies from NCBI can be fetched from a input file. "
+                 "ENA661K was parsed.")
 
+    #Import filtering criterias
     expected_criterias = ['abundance', 'genome_size', 'size_threshold', 'max_contig_number',
                           'known_st', 'any_quality', 'ST_list_path', 'assembly_level',
                           'reference_genome', 'assembly_source', 'file_to_include',
@@ -427,6 +437,8 @@ def main(args):
 
             #remove biosamples file
             os.remove(os.path.join(args.output_directory,'metadata_ncbi/biosamples.tsv'))
+    #Download from ENA661k if only taxon was passed, in case input table is present
+    #Skip this section
     if 'ENA661K' in args.database:
         """
         This block of code executes everything related to ENA661K assemblies

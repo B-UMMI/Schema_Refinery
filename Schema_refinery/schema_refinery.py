@@ -32,18 +32,22 @@ def download_module():
                         required=True, dest='database',
                         nargs='+',
                         choices = ['NCBI','ENA661K'],
-                        help='Databases from which assemblies will be downloaded. ')
-
-    parser.add_argument('-t', '--taxon', type=str,
-                        required=True, dest='taxon',
-                        help='Scientific name of the taxon.')
+                        help='Databases from which assemblies will be downloaded.')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
                         help='Path to the output directory.')
 
+    parser.add_argument('-e', '--email', type=str,
+                        required=True, dest='email',
+                        help='Entrez email parameter.')
+
+    parser.add_argument('-t', '--taxon', type=str,
+                        required=False, dest='taxon',
+                        help='Scientific name of the taxon.')
+
     parser.add_argument('-th', '--threads', type=int,
-                        required=False, default=2,
+                        required=False, default=3,
                         dest='threads',
                         help='Number of threads for download.')
 
@@ -53,13 +57,10 @@ def download_module():
                         help='Maximum number of retries when a '
                              'download fails.')
 
-    parser.add_argument('-e', '--email', type=str,
-                        required=True, dest='email',
-                        help='Entrez email parameter.')
-
     parser.add_argument('-k', '--api-key', type=str,
                         required=False, dest='api_key',
-                        help='Personal API key from NCBI. If not set, only 3 queries per second are allowed. ' 
+                        help='Personal API key from NCBI. '
+                        'If not set, only 3 queries per second are allowed. '
                         '10 queries per second otherwise with a valid API key.')
 
     parser.add_argument('-fm', '--fetch-metadata',

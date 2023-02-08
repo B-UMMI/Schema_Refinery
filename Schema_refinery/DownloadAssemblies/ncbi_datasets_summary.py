@@ -230,7 +230,7 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
                                                     assembly_level,
                                                     reference,
                                                     api_key)
-
+    #Verify assemblies
     if metadata_all['total_count'] != 0:
         if verify_list:
             for metadata in metadata_all['reports']:
@@ -313,6 +313,8 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
                                                       stderr=subprocess.PIPE,
                                                       check=False).stdout)
     else:
+        #If assemblies of that a taxon don't have summary it may be cause due to
+        #writing wrong taxon
         metadata_filtered = {'total_count': 0}
 
     return [all_assemblies,metadata_filtered]
