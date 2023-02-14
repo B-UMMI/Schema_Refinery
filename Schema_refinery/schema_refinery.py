@@ -8,9 +8,9 @@ try:
     from SchemaAnnotation import schema_annotation
     from utils import parameters_validation as pv
 except:
-    from schema_refinery.__init__ import __version__
-    from schema_refinery.SchemaAnnotation import schema_annotation
-    from schema_refinery.utils import parameters_validation as pv
+    from Schema_refinery.__init__ import __version__
+    from Schema_refinery.SchemaAnnotation import schema_annotation
+    from Schema_refinery.utils import parameters_validation as pv
 
 version = __version__
 

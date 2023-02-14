@@ -24,7 +24,7 @@ try:
     from utils.download_functions import download_file
 
 except ModuleNotFoundError:
-    from schema_refinery.utils.download_functions import download_file
+    from Schema_refinery.utils.download_functions import download_file
 
 
 
