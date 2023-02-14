@@ -19,9 +19,9 @@ try:
     from proteome_matcher import proteome_matcher
 
 except ModuleNotFoundError:
-    from schema_refinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
-    from schema_refinery.SchemaAnnotation.proteome_splitter import proteome_splitter
-    from schema_refinery.SchemaAnnotation.proteome_matcher import proteome_matcher
+    from Schema_refinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
+    from Schema_refinery.SchemaAnnotation.proteome_splitter import proteome_splitter
+    from Schema_refinery.SchemaAnnotation.proteome_matcher import proteome_matcher
 
 def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
 

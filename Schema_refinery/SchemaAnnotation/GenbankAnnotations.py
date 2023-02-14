@@ -23,8 +23,8 @@ try:
     from utils.sequence_functions import translate_sequence
 
 except ModuleNotFoundError:
-    from schema_refinery.utils.blast_functions import make_blast_db, run_blast
-    from schema_refinery.utils.sequence_functions import translate_sequence
+    from Schema_refinery.utils.blast_functions import make_blast_db, run_blast
+    from Schema_refinery.utils.sequence_functions import translate_sequence
 
 def get_protein_annotation_fasta(seqRecord):
     """ Gets the translated protein from a Genbank file.

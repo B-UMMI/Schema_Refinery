@@ -21,9 +21,9 @@ try:
     from MatchSchemas import check_match_schemas_arguments, match_schemas
 
 except ModuleNotFoundError:
-    from schema_refinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations
-    from schema_refinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations
-    from schema_refinery.SchemaAnnotation.AnnotationMerger import annotation_merger
+    from Schema_refinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations
+    from Schema_refinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations
+    from Schema_refinery.SchemaAnnotation.AnnotationMerger import annotation_merger
 
 def check_uniprot_arguments(uniprot_species, output_directory):
 
