@@ -15,7 +15,6 @@ Code documentation
 import os
 import sys
 import csv
-import argparse
 import itertools
 import subprocess
 
@@ -227,8 +226,7 @@ def flatten_list(list_to_flatten):
     return flattened_list
 
 
-def main(query_schema, subject_schema, output_path, blast_score_ratio,
-         cpu_cores):
+def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, cpu_cores):
 
     # create output directory
     if os.path.isdir(output_path) is True:
@@ -362,42 +360,36 @@ def main(query_schema, subject_schema, output_path, blast_score_ratio,
     with open(no_match_file, 'w') as nm:
         nm.write(no_match_lines+'\n')
 
+    return matches_file
 
-def parse_arguments():
+def check_match_schemas_arguments(query_schema, subject_schema, old_schema_columns, match_to_add, output_directory):
+    necessary_arguments = {
+        "query_schema": "\tMatchSchemas sub-module needs a query schema directory that will be matched against the subject schema. -qs",
+        "subject_schema": "\tMatchSchemas sub-module needs a subject schema directory that will be matched against the query schema. -ss",
+        "old_schema_columns": "\tMatchSchemas sub-module needs an old schema columns argument that receives one or more column names that are to be merged into the new annotations table. -oc",
+        "match_to_add": "\tMatchSchemas sub-module needs a matches to add file that has the old schema's annotations. -ma",
+        "output_directory": "\tMatchSchemas sub-module needs an output directory argument. -o"
+    }
 
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    missing_arguments = []
 
-    parser.add_argument('-q', type=str, required=True,
-                        dest='query_schema',
-                        help='Path to the query schema directory.'
-                             'This schema will be matched against '
-                             'the subject schema.')
+    if not query_schema:
+        missing_arguments.append("query_schema")
 
-    parser.add_argument('-s', type=str, required=True,
-                        dest='subject_schema',
-                        help='Path to que subject schema directory.')
+    if not subject_schema:
+        missing_arguments.append("subject_schema")
 
-    parser.add_argument('-o', type=str, required=True,
-                        dest='output_path',
-                        help='Path to the output directory.')
+    if not old_schema_columns:
+        missing_arguments.append("old_schema_columns")
 
-    parser.add_argument('--bsr', type=float, required=False,
-                        default=0.6, dest='blast_score_ratio',
-                        help='Minimum BSR value to consider aligned '
-                             'alleles as alleles for the same locus.')
+    if not match_to_add:
+        missing_arguments.append("match_to_add")
+    
+    if not output_directory:
+        missing_arguments.append("output_directory")
 
-    parser.add_argument('--cpu', type=int, required=False,
-                        default=1, dest='cpu_cores',
-                        help='Number of CPU cores to pass to BLAST.')
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-
-    main(**vars(args))
+    if len(missing_arguments > 0):
+        print("\nError: ")
+        for arg in missing_arguments:
+            print(necessary_arguments[arg])
+        sys.exit(0)

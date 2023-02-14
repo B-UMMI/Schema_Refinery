@@ -3,7 +3,7 @@ This Script merges annotations from different sources into one single comprehens
 
 Inputs:
 
-    --prot_species and --prot_genus, are outputs received from ProtFinder chewBBACA module
+    --uniprot_species and --uniprot_genus, are outputs received from ProtFinder chewBBACA module
 
     --genbank_file , output from genbank annotations script in Schema_refinery
 
@@ -20,9 +20,7 @@ Outputs:
 """
 
 import os
-import sys
 import pandas as pd
-import argparse
 
 def merger(table_1, table_2):
 
@@ -48,19 +46,19 @@ def merger(table_1, table_2):
 
     return merged
 
-def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss, match_to_add, matched, output_path):
+def annotation_merger(uniprot_species, uniprot_genus, genebank, proteome_trembl, proteome_swiss, match_to_add, old_schema_columns, matched_schemas, output_path):
     
     """
     Imports and convertions to right types, with some changes to columns names
     """
 
-    if species != '':
-        table_species = pd.read_csv(species, delimiter="\t")
+    if uniprot_species != '':
+        table_species = pd.read_csv(uniprot_species, delimiter="\t")
 
         table_species.convert_dtypes()
 
-    if genus != '':
-        table_genus = pd.read_csv(genus, delimiter="\t")
+    if uniprot_genus != '':
+        table_genus = pd.read_csv(uniprot_genus, delimiter="\t")
 
         table_genus.convert_dtypes()
 
@@ -83,14 +81,14 @@ def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss,
 
         table_proteome_s.convert_dtypes()
 
-    if match_to_add != '' and matched != '':
+    if match_to_add != '' and matched_schemas != '':
         match_add = pd.read_csv(match_to_add, delimiter="\t")
-        matched_table = pd.read_csv(matched, delimiter="\t",names=['Locus_ID','Locus','BSR_schema_match'])
+        matched_table = pd.read_csv(matched_schemas, delimiter="\t",names=['Locus_ID','Locus','BSR_schema_match'])
 
         match_add.convert_dtypes()
         matched_table.convert_dtypes()        
 
-        match_add = match_add[['Locus','User_locus_name','Custom_annotatiom']]
+        match_add = match_add[['Locus','User_locus_name'] + old_schema_columns]
 
     if not os.path.isdir(output_path):
         os.mkdir(output_path)
@@ -103,11 +101,11 @@ def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss,
     choosing only the essential columns from each table.
     """
 
-    if species != '':
+    if uniprot_species != '':
 
         merged_table = merger(table_species, merged_table)
 
-    if genus != '':
+    if uniprot_genus != '':
 
         merged_table = pd.merge(table_genus[['Locus_ID','Proteome_ID','Proteome_Product',
                                 'Proteome_Gene_Name','Proteome_Species','Proteome_BSR']],
@@ -130,7 +128,7 @@ def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss,
         merged_table = merger(table_proteome_s, merged_table)  
 
             
-    if match_to_add != '' and matched != '':
+    if match_to_add != '' and matched_schemas != '':
 
         # merge columns so that both table to add and reference have locus_ID
         merged_match = pd.merge(match_add, matched_table, on = 'Locus', 
@@ -147,30 +145,4 @@ def annotation_merger(species, genus, genebank, proteome_trembl, proteome_swiss,
                                 how = 'left')
         
     return merged_table.to_csv(os.path.join(output_path,"merged_file.tsv"),sep='\t',index=False)
-
-def check_uniprot_arguments(species, match_to_add, matched_schemas):
-
-    necessary_arguments = {
-        "species": "\tUniprot annotations need a species file argument, outputted by Uniprot Finder. -ps",
-        "match_to_add": "\tUniprot annotations need a matches to add file alongside the matched schemas file. -ma",
-        "matched_schemas": "\tUniprot annotations need a matched schemas file alongside the matches to add file. -ms",
-        "output_directory": "\tUniprot annotations need an output directory argument. -o"
-    }
-
-    missing_arguments = []
-
-    if not species:
-        missing_arguments.append("species")
-
-    if match_to_add and not matched_schemas:
-        missing_arguments.append("matched_schemas")
-
-    if not match_to_add and matched_schemas:
-        missing_arguments.append("match_to_add")
-
-    if len(missing_arguments > 0):
-        print("\nError: ")
-        for arg in missing_arguments:
-            print(necessary_arguments[arg])
-        sys.exit(0)
 

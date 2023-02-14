@@ -20,7 +20,13 @@ import socket
 import concurrent.futures
 from itertools import repeat
 
-from utils.download_functions import download_file
+try:
+    from utils.download_functions import download_file
+
+except ModuleNotFoundError:
+    from schema_refinery.utils.download_functions import download_file
+
+
 
 # set socket timeout for urllib calls
 socket.setdefaulttimeout(30)

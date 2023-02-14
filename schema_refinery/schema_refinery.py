@@ -9,7 +9,7 @@ try:
     from utils import parameters_validation as pv
 except:
     from schema_refinery.__init__ import __version__
-    from SchemaAnnotation.SchemaAnnotation import schema_annotation
+    from schema_refinery.SchemaAnnotation import schema_annotation
     from schema_refinery.utils import parameters_validation as pv
 
 version = __version__
@@ -24,30 +24,20 @@ def schema_annotation_module():
     parser.add_argument('-ao', '--annotation-options', type=str,
                         required=True, dest='annotation_options',
                         nargs='+',
-                        choices = ['proteomes','genbank', 'uniprot'],
+                        choices = ['proteomes','genbank', 'uniprot', 'matchSchemas'],
                         help='Annotation options to run '
-                             'proteomes, genbank and/or uniprot')
+                             'proteomes, genbank, uniprot and/or matchSchemas')
 
-    parser.add_argument('-ps', '--prot_species', type=str, required=False,
-                        dest='species',
+    parser.add_argument('-us', '--uniprot_species', type=str, required=False,
+                        dest='uniprot_species',
                         help='Uniprot Finder output for species')
 
-    parser.add_argument('-pg', '--prot_genus', type=str, required=False,
-                        dest='genus',
+    parser.add_argument('-ug', '--uniprot_genus', type=str, required=False,
+                        dest='uniprot_genus',
                         default = '',
                         help='Uniprot Finder output for genus')
 
-    parser.add_argument('-ma', '--match_to_add', type=str, required=False,
-                        dest='match_to_add',
-                        default = '',
-                        help='Annotation of another schema, needed with --matched_schemas')
-
-    parser.add_argument('-ms', '--matched_schemas', type=str, required=False,
-                        dest='matched_schemas',
-                        default = '',
-                        help='Schemas matched loci. Needed with match_to_add')
-
-    parser.add_argument('-i', type=str, required=False,
+    parser.add_argument('-i', '--input-files', type=str, required=False,
                             dest='input_files',
                             help='Path to the directory that contains '
                                 'Genbank files with annotations to '
@@ -62,7 +52,7 @@ def schema_annotation_module():
                         help='TSV file downloaded from UniProt '
                             'that contains list of proteomes.')
 
-    parser.add_argument('-d', type=str, required=False,
+    parser.add_argument('-d', '--proteomes-directory', type=str, required=False,
                             dest='proteomes_directory',
                             help='Path to directory with UniProt '
                                 'proteomes in Fasta format.')
@@ -86,6 +76,43 @@ def schema_annotation_module():
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
                         help='Path to the output directory.')
+    
+    parser.add_argument('-qs', '--query-schema', type=str, required=False,
+                        dest='query_schema',
+                        help='Path to the query schema directory.'
+                             'This schema will be matched against '
+                             'the subject schema.'
+                             'This argument is needed by the Match Schemas'
+                             'sub-module.')
+
+    parser.add_argument('-ss', '--subject-schema', type=str, required=False,
+                        dest='subject_schema',
+                        help='Path to que subject schema directory.'
+                             'This argument is needed by the Match Schemas'
+                             'sub-module.')
+    
+    parser.add_argument('-oc', '--old-schema-columns', type=str, required=False,
+                        nargs='+',
+                        dest='old_schema_columns',
+                        help='Columns from the old schema annotations to merge into'
+                             'the new schema annotations table being created.'
+                             'This argument is needed by the Match Schemas'
+                             'sub-module.')
+    
+    parser.add_argument('-ma', '--match_to_add', type=str, required=False,
+                        dest='match_to_add',
+                        default = '',
+                        help='Annotation of another schema, needed with '
+                             '--old-schema-columns.'
+                             'This argument is needed by the Match Schemas'
+                             'sub-module.')
+    
+    parser.add_argument('--bsr', type=float, required=False,
+                        default=0.6, dest='blast_score_ratio',
+                        help='Minimum BSR value to consider aligned '
+                             'alleles as alleles for the same locus.'
+                             'This argument is optional for the Match Schemas'
+                             'sub-module.')
 
     args = parser.parse_args()
     del args.SchemaAnnotation
