@@ -19,8 +19,15 @@ import pickle
 
 from Bio import SeqIO
 
-from utils.blast_functions import make_blast_db, run_blast
-from utils.sequence_functions import translate_sequence
+try:
+    from utils.blast_functions import make_blast_db, run_blast
+    from utils.sequence_functions import translate_sequence
+
+except ModuleNotFoundError:
+    from schema_refinery.utils.blast_functions import make_blast_db, run_blast
+    from schema_refinery.utils.sequence_functions import translate_sequence
+
+
 
 # proteome_splitter_files_list has the TrEMBL file in index 0,
 # Swiss-Prot in index 1 and descriptions file in index 2
