@@ -33,11 +33,11 @@ def tryeval(val):
 
     Parameter
     ---------
-    val : any
+    val : any type
 
     Returns
     -------
-    val : any
+    val : any type
         converted to the right type.
     """
 
@@ -207,6 +207,10 @@ def filtering_criteria_variables(filtering_criteria_path, expected_criterias):
     if criterias['verify_status'] is not None:
         if type(criterias['verify_status']) is not bool:
             wrong_inputs.append('verify_status: bool or None')
+            
+    if criterias['exclude_atypical'] is not None:
+        if type(criterias['exclude_atypical']) is not bool:
+            wrong_inputs.append('exclude_atypical: bool or None')
 
     if len(wrong_inputs) > 0:
         print('\nFiltering table inputs have wrong values or types:')
@@ -241,7 +245,7 @@ def main(args):
     expected_criterias = ['abundance', 'genome_size', 'size_threshold', 'max_contig_number',
                           'known_st', 'any_quality', 'ST_list_path', 'assembly_level',
                           'reference_genome', 'assembly_source', 'file_to_include',
-                          'verify_status']
+                          'verify_status','exclude_atypical']
 
     criterias = {}
 
@@ -281,6 +285,7 @@ def main(args):
                                                           criterias['assembly_level'],
                                                           criterias['reference_genome'],
                                                           criterias['verify_status'],
+                                                          criterias['exclude_atypical'],
                                                           args.api_key)
 
             if not os.path.exists(os.path.join(args.output_directory,'metadata_ncbi')):
@@ -349,6 +354,7 @@ def main(args):
                                                           criterias['reference_genome'],
                                                           criterias['assembly_source'],
                                                           criterias['verify_status'],
+                                                          criterias['exclude_atypical'],
                                                           args.api_key)
 
             if not os.path.exists(os.path.join(args.output_directory,'metadata_ncbi')):
@@ -465,7 +471,6 @@ def main(args):
                                       criterias['max_contig_number'],
                                       criterias['known_st'],
                                       criterias['any_quality'],
-                                      args.stride,
                                       args.retry,
                                       criterias['ST_list_path'],
                                       args.threads)

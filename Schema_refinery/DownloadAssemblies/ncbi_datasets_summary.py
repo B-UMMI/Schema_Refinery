@@ -65,7 +65,8 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
     return True
 
 
-def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key):
+def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,
+                         exclude_atypical,api_key):
 
     """
     This function based on an input id fetches json object (dict) for all
@@ -101,6 +102,9 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
 
     if reference and reference is not None:
         arguments += ['--reference']
+    
+    if exclude_atypical or exclude_atypical is None:
+        arguments += ['--exclude-atypical']
 
 
     metadata = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
@@ -126,7 +130,7 @@ def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,api_key
     return [failed_list,metadata_all]
 
 def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_size,
-                          assembly_level,reference,verify_status,api_key):
+                          assembly_level,reference,verify_status,exclude_atypical,api_key,):
     """
     Function that from a list of ids and filtering criterea, filters the id list.
 
@@ -156,10 +160,10 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
         ids = list(csv.reader(id_list,delimiter='\t'))
 
     ids = [item for sublist in ids for item in sublist]
-    
+
     if len(ids) == 0:
         os.sys.exit("\nInput file has no assemblies IDs.")
-        
+
     #if input list has corrects format ids.
     if not all(i.startswith(('GCF_','GCA_')) for i in ids):
         sys.exit('\nOne or more ids in the input list have wrong format. Must '
@@ -209,7 +213,12 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
             print(f"Remove suppressed assemblies: {verify_status}")
         else:
             print("Remove suppressed assemblies: True")
-
+        
+        if exclude_atypical is not None:
+            print(f"Verify if assemblies are atypical: {exclude_atypical}")
+        else:
+            print("Verify if assemblies are atypical: True")
+            
         verify_list = True
 
     else:
@@ -229,6 +238,7 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
                                                     id_list_path,
                                                     assembly_level,
                                                     reference,
+                                                    exclude_atypical,
                                                     api_key)
     #Verify assemblies
     if metadata_all['total_count'] != 0:
@@ -250,7 +260,7 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
     return [failed_list,accepted_list]
 
 def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
-                            api_key):
+                            exclude_atypical,api_key):
     """
     This function based on an input taxon fetches json object (dict).
 
@@ -306,7 +316,10 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
 
     if reference and reference is not None:
         arguments += ['--reference']
-
+        
+    if exclude_atypical or exclude_atypical is None:
+        arguments += ['--exclude-atypical']
+        
     if has_summary:
         # find all metadata that pass initial criterias
         metadata_filtered = json.loads(subprocess.run(arguments,stdout=subprocess.PIPE,
@@ -321,7 +334,7 @@ def metadata_fetcher_taxon(taxon,assembly_level,reference,assembly_source,
 
 def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
                           assembly_level,reference,assembly_source,verify_status,
-                          api_key):
+                          exclude_atypical,api_key):
     """
     Fetches the ids that pass the filtering criteria.
 
@@ -410,6 +423,11 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
             print(f"Remove suppressed assemblies: {verify_status}")
         else:
             print("Remove suppressed assemblies: True")
+            
+        if exclude_atypical is not None:
+            print(f"Verify if assemblies are atypical: {exclude_atypical}")
+        else:
+            print("Verify if assemblies are atypical: True")
 
         verify_list = True
 
@@ -427,6 +445,7 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
                                                         assembly_level,
                                                         reference,
                                                         assembly_source,
+                                                        exclude_atypical,
                                                         api_key)
     accepted_list = []
     failed_list = []

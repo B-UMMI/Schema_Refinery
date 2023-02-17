@@ -124,14 +124,14 @@ def download_from_ena(sample, outfile1, outfile2):
 
 def download_from_sra(sample, outfile1, outfile2):
 
-    fastq_command = ["fastq-dump", sample, "--split-files", "-v"]
+    fastq_command = ["fastq-dump","--gzip", sample, "--split-files", "-v"]
     res = subprocess.run(fastq_command)
     if (res.returncode != 0):
         print("The exit code was: %d" % res.returncode)
         print("Something went wrong...")
 
     print(f"Moving file 1")
-    mv_command = ["mv", f'{sample}_1.fastq', outfile1[:-3]]
+    mv_command = ["mv", f'{sample}_1.fastq.gz', outfile1[:-3]]
     print()
     res = subprocess.run(mv_command)
     if (res.returncode != 0):
@@ -139,7 +139,7 @@ def download_from_sra(sample, outfile1, outfile2):
         print("Something went wrong...")
 
     print(f"Moving file 2")
-    mv_command = ["mv", f'{sample}_2.fastq', outfile2[:-3]]
+    mv_command = ["mv", f'{sample}_2.fastq.gz', outfile2[:-3]]
     res = subprocess.run(mv_command)
     if (res.returncode != 0):
         print("The exit code was: %d" % res.returncode)
@@ -175,7 +175,7 @@ def main(accession_ids_file, output_directory):
     for id in accession_ids:
         sample = id[0]
         # Accession id directory
-        accession_id_dir = f'{output_directory}/{sample}/'
+        accession_id_dir = f'{output_directory}/{sample}'
 
         if not os.path.exists(accession_id_dir):
             os.mkdir(accession_id_dir)

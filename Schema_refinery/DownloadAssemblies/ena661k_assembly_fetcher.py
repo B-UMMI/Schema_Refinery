@@ -162,7 +162,7 @@ def download_ftp_file(data, retry, verify=True, progress=False):
 
 def main(sr_path, taxon, output_directory,
          ftp_download, abundance, genome_size, size_threshold,
-         max_contig_number, known_st, any_quality, stride,
+         max_contig_number, known_st, any_quality,
          retry, st, threads):
     """
     Main function of the ena661k_assembly_fetcher.
@@ -261,15 +261,15 @@ def main(sr_path, taxon, output_directory,
           ''.format(len(taxon_lines), taxon))
 
     if len(taxon_lines) == 0:
-        print('Did not find matches for {0}.'.format(taxon))
+        print(f'Did not find matches for {taxon}.')
         sys.exit(0)
 
     print("\nFiltering by chosen criteria:")
 
     #Print filtering criteria.
     if genome_size is not None and size_threshold is not None:
-        print("Genome size of: {}".format(genome_size))
-        print("Size threshold of: {}".format(size_threshold))
+        print(f"Genome size of: {genome_size}")
+        print(f"Size threshold of: {size_threshold}")
 
     elif genome_size is None and size_threshold is None:
         print("Genome size of: Not specified")
@@ -281,12 +281,12 @@ def main(sr_path, taxon, output_directory,
         print("    Size threshold of: Not specified")
 
     if abundance is not None:
-        print("Abundance of: {}".format(abundance))
+        print(f"Abundance of: {abundance}")
     else:
         print("Abundance of: Not specified")
 
     if max_contig_number is not None:
-        print("Maximum number of contigs: {}".format(max_contig_number))
+        print(f"Maximum number of contigs: {max_contig_number}")
     else:
         print("Maximum number of contigs: Not specified")
 
@@ -477,7 +477,7 @@ def main(sr_path, taxon, output_directory,
                 else:
                     failed += 1
 
-            print('\nFailed download for {0} files.'.format(failed))
+            print(f'\nFailed download for {failed} files.')
 
 
 def parse_arguments():
