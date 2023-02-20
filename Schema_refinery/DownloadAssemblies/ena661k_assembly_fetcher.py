@@ -186,7 +186,6 @@ def main(sr_path, taxon, output_directory,
     known_st: bool
         If assemblies to be downloaded must have ST.
     any_quality: bool
-    stride: int
     retry: int
     st: str
         Path to the file containing desired ST.
@@ -424,20 +423,9 @@ def main(sr_path, taxon, output_directory,
         # get FTP paths only for selected samples
         taxon_paths = {i: sample_paths[i] for i in sample_ids}
 
-        if stride:
-            interval_list = stride.split(':')
-            low = int(interval_list[0])-1
-            high = int(interval_list[1])
 
-            # make sure the interval doesn't go outside of the
-            # sample_ids list bounds
-            if high > len(sample_ids):
-                high = len(sample_ids)
-                # update the stride string for the zip archive name
-                stride = str(low + 1) + ':' + str(high)
-        else:
-            low = 0
-            high = len(taxon_paths)
+        low = 0
+        high = len(taxon_paths)
 
         # list files in output directory
         local_files = os.listdir(output_directory)
@@ -556,15 +544,6 @@ def parse_arguments():
                         help='Download all assemblies, even the ones '
                              'that are not high quality.')
 
-    parser.add_argument('-stride', '--stride', type=str,
-                        required=False,
-                        dest='stride',
-                        help='Interval specifying which sample ids to '
-                             'download. Example: "1:2000" - This will '
-                             'download the first 2000 samples. Note: If '
-                             'you want to download from the first id, '
-                             'you have to put "1", not "0" in the lower '
-                             'value.')
 
     parser.add_argument('-r', '--retry', type=int,
                         required=False, dest='retry',

@@ -59,6 +59,7 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
             return False
 
     if verify_status is True or verify_status is None:
+        
         if assembly_info['assembly_status'] == 'suppressed':
             return False
 
@@ -256,6 +257,8 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
 
         else:
             accepted_list = ids
+
+    print(f"\n{len(accepted_list)} passed filtering criteria out of {len(accepted_list) + len(failed_list)} in NCBI.")
 
     return [failed_list,accepted_list]
 
@@ -471,5 +474,7 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
     #add ids that were initially removed by assembly_level or reference to failed
     #list
     failed_list = [x for x in all_ids if x not in accepted_list] + failed_list
+
+    print(f"\n{len(accepted_list)} passed filtering criteria out of {len(accepted_list) + len(failed_list)} in NCBI.")
 
     return [failed_list,accepted_list]
