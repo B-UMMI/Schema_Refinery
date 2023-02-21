@@ -33,7 +33,7 @@ except ModuleNotFoundError:
 socket.setdefaulttimeout(30)
 
 # URL template for proteome download
-# proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&format=fasta&compress=yes'
+proteome_template_url = 'https://rest.uniprot.org/uniprotkb/stream?query=proteome:{0}&format=fasta&compressed=true'
 
 def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:int):
 
