@@ -14,9 +14,9 @@ Code documentation
 import sys
 
 try:
-    from proteome_fetcher import proteome_fetcher
-    from proteome_splitter import proteome_splitter
-    from proteome_matcher import proteome_matcher
+    from SchemaAnnotation.proteome_fetcher import proteome_fetcher
+    from SchemaAnnotation.proteome_splitter import proteome_splitter
+    from SchemaAnnotation.proteome_matcher import proteome_matcher
 
 except ModuleNotFoundError:
     from Schema_refinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
