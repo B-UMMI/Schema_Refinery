@@ -52,17 +52,17 @@ def annotation_merger(uniprot_species, uniprot_genus, genebank, proteome_trembl,
     Imports and convertions to right types, with some changes to columns names
     """
 
-    if uniprot_species != '':
+    if uniprot_species:
         table_species = pd.read_csv(uniprot_species, delimiter="\t")
 
         table_species.convert_dtypes()
 
-    if uniprot_genus != '':
+    if uniprot_genus:
         table_genus = pd.read_csv(uniprot_genus, delimiter="\t")
 
         table_genus.convert_dtypes()
 
-    if genebank != '':
+    if genebank:
         table_genebank = pd.read_csv(genebank, delimiter="\t")
 
         table_genebank.convert_dtypes()
@@ -70,18 +70,18 @@ def annotation_merger(uniprot_species, uniprot_genus, genebank, proteome_trembl,
         table_genebank.rename({"origin_id":"genebank_origin_id","origin_product":"genebank_origin_product",
                             "origin_name":"genebank_origin_name","origin_bsr":"genebank_origin_bsr"},axis='columns',inplace=True)
 
-    if proteome_trembl != '':
+    if proteome_trembl:
         table_proteome_t = pd.read_csv(proteome_trembl, delimiter="\t")
 
         table_proteome_t.convert_dtypes()
 
 
-    if proteome_swiss != '':
+    if proteome_swiss:
         table_proteome_s = pd.read_csv(proteome_swiss, delimiter="\t")
 
         table_proteome_s.convert_dtypes()
 
-    if match_to_add != '' and matched_schemas != '':
+    if match_to_add and matched_schemas:
         match_add = pd.read_csv(match_to_add, delimiter="\t")
         matched_table = pd.read_csv(matched_schemas, delimiter="\t",names=['Locus_ID','Locus','BSR_schema_match'])
 
@@ -90,10 +90,6 @@ def annotation_merger(uniprot_species, uniprot_genus, genebank, proteome_trembl,
 
         match_add = match_add[['Locus','User_locus_name'] + old_schema_columns]
 
-    if not os.path.isdir(output_path):
-        os.mkdir(output_path)
-
-    
     merged_table = pd.DataFrame({'Locus_ID': []})
 
     """
@@ -101,11 +97,11 @@ def annotation_merger(uniprot_species, uniprot_genus, genebank, proteome_trembl,
     choosing only the essential columns from each table.
     """
 
-    if uniprot_species != '':
+    if uniprot_species:
 
         merged_table = merger(table_species, merged_table)
 
-    if uniprot_genus != '':
+    if uniprot_genus:
 
         merged_table = pd.merge(table_genus[['Locus_ID','Proteome_ID','Proteome_Product',
                                 'Proteome_Gene_Name','Proteome_Species','Proteome_BSR']],
@@ -114,21 +110,21 @@ def annotation_merger(uniprot_species, uniprot_genus, genebank, proteome_trembl,
                                 on =['Locus_ID'],
                                 how ='left')
 
-    if genebank != '':
+    if genebank:
 
         merged_table = merger(table_genebank, merged_table)
 
 
-    if proteome_trembl != '':
+    if proteome_trembl:
 
         merged_table = merger(table_proteome_t, merged_table)
 
-    if proteome_swiss != '':
+    if proteome_swiss:
 
         merged_table = merger(table_proteome_s, merged_table)  
 
             
-    if match_to_add != '' and matched_schemas != '':
+    if match_to_add and matched_schemas:
 
         # merge columns so that both table to add and reference have locus_ID
         merged_match = pd.merge(match_add, matched_table, on = 'Locus', 

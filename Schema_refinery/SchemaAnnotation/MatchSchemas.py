@@ -16,170 +16,18 @@ import os
 import sys
 import csv
 import itertools
-import subprocess
 
 from Bio import SeqIO
-from Bio.Seq import Seq
 
+try:
+    from utils.file_functions import check_and_make_directory
+    from utils.blast_functions import make_blast_db, run_blast
+    from utils.sequence_functions import translate_sequence
 
-def reverse_str(string):
-    """ Reverse character order in input string.
-
-    Parameters
-    ----------
-    string : str
-        String to be reversed.
-
-    Returns
-    -------
-    revstr : str
-        Reverse of input string.
-    """
-
-    revstr = string[::-1]
-
-    return revstr
-
-
-def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of a DNA sequence.
-
-    Parameters
-    ----------
-    dna_sequence : str
-        String representing a DNA sequence.
-
-    Returns
-    -------
-    reverse_complement : str
-        The reverse complement of the input DNA
-        sequence.
-    """
-
-    base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-
-    # convert string into list with each character as a separate element
-    bases = list(dna_sequence.upper())
-
-    # determine complement strand
-    complement_bases = []
-    for base in bases:
-        complement_bases.append(base_complement.get(base, base))
-
-    complement_strand = ''.join(complement_bases)
-
-    # reverse strand
-    reverse_complement = reverse_str(complement_strand)
-
-    return reverse_complement
-
-
-def translate_sequence(dna_str, table_id):
-    """ Translate a DNA sequence using the BioPython package.
-
-    Parameters
-    ----------
-    dna_str : str
-        DNA sequence.
-    table_id : int
-        Translation table identifier.
-
-    Returns
-    -------
-    protseq : str
-        Protein sequence created by translating
-        the input DNA sequence.
-    """
-
-    myseq_obj = Seq(dna_str)
-    # sequences must be a complete and valid CDS
-    protseq = Seq.translate(myseq_obj, table=table_id, cds=True)
-
-    return protseq
-
-
-def make_blast_db(input_fasta, output_path, db_type):
-    """ Creates a BLAST database.
-
-    Parameters
-    ----------
-    input_fasta : str
-        Path to a Fasta file.
-    output_path : str
-        Path to the output BLAST database.
-    db_type : str
-        Type of the database, nucleotide (nuc) or
-        protein (prot).
-    """
-
-    blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
-                   '-parse_seqids', '-dbtype', db_type]
-
-    makedb_cmd = subprocess.Popen(blastdb_cmd,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-
-    stdout, stderr = makedb_cmd.communicate()
-    print(stdout, stderr)
-
-    makedb_cmd.wait()
-
-
-def run_blast(blast_path, blast_db, fasta_file, blast_output,
-              max_hsps=1, threads=1, ids_file=None, blast_task=None,
-              max_targets=None):
-    """ Executes BLAST.
-
-    Parameters
-    ----------
-    blast_path : str
-        Path to the BLAST executable.
-    blast_db : str
-        Path to the BLAST database.
-    fasta_file : str
-        Path to the Fasta file that contains the sequences
-        to align against the database.
-    blast_output : str
-        Path to the output file.
-    max_hsps : int
-        Maximum number of High-Scoring Pairs.
-    threads : int
-        Number of threads passed to BLAST.
-    ids_file : path
-        Path to a file with the identifiers of the sequences
-        to align against. Used to specify the database sequences
-        we want to align against.
-    blast_task : str
-        BLAST task. Allows to set default parameters for a specific
-        type of search.
-    max_targets : int
-        Maximum number of targets sequences to align against.
-
-    Returns
-    -------
-    stderr : list
-        List with the warnings/errors reported by BLAST.
-    """
-
-    blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
-                  '-out', blast_output, '-outfmt', '6 qseqid sseqid score',
-                  '-max_hsps', str(max_hsps), '-num_threads', str(threads),
-                  '-evalue', '0.001']
-
-    if ids_file is not None:
-        blast_args.extend(['-seqidlist', ids_file])
-    if blast_task is not None:
-        blast_args.extend(['-task', blast_task])
-    if max_targets is not None:
-        blast_args.extend(['-max_target_seqs', str(max_targets)])
-
-    blast_proc = subprocess.Popen(blast_args,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-
-    stderr = blast_proc.stderr.readlines()
-
-    return stderr
+except ModuleNotFoundError:
+    from Schema_refinery.utils.file_functions import check_and_make_directory
+    from Schema_refinery.utils.blast_functions import make_blast_db, run_blast
+    from Schema_refinery.utils.sequence_functions import translate_sequence
 
 
 def read_tabular(input_file, delimiter='\t'):
@@ -228,14 +76,8 @@ def flatten_list(list_to_flatten):
 
 def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, cpu_cores):
 
-    # create output directory
-    if os.path.isdir(output_path) is True:
-        sys.exit('Output directory exists. Please provide '
-                 'a path to a new directory that will be '
-                 'created to store the files created by '
-                 'the process.')
-    else:
-        os.mkdir(output_path)
+    output_path = os.path.join(output_path, "matchSchemas")
+    check_and_make_directory(output_path)
 
     # import representative sequences in query schema
     rep_dir = os.path.join(query_schema, 'short')

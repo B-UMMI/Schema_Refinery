@@ -22,24 +22,23 @@ from itertools import repeat
 
 try:
     from utils.download_functions import download_file
+    from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
     from Schema_refinery.utils.download_functions import download_file
-
+    from Schema_refinery.utils.file_functions import check_and_make_directory
 
 
 # set socket timeout for urllib calls
 socket.setdefaulttimeout(30)
 
 # URL template for proteome download
-proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&format=fasta&compress=yes'
+# proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&format=fasta&compress=yes'
 
 def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:int):
 
     output_directory = os.path.join(output_directory, "Downloaded_proteomes")
-
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
+    check_and_make_directory(output_directory)
 
     # open table downloaded from Uniprot
     with open(input_table, 'r') as table:
@@ -88,3 +87,5 @@ def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:i
           '\nElapsed Time: {2}m{3:.0f}s'
           ''.format(files_number-len(failures),
                     files_number, minutes, seconds))
+    
+    return output_directory
