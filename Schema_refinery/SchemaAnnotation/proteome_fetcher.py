@@ -23,17 +23,16 @@ from itertools import repeat
 try:
     from utils.download_functions import download_file
     from utils.file_functions import check_and_make_directory
+    from utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
 
 except ModuleNotFoundError:
     from Schema_refinery.utils.download_functions import download_file
     from Schema_refinery.utils.file_functions import check_and_make_directory
+    from Schema_refinery.utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
 
 
 # set socket timeout for urllib calls
-socket.setdefaulttimeout(30)
-
-# URL template for proteome download
-proteome_template_url = 'https://rest.uniprot.org/uniprotkb/stream?query=proteome:{0}&format=fasta&compressed=true'
+socket.setdefaulttimeout(SOCKET_TIMEOUT)
 
 def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:int):
 
@@ -48,7 +47,7 @@ def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:i
         proteomes = [row[0].split("\t")[0] for row in reader]
 
     # Build the Uniprot URLs
-    urls = [proteome_template_url.format(proteome_id)
+    urls = [PROTEOME_TEMPLATE_URL.format(proteome_id)
             for proteome_id in proteomes]
     
     print("urls: ", urls)
