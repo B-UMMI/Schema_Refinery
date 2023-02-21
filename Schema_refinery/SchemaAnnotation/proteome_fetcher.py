@@ -36,6 +36,8 @@ proteome_template_url = 'https://www.uniprot.org/uniprot/?query=proteome:{0}&for
 
 def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:int):
 
+    output_directory = os.path.join(output_directory, "Downloaded_proteomes")
+
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
@@ -49,6 +51,8 @@ def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:i
     # Build the Uniprot URLs
     urls = [proteome_template_url.format(proteome_id)
             for proteome_id in proteomes]
+    
+    print("urls: ", urls)
 
     files_number = len(urls)
     if files_number == 0:

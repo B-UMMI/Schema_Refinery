@@ -23,11 +23,9 @@ except ModuleNotFoundError:
     from Schema_refinery.SchemaAnnotation.proteome_splitter import proteome_splitter
     from Schema_refinery.SchemaAnnotation.proteome_matcher import proteome_matcher
 
-def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
-
+def check_proteome_annotations_arguments(input_table, schema_directory):
     necessary_arguments = {
         "input_table": "\tProteome annotations need an input table argument. -t",
-        "proteomes_directory": "\tProteome annotations need a proteomes directory argument. -d",
         "schema_directory": "\tProteome annotations need a schema directory argument. -s",
     }
 
@@ -37,20 +35,21 @@ def proteome_annotations(input_table, proteomes_directory, threads, retry, schem
     if not input_table:
         missing_arguments.append("input_table")
     
-    if not proteomes_directory:
-        missing_arguments.append("proteomes_directory")
-    
     if not schema_directory:
         missing_arguments.append("schema_directory")
 
-    if len(missing_arguments > 0):
+    error_messages = []
+    if len(missing_arguments) > 0:
         print("\nError: ")
         for arg in missing_arguments:
-            print(necessary_arguments[arg])
-        sys.exit(0)
+            error_messages.append(necessary_arguments[arg])
+    
+    return error_messages
 
-    # proteomes are downloaded to proteomes_directory
-    proteome_fetcher(input_table, proteomes_directory, threads, retry)
+def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
+
+    if not proteomes_directory:
+        proteome_fetcher(input_table, output_directory, threads, retry)
 
     tr_file, sp_file, descriptions_file = proteome_splitter(proteomes_directory, output_directory)
 
