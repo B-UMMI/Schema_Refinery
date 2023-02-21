@@ -19,17 +19,19 @@ try:
     from SchemaAnnotation.ProteomeAnnotations import proteome_annotations, check_proteome_annotations_arguments
     from SchemaAnnotation.AnnotationMerger import annotation_merger
     from SchemaAnnotation.MatchSchemas import check_match_schemas_arguments, match_schemas
+    from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
     from Schema_refinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations, check_genbank_annotations_arguments
     from Schema_refinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations, check_proteome_annotations_arguments
     from Schema_refinery.SchemaAnnotation.AnnotationMerger import annotation_merger
     from Schema_refinery.SchemaAnnotation.MatchSchemas import check_match_schemas_arguments, match_schemas
+    from Schema_refinery.utils.file_functions import check_and_make_directory
 
 def check_uniprot_arguments(uniprot_species):
 
     necessary_arguments = {
-        "uniprot_species": "\tUniprot annotations need a species file argument, outputted by Uniprot Finder. -ps",
+        "uniprot_species": "\tUniprot annotations need a species file argument, outputted by Uniprot Finder. -us",
     }
 
     missing_arguments = []
@@ -66,7 +68,13 @@ def schema_annotation(args):
             print(message)
         sys.exit(0)
 
+    check_and_make_directory(args.output_directory)
+
     # run submodules
+    genbank_file = None
+    trembl = None
+    swiss = None 
+    matched_schemas = None
     if 'genbank' in args.annotation_options:
         genbank_file = genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
 

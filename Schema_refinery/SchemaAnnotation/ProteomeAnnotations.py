@@ -11,17 +11,19 @@ Code documentation
 ------------------
 """
 
-import sys
+import os
 
 try:
     from SchemaAnnotation.proteome_fetcher import proteome_fetcher
     from SchemaAnnotation.proteome_splitter import proteome_splitter
     from SchemaAnnotation.proteome_matcher import proteome_matcher
+    from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
     from Schema_refinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
     from Schema_refinery.SchemaAnnotation.proteome_splitter import proteome_splitter
     from Schema_refinery.SchemaAnnotation.proteome_matcher import proteome_matcher
+    from Schema_refinery.utils.file_functions import check_and_make_directory
 
 def check_proteome_annotations_arguments(input_table, schema_directory):
     necessary_arguments = {
@@ -48,8 +50,11 @@ def check_proteome_annotations_arguments(input_table, schema_directory):
 
 def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
 
+    output_directory = os.path.join(output_directory, "Proteomes")
+    check_and_make_directory(output_directory)
+
     if not proteomes_directory:
-        proteome_fetcher(input_table, output_directory, threads, retry)
+        proteomes_directory = proteome_fetcher(input_table, output_directory, threads, retry)
 
     tr_file, sp_file, descriptions_file = proteome_splitter(proteomes_directory, output_directory)
 

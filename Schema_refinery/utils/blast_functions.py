@@ -22,6 +22,7 @@ def make_blast_db(input_fasta, output_path, db_type):
                                   stderr=subprocess.PIPE)
 
     stdout, stderr = makedb_cmd.communicate()
+    print(stdout, stderr)
 
     makedb_cmd.wait()
 

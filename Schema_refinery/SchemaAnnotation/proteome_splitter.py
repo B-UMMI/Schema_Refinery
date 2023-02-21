@@ -18,10 +18,10 @@ import pickle
 
 from Bio import SeqIO
 
+
 def proteome_splitter(proteomes_directory:str, output_directory:str):
 
-    if os.path.isdir(output_directory) is False:
-        os.mkdir(output_directory)
+    print("Starting to split proteomes...")
 
     # list proteomes in input directory
     proteomes = [os.path.join(proteomes_directory, f)
@@ -44,21 +44,27 @@ def proteome_splitter(proteomes_directory:str, output_directory:str):
             descriptions[recid] = desc
 
     # save to file
-    tr_file = os.path.join(output_directory, 'trembl_prots.fasta')
-    with open(tr_file, 'w') as tout:
+    tr_file = 'trembl_prots.fasta'
+    print(f"Saving {tr_file} file...")
+    tr_file_path = os.path.join(output_directory, tr_file)
+    with open(tr_file_path, 'w') as tout:
         records = ['>{0}\n{1}'.format(k, v) for k, v in trembl.items()]
         rectext = '\n'.join(records)
         tout.write(rectext+'\n')
 
-    sp_file = os.path.join(output_directory, 'sp_prots.fasta')
-    with open(sp_file, 'w') as tout:
+    sp_file = 'sp_prots.fasta'
+    print(f"Saving {sp_file} file...")
+    sp_file_path = os.path.join(output_directory, sp_file)
+    with open(sp_file_path, 'w') as tout:
         records = ['>{0}\n{1}'.format(k, v) for k, v in sp.items()]
         rectext = '\n'.join(records)
         tout.write(rectext+'\n')
 
-    # save descriptions
-    descriptions_file = os.path.join(output_directory, 'descriptions')
-    with open(descriptions_file, 'wb') as dout:
+    # save 
+    descriptions_file = 'descriptions'
+    print(f"Saving {descriptions_file} file...")
+    descriptions_file_path = os.path.join(output_directory, descriptions_file)
+    with open(descriptions_file_path, 'wb') as dout:
         pickle.dump(descriptions, dout)
 
-    return tr_file, sp_file, descriptions_file
+    return tr_file_path, sp_file_path, descriptions_file_path

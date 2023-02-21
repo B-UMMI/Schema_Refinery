@@ -14,17 +14,18 @@ Code documentation
 
 import os
 import csv
-import sys
 
 from Bio import SeqIO
 
 try:
     from utils.blast_functions import make_blast_db, run_blast
     from utils.sequence_functions import translate_sequence
+    from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
     from Schema_refinery.utils.blast_functions import make_blast_db, run_blast
     from Schema_refinery.utils.sequence_functions import translate_sequence
+    from Schema_refinery.utils.file_functions import check_and_make_directory
 
 def get_protein_annotation_fasta(seqRecord):
     """ Gets the translated protein from a Genbank file.
@@ -71,8 +72,8 @@ def get_protein_annotation_fasta(seqRecord):
 
 def genbank_annotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
 
-    if os.path.isdir(output_directory) is False:
-        os.mkdir(output_directory)
+    output_directory = os.path.join(output_directory, "Genbank")
+    check_and_make_directory(output_directory)
 
     gbk_files = [os.path.join(input_files, f) for f in os.listdir(input_files)]
 
@@ -117,12 +118,12 @@ def genbank_annotations(input_files:str, schema_directory:str, output_directory:
 
     # create BLASTdb
     blastdb_path = os.path.join(output_directory, 'reps_db')
-    make_blast_db('makeblastdb', prot_file, blastdb_path, 'prot')
+    make_blast_db(prot_file, blastdb_path, 'prot')
 
     blastout = os.path.join(output_directory, 'blastout.tsv')
     run_blast('blastp', blastdb_path, selected_file, blastout,
               max_hsps=1, threads=cpu_cores, ids_file=None,
-              blast_task=None, max_targets=1, ignore=None)
+              blast_task=None, max_targets=1)
 
     # import BLAST results
     with open(blastout, 'r') as at:
@@ -167,7 +168,7 @@ def genbank_annotations(input_files:str, schema_directory:str, output_directory:
     reps_blast_out = os.path.join(output_directory, 'concat_reps_self.tsv')
     run_blast('blastp', blastdb_path, prot_file, reps_blast_out,
               max_hsps=1, threads=cpu_cores, ids_file=None, blast_task=None,
-              max_targets=1, ignore=None)
+              max_targets=1)
 
     # import self_results
     with open(reps_blast_out, 'r') as at:
