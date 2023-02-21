@@ -15,10 +15,10 @@ Code documentation
 import sys
 
 try:
-    from GenbankAnnotations import genbank_annotations
-    from ProteomeAnnotations import proteome_annotations
-    from AnnotationMerger import annotation_merger
-    from MatchSchemas import check_match_schemas_arguments, match_schemas
+    from SchemaAnnotation.GenbankAnnotations import genbank_annotations
+    from SchemaAnnotation.ProteomeAnnotations import proteome_annotations
+    from SchemaAnnotation.AnnotationMerger import annotation_merger
+    from SchemaAnnotation.MatchSchemas import check_match_schemas_arguments, match_schemas
 
 except ModuleNotFoundError:
     from Schema_refinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations
