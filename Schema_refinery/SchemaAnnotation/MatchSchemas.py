@@ -384,7 +384,7 @@ def check_match_schemas_arguments(query_schema, subject_schema, old_schema_colum
     if not match_to_add:
         missing_arguments.append("match_to_add")
 
-    if len(missing_arguments > 0):
+    if len(missing_arguments) > 0:
         print("\nError: ")
         for arg in missing_arguments:
             print(necessary_arguments[arg])

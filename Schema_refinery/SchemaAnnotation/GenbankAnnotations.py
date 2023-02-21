@@ -69,7 +69,7 @@ def get_protein_annotation_fasta(seqRecord):
 
     return fasta, fasta_dict
 
-def run_genbank_annotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
+def genbank_annotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
 
     if os.path.isdir(output_directory) is False:
         os.mkdir(output_directory)
@@ -198,9 +198,7 @@ def run_genbank_annotations(input_files:str, schema_directory:str, output_direct
 
     return annotations_file
 
-
-def genbank_annotations(input_files, schema_directory, output_directory, cpu_cores):
-
+def check_genbank_annotations_arguments(input_files, schema_directory):
     necessary_arguments = {
         "input_files": "\tGenbank annotations need an input file argument. -i",
         "schema_directory": "\tGenbank annotations need a schema directory argument. -s",
@@ -215,11 +213,11 @@ def genbank_annotations(input_files, schema_directory, output_directory, cpu_cor
     if not schema_directory:
         missing_arguments.append("schema_directory")
 
-    if len(missing_arguments > 0):
+    error_messages = []
+    if len(missing_arguments) > 0:
         print("\nError: ")
         for arg in missing_arguments:
-            print(necessary_arguments[arg])
-        sys.exit(0)
+            error_messages.append(necessary_arguments[arg])
 
-    # finally run the main genbankAnnotations function
-    run_genbank_annotations(input_files, schema_directory, output_directory, cpu_cores)
+    return error_messages
+
