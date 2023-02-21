@@ -121,9 +121,11 @@ def schema_annotation_module():
 
 def main():
 
-    modules_info = {'SchemaAnnotation': ['This module handles the whole process of creating the'
-                                        'Genbank, TrEMBL and Swiss-Prot annotations and merging them'
-                                        'alongside the UniProtFinder annotations into a single TSV file.',
+    modules_info = {'SchemaAnnotation': ['This module handles the whole process of creating the '
+                                        'Genbank, TrEMBL and Swiss-Prot annotations and merging them '
+                                        'alongside the UniProtFinder annotations into a single TSV file. '
+                                        'It also supports a matchSchemas sub-module that gets a user '
+                                        'selected list of annotations from an old schema',
                                        schema_annotation_module],
     }
 
