@@ -362,13 +362,12 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
 
     return matches_file
 
-def check_match_schemas_arguments(query_schema, subject_schema, old_schema_columns, match_to_add, output_directory):
+def check_match_schemas_arguments(query_schema, subject_schema, old_schema_columns, match_to_add):
     necessary_arguments = {
         "query_schema": "\tMatchSchemas sub-module needs a query schema directory that will be matched against the subject schema. -qs",
         "subject_schema": "\tMatchSchemas sub-module needs a subject schema directory that will be matched against the query schema. -ss",
         "old_schema_columns": "\tMatchSchemas sub-module needs an old schema columns argument that receives one or more column names that are to be merged into the new annotations table. -oc",
         "match_to_add": "\tMatchSchemas sub-module needs a matches to add file that has the old schema's annotations. -ma",
-        "output_directory": "\tMatchSchemas sub-module needs an output directory argument. -o"
     }
 
     missing_arguments = []
@@ -384,9 +383,6 @@ def check_match_schemas_arguments(query_schema, subject_schema, old_schema_colum
 
     if not match_to_add:
         missing_arguments.append("match_to_add")
-    
-    if not output_directory:
-        missing_arguments.append("output_directory")
 
     if len(missing_arguments > 0):
         print("\nError: ")

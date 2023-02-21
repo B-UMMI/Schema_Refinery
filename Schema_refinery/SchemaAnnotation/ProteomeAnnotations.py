@@ -29,7 +29,6 @@ def proteome_annotations(input_table, proteomes_directory, threads, retry, schem
         "input_table": "\tProteome annotations need an input table argument. -t",
         "proteomes_directory": "\tProteome annotations need a proteomes directory argument. -d",
         "schema_directory": "\tProteome annotations need a schema directory argument. -s",
-        "output_directory": "\tProteome annotations need an output directory argument. -o"
     }
 
     missing_arguments = []
@@ -43,9 +42,6 @@ def proteome_annotations(input_table, proteomes_directory, threads, retry, schem
     
     if not schema_directory:
         missing_arguments.append("schema_directory")
-    
-    if not output_directory:
-        missing_arguments.append("output_directory")
 
     if len(missing_arguments > 0):
         print("\nError: ")
