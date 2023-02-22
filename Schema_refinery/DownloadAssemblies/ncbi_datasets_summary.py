@@ -65,6 +65,93 @@ def verify_assembly(metadata_assembly,size_threshold,max_contig_number,
 
     return True
 
+def verifacation_check(genome_size,size_threshold,max_contig_number,
+                       assembly_level,reference,verify_status,exclude_atypical,
+                       taxon='not included',assembly_source='not included'):
+    
+    if (assembly_source is not None
+        or genome_size is not None
+        or size_threshold is not None
+        or max_contig_number is not None
+        or assembly_level is not None
+        or reference is not None
+        or verify_status is not None
+        or exclude_atypical is not None):
+        """
+        if verification is needed
+        """
+        
+        print("\nVerifying assemblies to be downloaded by specified criteria:")
+        
+        if taxon !='not included':
+            print(f"Taxon : {taxon}")
+
+        if assembly_source is not None:
+
+            if assembly_source != "all":
+                print(f"Fetching assemblies from: {assembly_source}")
+
+            else:
+                print("Fetching assemblies from: RefSeq,GenBank")
+                
+        elif assembly_source == 'not included':
+            pass
+        else:
+            print("Fetching assemblies from: RefSeq,GenBank")
+
+        if genome_size is not None and size_threshold is not None:
+            print(f"Genome size of: {genome_size}")
+            print(f"Size threshold of: {size_threshold}")
+
+        elif genome_size is None and size_threshold is None:
+            print("Genome size of: Not specified")
+            print("Size threshold of: Not specified")
+        else:
+            print("Both genome size and size threshold need to be specified.")
+            print("Setting as:")
+            print("    Genome size of: Not specified")
+            print("    Size threshold of: Not specified")
+
+        if max_contig_number is not None:
+            print(f"Maximum number of contigs: {max_contig_number}")
+
+        else:
+            print("Maximum number of contigs: Not specified")
+
+        if assembly_level is not None:
+            print(f"assembly level at: {assembly_level}")
+
+        else:
+            print("assembly level at: Not specified (using Defaut: all)")
+
+        if reference and reference is not None:
+            print("Only reference genomes: True")
+
+        else:
+            print("Only reference genomes: False")
+
+        if verify_status is not None:
+            print(f"Remove suppressed assemblies: {verify_status}")
+        else:
+            print("Remove suppressed assemblies: True")
+            
+        if exclude_atypical is not None:
+            print(f"Verify if assemblies are atypical: {exclude_atypical}")
+        else:
+            print("Remove atypical assemblies: True")
+
+        verify_list = True
+
+    else:
+        """
+        If no verification is needed.
+        """
+        verify_list = False
+        print("No assembly verification criteria was specified...")
+        print("Using default Criterias.")
+        print("Proceeding...")
+    
+    return verify_list
 
 def metadata_fetcher_ids(input_ids,id_list_path,assembly_level,reference,
                          exclude_atypical,api_key):
@@ -169,64 +256,11 @@ def metadata_from_id_list(id_list_path,size_threshold,max_contig_number,genome_s
     if not all(i.startswith(('GCF_','GCA_')) for i in ids):
         sys.exit('\nOne or more ids in the input list have wrong format. Must '
                  'start with either GCF_ or GCA_')
-
-    #if verification is needed
-    if (genome_size is not None
-        or size_threshold is not None
-        or max_contig_number is not None
-        or assembly_level is not None
-        or reference and reference is not None):
-
-        print("Verifying assemblies to be downloaded by specified criteria:")
-
-        if genome_size is not None and size_threshold is not None:
-            print(f"Genome size of: {genome_size}")
-            print(f"Size threshold of: {size_threshold}")
-
-        elif genome_size is None and size_threshold is None:
-            print("Genome size of: Not specified")
-            print("Size threshold of: Not specified")
-        else:
-            print("Both genome size and size threshold need to be specified.")
-            print("Setting as:")
-            print("    Genome size of: Not specified")
-            print("    Size threshold of: Not specified")
-
-        if max_contig_number is not None:
-            print(f"Maximum number of contigs: {max_contig_number}")
-
-        else:
-            print("Maximum number of contigs: Not specified")
-
-        if assembly_level is not None:
-            print(f"assembly level at: {assembly_level}")
-
-        else:
-            print("assembly level at: Not specified (using Defaut: all)")
-
-        if reference and reference is not None:
-            print("Only reference genomes: True")
-
-        else:
-            print("Only reference genomes: False")
-
-        if verify_status is not None:
-            print(f"Remove suppressed assemblies: {verify_status}")
-        else:
-            print("Remove suppressed assemblies: True")
-        
-        if exclude_atypical is not None:
-            print(f"Verify if assemblies are atypical: {exclude_atypical}")
-        else:
-            print("Verify if assemblies are atypical: True")
-            
-        verify_list = True
-
-    else:
-        verify_list = False
-        print("No assembly verification criteria was specified...")
-        print("Using default Criterias.")
-        print("Proceeding...")
+    
+    #If verification is needed
+    verify_list = verifacation_check(genome_size,size_threshold,max_contig_number,
+                                     assembly_level,reference,verify_status,
+                                     exclude_atypical)
 
     accepted_list = []
 
@@ -364,84 +398,11 @@ def metadata_from_taxon(taxon,size_threshold,max_contig_number,genome_size,
     accepted_list: list
         containing assemblies that passed criteria
     """
-
-    if (assembly_source is not None
-        or genome_size is not None
-        or size_threshold is not None
-        or max_contig_number is not None
-        or assembly_level is not None
-        or reference is not None
-        or verify_status is not None):
-        """
-        if verification is needed
-        """
-
-        print("\nVerifying assemblies to be downloaded by specified criteria:")
-
-        print(f"Taxon : {taxon}")
-
-        if assembly_source is not None:
-
-            if assembly_source != "all":
-                print(f"Fetching assemblies from: {assembly_source}")
-
-            else:
-                print("Fetching assemblies from: RefSeq,GenBank")
-
-        else:
-            print("Fetching assemblies from: RefSeq,GenBank")
-
-        if genome_size is not None and size_threshold is not None:
-            print(f"Genome size of: {genome_size}")
-            print(f"Size threshold of: {size_threshold}")
-
-        elif genome_size is None and size_threshold is None:
-            print("Genome size of: Not specified")
-            print("Size threshold of: Not specified")
-        else:
-            print("Both genome size and size threshold need to be specified.")
-            print("Setting as:")
-            print("    Genome size of: Not specified")
-            print("    Size threshold of: Not specified")
-
-        if max_contig_number is not None:
-            print(f"Maximum number of contigs: {max_contig_number}")
-
-        else:
-            print("Maximum number of contigs: Not specified")
-
-        if assembly_level is not None:
-            print(f"assembly level at: {assembly_level}")
-
-        else:
-            print("assembly level at: Not specified (using Defaut: all)")
-
-        if reference and reference is not None:
-            print("Only reference genomes: True")
-
-        else:
-            print("Only reference genomes: False")
-
-        if verify_status is not None:
-            print(f"Remove suppressed assemblies: {verify_status}")
-        else:
-            print("Remove suppressed assemblies: True")
-            
-        if exclude_atypical is not None:
-            print(f"Verify if assemblies are atypical: {exclude_atypical}")
-        else:
-            print("Verify if assemblies are atypical: True")
-
-        verify_list = True
-
-    else:
-        """
-        If no verification is needed.
-        """
-        verify_list = False
-        print("No assembly verification criteria was specified...")
-        print("Using default Criterias.")
-        print("Proceeding...")
+    
+    #If verification is needed
+    verify_list = verifacation_check(genome_size,size_threshold,max_contig_number,
+                                     assembly_level,reference,verify_status,
+                                     exclude_atypical,assembly_source,taxon)
 
     #get all possible ids and all ids filtered by assembly_level or reference
     all_ids,metadata_filtered = metadata_fetcher_taxon(taxon,
