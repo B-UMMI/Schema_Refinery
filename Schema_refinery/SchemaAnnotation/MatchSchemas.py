@@ -3,7 +3,7 @@
 """
 Purpose
 -------
-This script aligns representative alleles in a query schema
+This sub-module aligns representative alleles in a query schema
 against all alleles in a subject schema to determine similar
 loci in both schemas.
 
@@ -13,7 +13,7 @@ Code documentation
 
 
 import os
-import sys
+import argparse
 import csv
 import itertools
 
@@ -204,30 +204,58 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
 
     return matches_file
 
-def check_match_schemas_arguments(query_schema, subject_schema, old_schema_columns, match_to_add):
-    necessary_arguments = {
-        "query_schema": "\tMatchSchemas sub-module needs a query schema directory that will be matched against the subject schema. -qs",
-        "subject_schema": "\tMatchSchemas sub-module needs a subject schema directory that will be matched against the query schema. -ss",
-        "old_schema_columns": "\tMatchSchemas sub-module needs an old schema columns argument that receives one or more column names that are to be merged into the new annotations table. -oc",
-        "match_to_add": "\tMatchSchemas sub-module needs a matches to add file that has the old schema's annotations. -ma",
-    }
+def check_match_schemas_arguments(args_list:list):
+    parser = argparse.ArgumentParser(prog='Match Schemas Annotations',
+                                     description='This sub-module aligns representative ' 
+                                     'alleles in a query schema against all alleles in '
+                                     'a subject schema to determine similar '
+                                     'loci in both schemas.' )
+    
+    parser.add_argument('-qs', '--query-schema', type=str, required=True,
+                        dest='query_schema',
+                        help='Path to the query schema directory.'
+                             'This schema will be matched against '
+                             'the subject schema.'
+                             'This argument is needed by the Match Schemas'
+                             'sub-module.')
 
-    missing_arguments = []
+    parser.add_argument('-ss', '--subject-schema', type=str, required=True,
+                        dest='subject_schema',
+                        help='Path to que subject schema directory. '
+                             'This argument is needed by the Match Schemas '
+                             'sub-module.')
+    
+    parser.add_argument('-oc', '--old-schema-columns', type=str, required=True,
+                        nargs='+',
+                        dest='old_schema_columns',
+                        help='Columns from the old schema annotations to merge into '
+                             'the new schema annotations table being created. '
+                             'This argument is needed by the Match Schemas '
+                             'sub-module.')
+    
+    parser.add_argument('-ma', '--match_to_add', type=str, required=True,
+                        dest='match_to_add',
+                        default = '',
+                        help='Annotation of another schema, needed with '
+                             '--old-schema-columns. '
+                             'This argument is needed by the Match Schemas '
+                             'sub-module.')
 
-    if not query_schema:
-        missing_arguments.append("query_schema")
 
-    if not subject_schema:
-        missing_arguments.append("subject_schema")
+    parser.add_argument('--bsr', type=float, required=False,
+                        default=0.6, dest='blast_score_ratio',
+                        help='Minimum BSR value to consider aligned '
+                             'alleles as alleles for the same locus. '
+                             'This argument is optional for the Match Schemas '
+                             'sub-module.')
+    
+    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
+                            dest='cpu_cores',
+                            default=1,
+                            help='Number of CPU cores to pass to BLAST.')
 
-    if not old_schema_columns:
-        missing_arguments.append("old_schema_columns")
-
-    if not match_to_add:
-        missing_arguments.append("match_to_add")
-
-    if len(missing_arguments) > 0:
-        print("\nError: ")
-        for arg in missing_arguments:
-            print(necessary_arguments[arg])
-        sys.exit(0)
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the output directory where to save the files.')
+    
+    parser.parse_args(args_list)

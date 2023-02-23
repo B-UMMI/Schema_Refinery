@@ -4,7 +4,7 @@
 Purpose
 -------
 
-This script aligns schema representative sequences
+This sub-module aligns schema representative sequences
 against records in Genbank files to extract relevant
 annotations.
 
@@ -14,6 +14,7 @@ Code documentation
 
 import os
 import csv
+import argparse
 
 from Bio import SeqIO
 
@@ -199,26 +200,30 @@ def genbank_annotations(input_files:str, schema_directory:str, output_directory:
 
     return annotations_file
 
-def check_genbank_annotations_arguments(input_files, schema_directory):
-    necessary_arguments = {
-        "input_files": "\tGenbank annotations need an input file argument. -i",
-        "schema_directory": "\tGenbank annotations need a schema directory argument. -s",
-    }
+def check_genbank_annotations_arguments(args_list:list):
+    parser = argparse.ArgumentParser(prog='Genbank Annotations',
+                                     description='This sub-module aligns schema representative sequences '
+                                     'against records in Genbank files to extract relevant annotations.')
+    
+    parser.add_argument('-i', '--input-files', type=str, required=True,
+                            dest='input_files',
+                            help='Path to the directory that contains '
+                                'Genbank files with annotations to '
+                                'extract.')
 
-    missing_arguments = []
+    parser.add_argument('-s', '--schema-directory', type=str,
+                            required=True, dest='schema_directory',
+                            help='Path to the schema\'s directory.')
+    
+    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
+                            dest='cpu_cores',
+                            default=1,
+                            help='Number of CPU cores to pass to BLAST.')
 
-    # Check if all the necessary arguments have been received
-    if not input_files:
-        missing_arguments.append("input_files")
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the output directory where to save the files.')
 
-    if not schema_directory:
-        missing_arguments.append("schema_directory")
 
-    error_messages = []
-    if len(missing_arguments) > 0:
-        print("\nError: ")
-        for arg in missing_arguments:
-            error_messages.append(necessary_arguments[arg])
-
-    return error_messages
+    parser.parse_args(args_list)
 

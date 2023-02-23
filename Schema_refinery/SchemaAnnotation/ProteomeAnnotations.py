@@ -4,7 +4,7 @@
 Purpose
 -------
 
-This script handles everything related with
+This sub-module handles everything related with
 the creation of TrEMBL and Swiss-Prot annotations.
 
 Code documentation
@@ -12,6 +12,7 @@ Code documentation
 """
 
 import os
+import argparse
 
 try:
     from SchemaAnnotation.proteome_fetcher import proteome_fetcher
@@ -25,28 +26,46 @@ except ModuleNotFoundError:
     from Schema_refinery.SchemaAnnotation.proteome_matcher import proteome_matcher
     from Schema_refinery.utils.file_functions import check_and_make_directory
 
-def check_proteome_annotations_arguments(input_table, schema_directory):
-    necessary_arguments = {
-        "input_table": "\tProteome annotations need an input table argument. -t",
-        "schema_directory": "\tProteome annotations need a schema directory argument. -s",
-    }
+def check_proteome_annotations_arguments(args_list:list):
+    parser = argparse.ArgumentParser(prog='Proteome Annotations',
+                                     description='This sub-module handles everything related with '
+                                     'the creation of TrEMBL and Swiss-Prot annotations.')
 
-    missing_arguments = []
+    parser.add_argument('-s', '--schema-directory', type=str,
+                            required=True, dest='schema_directory',
+                            help='Path to the schema\'s directory.')
 
-    # Check if all the necessary arguments have been received
-    if not input_table:
-        missing_arguments.append("input_table")
+    parser.add_argument('-t', '--input_table', type=str,
+                        required=True, dest='input_table',
+                        help='TSV file downloaded from UniProt '
+                            'that contains list of proteomes.')
     
-    if not schema_directory:
-        missing_arguments.append("schema_directory")
+    parser.add_argument('-d', '--proteomes-directory', type=str, required=False,
+                            dest='proteomes_directory',
+                            help='Path to the directory with UniProt '
+                                'proteomes in Fasta format.')
 
-    error_messages = []
-    if len(missing_arguments) > 0:
-        print("\nError: ")
-        for arg in missing_arguments:
-            error_messages.append(necessary_arguments[arg])
+    parser.add_argument('-th', '--threads', type=int,
+                        required=False, default=2,
+                        dest='threads',
+                        help='Number of threads for concurrent download.')
+
+    parser.add_argument('-r', '--retry', type=int,
+                        required=False, dest='retry',
+                        default=7,
+                        help='Maximum number of retries when a '
+                            'download fails.')
     
-    return error_messages
+    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
+                            dest='cpu_cores',
+                            default=1,
+                            help='Number of CPU cores to pass to BLAST.')
+
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the output directory where to save the files.')
+
+    parser.parse_args(args_list)
 
 def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
 
