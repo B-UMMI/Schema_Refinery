@@ -332,7 +332,8 @@ def multi_threading(i, retry):
         else:
             break
 
-    return [i,identifiers]
+    return [i, identifiers]
+
 
 def main(input_file, output_file, email, threads, retry, api_key):
     """
@@ -365,7 +366,6 @@ def main(input_file, output_file, email, threads, retry, api_key):
     database_identifiers = {}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-
         for res in list(tqdm(executor.map(multi_threading, identifiers,repeat(retry)),total=len(identifiers))):
             database_identifiers[res[0]] = res[1]
 
@@ -386,9 +386,7 @@ def main(input_file, output_file, email, threads, retry, api_key):
 
 
 def parse_arguments():
-    """
-    Arguments.
-    """
+
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 

@@ -12,7 +12,7 @@ Code documentation
 
 from setuptools import setup
 
-import Schema_refinery
+import SchemaRefinery
 
 with open('README.rst',encoding='utf-8') as readme_file:
     readme = readme_file.read()
@@ -24,7 +24,7 @@ test_requirements = ['pytest>=3', ]
 
 setup(
     author="UMMI",
-    author_email='microbiologia@fm.ul.pt',
+    author_email='imm-bioinfo@medicina.ulisboa.pt',
     python_requires='>=3.6',
     install_requires = [],
     classifiers=[
@@ -46,11 +46,11 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/B-UMMI/schema_refinery',
-    version='0.1.0',
+    version='0.2.0',
     zip_safe=False,
 
-    packages = ['Schema_refinery','Schema_refinery.DownloadAssemblies'],
+    packages = ['SchemaRefinery','SchemaRefinery.DownloadAssemblies'],
 
-    entry_points={'console_scripts': ["schema_refinery.py = Schema_refinery.schema_refinery:main",
-                                    "SR = Schema_refinery.schema_refinery:main"]}
+    entry_points={'console_scripts': ["SchemaRefinery = SchemaRefinery.schema_refinery:main",
+                                    "SR = SchemaRefinery.schema_refinery:main"]}
 )

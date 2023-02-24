@@ -1,41 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 28 13:28:18 2022
-
-AUTHOR
-
-    Mykyta Forofontov
-    github: @MForofontov
 """
 
 import os
+import time
 import argparse
 import concurrent.futures
-import time
-import xml.etree.ElementTree as ET
 from itertools import repeat
+import xml.etree.ElementTree as ET
+
 import pandas as pd
 from tqdm import tqdm
 from Bio import Entrez
 
-def read_table(id_table_path):
-    """
-    Reads TSV file containing Biosample id and transforms into pandas dataframe.
-
-    Parameter
-    ---------
-
-    id_table_path : str
-
-    Returns
-    -------
-
-    return : pandas dataframe object
-    """
-    with open(id_table_path) as id_table:
-
-        return pd.read_csv(id_table, sep='\t',low_memory=False,header=None)
 
 def find_internal_id(query_id):
     """
@@ -68,6 +46,7 @@ def find_internal_id(query_id):
     except:
         return "Failed"
 
+
 def download_query(internal_id):
     """
     This function with and input of an internal id for a Biosample, fetches
@@ -83,20 +62,18 @@ def download_query(internal_id):
 
     return : xml tree object
     """
-
     try:
-        if not "Failed" in internal_id:
-
+        if "Failed" not in internal_id:
             handle = Entrez.efetch(db="biosample", id=internal_id)
             tree = ET.parse(handle)
             root = tree.getroot()
 
             return root
-
         else:
             return internal_id
     except:
         return "Failed"
+
 
 def get_metadata(xml_root):
     """
@@ -114,13 +91,9 @@ def get_metadata(xml_root):
     return : dict
         that contains metadata
     """
-
     if not "Failed" in xml_root:
-
         metadata_dict = {}
-
         metadata_dict.update(xml_root[0].attrib)
-
         metadata_dict.update(xml_root.find(".//Organism").attrib)
 
         for attributes in xml_root.iter('Attributes'):
@@ -136,7 +109,8 @@ def get_metadata(xml_root):
     else:
         return {"accession": "Failed"}
 
-def write_to_file(metadata_df,output_directory):
+
+def write_to_file(metadata_df, output_directory):
     """
     Writes dataframe into TSV file format at output directory.
 
@@ -155,14 +129,12 @@ def write_to_file(metadata_df,output_directory):
                        mode='a', header=not os.path.exists(os.path.join(
                            output_directory, "metadata.tsv")),sep="\t",index=False)
 
-def multi_thread_run(query,retry):
-    """
-    Function that enables main function to run multithreading for faster metadata
-    fetching.
+
+def multi_thread_run(query, retry):
+    """Fetch metadata with multithreading.
 
     Parameter
     ---------
-
     query : str
         Biosample id
     retry : int
@@ -170,16 +142,11 @@ def multi_thread_run(query,retry):
 
     Returns
     -------
-
-    return : dict
+    metadata_dict : dict
         that contains metadata
     """
-
-
     rtry = 0
-
     while rtry < retry:
-
         metadata_dict = get_metadata(download_query(find_internal_id(query)))
 
         if len(metadata_dict) == 1:
@@ -190,49 +157,45 @@ def multi_thread_run(query,retry):
 
     return metadata_dict
 
-def main(id_table_path,output_directory,email,threads,api_key,retry):
 
-    #Create directory if absent in output path
-    if not os.path.exists(output_directory):
-        os.mkdir(output_directory)
-
+# id_table_path = biosample_file
+# output_directory = metadata_directory
+# email = 'john@doe.com'
+# threads = 2
+# api_key = None
+# retry = 7
+def main(id_table_path, output_directory, email, threads, api_key, retry):
     Entrez.email = email
 
-    #API key to increase number of requests
+    # API key to increase number of requests
     if api_key is not None:
         Entrez.api_key = api_key
 
-    #list where all the dictionaries containg metadata are stored
+    # list where all the dictionaries containg metadata are stored
     metadata_list_dict = []
 
-    #Read input table to extract ids
-    table = read_table(id_table_path)
-    queries = [i for sl in table.values.tolist() for i in sl]
+    # Read input table to extract ids
+    with open(id_table_path, 'r') as infile:
+        queries = infile.read().splitlines()
 
     failures = []
-
-    #multithreading function
+    # multithreading function
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-
         for res in list(tqdm(executor.map(multi_thread_run, queries, repeat(retry)),total=len(queries))):
             if 'Failed' in res:
                 failures.append(res)
             metadata_list_dict.append(res)
 
-    """
-    Convert the list of dictionaries into pandas dataframe where keys are
-    columns and values are values for the following column.
-    When dictionary does not have a key and value, the value in the column of
-    pandas dataframe if that column already exists is kept blank.
-    """
-
+    # convert list of dctionaries to Pandas dataframe
+    # keys are column ids
     metadata_df = pd.DataFrame(metadata_list_dict)
 
-    #Organise metadata and associate with input id
-    metadata_df.insert(0,"File",queries)
+    # Organise metadata and associate with input id
+    metadata_df.insert(0, "File", queries)
 
-    #Write to TSV in output directory
-    write_to_file(metadata_df,output_directory)
+    # Write to TSV in output directory
+    write_to_file(metadata_df, output_directory)
+
 
 def parse_arguments():
 
@@ -272,13 +235,12 @@ def parse_arguments():
                         help='Maximum number of retries when a '
                              'download fails.')
 
-
     args = parser.parse_args()
 
     return args
 
+
 if __name__ == '__main__':
 
     args = parse_arguments()
-
     main(**vars(args))
