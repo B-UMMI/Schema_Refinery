@@ -21,12 +21,12 @@ except ModuleNotFoundError:
     from Schema_refinery.DownloadAssemblies import parameter_validation as pv
 
 
-def download_module():
+def download_assemblies():
 
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('Download_module', nargs='+',
+    parser.add_argument('DownloadAssemblies', nargs='+',
                         help='')
 
     # Common arguments between databases
@@ -101,12 +101,16 @@ def download_module():
 
 def main():
 
-    module_info = {"Download_module": ['Downloads assemblies from either NCBI '
-                                       'or ENA661K database', download_module]}
+    module_info = {"DownloadAssemblies": ['Downloads assemblies from the NCBI '
+                                       'and the ENA661K database.', download_assemblies]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
-        print('possible arguments here')
-        sys.exit()
+        print('USAGE: SchemaRefinery [module] -h \n')
+        print('Select one of the following modules:\n')
+        for f in module_info:
+            print('{0}: {1}'.format(f, module_info[f][0]))
+        sys.exit(0)
+
 
     module = sys.argv[1]
     module_info[module][1]()
