@@ -12,7 +12,7 @@ import csv
 try:
     from DownloadAssemblies import constants as ct
 except ModuleNotFoundError:
-    from Schema_refinery.DownloadAssemblies import constants as ct
+    from SchemaRefinery.DownloadAssemblies import constants as ct
 
 
 def tryeval(val):
@@ -123,8 +123,6 @@ def check_parameter(value, validate_type, validate_minimum, validate_maximum,
         return value
 
 
-# file_path = '/home/rmamede/Desktop/schemaRefinery_PRs/filtering_criteria.tsv'
-# expected_criteria=ct.FILTERING_CRITERIA
 def validate_criteria_file(file_path, expected_criteria=ct.FILTERING_CRITERIA):
     """"""
     with open(file_path, 'r', encoding='utf-8') as filters:

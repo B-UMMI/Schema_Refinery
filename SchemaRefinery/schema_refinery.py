@@ -14,11 +14,11 @@ import sys
 import argparse
 
 try:
-    from DownloadAssemblies import download_assemblies
+    from DownloadAssemblies import DownloadAssemblies
     from DownloadAssemblies import parameter_validation as pv
 except ModuleNotFoundError:
-    from Schema_refinery.DownloadAssemblies import download_assemblies
-    from Schema_refinery.DownloadAssemblies import parameter_validation as pv
+    from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
+    from SchemaRefinery.DownloadAssemblies import parameter_validation as pv
 
 
 def download_assemblies():
@@ -64,7 +64,7 @@ def download_assemblies():
 
     parser.add_argument('-k', '--api-key', type=str,
                         required=False, dest='api_key',
-                        help='Personal API key provided to NCBI. If not set, '
+                        help='Personal API key provided to the NCBI. If not set, '
                              'only 3 requests per second are allowed. With a '
                              'valid API key the limit increases to 10 '
                              'requests per second.')
@@ -73,7 +73,7 @@ def download_assemblies():
                         required=False, dest='fetch_metadata',
                         action='store_true',
                         default=False,
-                        help='If provided, the process does not fetch '
+                        help='If provided, the process downloads '
                              'metadata for the assemblies.')
 
     parser.add_argument('-f', '--filtering-criteria', type=pv.validate_criteria_file,
@@ -89,14 +89,13 @@ def download_assemblies():
     # Arguments specific for NCBI
     parser.add_argument('-i', '--input-table', type=str,
                         required=False, dest='input_table',
-                        help='TSV file downloaded from the NCBI Genome '
-                             'Assembly and Annotation report.')
+                        help='Text file with a list of accession numbers for the NCBI Assembly database.')
 
     args = parser.parse_args()
 
-    del args.Download_module
+    del args.DownloadAssemblies
 
-    download_assemblies.main(args)
+    DownloadAssemblies.main(args)
 
 
 def main():
@@ -110,7 +109,6 @@ def main():
         for f in module_info:
             print('{0}: {1}'.format(f, module_info[f][0]))
         sys.exit(0)
-
 
     module = sys.argv[1]
     module_info[module][1]()

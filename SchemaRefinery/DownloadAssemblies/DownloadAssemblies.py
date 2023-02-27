@@ -63,12 +63,6 @@ def find_local_conda_env():
     return os.path.join(sr_path, 'ena661k_files')
 
 
-
-# criteria_file = '/home/rmamede/Desktop/schemaRefinery_PRs/filtering_criteria.tsv'
-# criteria = pv.validate_criteria_file(criteria_file, expected_criteria=ct.FILTERING_CRITERIA)
-# #assembly_ids_file = '/home/rmamede/Desktop/schemaRefinery_PRs/assemblies_ids.txt'
-# taxon = "Streptococcus suis"
-# output_directory = '/home/rmamede/Desktop/schemaRefinery_PRs/test'
 def main(args):
     # if both input table and taxon are present
     if args.input_table is not None and args.taxon is not None:
@@ -171,7 +165,7 @@ def main(args):
             print("\nDownloading assemblies...")
             subprocess.run(arguments, check=False)
         else:
-            print("\nAssemblies to be downloaded are in the following TSV file: {}".format(valid_ids_file))
+            print("\nThe list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(valid_ids_file))
     # Download from ENA661k
     if 'ENA661K' in args.database:
         # Path for ena661k files
@@ -194,7 +188,7 @@ def main(args):
         linked_ids_file = os.path.join(metadata_directory, 'id_matches.tsv')
         ids_file = os.path.join(metadata_directory, 'assemblies_ids_to_download.tsv')
 
-        print("\nFetching related ids...")
+        print("\nFetching RefSeq, Genbank and SRA IDs linked to the BioSample ID...")
         ncbi_linked_ids.main(ids_file,
                              linked_ids_file,
                              args.email,
@@ -212,7 +206,7 @@ def main(args):
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples)+'\n')
 
-        print("\nFetching additional metadata...")
+        print("\nFetching metadata associated to the BioSample ID...")
         fetch_metadata.main(biosample_file,
                             metadata_directory,
                             args.email,

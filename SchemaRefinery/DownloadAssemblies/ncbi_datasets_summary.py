@@ -65,10 +65,6 @@ def verify_assembly(metadata_assembly, size_threshold, max_contig_number,
     return True
 
 
-#id_list_path = '/home/rmamede/Desktop/schemaRefinery_PRs/assemblies_ids.txt'
-# id_list_path = None
-# taxon = taxon
-# api_key = None
 def fetch_metadata(id_list_path, taxon, criteria, api_key):
     """
     This function based on an input id fetches json object (dict) for all
@@ -116,7 +112,7 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               check=False)
-    print(metadata.stderr)
+
     metadata = json.loads(metadata.stdout)
 
     return metadata

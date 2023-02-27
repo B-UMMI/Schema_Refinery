@@ -27,7 +27,7 @@ from itertools import repeat
 try:
     from DownloadAssemblies import constants as ct
 except ModuleNotFoundError:
-    from Schema_refinery.DownloadAssemblies import constants as ct
+    from SchemaRefinery.DownloadAssemblies import constants as ct
 
 
 # increase the field_size_limit
@@ -167,9 +167,6 @@ def download_ftp_file(data, retry, verify=True, progress=False):
     return downloaded
 
 
-# ftp_download = True
-# retry = 7
-# threads = 4
 def main(sr_path, taxon, output_directory, ftp_download, criteria, retry, threads):
     # FTP paths and local location for files needed to download assemblies
     assembly_ftp_file = os.path.join(sr_path, 'assembly_ftp_file.txt')

@@ -158,12 +158,6 @@ def multi_thread_run(query, retry):
     return metadata_dict
 
 
-# id_table_path = biosample_file
-# output_directory = metadata_directory
-# email = 'john@doe.com'
-# threads = 2
-# api_key = None
-# retry = 7
 def main(id_table_path, output_directory, email, threads, api_key, retry):
     Entrez.email = email
 
