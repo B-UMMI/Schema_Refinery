@@ -15,10 +15,10 @@ try:
     from DownloadAssemblies import ncbi_linked_ids
     from DownloadAssemblies import fetch_metadata
 except ModuleNotFoundError:
-    from Schema_refinery.DownloadAssemblies import ena661k_assembly_fetcher
-    from Schema_refinery.DownloadAssemblies import ncbi_datasets_summary
-    from Schema_refinery.DownloadAssemblies import ncbi_linked_ids
-    from Schema_refinery.DownloadAssemblies import fetch_metadata
+    from SchemaRefinery.DownloadAssemblies import ena661k_assembly_fetcher
+    from SchemaRefinery.DownloadAssemblies import ncbi_datasets_summary
+    from SchemaRefinery.DownloadAssemblies import ncbi_linked_ids
+    from SchemaRefinery.DownloadAssemblies import fetch_metadata
 
 
 def find_local_conda_env():
