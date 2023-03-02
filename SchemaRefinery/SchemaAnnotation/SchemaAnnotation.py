@@ -22,11 +22,11 @@ try:
     from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
-    from Schema_refinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations, check_genbank_annotations_arguments
-    from Schema_refinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations, check_proteome_annotations_arguments
-    from Schema_refinery.SchemaAnnotation.AnnotationMerger import annotation_merger
-    from Schema_refinery.SchemaAnnotation.MatchSchemas import check_match_schemas_arguments, match_schemas
-    from Schema_refinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations, check_genbank_annotations_arguments
+    from SchemaRefinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations, check_proteome_annotations_arguments
+    from SchemaRefinery.SchemaAnnotation.AnnotationMerger import annotation_merger
+    from SchemaRefinery.SchemaAnnotation.MatchSchemas import check_match_schemas_arguments, match_schemas
+    from SchemaRefinery.utils.file_functions import check_and_make_directory
 
 def check_uniprot_arguments(args_list:list):
     parser = argparse.ArgumentParser(prog='Uniprot Annotations',

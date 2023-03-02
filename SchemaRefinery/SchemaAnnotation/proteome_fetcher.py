@@ -26,9 +26,9 @@ try:
     from utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
 
 except ModuleNotFoundError:
-    from Schema_refinery.utils.download_functions import download_file
-    from Schema_refinery.utils.file_functions import check_and_make_directory
-    from Schema_refinery.utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
+    from SchemaRefinery.utils.download_functions import download_file
+    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
 
 
 # set socket timeout for urllib calls
