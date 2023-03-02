@@ -1,23 +1,32 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Purpose
+-------
+This script installs the schema_refinery package in the local files, giving the
+option to call schema_rifinery in the command line by typing SR or schema_refinery.
 
-"""The setup script."""
+Code documentation
+------------------
+"""
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
-with open('README.rst') as readme_file:
+import SchemaRefinery
+
+with open('README.rst',encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('HISTORY.rst',encoding='utf-8') as history_file:
     history = history_file.read()
-
-requirements = [ ]
 
 test_requirements = ['pytest>=3', ]
 
 setup(
     author="UMMI",
-    author_email='microbiologia@fm.ul.pt',
+    author_email='imm-bioinfo@medicina.ulisboa.pt',
     python_requires='>=3.6',
+    install_requires = [],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -29,16 +38,19 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     description="Set of scripts and instructions to refine wg/cgMLST schemas. ",
-    install_requires=requirements,
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='schema_refinery',
     name='schema_refinery',
-    packages=find_packages(include=['schema_refinery', 'schema_refinery.*']),
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/B-UMMI/schema_refinery',
-    version='0.1.0',
+    version='0.2.0',
     zip_safe=False,
+
+    packages = ['SchemaRefinery','SchemaRefinery.DownloadAssemblies'],
+
+    entry_points={'console_scripts': ["SchemaRefinery = SchemaRefinery.schema_refinery:main",
+                                    "SR = SchemaRefinery.schema_refinery:main"]}
 )
