@@ -107,7 +107,6 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
         # filter by choosen assembly source
         if criteria['assembly_source'] is not None:
             arguments.extend(['--assembly-source', ','.join(criteria['assembly_source'])])
-
     metadata = subprocess.run(arguments,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,

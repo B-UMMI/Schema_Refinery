@@ -80,6 +80,9 @@ def main(args):
 
     if args.filtering_criteria:
         criteria = args.filtering_criteria
+        
+        if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
+            sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
     else:
         criteria = None
 
@@ -100,9 +103,16 @@ def main(args):
 
             if criteria is not None:
                 metadata = ncbi_datasets_summary.fetch_metadata(args.input_table, None, criteria, args.api_key)
+
+                if metadata['total_count'] == 0:
+                    os.sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
         else:
             # Fetch from taxon identifier
             metadata = ncbi_datasets_summary.fetch_metadata(None, args.taxon, criteria, args.api_key)
+            
+            if metadata['total_count'] == 0:
+                os.sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
+
             assembly_ids = [sample['accession'] for sample in metadata['reports']]
 
         total_ids = len(assembly_ids)
