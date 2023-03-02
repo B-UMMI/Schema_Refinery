@@ -25,9 +25,9 @@ try:
     from utils.sequence_functions import translate_sequence
 
 except ModuleNotFoundError:
-    from Schema_refinery.utils.file_functions import check_and_make_directory
-    from Schema_refinery.utils.blast_functions import make_blast_db, run_blast
-    from Schema_refinery.utils.sequence_functions import translate_sequence
+    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
+    from SchemaRefinery.utils.sequence_functions import translate_sequence
 
 
 def read_tabular(input_file, delimiter='\t'):

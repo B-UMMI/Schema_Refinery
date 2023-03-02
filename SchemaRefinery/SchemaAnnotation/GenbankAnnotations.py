@@ -24,9 +24,9 @@ try:
     from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
-    from Schema_refinery.utils.blast_functions import make_blast_db, run_blast
-    from Schema_refinery.utils.sequence_functions import translate_sequence
-    from Schema_refinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
+    from SchemaRefinery.utils.sequence_functions import translate_sequence
+    from SchemaRefinery.utils.file_functions import check_and_make_directory
 
 def get_protein_annotation_fasta(seqRecord):
     """ Gets the translated protein from a Genbank file.

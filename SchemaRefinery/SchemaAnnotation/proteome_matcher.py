@@ -24,8 +24,8 @@ try:
     from utils.sequence_functions import translate_sequence
 
 except ModuleNotFoundError:
-    from Schema_refinery.utils.blast_functions import make_blast_db, run_blast
-    from Schema_refinery.utils.sequence_functions import translate_sequence
+    from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
+    from SchemaRefinery.utils.sequence_functions import translate_sequence
 
 
 # proteome_splitter_files_list has the TrEMBL file in index 0,

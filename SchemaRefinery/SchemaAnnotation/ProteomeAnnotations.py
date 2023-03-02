@@ -21,10 +21,10 @@ try:
     from utils.file_functions import check_and_make_directory
 
 except ModuleNotFoundError:
-    from Schema_refinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
-    from Schema_refinery.SchemaAnnotation.proteome_splitter import proteome_splitter
-    from Schema_refinery.SchemaAnnotation.proteome_matcher import proteome_matcher
-    from Schema_refinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
+    from SchemaRefinery.SchemaAnnotation.proteome_splitter import proteome_splitter
+    from SchemaRefinery.SchemaAnnotation.proteome_matcher import proteome_matcher
+    from SchemaRefinery.utils.file_functions import check_and_make_directory
 
 def check_proteome_annotations_arguments(args_list:list):
     parser = argparse.ArgumentParser(prog='Proteome Annotations',

@@ -4,7 +4,7 @@ import platform
 try:
     from utils import constants as ct
 except:
-    from Schema_refinery.utils import constants as ct
+    from SchemaRefinery.utils import constants as ct
 
 def validate_python_version(minimum_version=ct.MIN_PYTHON):
     """Validate Python version used to run Schema Refinery.

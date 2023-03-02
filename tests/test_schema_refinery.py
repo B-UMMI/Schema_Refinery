@@ -5,7 +5,7 @@
 import pytest
 
 
-from Schema_refinery import schema_refinery
+from SchemaRefinery import schema_refinery
 
 
 @pytest.fixture
