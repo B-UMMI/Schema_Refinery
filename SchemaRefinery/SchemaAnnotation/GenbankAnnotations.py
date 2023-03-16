@@ -21,11 +21,11 @@ from Bio import SeqIO
 try:
     from utils.blast_functions import make_blast_db, run_blast
     from utils.sequence_functions import translate_sequence
-    from utils.file_functions import check_and_make_directory
+    from utils.file_functions import create_directory
 except ModuleNotFoundError:
     from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
     from SchemaRefinery.utils.sequence_functions import translate_sequence
-    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.file_functions import create_directory
 
 
 def get_protein_annotation_fasta(seqRecord):
@@ -75,7 +75,7 @@ def get_protein_annotation_fasta(seqRecord):
 def genbank_annotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
 
     output_directory = os.path.join(output_directory, "Genbank")
-    check_and_make_directory(output_directory)
+    create_directory(output_directory)
 
     gbk_files = [os.path.join(input_files, f) for f in os.listdir(input_files)]
 

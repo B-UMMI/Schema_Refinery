@@ -18,18 +18,18 @@ try:
     from SchemaAnnotation.proteome_fetcher import proteome_fetcher
     from SchemaAnnotation.proteome_splitter import proteome_splitter
     from SchemaAnnotation.proteome_matcher import proteome_matcher
-    from utils.file_functions import check_and_make_directory
+    from utils.file_functions import create_directory
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation.proteome_fetcher import proteome_fetcher
     from SchemaRefinery.SchemaAnnotation.proteome_splitter import proteome_splitter
     from SchemaRefinery.SchemaAnnotation.proteome_matcher import proteome_matcher
-    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.file_functions import create_directory
 
 
 def proteome_annotations(input_table, proteomes_directory, threads, retry, schema_directory, output_directory, cpu_cores):
 
     output_directory = os.path.join(output_directory, "Proteomes")
-    check_and_make_directory(output_directory)
+    create_directory(output_directory)
 
     if not proteomes_directory:
         proteomes_directory = proteome_fetcher(input_table, output_directory, threads, retry)

@@ -20,12 +20,12 @@ import itertools
 from Bio import SeqIO
 
 try:
-    from utils.file_functions import check_and_make_directory
+    from utils.file_functions import create_directory
     from utils.blast_functions import make_blast_db, run_blast
     from utils.sequence_functions import translate_sequence
 
 except ModuleNotFoundError:
-    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.file_functions import create_directory
     from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
     from SchemaRefinery.utils.sequence_functions import translate_sequence
 
@@ -77,7 +77,7 @@ def flatten_list(list_to_flatten):
 def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, cpu_cores):
 
     output_path = os.path.join(output_path, "matchSchemas")
-    check_and_make_directory(output_path)
+    create_directory(output_path)
 
     # import representative sequences in query schema
     rep_dir = os.path.join(query_schema, 'short')

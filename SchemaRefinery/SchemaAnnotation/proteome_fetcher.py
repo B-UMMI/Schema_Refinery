@@ -22,11 +22,11 @@ from itertools import repeat
 
 try:
     from utils.download_functions import download_file
-    from utils.file_functions import check_and_make_directory
+    from utils.file_functions import create_directory
     from utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
 except ModuleNotFoundError:
     from SchemaRefinery.utils.download_functions import download_file
-    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.file_functions import create_directory
     from SchemaRefinery.utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
 
 
@@ -36,7 +36,7 @@ socket.setdefaulttimeout(SOCKET_TIMEOUT)
 def proteome_fetcher(input_table:str, output_directory:str, threads:int, retry:int):
 
     output_directory = os.path.join(output_directory, "Downloaded_proteomes")
-    check_and_make_directory(output_directory)
+    create_directory(output_directory)
 
     # open table downloaded from Uniprot
     with open(input_table, 'r') as table:

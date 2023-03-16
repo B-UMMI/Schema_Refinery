@@ -18,18 +18,18 @@ try:
     from SchemaAnnotation.ProteomeAnnotations import proteome_annotations
     from SchemaAnnotation.AnnotationMerger import annotation_merger
     from SchemaAnnotation.MatchSchemas import match_schemas
-    from utils.file_functions import check_and_make_directory
+    from utils.file_functions import create_directory
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations
     from SchemaRefinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations
     from SchemaRefinery.SchemaAnnotation.AnnotationMerger import annotation_merger
     from SchemaRefinery.SchemaAnnotation.MatchSchemas import match_schemas
-    from SchemaRefinery.utils.file_functions import check_and_make_directory
+    from SchemaRefinery.utils.file_functions import create_directory
 
 
 def main(args):
 
-    check_and_make_directory(args.output_directory)
+    create_directory(args.output_directory)
 
     # run annotation submodules
     if 'genbank' in args.annotation_options:
