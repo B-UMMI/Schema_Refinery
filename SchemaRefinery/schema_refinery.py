@@ -14,17 +14,19 @@ import sys
 import argparse
 
 try:
+    from __init__ import __version__
     from DownloadAssemblies import DownloadAssemblies
     from DownloadAssemblies import parameter_validation as pv
-    from __init__ import __version__
-    from SchemaAnnotation.SchemaAnnotation import schema_annotation
+    from SchemaAnnotation import SchemaAnnotation
 except ModuleNotFoundError:
+    from SchemaRefinery.__init__ import __version__
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.DownloadAssemblies import parameter_validation as pv
-    from SchemaRefinery.__init__ import __version__
-    from SchemaRefinery.SchemaAnnotation.SchemaAnnotation import schema_annotation
+    from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
+
 
 version = __version__
+
 
 def download_assemblies():
 
@@ -97,12 +99,13 @@ def download_assemblies():
                         help='Text file with a list of accession numbers for the NCBI Assembly database.')
 
     args = parser.parse_args()
-
     del args.DownloadAssemblies
 
     DownloadAssemblies.main(args)
 
+
 def schema_annotation_module():
+
     parser = argparse.ArgumentParser(prog='SchemaAnnotation',
                                      description='')
 
@@ -205,18 +208,19 @@ def schema_annotation_module():
     args = parser.parse_args()
     del args.SchemaAnnotation
 
-    schema_annotation(args)
+    SchemaAnnotation.main(args)
 
 
 def main():
 
-    module_info = {"DownloadAssemblies": ['Downloads assemblies from the NCBI '
-                                       'and the ENA661K database.', download_assemblies],
-                    'SchemaAnnotation': ['This module handles the whole process of creating the '
-                                        'Genbank, TrEMBL and Swiss-Prot annotations and merging them '
-                                        'alongside the UniProtFinder annotations into a single TSV file. '
-                                        'It also supports a matchSchemas sub-module that gets a user '
-                                        'selected list of annotations from an old schema',
+    module_info = {
+        "DownloadAssemblies":
+         ['Download genome assemblies from the NCBI and the ENA661K databases.',
+          download_assemblies
+         ],
+          'SchemaAnnotation':
+         ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based '
+          'on alignment against Genbank files and other schemas.',
                                        schema_annotation_module]}
     
     matches = ["--v", "-v", "-version", "--version"]

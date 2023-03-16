@@ -22,11 +22,11 @@ try:
     from utils.blast_functions import make_blast_db, run_blast
     from utils.sequence_functions import translate_sequence
     from utils.file_functions import check_and_make_directory
-
 except ModuleNotFoundError:
     from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
     from SchemaRefinery.utils.sequence_functions import translate_sequence
     from SchemaRefinery.utils.file_functions import check_and_make_directory
+
 
 def get_protein_annotation_fasta(seqRecord):
     """ Gets the translated protein from a Genbank file.
@@ -70,6 +70,7 @@ def get_protein_annotation_fasta(seqRecord):
             fasta_dict[translated_protein] = [protein_id, product, gene]
 
     return fasta, fasta_dict
+
 
 def genbank_annotations(input_files:str, schema_directory:str, output_directory:str, cpu_cores:int):
 
@@ -199,31 +200,3 @@ def genbank_annotations(input_files:str, schema_directory:str, output_directory:
     print('Results available at {0}'.format(annotations_file))
 
     return annotations_file
-
-def check_genbank_annotations_arguments(args_list:list):
-    parser = argparse.ArgumentParser(prog='Genbank Annotations',
-                                     description='This sub-module aligns schema representative sequences '
-                                     'against records in Genbank files to extract relevant annotations.')
-    
-    parser.add_argument('-i', '--input-files', type=str, required=True,
-                            dest='input_files',
-                            help='Path to the directory that contains '
-                                'Genbank files with annotations to '
-                                'extract.')
-
-    parser.add_argument('-s', '--schema-directory', type=str,
-                            required=True, dest='schema_directory',
-                            help='Path to the schema\'s directory.')
-    
-    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
-                            dest='cpu_cores',
-                            default=1,
-                            help='Number of CPU cores to pass to BLAST.')
-
-    parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the output directory where to save the files.')
-
-
-    parser.parse_args(args_list)
-

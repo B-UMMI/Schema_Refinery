@@ -22,7 +22,6 @@ from Bio import SeqIO
 try:
     from utils.blast_functions import make_blast_db, run_blast
     from utils.sequence_functions import translate_sequence
-
 except ModuleNotFoundError:
     from SchemaRefinery.utils.blast_functions import make_blast_db, run_blast
     from SchemaRefinery.utils.sequence_functions import translate_sequence

@@ -24,7 +24,6 @@ try:
     from utils.download_functions import download_file
     from utils.file_functions import check_and_make_directory
     from utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
-
 except ModuleNotFoundError:
     from SchemaRefinery.utils.download_functions import download_file
     from SchemaRefinery.utils.file_functions import check_and_make_directory
