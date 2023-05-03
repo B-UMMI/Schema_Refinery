@@ -33,9 +33,8 @@ def main(schema, missing_classes_fasta, output_directory):
             with open(schema_files_paths[locus], "r") as locus_file:
                 locus_file_lines = locus_file.readlines()
                 with open(representative_file, "w") as rep_file:
-                    rep_file_lines =rep_file.readlines()
-                    rep_file.writelines(locus_file_lines[0], locus_file_lines[1])
-                all_reps_file.writelines(locus_file_lines[0], locus_file_lines[1])
+                    rep_file.writelines([locus_file_lines[0], locus_file_lines[1]])
+                all_reps_file.writelines([locus_file_lines[0], locus_file_lines[1]])
             for classification in LOCUS_CLASSIFICATIONS_TO_CHECK:
                 subjects_number = 0
                 current_cds_file = os.path.join(output_directory, f"CDS_{locus}_{classification}.fasta")
@@ -56,8 +55,8 @@ def main(schema, missing_classes_fasta, output_directory):
                 # only do blast if any subjects are found
                 if subjects_number > 0:
 
-                    blast_results_file = os.path.join(blast_results_dir, f"blast_results_{locus}_{classification}.xml")
-                    blast_args = ['blastn', '-query', representative_file, '-subject', current_cds_file, '-out', blast_results_file, '-outfmt', '5']
+                    blast_results_file = os.path.join(blast_results_dir, f"blast_results_{locus}_{classification}.txt")
+                    blast_args = ['blastn', '-query', representative_file, '-subject', current_cds_file, '-out', blast_results_file]
 
                     print(f"Running BLAST for locus: {locus}")
                     print(f"Classification: {classification}.")
@@ -79,7 +78,7 @@ def main(schema, missing_classes_fasta, output_directory):
     print("Running Blast for all representatives...")
 
     for locus in loci:
-        blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.xml")
+        blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.txt")
         blast_args = ['blastn', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
 
         print(f"Running BLAST for locus: {locus}")
