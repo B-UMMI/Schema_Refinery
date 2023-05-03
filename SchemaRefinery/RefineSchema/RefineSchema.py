@@ -1,5 +1,4 @@
 import os
-import argparse
 import subprocess
 
 LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM", 
@@ -93,29 +92,3 @@ def main(schema, missing_classes_fasta, output_directory):
         if len(stderr) > 0:
             print(stderr)
                 
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-s', '--schema', type=str,
-                        required=True, dest='schema',
-                        help='')
-    
-    parser.add_argument('-msf', '--missing-classes-fasta', type=str,
-                        required=True, dest='missing_classes_fasta',
-                        help='')
-
-    parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the directory to which '
-                             'files will be stored.')
-
-    args = parser.parse_args()
-
-    return args
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-    main(**vars(args))

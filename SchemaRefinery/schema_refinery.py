@@ -16,9 +16,11 @@ import argparse
 try:
     from DownloadAssemblies import DownloadAssemblies
     from DownloadAssemblies import parameter_validation as pv
+    from RefineSchema import RefineSchema
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.DownloadAssemblies import parameter_validation as pv
+    from SchemaRefinery.RefineSchema import RefineSchema
 
 
 def download_assemblies():
@@ -97,11 +99,38 @@ def download_assemblies():
 
     DownloadAssemblies.main(args)
 
+def refine_schema():
+    
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    
+    parser.add_argument('RefineSchema', nargs='+',
+                        help='')
+
+    parser.add_argument('-s', '--schema', type=str,
+                        required=True, dest='schema',
+                        help='')
+    
+    parser.add_argument('-msf', '--missing-classes-fasta', type=str,
+                        required=True, dest='missing_classes_fasta',
+                        help='')
+
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the directory to which '
+                             'files will be stored.')
+
+    args = parser.parse_args()
+
+    del args.RefineSchema
+
+    RefineSchema.main(args)
 
 def main():
 
     module_info = {"DownloadAssemblies": ['Downloads assemblies from the NCBI '
-                                       'and the ENA661K database.', download_assemblies]}
+                                       'and the ENA661K database.', download_assemblies],
+                   "RefineSchema": ['Identifies spurious loci from a schema', refine_schema]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')
