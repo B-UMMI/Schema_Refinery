@@ -27,6 +27,26 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
     if len(stderr) > 0:
         print(stderr)
 
+def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory):
+    blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
+    check_and_make_directory(blast_results_all_representatives)
+
+    print("Running Blast for all representatives...")
+
+    for locus in loci:
+        blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.txt")
+        blast_args = ['blastn', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
+
+        print(f"Running BLAST for locus: {locus}")
+
+        blast_proc = subprocess.Popen(blast_args,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+
+        stderr = blast_proc.stderr.readlines()
+        if len(stderr) > 0:
+            print(stderr)
+
 def main(schema, missing_classes_fasta, output_directory):
     check_and_make_directory(output_directory)
 
@@ -41,12 +61,11 @@ def main(schema, missing_classes_fasta, output_directory):
 
     all_representatives_file = os.path.join(representatives_dir, f"All_representatives.fasta")
     representative_file_dict = {}
+
+    # iterate through all representatives
     with open(all_representatives_file, "w") as all_reps_file:
         for locus in loci:
             representative_file = os.path.join(representatives_dir, f"{locus}_representative.fasta")
-
-            # saving this representative file in a dictionary so
-            # it is accessible later when running BLAST on all representatives
             representative_file_dict[locus] = representative_file
 
             with open(schema_files_paths[locus], "r") as locus_file:
@@ -54,9 +73,16 @@ def main(schema, missing_classes_fasta, output_directory):
                 with open(representative_file, "w") as rep_file:
                     rep_file.writelines([locus_file_lines[0], locus_file_lines[1]])
 
-                # filling the all representatives file here to save iterations
                 all_reps_file.writelines([locus_file_lines[0], locus_file_lines[1]])
 
+    # only received the schema
+    if schema and not missing_classes_fasta:
+        # Run BLAST for all representatives
+        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory)
+
+    # received both arguments
+    if schema and missing_classes_fasta:
+        for locus in loci:
             for classification in LOCUS_CLASSIFICATIONS_TO_CHECK:
                 subjects_number = 0
                 with open(missing_classes_fasta, "r") as missing_classes_fasta_file:
@@ -77,25 +103,7 @@ def main(schema, missing_classes_fasta, output_directory):
 
                 # only do blast if any subjects are found
                 if subjects_number > 0:
-                    run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir, representative_file, current_cds_file)
+                    run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir, representative_file_dict[locus], current_cds_file)
 
-    # Run BLAST for all representatives
-
-    blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
-    check_and_make_directory(blast_results_all_representatives)
-
-    print("Running Blast for all representatives...")
-
-    for locus in loci:
-        blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.txt")
-        blast_args = ['blastn', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
-
-        print(f"Running BLAST for locus: {locus}")
-
-        blast_proc = subprocess.Popen(blast_args,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-
-        stderr = blast_proc.stderr.readlines()
-        if len(stderr) > 0:
-            print(stderr)
+        # Run BLAST for all representatives
+        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory)
