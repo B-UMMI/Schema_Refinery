@@ -148,7 +148,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     for locus in loci:
         blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.txt")
-        blast_args = ['blastn', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
+        blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
 
         print(f"Running BLAST for locus: {locus}")
 
@@ -160,7 +160,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         if len(stderr) > 0:
             print(stderr)
 
-def main(schema, missing_classes_fasta, output_directory):
+def main(schema, output_directory, missing_classes_fasta):
     check_and_make_directory(output_directory)
 
     blast_results_dir = os.path.join(output_directory, "blast_results")
@@ -183,10 +183,15 @@ def main(schema, missing_classes_fasta, output_directory):
 
             with open(schema_files_paths[locus], "r") as locus_file:
                 locus_file_lines = locus_file.readlines()
-                with open(representative_file, "w") as rep_file:
-                    rep_file.writelines([locus_file_lines[0], locus_file_lines[1]])
+                protein_translation = translate_dna(locus_file_lines[1].replace('\n', ''), "Standard", 0)
 
-                all_reps_file.writelines([locus_file_lines[0], locus_file_lines[1]])
+                # the protein translation was succesful
+                if isinstance(protein_translation, list):
+                    # print(protein_translation)
+                    with open(representative_file, "w") as rep_file:
+                        rep_file.writelines([locus_file_lines[0], protein_translation[0][1]])
+
+                    all_reps_file.writelines([locus_file_lines[0], f"{protein_translation[0][1]}\n"])
 
     # only received the schema
     if schema and not missing_classes_fasta:

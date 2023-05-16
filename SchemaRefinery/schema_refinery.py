@@ -16,11 +16,11 @@ import argparse
 try:
     from DownloadAssemblies import DownloadAssemblies
     from DownloadAssemblies import parameter_validation as pv
-    from RefineSchema import RefineSchema
+    from RefineSchema import SpuriousLociIdentification
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.DownloadAssemblies import parameter_validation as pv
-    from SchemaRefinery.RefineSchema import RefineSchema
+    from SchemaRefinery.RefineSchema import SpuriousLociIdentification
 
 
 def download_assemblies():
@@ -112,7 +112,8 @@ def refine_schema():
                         help='')
     
     parser.add_argument('-msf', '--missing-classes-fasta', type=str,
-                        required=True, dest='missing_classes_fasta',
+                        default=None,
+                        required=False, dest='missing_classes_fasta',
                         help='')
 
     parser.add_argument('-o', '--output-directory', type=str,
@@ -124,7 +125,9 @@ def refine_schema():
 
     del args.RefineSchema
 
-    RefineSchema.main(args)
+    print(args)
+
+    SpuriousLociIdentification.main(**vars(args))
 
 def main():
 
