@@ -168,11 +168,13 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     print("Running Blast for all representatives...")
 
-    for locus in loci:
+    total_loci = len(loci)
+
+    for idx, locus in enumerate(loci, 1):
         blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.txt")
         blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
 
-        print(f"Running BLAST for locus: {locus}")
+        print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
         run_blast(blast_args)
 
         # check results file for alignments
@@ -181,7 +183,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
         # print(alignments)
 
-        for alignment in alignments:
+        total_alignments = len(alignments)
+        for i, alignment in enumerate(alignments, 1):
             alignment_files = [f for f in os.listdir(schema) if alignment in f]
             if len(alignment_files) > 0:
                 alignment_file = alignment_files[0]
@@ -205,7 +208,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                 allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.txt")
                 blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-out', allele_blast_results_file]
 
-                print(f"\tRunning BLAST for alignment: {alignment}")
+                print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
                 run_blast(blast_args)
 
 def main(schema, output_directory, missing_classes_fasta):
