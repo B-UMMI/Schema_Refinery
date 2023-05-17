@@ -123,6 +123,16 @@ def translate_dna(dna_sequence, table_id, min_len):
     else:
         exception_str = ','.join(exception_collector)
         return exception_str
+    
+def run_blast(blast_args):
+    blast_proc = subprocess.Popen(blast_args,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+
+    stderr = blast_proc.stderr.readlines()
+    if len(stderr) > 0:
+        print(stderr)
+
 
 def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir, representative_file, current_cds_file):
     blast_results_file = os.path.join(blast_results_dir, f"blast_results_{locus}_{classification}.txt")
@@ -140,9 +150,21 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
     if len(stderr) > 0:
         print(stderr)
 
-def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory):
+def get_alignments(blast_results_file):
+    with open(blast_results_file, "r") as f:
+        alignments = [line[2:].replace('\n', '') for line in f.readlines() if line[0] == ">"]
+    
+    return alignments
+
+def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
     check_and_make_directory(blast_results_all_representatives)
+
+    alleles_protein_dir = os.path.join(output_directory, "alleles_protein")
+    check_and_make_directory(alleles_protein_dir)
+
+    blast_results_alignments = os.path.join(blast_results_all_representatives, "alignments")
+    check_and_make_directory(blast_results_alignments)
 
     print("Running Blast for all representatives...")
 
@@ -151,14 +173,40 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
 
         print(f"Running BLAST for locus: {locus}")
+        run_blast(blast_args)
 
-        blast_proc = subprocess.Popen(blast_args,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+        # check results file for alignments
+        alignments = get_alignments(blast_results_file)
+        if locus in alignments: alignments.remove(locus) # remove own locus from alignment hits
 
-        stderr = blast_proc.stderr.readlines()
-        if len(stderr) > 0:
-            print(stderr)
+        # print(alignments)
+
+        for alignment in alignments:
+            alignment_files = [f for f in os.listdir(schema) if alignment in f]
+            if len(alignment_files) > 0:
+                alignment_file = alignment_files[0]
+                alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment_file}")
+                with open(alignment_file, "r") as alleles_file:
+                    lines = alleles_file.readlines()
+                    with open(alleles_protein_file_path, "w") as alleles_protein_file:
+                        for line in lines:
+                            if line[0] == '>':
+                                alleles_protein_file.writelines([line])
+                            else:
+                                protein_translation = translate_dna(line.replace('\n', ''), "Standard", 0)
+                                # the protein translation was succesful
+                                if isinstance(protein_translation, list):
+                                    alleles_protein_file.writelines([f"{protein_translation[0][1]}\n"])
+                                else: # protein translation was not succesful
+                                    # TODO: something to handle dna sequences that couldn't be translated to protein
+                                    pass
+                
+                # run blast for alignment locus alleles
+                allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.txt")
+                blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-out', allele_blast_results_file]
+
+                print(f"\tRunning BLAST for alignment: {alignment}")
+                run_blast(blast_args)
 
 def main(schema, output_directory, missing_classes_fasta):
     check_and_make_directory(output_directory)
@@ -192,11 +240,16 @@ def main(schema, output_directory, missing_classes_fasta):
                         rep_file.writelines([locus_file_lines[0], protein_translation[0][1]])
 
                     all_reps_file.writelines([locus_file_lines[0], f"{protein_translation[0][1]}\n"])
+                else: # protein translation was not succesful
+                    # TODO: something to handle dna sequences that couldn't be translated to protein
+                    pass
+
+    # loci=["GCF-000817005-protein1586"]
 
     # only received the schema
     if schema and not missing_classes_fasta:
         # Run BLAST for all representatives
-        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory)
+        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema)
 
     # received both arguments
     if schema and missing_classes_fasta:
@@ -224,4 +277,4 @@ def main(schema, output_directory, missing_classes_fasta):
                     run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir, representative_file_dict[locus], current_cds_file)
 
         # Run BLAST for all representatives
-        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory)
+        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema)
