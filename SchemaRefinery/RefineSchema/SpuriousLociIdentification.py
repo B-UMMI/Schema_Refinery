@@ -1,4 +1,5 @@
 import os
+import copy
 import subprocess
 from Bio.Seq import Seq
 
@@ -152,7 +153,7 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
 
 def get_alignments(blast_results_file):
     with open(blast_results_file, "r") as f:
-        alignments = [line[2:].replace('\n', '') for line in f.readlines() if line[0] == ">"]
+        alignments = [line[2:-3] for line in f.readlines() if line[0] == ">"]
     
     return alignments
 
@@ -181,28 +182,27 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         alignments = get_alignments(blast_results_file)
         if locus in alignments: alignments.remove(locus) # remove own locus from alignment hits
 
-        # print(alignments)
-
         total_alignments = len(alignments)
         for i, alignment in enumerate(alignments, 1):
             alignment_files = [f for f in os.listdir(schema) if alignment in f]
             if len(alignment_files) > 0:
                 alignment_file = alignment_files[0]
+                alignment_file_path = os.path.join(schema, alignment_files[0])
                 alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment_file}")
-                with open(alignment_file, "r") as alleles_file:
+                with open(alignment_file_path, "r") as alleles_file:
                     lines = alleles_file.readlines()
                     with open(alleles_protein_file_path, "w") as alleles_protein_file:
                         for line in lines:
-                            if line[0] == '>':
-                                alleles_protein_file.writelines([line])
-                            else:
-                                protein_translation = translate_dna(line.replace('\n', ''), "Standard", 0)
-                                # the protein translation was succesful
-                                if isinstance(protein_translation, list):
-                                    alleles_protein_file.writelines([f"{protein_translation[0][1]}\n"])
-                                else: # protein translation was not succesful
-                                    # TODO: something to handle dna sequences that couldn't be translated to protein
-                                    pass
+                            protein_translation = translate_dna(line.replace('\n', ''), "Standard", 0)
+                            # the protein translation was succesful
+                            if isinstance(protein_translation, list):
+                                if line[0] == '>':
+                                    alleles_protein_file.writelines([line])
+                                else:
+                                    alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
+                            else: # protein translation was not succesful
+                                # TODO: something to handle dna sequences that couldn't be translated to protein
+                                pass
                 
                 # run blast for alignment locus alleles
                 allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.txt")
@@ -221,12 +221,14 @@ def main(schema, output_directory, missing_classes_fasta):
     check_and_make_directory(representatives_dir)
 
     schema_files_paths = {f.replace(".fasta", ""): os.path.join(schema, f) for f in os.listdir(schema) if not os.path.isdir(f) and ".fasta" in f}
-    loci = schema_files_paths.keys()
+    loci = set(schema_files_paths.keys())
 
     all_representatives_file = os.path.join(representatives_dir, f"All_representatives.fasta")
     representative_file_dict = {}
+    not_translated_dna_sequences = {}
 
     # iterate through all representatives
+    filtered_loci = copy.deepcopy(loci)
     with open(all_representatives_file, "w") as all_reps_file:
         for locus in loci:
             representative_file = os.path.join(representatives_dir, f"{locus}_representative.fasta")
@@ -240,19 +242,21 @@ def main(schema, output_directory, missing_classes_fasta):
                 if isinstance(protein_translation, list):
                     # print(protein_translation)
                     with open(representative_file, "w") as rep_file:
-                        rep_file.writelines([locus_file_lines[0], protein_translation[0][1]])
+                        rep_file.writelines([locus_file_lines[0], str(protein_translation[0][0])])
 
-                    all_reps_file.writelines([locus_file_lines[0], f"{protein_translation[0][1]}\n"])
+                    all_reps_file.writelines([locus_file_lines[0], f"{str(protein_translation[0][0])}\n"])
                 else: # protein translation was not succesful
                     # TODO: something to handle dna sequences that couldn't be translated to protein
-                    pass
+                    del representative_file_dict[locus]
+                    filtered_loci.remove(locus)
+                    not_translated_dna_sequences[locus] = protein_translation
 
-    # loci=["GCF-000817005-protein1586"]
+    # loci = ["GCF-000817005-protein1586"]
 
     # only received the schema
     if schema and not missing_classes_fasta:
         # Run BLAST for all representatives
-        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema)
+        run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, schema)
 
     # received both arguments
     if schema and missing_classes_fasta:
@@ -280,4 +284,4 @@ def main(schema, output_directory, missing_classes_fasta):
                     run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir, representative_file_dict[locus], current_cds_file)
 
         # Run BLAST for all representatives
-        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema)
+        run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, schema)
