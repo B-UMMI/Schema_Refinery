@@ -125,8 +125,6 @@ def refine_schema():
 
     del args.RefineSchema
 
-    print(args)
-
     SpuriousLociIdentification.main(**vars(args))
 
 def main():
