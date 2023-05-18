@@ -182,34 +182,33 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         alignments = get_alignments(blast_results_file)
         if locus in alignments: alignments.remove(locus) # remove own locus from alignment hits
 
+        schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
+
         total_alignments = len(alignments)
         for i, alignment in enumerate(alignments, 1):
-            alignment_files = [f for f in os.listdir(schema) if alignment in f]
-            if len(alignment_files) > 0:
-                alignment_file = alignment_files[0]
-                alignment_file_path = os.path.join(schema, alignment_files[0])
-                alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment_file}")
-                with open(alignment_file_path, "r") as alleles_file:
-                    lines = alleles_file.readlines()
-                    with open(alleles_protein_file_path, "w") as alleles_protein_file:
-                        for line in lines:
-                            protein_translation = translate_dna(line.replace('\n', ''), "Standard", 0)
-                            # the protein translation was succesful
-                            if isinstance(protein_translation, list):
-                                if line[0] == '>':
-                                    alleles_protein_file.writelines([line])
-                                else:
-                                    alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
-                            else: # protein translation was not succesful
-                                # TODO: something to handle dna sequences that couldn't be translated to protein
-                                pass
-                
-                # run blast for alignment locus alleles
-                allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.txt")
-                blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-out', allele_blast_results_file]
+            alignment_file_path = os.path.join(schema, schema_files[alignment])
+            alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment}")
+            with open(alignment_file_path, "r") as alleles_file:
+                lines = alleles_file.readlines()
+                with open(alleles_protein_file_path, "w") as alleles_protein_file:
+                    for line in lines:
+                        protein_translation = translate_dna(line.replace('\n', ''), "Standard", 0)
+                        # the protein translation was succesful
+                        if isinstance(protein_translation, list):
+                            if line[0] == '>':
+                                alleles_protein_file.writelines([line])
+                            else:
+                                alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
+                        else: # protein translation was not succesful
+                            # TODO: something to handle dna sequences that couldn't be translated to protein
+                            pass
+            
+            # run blast for alignment locus alleles
+            allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.txt")
+            blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-out', allele_blast_results_file]
 
-                print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
-                run_blast(blast_args)
+            print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
+            run_blast(blast_args)
 
 def main(schema, output_directory, missing_classes_fasta):
     check_and_make_directory(output_directory)
@@ -251,7 +250,7 @@ def main(schema, output_directory, missing_classes_fasta):
                     filtered_loci.remove(locus)
                     not_translated_dna_sequences[locus] = protein_translation
 
-    # loci = ["GCF-000817005-protein1586"]
+    # filtered_loci = ["GCF-022070005-protein1832"]
 
     # only received the schema
     if schema and not missing_classes_fasta:
