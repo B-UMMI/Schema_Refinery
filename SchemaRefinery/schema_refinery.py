@@ -97,11 +97,30 @@ def download_assemblies():
 
     DownloadAssemblies.main(args)
 
+def modify_schema():
+
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument('ModifySchema', nargs='+',
+                        help='')
+
+    # Common arguments between databases
+    parser.add_argument('-g', '--input_schema', type=str,
+                        required=True, dest='schema_path',
+                        help='Databases from which assemblies will '
+                             'be downloaded.')
+
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the output directory.')
 
 def main():
 
     module_info = {"DownloadAssemblies": ['Downloads assemblies from the NCBI '
-                                       'and the ENA661K database.', download_assemblies]}
+                                       'and the ENA661K database.', download_assemblies],
+                    "ModifySchema": ['Modifies Schema according to input',
+                                      modify_schema]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')
