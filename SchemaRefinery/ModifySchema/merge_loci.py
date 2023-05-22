@@ -15,10 +15,10 @@ import hashlib
 
 from Bio import SeqIO
 
-def merge_loci(loci_to_merge,schema_path):
+def merge_locus(loci_to_merge,schema_path):
 
     #New loci file name will be the first loci name in the list
-    new_locus_id = f">{loci_to_merge[0]}_"
+    new_allele_id = f">{loci_to_merge[0]}_"
     new_locus_path = os.path.join(schema_path,f"{loci_to_merge[0]}.fasta")
     allele_id = 1
     seq_hash = {}
@@ -36,7 +36,7 @@ def merge_loci(loci_to_merge,schema_path):
                 if hashed_seq in seq_hash.keys():
                     continue
                 else:
-                    seq_hash[hashed_seq] = [f"{new_locus_id}{allele_id}",
+                    seq_hash[hashed_seq] = [f"{new_allele_id}{allele_id}",
                                             rec[1]]
                     allele_id += 1
 

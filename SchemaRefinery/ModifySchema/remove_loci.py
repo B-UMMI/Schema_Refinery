@@ -11,7 +11,7 @@ Code documentation
 
 import os
 
-def remove_loci(loci_to_remove,schema_path):
+def remove_locus(loci_to_remove,schema_path):
     
     for loci in loci_to_remove:
         loci_path = os.path.join(schema_path, f"{loci}.fasta")

@@ -10,19 +10,21 @@ from multiprocessing import Pool, cpu_count
 
 try:
     from ModifySchema import merge_loci
+    from ModifySchema import remove_loci
+    from ModifySchema import split_loci
 except ModuleNotFoundError:
     from SchemaRefinery.ModifySchema import merge_loci
+    from SchemaRefinery.ModifySchema import remove_loci
+    from SchemaRefinery.ModifySchema import split_loci
 
-new_schema_path = '/home/ummi/Downloads/test/schema_seed'
-input_line = ['merge','a','b']
 def multiprocess_table(input_line,new_schema_path):
 
     if input_line[0].lower() == 'merge':
-        merge_loci.merge_loci(input_line[1:],new_schema_path)
+        merge_loci.merge_locus(input_line[1:],new_schema_path)
     elif input_line[0].lower() == 'remove':
-        pass
+        remove_loci.remove_locus(input_line[1:],new_schema_path)
     elif input_line[0].lower() == 'split':
-        pass
+        split_loci.split_locus(input_line[2:],new_schema_path,input_line[1])
 
 def main(args):
     # create output directory
