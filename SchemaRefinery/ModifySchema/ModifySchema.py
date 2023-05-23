@@ -60,18 +60,28 @@ def multiprocess_table(input_line,new_schema_path):
         split_loci.split_locus(input_line[2:],new_schema_path,input_line[1])
 
 def main(args):
+
+    print("Creating directory and copying schema...")
     # create output directory
     if os.path.isdir(args.output_directory) is False:
         os.mkdir(args.output_directory)
     
     new_schema_path = os.path.join(args.output_directory,'schema_seed')
-    shutil.copytree(args.schema_path, new_schema_path)
 
+    if os.path.exists(new_schema_path):
+        shutil.rmtree(new_schema_path)
+        shutil.copytree(args.schema_path, new_schema_path)
+    else:
+        shutil.copytree(args.schema_path, new_schema_path)
+
+    print("Reading input table...")
     input_table = read_tsv(args.input_table)
 
+    print("Executing proccesses...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.cpu) as executor:
         executor.map(multiprocess_table, input_table, repeat(new_schema_path))
 
+    print(f"Modified Schema available at {new_schema_path}")
 
 
     
