@@ -49,7 +49,9 @@ setup(
     version='0.2.0',
     zip_safe=False,
 
-    packages = ['SchemaRefinery','SchemaRefinery.DownloadAssemblies'],
+    packages = ['SchemaRefinery',
+                'SchemaRefinery.DownloadAssemblies',
+                'SchemaRefinery.ModifySchema'],
 
     entry_points={'console_scripts': ["SchemaRefinery = SchemaRefinery.schema_refinery:main",
                                     "SR = SchemaRefinery.schema_refinery:main"]}

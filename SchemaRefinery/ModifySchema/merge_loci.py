@@ -16,21 +16,17 @@ import hashlib
 from Bio import SeqIO
 
 def merge_locus(loci_to_merge,schema_path):
-
     #New loci file name will be the first loci name in the list
     new_allele_id = f">{loci_to_merge[0]}_"
     new_locus_path = os.path.join(schema_path,f"{loci_to_merge[0]}.fasta")
     allele_id = 1
     seq_hash = {}
 
-    
     for loci in loci_to_merge:
         loci_path = os.path.join(schema_path,f"{loci}.fasta")
         loci_path_short = os.path.join(schema_path, 'short', f"{loci}.fasta")
-
-        if os.path.exists(loci_path) and os.path.exists(loci_path_short):
+        if os.path.exists(loci_path):
             loci_records = [[rec.id, str(rec.seq)] for rec in SeqIO.parse(loci_path, 'fasta')]
-
             for rec in loci_records:
                 hashed_seq = hashlib.sha256(rec[1].encode('utf-8')).hexdigest()
                 if hashed_seq in seq_hash.keys():
@@ -42,9 +38,6 @@ def merge_locus(loci_to_merge,schema_path):
 
             # remove locus file from main schema directory
             os.remove(loci_path)
-            # remove from short diretory
-            os.remove(loci_path_short)
-
         else:
             print(f"\nERROR: In the following merge loci group: {' '.join(loci_to_merge)} "
                   f"the following loci : {loci} is not present in the schema. "

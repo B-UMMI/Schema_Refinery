@@ -16,9 +16,11 @@ import argparse
 try:
     from DownloadAssemblies import DownloadAssemblies
     from DownloadAssemblies import parameter_validation as pv
+    from ModifySchema import ModifySchema
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.DownloadAssemblies import parameter_validation as pv
+    from SchemaRefinery.ModifySchema import ModifySchema
 
 
 def download_assemblies():
@@ -114,6 +116,20 @@ def modify_schema():
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
                         help='Path to the output directory.')
+    
+    parser.add_argument('-i', '--input_table', type=str,
+                    required=True, dest='input_table',
+                    help='Path to the output directory.')
+
+    parser.add_argument('-c','--cpu', type=int, required=False,
+                        default=3, dest='cpu',
+                        help='Number of CPU cores to use.')
+
+    args = parser.parse_args()
+    
+    del args.ModifySchema
+
+    ModifySchema.main(args)
 
 def main():
 

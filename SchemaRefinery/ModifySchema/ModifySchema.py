@@ -6,7 +6,7 @@ import sys
 import shutil
 import csv
 from itertools import repeat
-from multiprocessing import Pool, cpu_count
+import concurrent.futures
 
 try:
     from ModifySchema import merge_loci
@@ -16,6 +16,18 @@ except ModuleNotFoundError:
     from SchemaRefinery.ModifySchema import merge_loci
     from SchemaRefinery.ModifySchema import remove_loci
     from SchemaRefinery.ModifySchema import split_loci
+
+def read_tsv(file_path):
+    """
+    """
+    data = []
+    with open(file_path, 'r', newline='') as file:
+        reader = csv.reader(file, delimiter='\t')
+        for row in reader:
+            non_empty_row = [value for value in row if value]
+            if non_empty_row:
+                data.append(non_empty_row)
+    return data
 
 def multiprocess_table(input_line,new_schema_path):
 
@@ -32,14 +44,12 @@ def main(args):
         os.mkdir(args.output_directory)
     
     new_schema_path = os.path.join(args.output_directory,'schema_seed')
-    shutil.copytree(args.schema_path, args.new_schema_path)
+    shutil.copytree(args.schema_path, new_schema_path)
 
-    with open(args.input_table, 'r', newline='') as file:
-        input_table = csv.reader(file, delimiter='\t')
+    input_table = read_tsv(args.input_table)
 
-    p = Pool(processes=args.cpu)
-    r = p.map_async(multiprocess_table, input_table, repeat(new_schema_path))
-    r.wait()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.cpu) as executor:
+        executor.map(multiprocess_table, input_table, repeat(new_schema_path))
 
 
 
