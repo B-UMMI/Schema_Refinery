@@ -16,6 +16,20 @@ import hashlib
 from Bio import SeqIO
 
 def merge_locus(loci_to_merge,schema_path):
+    """Remove the loci contained inside a list
+    Parameter
+    ---------
+    loci_to_remove : list
+        List contating id for loci to be removed.
+
+    schema_path : str
+        String that contains the new schema path.
+
+    Returns
+    -------
+    None, operates over OS system folder
+    """
+
     #New loci file name will be the first loci name in the list
     new_allele_id = f">{loci_to_merge[0]}_"
     new_locus_path = os.path.join(schema_path,f"{loci_to_merge[0]}.fasta")

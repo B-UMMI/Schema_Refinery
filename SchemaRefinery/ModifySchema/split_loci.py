@@ -7,6 +7,22 @@ from Bio import SeqIO
 
 
 def split_locus(loci_list, schema_path, loci_to_split):
+    """Remove the loci contained inside a list
+    Parameter
+    ---------
+    loci_list : list
+        List contating id for loci to be removed.
+
+    schema_path : str
+        String that contains the new schema path.
+    
+    loci_to_split : str
+        String that contains loci id from which to split.
+
+    Returns
+    -------
+    None, operates over OS system folder
+    """
 
     loci_path = os.path.join(schema_path,f"{loci_to_split}.fasta")
     loci_path_short = os.path.join(schema_path, 'short', f"{loci_to_split}.fasta")

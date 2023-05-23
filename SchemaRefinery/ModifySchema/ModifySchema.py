@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import shutil
 import csv
 from itertools import repeat
@@ -18,7 +17,16 @@ except ModuleNotFoundError:
     from SchemaRefinery.ModifySchema import split_loci
 
 def read_tsv(file_path):
-    """
+    """Read the input TSV and remove the blank columns
+    Parameter
+    ---------
+    file_path : str
+        TSV file path.
+
+    Returns
+    -------
+    data : list
+        TSV file converted to list, where each line is a list.
     """
     data = []
     with open(file_path, 'r', newline='') as file:
@@ -30,6 +38,19 @@ def read_tsv(file_path):
     return data
 
 def multiprocess_table(input_line,new_schema_path):
+    """Multiprocess
+    Parameter
+    ---------
+    input_line : list
+        List containing the command (merge,remove or split) as the first 
+        entry followed by loci ids.
+    new_schema_path : str
+        String that contains the new schema path.
+
+    Returns
+    -------
+    None, operates over OS system folder
+    """
 
     if input_line[0].lower() == 'merge':
         merge_loci.merge_locus(input_line[1:],new_schema_path)
