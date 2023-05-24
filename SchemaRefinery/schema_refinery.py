@@ -110,8 +110,7 @@ def modify_schema():
     # Common arguments between databases
     parser.add_argument('-g', '--input_schema', type=str,
                         required=True, dest='schema_path',
-                        help='Databases from which assemblies will '
-                             'be downloaded.')
+                        help='Path to the schema_seed')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
@@ -119,7 +118,10 @@ def modify_schema():
     
     parser.add_argument('-i', '--input_table', type=str,
                     required=True, dest='input_table',
-                    help='Path to the output directory.')
+                    help='Path to the input TSV table that contains data in following format:\n'
+                    'merge    loci1   loci2\n'
+                    'remove    loci3   loci4\n'
+                    'split    loci5   new_loci_x   100-300   new_loci_y   301-500\n')
 
     parser.add_argument('-c','--cpu', type=int, required=False,
                         default=3, dest='cpu',
