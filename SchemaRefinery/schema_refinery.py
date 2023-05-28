@@ -120,6 +120,10 @@ def refine_schema():
                         required=True, dest='output_directory',
                         help='Path to the directory to which '
                              'files will be stored.')
+    
+    parser.add_argument('-t', '--threshold', type=str,
+                        required=False, dest='threshold',
+                        default=0, help='')
 
     args = parser.parse_args()
 

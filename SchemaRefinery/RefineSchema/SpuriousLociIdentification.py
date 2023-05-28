@@ -157,6 +157,11 @@ def get_alignments(blast_results_file):
     
     return alignments
 
+def process_blast_result(blast_file):
+    with open(blast_file, 'r') as file:
+        lines = file.readlines()
+        # process the results
+
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
     check_and_make_directory(blast_results_all_representatives)
@@ -210,7 +215,9 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
             print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
             run_blast(blast_args)
 
-def main(schema, output_directory, missing_classes_fasta):
+            #TODO: Process the blast file for this alignment here
+
+def main(schema, output_directory, missing_classes_fasta, threshold):
     check_and_make_directory(output_directory)
 
     blast_results_dir = os.path.join(output_directory, "blast_results")
