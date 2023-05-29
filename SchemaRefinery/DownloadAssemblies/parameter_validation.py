@@ -165,3 +165,64 @@ def validate_criteria_file(file_path, expected_criteria=ct.FILTERING_CRITERIA):
         sys.exit(warning_text)
     else:
         return parameter_values
+
+def validate_modify_schema_input(file_path, expected_commands=ct.ACCEPTED_COMMANDS):
+    input_list = []
+    with open(file_path, 'r', newline='') as file:
+        reader = csv.reader(file, delimiter='\t')
+        for row in reader:
+            non_empty_row = [value for value in row if value]
+            if non_empty_row:
+                input_list.append(non_empty_row)
+
+    unexpected_keys = [x
+                       for x in input_list
+                       if x[0] not in expected_commands]
+
+    if len(unexpected_keys) > 0:
+        print("\nError: Following unexpected commands:")
+        unexpected_keys = '\n'.join(unexpected_keys)
+        print(unexpected_keys)
+        sys.exit()
+
+    warnings = []
+    parameter_values = []
+    for input_line in input_list:
+        command = input_line[0].lower()
+        parameters = input_line[1:]
+        validated_values = []
+        if command in ['merge', 'remove']:
+            for parameter in parameters:
+                validated_values.append(check_parameter(parameter, *ct.INPUT_ERRORS[command][1]))
+        else:
+            if (len(parameters) % 2) != 0:
+                for new_loci_name, interval in zip(*[iter(parameter)]*2):
+                    validated_values.append(check_parameter(new_loci_name, *ct.INPUT_ERRORS[command + "_id"][1]))
+
+                    try:
+                        valid = []
+                        for i in interval.split('-'):
+                            valid.append(check_parameter(i, *ct.INPUT_ERRORS[command + "_size"][1]))
+                        
+                        if all(valid is not None):
+                            validated_values.append(interval)
+                    except:
+                        if ct.SPLIT_MISSING_MINUS not in warnings:
+                            warnings.append(ct.SPLIT_MISSING_MINUS)
+
+            elif ct.SPLIT_MUST_BE_EVEN not in warnings:
+                warnings.append(ct.SPLIT_MUST_BE_EVEN)
+        if all(validated_values):
+            parameter_values.append([command] + validated_values)
+        elif ct.CRITERIA_ERRORS[command][0] not in warnings:
+            warnings.append(ct.CRITERIA_ERRORS[command][0])
+
+    if len(warnings) > 0:
+        warning_text = '\n'.join(warnings)
+        sys.exit(warning_text)
+    else:
+        return parameter_values
+
+
+        
+

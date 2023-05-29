@@ -63,3 +63,27 @@ EBI_FTP = 'http://ftp.ebi.ac.uk'
 ASSEMBLY_FTP_PATH = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/sampleid_assembly_paths.txt'
 ASSEMBLY_METADATA_PATH = 'https://figshare.com/ndownloader/files/26578601'
 FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
+
+
+"""
+Modify_schema
+"""
+
+ACCEPTED_COMMANDS = ['merge', 'split', 'remove']
+
+INPUT_ERRORS = {'merge':
+                    ['merge: must contain a string.',
+                    [str, None, None, None, None]],
+                'split_id':
+                    ['split: must contain a string with the new id.',
+                    [str, None, None, None, None]],
+                'split_size':
+                    ['split: must have the sizes superior to 0.',
+                    [int, None, 1, None, None]],
+                'remove':
+                    ['split: must contain a string.',
+                    [str, None, None, None, None]]}
+
+SPLIT_MUST_BE_EVEN = "split: must be with the following format: split    loci5   new_loci_x   100-300   new_loci_y   301-500."
+
+SPLIT_MISSING_MINUS = "split: must have '-' between two values."

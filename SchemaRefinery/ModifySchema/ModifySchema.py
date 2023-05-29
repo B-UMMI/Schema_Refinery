@@ -16,27 +16,6 @@ except ModuleNotFoundError:
     from SchemaRefinery.ModifySchema import remove_loci
     from SchemaRefinery.ModifySchema import split_loci
 
-def read_tsv(file_path):
-    """Read the input TSV and remove the blank columns
-    Parameter
-    ---------
-    file_path : str
-        TSV file path.
-
-    Returns
-    -------
-    data : list
-        TSV file converted to list, where each line is a list.
-    """
-    data = []
-    with open(file_path, 'r', newline='') as file:
-        reader = csv.reader(file, delimiter='\t')
-        for row in reader:
-            non_empty_row = [value for value in row if value]
-            if non_empty_row:
-                data.append(non_empty_row)
-    return data
-
 def multiprocess_table(input_line,new_schema_path):
     """Multiprocess
     Parameter
@@ -75,7 +54,7 @@ def main(args):
         shutil.copytree(args.schema_path, new_schema_path)
 
     print("Reading input table...")
-    input_table = read_tsv(args.input_table)
+    input_table = args.input_table
 
     print("Executing proccesses...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.cpu) as executor:

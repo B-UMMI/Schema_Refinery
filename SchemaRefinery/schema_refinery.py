@@ -116,7 +116,7 @@ def modify_schema():
                         required=True, dest='output_directory',
                         help='Path to the output directory.')
     
-    parser.add_argument('-i', '--input_table', type=str,
+    parser.add_argument('-i', '--input_table', type=pv.validate_modify_schema_input,
                     required=True, dest='input_table',
                     help='Path to the input TSV table that contains data in following format:\n'
                     'merge    loci1   loci2\n'
