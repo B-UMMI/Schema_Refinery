@@ -79,11 +79,11 @@ INPUT_ERRORS = {'merge':
                     [str, None, None, None, None]],
                 'split_size':
                     ['split: must have the sizes superior to 0.',
-                    [int, None, 1, None, None]],
+                    [int, 0, None, None, None]],
                 'remove':
                     ['split: must contain a string.',
                     [str, None, None, None, None]]}
 
-SPLIT_MUST_BE_EVEN = "split: must be with the following format: split    loci5   new_loci_x   100-300   new_loci_y   301-500."
+SPLIT_MUST_BE_ODD = "split: must be with the following format: split    loci5   new_loci_x   100-300   new_loci_y   301-500."
 
 SPLIT_MISSING_MINUS = "split: must have '-' between two values."

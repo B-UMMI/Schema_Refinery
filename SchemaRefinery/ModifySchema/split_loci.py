@@ -25,12 +25,13 @@ def split_locus(loci_list, schema_path, loci_to_split):
     """
 
     loci_path = os.path.join(schema_path,f"{loci_to_split}.fasta")
-    loci_path_short = os.path.join(schema_path, 'short', f"{loci_to_split}.fasta")
 
     if os.path.exists(loci_path):
         sequences = {rec.id: str(rec.seq)
                     for rec in SeqIO.parse(loci_path, 'fasta')}
-        
+    else:
+        print(f"\n{loci_path}.fasta does not exist in the schema_seed folder.")
+
     for new_loci_name, interval in zip(*[iter(loci_list)]*2):
         min_length, max_length = interval.split('-')
         new_loci_path = os.path.join(schema_path,f"{new_loci_name}.fasta")
@@ -51,4 +52,3 @@ def split_locus(loci_list, schema_path, loci_to_split):
         
     # remove locus file from main schema directory
     os.remove(loci_path)
-
