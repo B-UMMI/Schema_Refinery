@@ -2,6 +2,7 @@ import os
 import copy
 import subprocess
 from Bio.Seq import Seq
+import shutil
 
 LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM", 
                                   #"ALM", 
@@ -151,9 +152,13 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
     if len(stderr) > 0:
         print(stderr)
 
-def get_alignments(blast_results_file):
+def list_blast_results(blast_results_file, with_split=True):
     with open(blast_results_file, "r") as f:
-        alignments = [line[2:-3] for line in f.readlines() if line[0] == ">"]
+        # remove allele number from locus name
+        if with_split:
+            alignments = [[i.split("_")[0].replace("\n", '') for i in line.split("\t")] for line in f.readlines()]
+        else:
+            alignments = [[i.replace("\n", '') for i in line.split("\t")] for line in f.readlines()]
     
     return alignments
 
@@ -172,50 +177,63 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     blast_results_alignments = os.path.join(blast_results_all_representatives, "alignments")
     check_and_make_directory(blast_results_alignments)
 
+    report_file_path = os.path.join(output_directory, "report.tsv")
+
     print("Running Blast for all representatives...")
 
     total_loci = len(loci)
+    with open(report_file_path, 'w') as report_file:
+        report_file.writelines(["Locus\t", "Allele\t", "BSR\n"])
+        for idx, locus in enumerate(loci, 1):
+            blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
+            blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid score', '-out', blast_results_file]
 
-    for idx, locus in enumerate(loci, 1):
-        blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.txt")
-        blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-out', blast_results_file]
-
-        print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
-        run_blast(blast_args)
-
-        # check results file for alignments
-        alignments = get_alignments(blast_results_file)
-        if locus in alignments: alignments.remove(locus) # remove own locus from alignment hits
-
-        schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
-
-        total_alignments = len(alignments)
-        for i, alignment in enumerate(alignments, 1):
-            alignment_file_path = os.path.join(schema, schema_files[alignment])
-            alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment}")
-            with open(alignment_file_path, "r") as alleles_file:
-                lines = alleles_file.readlines()
-                with open(alleles_protein_file_path, "w") as alleles_protein_file:
-                    for line in lines:
-                        protein_translation = translate_dna(line.replace('\n', ''), "Standard", 0)
-                        # the protein translation was succesful
-                        if isinstance(protein_translation, list):
-                            if line[0] == '>':
-                                alleles_protein_file.writelines([line])
-                            else:
-                                alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
-                        else: # protein translation was not succesful
-                            # TODO: something to handle dna sequences that couldn't be translated to protein
-                            pass
-            
-            # run blast for alignment locus alleles
-            allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.txt")
-            blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-out', allele_blast_results_file]
-
-            print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
+            print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
             run_blast(blast_args)
 
-            #TODO: Process the blast file for this alignment here
+            # check results file for alignments
+            all_alignments = list_blast_results(blast_results_file)
+
+            alignments = [l for l in all_alignments if l[1] != locus]
+            self_locus_alignment = [l for l in all_alignments if l[1] == locus][0]
+            alignments = [[l[0], l[1], float(l[2])/float(self_locus_alignment[2])] for l in alignments if float(l[2])/float(self_locus_alignment[2]) >= 0.5]
+
+            schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
+
+            total_alignments = len(alignments)
+            for i, alignment_list in enumerate(alignments, 1):
+                alignment = alignment_list[1]
+                alignment_file_path = os.path.join(schema, schema_files[alignment])
+                alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment}")
+                with open(alignment_file_path, "r") as alleles_file:
+                    lines = alleles_file.readlines()
+                    with open(alleles_protein_file_path, "w") as alleles_protein_file:
+                        for j in range(0, len(lines), 2):
+                            protein_translation = translate_dna(lines[j+1].replace('\n', ''), "Standard", 0)
+                            # the protein translation was succesful
+                            if isinstance(protein_translation, list):
+                                alleles_protein_file.writelines([lines[j]])
+                                alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
+                            else: # protein translation was not succesful
+                                # TODO: something to handle dna sequences that couldn't be translated to protein
+                                pass
+                
+                # run blast for alignment locus alleles
+                allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.tsv")
+                blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-outfmt', '6 qseqid sseqid score', '-out', allele_blast_results_file]
+
+                print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
+                run_blast(blast_args)
+
+                # process the blast file for this alignment
+                allele_alignments = list_blast_results(allele_blast_results_file, with_split=False)
+                allele_alignments = [[locus, l[1], f"{float(l[2])/float(self_locus_alignment[2])}\n"] for l in allele_alignments if float(l[2])/float(self_locus_alignment[2]) >= 0.6]
+                
+                report_file.writelines(['\t'.join(l) for l in allele_alignments])
+    
+    shutil.rmtree(blast_results_alignments)
+    shutil.rmtree(alleles_protein_dir)
+    shutil.rmtree(blast_results_all_representatives)
 
 def main(schema, output_directory, missing_classes_fasta, threshold):
     check_and_make_directory(output_directory)
@@ -291,3 +309,6 @@ def main(schema, output_directory, missing_classes_fasta, threshold):
 
         # Run BLAST for all representatives
         run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, schema)
+
+    shutil.rmtree(blast_results_dir)
+    shutil.rmtree(representatives_dir)
