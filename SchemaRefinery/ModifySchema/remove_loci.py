@@ -28,7 +28,6 @@ def remove_locus(loci_to_remove,schema_path):
     
     for loci in loci_to_remove:
         loci_path = os.path.join(schema_path, f"{loci}.fasta")
-        loci_path_short = os.path.join(schema_path, 'short', f"{loci}.fasta")
 
         if os.path.exists(loci_path):
             # remove locus file from main schema directory

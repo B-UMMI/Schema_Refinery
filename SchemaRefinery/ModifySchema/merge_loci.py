@@ -35,10 +35,9 @@ def merge_locus(loci_to_merge,schema_path):
     new_locus_path = os.path.join(schema_path,f"{loci_to_merge[0]}.fasta")
     allele_id = 1
     seq_hash = {}
-
+    failed = False
     for loci in loci_to_merge:
         loci_path = os.path.join(schema_path,f"{loci}.fasta")
-        loci_path_short = os.path.join(schema_path, 'short', f"{loci}.fasta")
         if os.path.exists(loci_path):
             loci_records = [[rec.id, str(rec.seq)] for rec in SeqIO.parse(loci_path, 'fasta')]
             for rec in loci_records:
@@ -56,10 +55,12 @@ def merge_locus(loci_to_merge,schema_path):
             print(f"\nERROR: In the following merge loci group: {' '.join(loci_to_merge)} "
                   f"the following loci : {loci} is not present in the schema. "
                   "Unable to merge with the others")
+            failed = True
     
-    with open(new_locus_path,'w') as outfile:
+    if failed is False:
+        with open(new_locus_path,'w') as outfile:
 
-        for seq in seq_hash.values():
-            records = '\n'.join(seq)
-            outfile.write(records+'\n')
+            for seq in seq_hash.values():
+                records = '\n'.join(seq)
+                outfile.write(records+'\n')
 

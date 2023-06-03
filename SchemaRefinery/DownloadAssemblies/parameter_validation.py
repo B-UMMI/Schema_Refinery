@@ -191,7 +191,7 @@ def validate_modify_schema_input(file_path, expected_commands=ct.ACCEPTED_COMMAN
         command = input_line[0].lower()
         parameters = input_line[1:]
         validated_values = []
-        
+
         if command in ['merge', 'remove']:
             for parameter in parameters:
                 validated_values.append(check_parameter(parameter, *ct.INPUT_ERRORS[command][1]))
@@ -207,6 +207,8 @@ def validate_modify_schema_input(file_path, expected_commands=ct.ACCEPTED_COMMAN
                             valid.append(check_parameter(i, *ct.INPUT_ERRORS[command + "_size"][1]))
                         if all(x is not None for x in valid):
                             validated_values.append(interval)
+                        elif ct.SPLIT_VALUE_MUST_BE_INT not in warnings:
+                            warnings.append(ct.SPLIT_VALUE_MUST_BE_INT)
                     except:
                         if ct.SPLIT_MISSING_MINUS not in warnings:
                             warnings.append(ct.SPLIT_MISSING_MINUS)

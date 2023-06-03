@@ -30,7 +30,7 @@ def split_locus(loci_list, schema_path, loci_to_split):
         sequences = {rec.id: str(rec.seq)
                     for rec in SeqIO.parse(loci_path, 'fasta')}
     else:
-        print(f"\n{loci_path}.fasta does not exist in the schema_seed folder.")
+        print(f"\n{loci_path}.fasta does not exist in the schema_seed directory.")
 
     for new_loci_name, interval in zip(*[iter(loci_list)]*2):
         min_length, max_length = interval.split('-')

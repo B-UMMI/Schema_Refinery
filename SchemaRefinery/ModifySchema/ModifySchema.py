@@ -54,7 +54,7 @@ def main(args):
     if os.path.exists(temp_schema_path):
         print("\ntemp_schema_seed folder already exists...")
         print("Removing and regenerating temp_schema_seed folder.")
-        os.rmdir(temp_schema_path)
+        shutil.rmtree(temp_schema_path)
         os.mkdir(temp_schema_path)
         for file in fasta_files_list:
             shutil.copy(file,temp_schema_path)
@@ -85,6 +85,11 @@ def main(args):
 
     new_schema_seed_path = os.path.join(args.output_directory,'new_schema_seed')
 
+    if os.path.exists(new_schema_seed_path):
+        print("\nnew_schema_seed directory already exists in output directory...")
+        print("Removing new_schema_seed directory")
+        shutil.rmtree(new_schema_seed_path)
+
     arguments = ['chewie', 'PrepExternalSchema',
                  '-i', temp_schema_path,
                  '-o', new_schema_seed_path,
@@ -95,7 +100,7 @@ def main(args):
                  '--ptf', prodigal_training_file[0],
                  '--cpu', str(args.cpu)]
 
-    subprocess.run(arguments,check=False)
+    subprocess.Popen(arguments)
     print(f"\nModified Schema available at {new_schema_seed_path}")
 
 
