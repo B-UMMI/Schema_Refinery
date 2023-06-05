@@ -213,8 +213,9 @@ def validate_modify_schema_input(file_path, expected_commands=ct.ACCEPTED_COMMAN
                         if ct.SPLIT_MISSING_MINUS not in warnings:
                             warnings.append(ct.SPLIT_MISSING_MINUS)
 
-            elif ct.SPLIT_MUST_BE_EVEN not in warnings:
-                warnings.append(ct.SPLIT_MUST_BE_EVEN)
+            elif ct.SPLIT_MUST_BE_ODD not in warnings:
+                warnings.append(ct.SPLIT_MUST_BE_ODD)
+                
         if all(validated_values):
             parameter_values.append([command] + validated_values)
         elif ct.CRITERIA_ERRORS[command][0] not in warnings:
