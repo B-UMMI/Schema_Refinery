@@ -102,6 +102,10 @@ def main(args):
                  '--cpu', str(args.cpu)]
 
     subprocess.run(arguments)
+
+    print("\nRemoving temp files...")
+    os.rmdir(temp_schema_path)
+    
     print(f"\nModified Schema available at {new_schema_seed_path}")
 
 

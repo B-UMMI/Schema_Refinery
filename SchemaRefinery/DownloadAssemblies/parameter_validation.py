@@ -175,7 +175,7 @@ def validate_modify_schema_input(file_path, expected_commands=ct.ACCEPTED_COMMAN
             if non_empty_row:
                 input_list.append(non_empty_row)
 
-    unexpected_keys = [x
+    unexpected_keys = [x[0]
                        for x in input_list
                        if x[0] not in expected_commands]
 
@@ -201,21 +201,23 @@ def validate_modify_schema_input(file_path, expected_commands=ct.ACCEPTED_COMMAN
 
                 for new_loci_name, interval in zip(*[iter(parameters[1:])]*2):
                     validated_values.append(check_parameter(new_loci_name, *ct.INPUT_ERRORS[command + "_id"][1]))
-                    try:
-                        valid = []
+
+                    valid = []
+                    if '-' not in interval:
+                        if ct.SPLIT_MISSING_MINUS not in warnings:
+                            warnings.append(ct.SPLIT_MISSING_MINUS)
+                    else:
                         for i in interval.split('-'):
                             valid.append(check_parameter(i, *ct.INPUT_ERRORS[command + "_size"][1]))
                         if all(x is not None for x in valid):
                             validated_values.append(interval)
                         elif ct.SPLIT_VALUE_MUST_BE_INT not in warnings:
                             warnings.append(ct.SPLIT_VALUE_MUST_BE_INT)
-                    except:
-                        if ct.SPLIT_MISSING_MINUS not in warnings:
-                            warnings.append(ct.SPLIT_MISSING_MINUS)
+
 
             elif ct.SPLIT_MUST_BE_ODD not in warnings:
                 warnings.append(ct.SPLIT_MUST_BE_ODD)
-                
+
         if all(validated_values):
             parameter_values.append([command] + validated_values)
         elif ct.CRITERIA_ERRORS[command][0] not in warnings:

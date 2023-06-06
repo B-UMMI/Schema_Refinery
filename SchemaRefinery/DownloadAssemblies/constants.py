@@ -72,7 +72,7 @@ Modify_schema
 ACCEPTED_COMMANDS = ['merge', 'split', 'remove']
 
 INPUT_ERRORS = {'merge':
-                    ['merge: must contain a string.',
+                    ['merge: must contain string values.',
                     [str, None, None, None, None]],
                 'split_id':
                     ['split: must contain a string with the new id.',
@@ -87,3 +87,5 @@ INPUT_ERRORS = {'merge':
 SPLIT_MUST_BE_ODD = "split: must be with the following format: split    loci5   new_loci_x   100-300   new_loci_y   301-500."
 
 SPLIT_MISSING_MINUS = "split: must have '-' between two values."
+
+SPLIT_VALUE_MUST_BE_INT = "split: must have integer number separated by '-'"
