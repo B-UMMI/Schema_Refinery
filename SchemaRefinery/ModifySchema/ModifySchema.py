@@ -8,6 +8,7 @@ import subprocess
 import pickle
 
 from itertools import repeat
+
 try:
     from ModifySchema import merge_loci
     from ModifySchema import remove_loci
@@ -94,13 +95,13 @@ def main(args):
                  '-i', temp_schema_path,
                  '-o', new_schema_seed_path,
                  '--bsr', str(config['bsr'][0]),
-                 '--l', '0',
-                 '--st', '0.2',
+                 '--l', str(config['minimum_locus_length'][0]),
+                 '--st', str(config['size_threshold'][0]),
                  '--t', str(config['translation_table'][0]),
                  '--ptf', prodigal_training_file[0],
                  '--cpu', str(args.cpu)]
 
-    subprocess.Popen(arguments)
+    subprocess.run(arguments)
     print(f"\nModified Schema available at {new_schema_seed_path}")
 
 
