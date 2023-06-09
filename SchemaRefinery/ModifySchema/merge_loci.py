@@ -48,9 +48,6 @@ def merge_locus(loci_to_merge,schema_path):
                     seq_hash[hashed_seq] = [f"{new_allele_id}{allele_id}",
                                             rec[1]]
                     allele_id += 1
-
-            # remove locus file from main schema directory
-            os.remove(loci_path)
         else:
             print(f"\nERROR: In the following merge loci group: {' '.join(loci_to_merge)} "
                   f"the following loci : {loci} is not present in the schema. "
@@ -58,9 +55,16 @@ def merge_locus(loci_to_merge,schema_path):
             failed = True
     
     if failed is False:
+        # remove locus file from main schema directory
+        for loci in loci_to_merge:
+            loci_path = os.path.join(schema_path,f"{loci}.fasta")
+            os.remove(loci_path)
+
         with open(new_locus_path,'w') as outfile:
 
             for seq in seq_hash.values():
                 records = '\n'.join(seq)
                 outfile.write(records+'\n')
+    else:
+        print(f"\nFollowing locus {new_locus_path} failed to be created.")
 

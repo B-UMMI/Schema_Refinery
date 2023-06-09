@@ -104,8 +104,8 @@ def main(args):
     subprocess.run(arguments)
 
     print("\nRemoving temp files...")
-    os.rmdir(temp_schema_path)
-    
+    shutil.rmtree(temp_schema_path)
+
     print(f"\nModified Schema available at {new_schema_seed_path}")
 
 
