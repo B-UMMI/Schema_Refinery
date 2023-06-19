@@ -13,7 +13,6 @@ Code documentation
 
 
 import os
-import argparse
 import csv
 import itertools
 
@@ -76,22 +75,22 @@ def flatten_list(list_to_flatten):
 
 def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, cpu_cores):
 
-    output_path = os.path.join(output_path, "matchSchemas")
+    output_path = os.path.join(output_path, 'matchSchemas')
     create_directory(output_path)
 
-    # import representative sequences in query schema
+    # Import representative sequences in query schema
     rep_dir = os.path.join(query_schema, 'short')
     rep_files = [os.path.join(rep_dir, f)
                  for f in os.listdir(rep_dir)
-                 if f.endswith('.fasta') is True]
+                 if f.endswith('.fasta')]
 
-    # get representative sequences from query schema
+    # Get representative sequences from query schema
     query_ids = [os.path.basename(f).split('_')[0] for f in rep_files]
     query_reps = []
     for f in rep_files:
         locus_id = os.path.basename(f).split('_short')[0]
         records = SeqIO.parse(f, 'fasta')
-        # only get the forst representative allele
+        # Only get the first representative allele
         rec = next(records, None)
         seqid = rec.id
         allele_id = seqid.split('_')[-1]
@@ -100,29 +99,29 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
         sequence = '>{0}\n{1}'.format(short_seqid, prot)
         query_reps.append(sequence)
 
-    # save query reps into same file
+    # Save query reps into same file
     query_prot_file = os.path.join(output_path, 'query_prots.fasta')
     with open(query_prot_file, 'w') as op:
         op.write('\n'.join(query_reps))
 
-    # create BLAST db with query sequences and get self scores
+    # Create BLAST db with query sequences and get self scores
     query_blastdb_path = os.path.join(output_path, 'query_blastdb')
     make_blast_db(query_prot_file, query_blastdb_path, 'prot')
 
-    # determine self raw score for representative sequences
+    # Determine self raw score for representative sequences
     self_blast_out = os.path.join(output_path, 'self_results.tsv')
     # max_targets has to be greater than 1
     # for some cases, the first alignment that is reported is
     # not the self-alignment
     run_blast('blastp', query_blastdb_path, query_prot_file, self_blast_out,
-              max_hsps=1, threads=cpu_cores, ids_file=None, max_targets=5)
+              max_hsps=1, threads=cpu_cores, max_targets=5)
 
     self_blast_results = read_tabular(self_blast_out)
     self_blast_results = {r[0].split('_')[0]: r[2]
                           for r in self_blast_results
                           if r[0] == r[1]}
 
-    # translate subject sequences
+    # Translate subject sequences
     subject_files = [os.path.join(subject_schema, f)
                      for f in os.listdir(subject_schema)
                      if f.endswith('.fasta') is True]
@@ -142,7 +141,7 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
         with open(subject_prots_file, 'a') as sf:
             sf.write('\n'.join(sequences)+'\n')
 
-    # create BLASTdb with subject sequences
+    # Create BLASTdb with subject sequences
     blastdb_path = os.path.join(output_path, 'subject_blastdb')
     make_blast_db(subject_prots_file, blastdb_path, 'prot')
 
@@ -151,12 +150,12 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
     run_blast('blastp', blastdb_path, query_prot_file, blast_out,
               max_hsps=1, threads=cpu_cores, ids_file=None, max_targets=10)
 
-    # import BLAST results
+    # Import BLAST results
     blast_results = read_tabular(blast_out)
 
     ids_rev = {v: k for k, v in ids.items()}
 
-    # determine BSR values
+    # Determine BSR values
     bsr_values = {}
     multiple_matches = {}
     for m in blast_results:
@@ -173,7 +172,7 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
             bsr_values[query] = [subject, bsr]
             multiple_matches[query] = [[subject, bsr]]
 
-    # keep only queries with multiple matches
+    # Keep only queries with multiple matches
     multiple = []
     for k, v in multiple_matches.items():
         loci = [e[0].split('_')[0] for e in v]
@@ -187,15 +186,16 @@ def match_schemas(query_schema, subject_schema, output_path, blast_score_ratio, 
     with open(multiple_file, 'w') as mh:
         mh.write(multiple_lines+'\n')
 
-    # save matches between schemas loci
+    # Save matches between schemas loci
+    header = ['Locus_ID\tLocus\tBSR']
     matches = ['{0}\t{1}\t{2}'.format(k, v[0].split('_')[0], v[1])
                for k, v in bsr_values.items()]
-    matches_lines = '\n'.join(matches)
+    matches_lines = '\n'.join(header+matches)
     matches_file = os.path.join(output_path, 'matches.tsv')
     with open(matches_file, 'w') as mf:
         mf.write(matches_lines+'\n')
 
-    # determine identifiers that had no match
+    # Determine identifiers that had no match
     no_match = [i for i in self_blast_results if i not in bsr_values]
     no_match_lines = '\n'.join(no_match)
     no_match_file = os.path.join(output_path, 'no_match.txt')

@@ -13,57 +13,55 @@ Code documentation
 ------------------
 """
 
+
 import os
+import gzip
 import pickle
 
 from Bio import SeqIO
 
 
-def proteome_splitter(proteomes_directory:str, output_directory:str):
+def proteome_splitter(proteomes_directory: str, output_directory: str):
 
-    print("Starting to split proteomes...")
-
-    # list proteomes in input directory
+    # List proteomes in proteome directory
     proteomes = [os.path.join(proteomes_directory, f)
-                 for f in os.listdir(proteomes_directory)
-                 if f.endswith('.fasta')]
+                 for f in os.listdir(proteomes_directory)]
 
-    # divide into Swiss-Prot and TrEMBL records
-    sp = {}
-    trembl = {}
+    # Divide into Swiss-Prot and TrEMBL records
+    swiss_records = {}
+    trembl_records = {}
     descriptions = {}
     for file in proteomes:
-        for rec in SeqIO.parse(file, 'fasta'):
-            recid = rec.id
-            prot = str(rec.seq)
-            desc = rec.description
-            if recid.startswith('tr'):
-                trembl[recid] = prot
-            elif recid.startswith('sp'):
-                sp[recid] = prot
-            descriptions[recid] = desc
+        with gzip.open(file, 'rt') as gzfasta:
+            for rec in SeqIO.parse(gzfasta, 'fasta'):
+                recid = rec.id
+                prot = str(rec.seq)
+                desc = rec.description
+                if recid.startswith('tr'):
+                    trembl_records[recid] = prot
+                elif recid.startswith('sp'):
+                    swiss_records[recid] = prot
+                descriptions[recid] = desc
 
-    # save to file
-    tr_file = 'trembl_prots.fasta'
-    print(f"Saving {tr_file} file...")
-    tr_file_path = os.path.join(output_directory, tr_file)
+    # Save TrEMBL records to FASTA file
+    tr_filename = 'trembl_prots.fasta'
+    tr_file_path = os.path.join(output_directory, tr_filename)
     with open(tr_file_path, 'w') as tout:
-        records = ['>{0}\n{1}'.format(k, v) for k, v in trembl.items()]
+        records = ['>{0}\n{1}'.format(k, v) for k, v in trembl_records.items()]
         rectext = '\n'.join(records)
         tout.write(rectext+'\n')
 
-    sp_file = 'sp_prots.fasta'
-    print(f"Saving {sp_file} file...")
-    sp_file_path = os.path.join(output_directory, sp_file)
+    # Save Swiss-Prot records to FASTA file
+    sp_filename = 'swiss_prots.fasta'
+    sp_file_path = os.path.join(output_directory, sp_filename)
     with open(sp_file_path, 'w') as tout:
-        records = ['>{0}\n{1}'.format(k, v) for k, v in sp.items()]
+        records = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
         rectext = '\n'.join(records)
         tout.write(rectext+'\n')
 
-    # save 
-    descriptions_file = 'descriptions'
-    print(f"Saving {descriptions_file} file...")
-    descriptions_file_path = os.path.join(output_directory, descriptions_file)
+    # Save descriptions with Pickle
+    descriptions_filename = 'prots_descriptions'
+    descriptions_file_path = os.path.join(output_directory, descriptions_filename)
     with open(descriptions_file_path, 'wb') as dout:
         pickle.dump(descriptions, dout)
 

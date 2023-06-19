@@ -6,39 +6,104 @@ Purpose
 
 This module enables the whole process of creating the
 Genbank, TrEMBL and Swiss-Prot annotations and merging them
-alongside the UniProtFinder and/or match_schemas annotations into a single TSV file.
+alongside the UniProtFinder and/or match_schemas annotations into
+a single TSV file.
 
 Code documentation
 ------------------
 """
 
 
+import os
+from functools import reduce
+
+import pandas as pd
+
 try:
-    from SchemaAnnotation.GenbankAnnotations import genbank_annotations
-    from SchemaAnnotation.ProteomeAnnotations import proteome_annotations
-    from SchemaAnnotation.AnnotationMerger import annotation_merger
-    from SchemaAnnotation.MatchSchemas import match_schemas
-    from utils.file_functions import create_directory
+    from SchemaAnnotation import proteome_fetcher as pf
+    from SchemaAnnotation import proteome_splitter as ps
+    from SchemaAnnotation import proteome_matcher as pm
+    from SchemaAnnotation import genbank_annotations as ga
+    from SchemaAnnotation import match_schemas as ms
+    from utils import file_functions as ff
 except ModuleNotFoundError:
-    from SchemaRefinery.SchemaAnnotation.GenbankAnnotations import genbank_annotations
-    from SchemaRefinery.SchemaAnnotation.ProteomeAnnotations import proteome_annotations
-    from SchemaRefinery.SchemaAnnotation.AnnotationMerger import annotation_merger
-    from SchemaRefinery.SchemaAnnotation.MatchSchemas import match_schemas
-    from SchemaRefinery.utils.file_functions import create_directory
+    from SchemaRefinery.SchemaAnnotation import proteome_fetcher as pf
+    from SchemaRefinery.SchemaAnnotation import proteome_splitter as ps
+    from SchemaRefinery.SchemaAnnotation import proteome_matcher as pm
+    from SchemaRefinery.SchemaAnnotation import genbank_annotations as ga
+    from SchemaRefinery.SchemaAnnotation import match_schemas as ms
+    from SchemaRefinery.utils import file_functions as ff
 
 
 def main(args):
 
-    create_directory(args.output_directory)
+    ff.create_directory(args.output_directory)
 
-    # run annotation submodules
+    results_files = []
+
+    if args.chewie_annotations:
+        results_files.extend(args.chewie_annotations)
+
+    if 'uniprot-proteomes' in args.annotation_options:
+        proteomes_directory = pf.proteome_fetcher(args.proteome_table,
+                                                  args.output_directory,
+                                                  args.threads,
+                                                  args.retry)
+
+        if proteomes_directory is not None:
+            # Split proteome records into two files, one with TrEMBL records
+            # and another with Swiss-Prot records
+            split_data = ps.proteome_splitter(proteomes_directory, args.output_directory)
+            tr_file, sp_file, descriptions_file = split_data
+
+            # Align loci against proteome records
+            annotations = pm.proteome_matcher(args.schema_directory,
+                                              [tr_file, sp_file, descriptions_file],
+                                              args.output_directory, args.cpu_cores,
+                                              args.blast_score_ratio)
+            results_files.extend(annotations)
     if 'genbank' in args.annotation_options:
-        genbank_file = genbank_annotations(args.input_files, args.schema_directory, args.output_directory, args.cpu_cores)
+        genbank_file = ga.genbank_annotations(args.genbank_files,
+                                              args.schema_directory,
+                                              args.output_directory,
+                                              args.cpu_cores,
+                                              args.blast_score_ratio)
+        results_files.append(genbank_file)
+    matched_schemas = None
+    if 'match-schemas' in args.annotation_options:
+        matched_schemas = ms.match_schemas(args.schema_directory,
+                                           args.subject_schema,
+                                           args.output_directory,
+                                           args.blast_score_ratio,
+                                           args.cpu_cores)
+        results_files.append(matched_schemas)
 
-    if 'proteomes' in args.annotation_options:
-        trembl, swiss = proteome_annotations(args.input_table, args.proteomes_directory, args.threads, args.retry, args.schema_directory, args.output_directory, args.cpu_cores)
+    # Merge all results into a single file
+    dfs = []
+    for file in results_files:
+        current_df = pd.read_csv(file, delimiter='\t', dtype=str)
+        dfs.append(current_df)
 
-    if 'matchSchemas' in args.annotation_options:
-        matched_schemas = match_schemas(args.query_schema, args.subject_schema, args.output_directory, args.blast_score_ratio, args.cpu_cores)
+    if args.subject_annotations and matched_schemas:
+        # Read TSV with subject schema annotations
+        if args.subject_columns:
+            columns = ['Locus'] + args.subject_columns
+            match_add = pd.read_csv(args.subject_annotations, delimiter='\t',
+                                    usecols=columns, dtype=str)
+        else:
+            match_add = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str)
 
-    annotation_merger(args.uniprot_species, args.uniprot_genus, genbank_file, trembl, swiss, args.match_to_add, args.old_schema_columns, matched_schemas, args.output_directory)
+        # Merge columns so that both table to add and reference have locus_ID
+        merged_match = pd.merge(match_add, dfs[-1], on='Locus',
+                                how='left').fillna('')
+        merged_match = merged_match[merged_match.columns.tolist()[1:]]
+        merged_match = merged_match.rename({'Locus_ID': 'Locus'}, axis=1)
+
+        dfs[-1] = merged_match
+
+    # Merge all dataframes based on locus identifier
+    merged_table = reduce(lambda a, b: pd.merge(a, b, on=['Locus'],
+                                                how='left'), dfs).fillna('')
+
+    merged_table.to_csv(os.path.join(args.output_directory, 'merged_file.tsv'),
+                        sep='\t', index=False)
