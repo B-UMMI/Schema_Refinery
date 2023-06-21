@@ -153,40 +153,47 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
     if len(stderr) > 0:
         print(stderr)
 
-def join_intervals(current_interval, intervals_list, current_index, old_intervals, joined_intervals=""):
-    first_interval = current_interval
-    if current_index == len(intervals_list)-1:
-        return joined_intervals
+def join_intervals(start_stops_list):
+    start_stop_list_for_processing = [{"start": i[0], "stop": i[1], "joined_intervals": set()} for i in start_stops_list]
+    found_new_interval = True
     
-    second_interval = intervals_list[current_index+1]
+    new_index = 0
+    while found_new_interval:
+        found_new_interval = False
+        for i in range(new_index, len(start_stop_list_for_processing) - 1):
+            first = start_stop_list_for_processing[i]
+            second = start_stop_list_for_processing[i+1]
 
-    print("CURRENT: ", joined_intervals, first_interval, second_interval, old_intervals)
+            if second["start"] - first["stop"] <= MAX_GAP_UNITS:
+                if second["stop"] >= first["stop"]:
+                    new_last = second["stop"]
+                else:
+                    new_last = first["stop"]
 
-    if len(joined_intervals) > 0:
-        joined_intervals = f"{joined_intervals} ; "
+                if second["start"] <= first["start"]:
+                    new_first = second["start"]
+                else:
+                    new_first = first["start"]
 
-    if second_interval[0] - first_interval[1] <= MAX_GAP_UNITS:
-        if second_interval[1] >= first_interval[1]:
-            new_last = second_interval[1]
+                new_joined_intervals = first["joined_intervals"].union(second["joined_intervals"]).union(set(((first['start'], first['stop']), (second['start'], second['stop']))))
+                new_interval = {"start": new_first, "stop": new_last, "joined_intervals": new_joined_intervals}
+                found_new_interval = True
+                start_stop_list_for_processing = start_stop_list_for_processing[0:i] + [new_interval] + start_stop_list_for_processing[i+2:]
+                new_index = i
+                break
+            else:
+                continue
+
+    for interval in start_stop_list_for_processing:
+        interval['joined_intervals'] = list(interval['joined_intervals'])
+        interval['joined_intervals'].sort(key=lambda x : x[0])
+        interval['joined_intervals'] = [f"{i[0]}-{i[1]}" for i in interval['joined_intervals']]
+        if len(interval['joined_intervals']) > 0:
+            interval['joined_intervals'] = f"({';'.join(interval['joined_intervals'])})"
         else:
-            new_last = first_interval[1]
-
-        if second_interval[0] <= first_interval[0]:
-            new_first = second_interval[0]
-        else:
-            new_first = first_interval[0]
-
-        next_interval = [new_first, new_last]
-        new_old_intervals = f"{old_intervals} ; {second_interval[0]} - {second_interval[1]}"
-        # joined_intervals_list = ' ; '.join(joined_intervals.split(" ; ")[0:-2])
-        new_joined_intervals = f"{joined_intervals}{new_first} - {new_last} ({new_old_intervals})"
-    else:
-        new_old_intervals = f"{first_interval[0]} - {first_interval[1]}"
-        next_interval = second_interval
-        new_joined_intervals = f"{joined_intervals}{first_interval[0]} - {first_interval[1]}"
-
-    print("NEXT: ", new_joined_intervals, new_old_intervals)
-    return join_intervals(next_interval, intervals_list, current_index+1, new_old_intervals, new_joined_intervals)
+           interval['joined_intervals'] = "" 
+    
+    return [f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing]
 
 def process_blast_results(blast_results_file):
     alignments = {}
@@ -228,53 +235,20 @@ def process_blast_results(blast_results_file):
     alignment_strings = []
     for key, alignment in alignments.items():
         if len(alignment) > 1:
-            # new_alignment = {}
             alignment.sort(key=lambda x : x["query_start"])
-
             query_start_stops_list = [[entry["query_start"], entry["query_end"]] for entry in alignment]
+            alignment.sort(key=lambda x : x["subject_start"])
+            subject_start_stops_list = [[entry["subject_start"], entry["subject_end"]] for entry in alignment]
 
-            final_query_start_stop_list = []
-            for i in range(0, len(query_start_stops_list) - 1):
-                first = query_start_stops_list[i]
-                second = query_start_stops_list[i+1]
+            final_query_start_stop_list = join_intervals(query_start_stops_list)
+            final_subject_start_stop_list = join_intervals(subject_start_stops_list)
 
-                if second[0] - first[1] <= MAX_GAP_UNITS:
-                    if second[1] >= first[1]:
-                        new_last = second[1]
-                    else:
-                        new_last = first[1]
+            query_start_stops = ';'.join(final_query_start_stop_list)
+            subject_start_stops = ';'.join(final_subject_start_stop_list)
 
-                    if second[0] <= first[0]:
-                        new_first = second[0]
-                    else:
-                        new_first = first[0]
-                    new_interval = f"{new_first} - {new_last} ({first[0]} - {first[1]} ; {second[0]} - {second[1]})"
-                else:
-                    new_interval = f"{first[0]} - {first[1]} ; {second[0]} - {second[1]}"
-                    
-                final_query_start_stop_list.append(new_interval)
+            alignment_query_string = f"{alignment[0]['query']}\t{alignment[0]['subject']}\t{query_start_stops}\n"
+            alignment_subject_string = f"{alignment[0]['subject']}\t{alignment[0]['query']}\t{subject_start_stops}\n"
 
-
-            # query_start_stops = join_intervals(query_start_stops_list[0], query_start_stops_list, 0, f"{query_start_stops_list[0][0]} - {query_start_stops_list[0][1]}")
-            query_start_stops = ' ; '.join(final_query_start_stop_list)
-            print(query_start_stops)
-            subject_start_stops = ' ; '.join([f'{entry["subject_start"]} - {entry["subject_end"]}' for entry in alignment])
-
-            alignment_query_string = f"{alignment[0]['query']},{alignment[0]['subject']}\t{query_start_stops}\n"
-            alignment_subject_string = f"{alignment[0]['subject']},{alignment[0]['query']}\t{subject_start_stops}\n"
-
-            # for entry in alignment:
-            #     print(entry["query"])
-            #     print(entry["subject"])
-            #     print(entry["query_start"])
-            #     print(entry["query_end"])
-            #     print(entry["subject_start"])
-            #     print(entry["subject_end"])
-            #     print()
-            
-            # print("Alignment Strings:")
-            # print("Query: ", alignment_query_string)
-            # print("Subject: ", alignment_subject_string)
             alignment_strings.append(alignment_query_string)
             alignment_strings.append(alignment_subject_string)
     return alignment_strings
@@ -300,7 +274,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     total_loci = len(loci)
     with open(report_file_path, 'w') as report_file:
-        report_file.writelines(["Loci\t", "Start - End\n"])
+        report_file.writelines(["Locus 1\t", "Locus 2\t", "Start-End\n"])
         for idx, locus in enumerate(loci, 1):
             blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
             blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score', '-out', blast_results_file]
@@ -348,9 +322,9 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                 
             #     report_file.writelines(['\t'.join(l) for l in allele_alignments])
     
-    shutil.rmtree(blast_results_alignments)
+    # shutil.rmtree(blast_results_alignments)
     shutil.rmtree(alleles_protein_dir)
-    shutil.rmtree(blast_results_all_representatives)
+    # shutil.rmtree(blast_results_all_representatives)
 
 def main(schema, output_directory, missing_classes_fasta, threshold):
     # use short directory fasta files
@@ -431,5 +405,5 @@ def main(schema, output_directory, missing_classes_fasta, threshold):
         # Run BLAST for all representatives
         run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, schema)
 
-    shutil.rmtree(blast_results_dir)
+    # shutil.rmtree(blast_results_dir)
     shutil.rmtree(representatives_dir)
