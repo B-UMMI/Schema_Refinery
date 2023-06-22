@@ -3,6 +3,11 @@ import copy
 import subprocess
 from Bio.Seq import Seq
 import shutil
+import statistics
+
+import plotly.graph_objs as go
+from plotly.offline import plot
+from plotly.subplots import make_subplots
 
 LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM", 
                                   #"ALM", 
@@ -12,6 +17,7 @@ LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM",
 
 DNA_BASES = 'AGCT'
 MAX_GAP_UNITS = 4
+ALIGNMENT_RATIO_THRESHOLD = 0.6
 
 def check_and_make_directory(dir:str):
     if not os.path.isdir(dir):
@@ -153,8 +159,8 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
     if len(stderr) > 0:
         print(stderr)
 
-def join_intervals(start_stops_list):
-    start_stop_list_for_processing = [{"start": i[0], "stop": i[1], "joined_intervals": set()} for i in start_stops_list]
+def join_intervals(alignments):
+    start_stop_list_for_processing = [{"start": i[0], "stop": i[1], "joined_intervals": set()} for i in alignments]
     found_new_interval = True
     
     new_index = 0
@@ -193,7 +199,74 @@ def join_intervals(start_stops_list):
         else:
            interval['joined_intervals'] = "" 
     
-    return [f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing]
+    return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
+
+def create_subplots(nplots, ncols, titles):
+    """Create a Figure objcet with predefined subplots.
+
+    Parameters
+    ----------
+    nplots : int
+        Number of plots that will be displayed.
+    ncols : int
+        Number of subplots per row.
+    titles : list
+        Subplot titles.
+
+    Returns
+    -------
+    subplots_fig : plotly.graph_objs._figure.Figure
+        Figure object with predefined subplots.
+    """
+    # determine number of rows
+    nrows = statistics.math.ceil((nplots / ncols))
+    subplots_fig = make_subplots(rows=nrows, cols=ncols,
+                                 subplot_titles=titles)
+
+    return subplots_fig
+    
+def printGraphs(alignments, output_directory):
+    file_template = '{0}/{1}'
+    # create HTML with subplots for loci with alleles outside length threshold
+    # and loci with multiple mode values
+    # get list of loci
+    # subplot_traces = [(v[5], v[6]) for k, v in loci_stats.items()
+    #                     if v[6] is not None]
+
+    # animals=['giraffes', 'orangutans', 'monkeys']
+
+    # fig = go.Figure([go.Bar(x=animals, y=[20, 14, 23])])
+    # fig.show()
+
+    print(alignments)
+
+    pass
+
+    # if len(alignments) > 0:
+    #     # create Figure object for subplots
+    #     fig = go.Figure([go.Bar(x=animals, y=[20, 14, 23])])
+
+    #     # adjust figure height and layout
+    #     fig_height = (statistics.math.ceil(len(fig.data)/2))*300
+    #     fig.update_layout(title='Length distribution for loci that '
+    #                                     'contain alleles 20% smaller or '
+    #                                     'larger than the allele length mode '
+    #                                     'and/or multimodal distributions.',
+    #                               height=fig_height,
+    #                               showlegend=False,
+    #                               bargap=0.1,
+    #                               template='ggplot2')
+
+    #     # log transform axes for more compact scaling
+    #     fig.update_xaxes(type='linear',
+    #                              title_text='Length')
+    #     fig.update_yaxes(title_text='Names')
+
+    #     subplot_fig_plotfile = file_template.format(output_directory,
+    #                                                 'test_barplots.html')
+    #     plot(fig,
+    #          filename=subplot_fig_plotfile,
+    #          auto_open=False)
 
 def process_blast_results(blast_results_file):
     alignments = {}
@@ -233,30 +306,41 @@ def process_blast_results(blast_results_file):
 
     # filter alignments
     alignment_strings = []
-    for key, alignment in alignments.items():
-        if len(alignment) > 1:
-            alignment.sort(key=lambda x : x["query_start"])
-            query_start_stops_list = [[entry["query_start"], entry["query_end"]] for entry in alignment]
-            alignment.sort(key=lambda x : x["subject_start"])
-            subject_start_stops_list = [[entry["subject_start"], entry["subject_end"]] for entry in alignment]
+    alignment_query = []
+    alignment_subject = []
+    for key, alignments in alignments.items():
+        if len(alignments) > 1:
+            query_length = alignments[0]["query_length"]
+            subject_length = alignments[0]["subject_length"]
 
-            final_query_start_stop_list = join_intervals(query_start_stops_list)
-            final_subject_start_stop_list = join_intervals(subject_start_stops_list)
+            alignments.sort(key=lambda x : x["query_start"])
+            query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
+            alignments.sort(key=lambda x : x["subject_start"])
+            subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
 
-            query_start_stops = ';'.join(final_query_start_stop_list)
-            subject_start_stops = ';'.join(final_subject_start_stop_list)
+            final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
+            final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
 
-            alignment_query_string = f"{alignment[0]['query']}\t{alignment[0]['subject']}\t{query_start_stops}\n"
-            alignment_subject_string = f"{alignment[0]['subject']}\t{alignment[0]['query']}\t{subject_start_stops}\n"
+            #filter for alignment percentage
+            alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
+            alignment_subject.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
 
-            alignment_strings.append(alignment_query_string)
-            alignment_strings.append(alignment_subject_string)
-    return alignment_strings
+            bigger_query_alignment = alignment_query[0]["stop"] - alignment_query[0]["start"]
+            bigger_subject_alignment = alignment_subject[0]["stop"] - alignment_subject[0]["start"]
 
-def process_blast_result(blast_file):
-    with open(blast_file, 'r') as file:
-        lines = file.readlines()
-        # process the results
+            query_ratio = bigger_query_alignment / query_length
+            subject_ratio = bigger_subject_alignment / subject_length
+
+            if query_ratio >= ALIGNMENT_RATIO_THRESHOLD or subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
+                query_start_stops = ';'.join(final_query_start_stop_list)
+                alignment_query_string = f"{alignments[0]['query']}\t{alignments[0]['subject']}\t{query_start_stops}\t{query_ratio}\n"
+                alignment_strings.append(alignment_query_string)
+
+                subject_start_stops = ';'.join(final_subject_start_stop_list)
+                alignment_subject_string = f"{alignments[0]['subject']}\t{alignments[0]['query']}\t{subject_start_stops}\t{subject_ratio}\n"
+                alignment_strings.append(alignment_subject_string)
+                
+    return (alignment_strings, (alignment_query, alignment_subject))
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
@@ -274,7 +358,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     total_loci = len(loci)
     with open(report_file_path, 'w') as report_file:
-        report_file.writelines(["Locus 1\t", "Locus 2\t", "Start-End\n"])
+        report_file.writelines(["Locus 1\t", "Locus 2\t", "Start-End\t", "Biggest Alignment Ratio\n"])
         for idx, locus in enumerate(loci, 1):
             blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
             blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score', '-out', blast_results_file]
@@ -283,13 +367,12 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
             run_blast(blast_args)
 
             # check results file for alignments
-            alignments = process_blast_results(blast_results_file)
+            alignments_string, alignments = process_blast_results(blast_results_file)
+            # schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
 
-            # print("ALIGNMENTS: ", alignments, "\n")
-
-            schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
-
-            report_file.writelines(alignments)
+            report_file.writelines(alignments_string)
+            # if alignments_string:
+            #     printGraphs(alignments, output_directory)
 
             # total_alignments = len(alignments)
             # for i, alignment_list in enumerate(alignments, 1):
