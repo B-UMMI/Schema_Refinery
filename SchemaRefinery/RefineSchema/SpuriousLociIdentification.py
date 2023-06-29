@@ -1,13 +1,17 @@
 import os
 import copy
+import math
 import subprocess
 from Bio.Seq import Seq
 import shutil
 import statistics
 
 import plotly.graph_objs as go
+import plotly.express.colors as graph_colors
 from plotly.offline import plot
 from plotly.subplots import make_subplots
+
+GRAPH_COLORS = graph_colors.qualitative.Alphabet
 
 LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM", 
                                   #"ALM", 
@@ -225,51 +229,94 @@ def create_subplots(nplots, ncols, titles):
 
     return subplots_fig
     
-def printGraphs(alignments, output_directory):
+def printGraphs(alignments_dict: dict, output_directory):
     file_template = '{0}/{1}'
-    # create HTML with subplots for loci with alleles outside length threshold
-    # and loci with multiple mode values
-    # get list of loci
-    # subplot_traces = [(v[5], v[6]) for k, v in loci_stats.items()
-    #                     if v[6] is not None]
+    tick_vals = []
+    ticktext= []
+    if len(alignments_dict) > 0:
+        print("Constructing graphs...")
+        fig = make_subplots(rows=math.ceil(len(alignments_dict)/2), cols=2, column_widths=[0.5, 0.5], horizontal_spacing=0.15)
+        row = 1
+        col = 1
+        for key, alignments in alignments_dict.items():
+            first_alignement_dicts = alignments[0]
+            query = first_alignement_dicts["query"]
+            subject = first_alignement_dicts["subject"]
+            query_length = first_alignement_dicts["query_length"]
+            subject_length = first_alignement_dicts["subject_length"]
+            highest_length = max(first_alignement_dicts["query_length"], first_alignement_dicts["subject_length"])
 
-    # animals=['giraffes', 'orangutans', 'monkeys']
+            tick_vals.append(query)
+            tick_vals.append(subject)
+            ticktext.append("Query")
+            ticktext.append("Subject")
 
-    # fig = go.Figure([go.Bar(x=animals, y=[20, 14, 23])])
-    # fig.show()
+            x = []
+            y = []
+            rows = [row, row, row]
+            cols = [col, col, col]
+            for alignment in alignments:
+                x.append(alignment["query_start"])
+                x.append(alignment["subject_start"])
+                y.append(query)
+                y.append(subject)
 
-    print(alignments)
+                x.append(alignment["query_end"])
+                x.append(alignment["subject_end"])
+                
+                y.append(query)
+                y.append(subject)
 
-    pass
+            traces = [go.Scatter(x=x, y=y, mode="markers"),
+                        go.Scatter(x=[0, query_length], y=[query, query], mode="lines"),
+                        go.Scatter(x=[0, subject_length], y=[subject, subject], mode="lines")]
+            
+            # add dashed lines for alignments
+            color_index = 0
+            num_traces = 0
+            for count in range(len(x) - 1):
+                if count%2 != 0:
+                    continue
+                if num_traces == 2:
+                    num_traces = 0
+                    color_index += 1
+                if color_index == len(GRAPH_COLORS) - 1:
+                    color_index = 0
+                traces.append(go.Scatter(x=[x[count], x[count+1]], y=[y[count], y[count+1]], line=dict(width=4, color=GRAPH_COLORS[color_index], dash='dash')))
+                rows.append(row)
+                cols.append(col)
+                num_traces += 1
 
-    # if len(alignments) > 0:
-    #     # create Figure object for subplots
-    #     fig = go.Figure([go.Bar(x=animals, y=[20, 14, 23])])
+            fig.add_traces(traces, rows=rows, cols=cols)
 
-    #     # adjust figure height and layout
-    #     fig_height = (statistics.math.ceil(len(fig.data)/2))*300
-    #     fig.update_layout(title='Length distribution for loci that '
-    #                                     'contain alleles 20% smaller or '
-    #                                     'larger than the allele length mode '
-    #                                     'and/or multimodal distributions.',
-    #                               height=fig_height,
-    #                               showlegend=False,
-    #                               bargap=0.1,
-    #                               template='ggplot2')
+            if col < 2:
+                col += 1
+            else:
+                col = 1
+                row += 1
 
-    #     # log transform axes for more compact scaling
-    #     fig.update_xaxes(type='linear',
-    #                              title_text='Length')
-    #     fig.update_yaxes(title_text='Names')
+    fig_height = (statistics.math.ceil(len(fig.data)/2))*100
 
-    #     subplot_fig_plotfile = file_template.format(output_directory,
-    #                                                 'test_barplots.html')
-    #     plot(fig,
-    #          filename=subplot_fig_plotfile,
-    #          auto_open=False)
+    fig.update_layout(title='Test',
+                                  height=fig_height,
+                                  showlegend=False,
+                                  bargap=0.5,
+                                  template='ggplot2'
+                                  )
+
+    # log transform axes for more compact scaling
+    fig.update_xaxes(type='linear',
+                                 title_text='Length')
+    fig.update_yaxes(title_text='Names')
+
+    subplot_fig_plotfile = file_template.format(output_directory,
+                                                    'test_barplots.html')
+    plot(fig,
+             filename=subplot_fig_plotfile,
+             auto_open=False)
 
 def process_blast_results(blast_results_file):
-    alignments = {}
+    alignments_dict = {}
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
         for line in lines:
@@ -299,48 +346,53 @@ def process_blast_results(blast_results_file):
                     "score": int(score),
                     }
             
-            if not key in alignments.keys():
-                alignments[f"{query}_{subject}"] = [value]
+            if not key in alignments_dict.keys():
+                alignments_dict[f"{query}:{subject}"] = [value]
             else:
-                alignments[f"{query}_{subject}"].append(value)
-
+                alignments_dict[f"{query}:{subject}"].append(value)
     # filter alignments
     alignment_strings = []
     alignment_query = []
     alignment_subject = []
-    for key, alignments in alignments.items():
-        if len(alignments) > 1:
-            query_length = alignments[0]["query_length"]
-            subject_length = alignments[0]["subject_length"]
+    filtered_alignments_dict = copy.deepcopy(alignments_dict)
+    for key, alignments in alignments_dict.items():
+        if len(alignments) > 0:
+            query = alignments[0]['query']
+            subject = alignments[0]['subject']
 
-            alignments.sort(key=lambda x : x["query_start"])
-            query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
-            alignments.sort(key=lambda x : x["subject_start"])
-            subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
+            if query == subject:
+                del filtered_alignments_dict[key]
+            else:
+                query_length = alignments[0]["query_length"]
+                subject_length = alignments[0]["subject_length"]
 
-            final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
-            final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
+                alignments.sort(key=lambda x : x["query_start"])
+                query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
+                alignments.sort(key=lambda x : x["subject_start"])
+                subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
 
-            #filter for alignment percentage
-            alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
-            alignment_subject.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
+                final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
+                final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
 
-            bigger_query_alignment = alignment_query[0]["stop"] - alignment_query[0]["start"]
-            bigger_subject_alignment = alignment_subject[0]["stop"] - alignment_subject[0]["start"]
+                #filter for alignment percentage
+                alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
+                alignment_subject.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
 
-            query_ratio = bigger_query_alignment / query_length
-            subject_ratio = bigger_subject_alignment / subject_length
+                bigger_query_alignment = alignment_query[0]["stop"] - alignment_query[0]["start"]
+                bigger_subject_alignment = alignment_subject[0]["stop"] - alignment_subject[0]["start"]
 
-            if query_ratio >= ALIGNMENT_RATIO_THRESHOLD or subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
-                query_start_stops = ';'.join(final_query_start_stop_list)
-                alignment_query_string = f"{alignments[0]['query']}\t{alignments[0]['subject']}\t{query_start_stops}\t{query_ratio}\n"
-                alignment_strings.append(alignment_query_string)
+                query_ratio = bigger_query_alignment / query_length
+                subject_ratio = bigger_subject_alignment / subject_length
 
-                subject_start_stops = ';'.join(final_subject_start_stop_list)
-                alignment_subject_string = f"{alignments[0]['subject']}\t{alignments[0]['query']}\t{subject_start_stops}\t{subject_ratio}\n"
-                alignment_strings.append(alignment_subject_string)
-                
-    return (alignment_strings, (alignment_query, alignment_subject))
+                if query_ratio >= ALIGNMENT_RATIO_THRESHOLD or subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
+                    query_start_stops = ';'.join(final_query_start_stop_list)
+                    subject_start_stops = ';'.join(final_subject_start_stop_list)
+                    alignment_string = f"{query}\t{subject}\t{query_start_stops}\t{subject_start_stops}\t{query_ratio}\t{subject_ratio}\n"
+                    alignment_strings.append(alignment_string)
+                else:
+                    del filtered_alignments_dict[key]
+
+    return (alignment_strings, filtered_alignments_dict)
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
@@ -356,9 +408,10 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     print("Running Blast for all representatives...")
 
+    all_alignments_dict = {}
     total_loci = len(loci)
     with open(report_file_path, 'w') as report_file:
-        report_file.writelines(["Locus 1\t", "Locus 2\t", "Start-End\t", "Biggest Alignment Ratio\n"])
+        report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\n"])
         for idx, locus in enumerate(loci, 1):
             blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
             blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score', '-out', blast_results_file]
@@ -367,12 +420,14 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
             run_blast(blast_args)
 
             # check results file for alignments
-            alignments_string, alignments = process_blast_results(blast_results_file)
+            alignments_string, alignments_dict = process_blast_results(blast_results_file)
             # schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
 
             report_file.writelines(alignments_string)
-            # if alignments_string:
-            #     printGraphs(alignments, output_directory)
+
+            all_alignments_dict.update(alignments_dict)
+
+            # print(all_alignments_dict)
 
             # total_alignments = len(alignments)
             # for i, alignment_list in enumerate(alignments, 1):
@@ -404,6 +459,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
             #     allele_alignments = [[locus, l[1], f"{float(l[2])/float(self_locus_alignment[2])}\n"] for l in allele_alignments if float(l[2])/float(self_locus_alignment[2]) >= 0.6]
                 
             #     report_file.writelines(['\t'.join(l) for l in allele_alignments])
+
+    printGraphs(all_alignments_dict, output_directory)
     
     # shutil.rmtree(blast_results_alignments)
     shutil.rmtree(alleles_protein_dir)
