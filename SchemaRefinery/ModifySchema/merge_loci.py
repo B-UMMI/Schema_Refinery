@@ -42,7 +42,7 @@ def merge_locus(loci_to_merge,schema_path):
             loci_records = [[rec.id, str(rec.seq)] for rec in SeqIO.parse(loci_path, 'fasta')]
             for rec in loci_records:
                 hashed_seq = hashlib.sha256(rec[1].encode('utf-8')).hexdigest()
-                if hashed_seq in seq_hash.keys():
+                if hashed_seq in seq_hash:
                     continue
                 else:
                     seq_hash[hashed_seq] = [f"{new_allele_id}{allele_id}",
@@ -53,7 +53,7 @@ def merge_locus(loci_to_merge,schema_path):
                   f"the following loci : {loci} is not present in the schema. "
                   "Unable to merge with the others")
             failed = True
-    
+
     if failed is False:
         # remove locus file from main schema directory
         for loci in loci_to_merge:
@@ -67,4 +67,3 @@ def merge_locus(loci_to_merge,schema_path):
                 outfile.write(records+'\n')
     else:
         print(f"\nFollowing locus {new_locus_path} failed to be created.")
-

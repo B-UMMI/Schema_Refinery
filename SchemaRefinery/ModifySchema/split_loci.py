@@ -37,7 +37,7 @@ def split_locus(loci_list, schema_path, loci_to_split):
         new_loci_path = os.path.join(schema_path,f"{new_loci_name}.fasta")
         new_allele_id = f">{new_loci_name}_"
 
-        new_allele_list = [seq for seq in sequences.values() 
+        new_allele_list = [seq for seq in sequences.values()
                            if int(min_length) <= len(seq) <= int(max_length)]
 
         allele_id = 0
@@ -49,6 +49,6 @@ def split_locus(loci_list, schema_path, loci_to_split):
             for seq in new_allele_dict.values():
                 records = '\n'.join(seq)
                 outfile.write(records+'\n')
-        
+
     # remove locus file from main schema directory
     os.remove(loci_path)

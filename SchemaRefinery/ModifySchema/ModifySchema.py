@@ -46,11 +46,12 @@ def main(args):
     if os.path.isdir(args.output_directory) is False:
         print("\nCreating output directory.")
         os.mkdir(args.output_directory)
-    
+
     temp_schema_path = os.path.join(args.output_directory, 'temp_schema_seed')
 
     terminations = (".fasta",".fna",".fa")
-    fasta_files_list = [file for file in os.listdir(args.schema_path) if file.endswith(terminations)]
+    fasta_files_list = [file for file in os.listdir(args.schema_path)
+                        if file.endswith(terminations)]
 
     if os.path.exists(temp_schema_path):
         print("\ntemp_schema_seed folder already exists...")
@@ -82,7 +83,9 @@ def main(args):
     with open(config_file_path,'rb') as infile:
         config = pickle.load(infile)
 
-    prodigal_training_file = [os.path.join(args.schema_path,file) for file in os.listdir(args.schema_path) if file.endswith('.trn')]
+    prodigal_training_file = [os.path.join(args.schema_path,file) 
+                              for file in os.listdir(args.schema_path)
+                              if file.endswith('.trn')]
 
     new_schema_seed_path = os.path.join(args.output_directory,'new_schema_seed')
 
@@ -107,6 +110,5 @@ def main(args):
     shutil.rmtree(temp_schema_path)
 
     print(f"\nModified Schema available at {new_schema_seed_path}")
-
 
     

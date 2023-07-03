@@ -25,7 +25,7 @@ def remove_locus(loci_to_remove,schema_path):
     -------
     None, operates over OS system folder
     """
-    
+
     for loci in loci_to_remove:
         loci_path = os.path.join(schema_path, f"{loci}.fasta")
 

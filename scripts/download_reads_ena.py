@@ -131,7 +131,7 @@ def download_from_sra(sample, outfile1, outfile2):
         print("Something went wrong...")
 
     print(f"Moving file 1")
-    mv_command = ["mv", f'{sample}_1.fastq.gz', outfile1[:-3]]
+    mv_command = ["mv", f'{sample}_1.fastq.gz', outfile1]
     print()
     res = subprocess.run(mv_command)
     if (res.returncode != 0):
@@ -139,7 +139,7 @@ def download_from_sra(sample, outfile1, outfile2):
         print("Something went wrong...")
 
     print(f"Moving file 2")
-    mv_command = ["mv", f'{sample}_2.fastq.gz', outfile2[:-3]]
+    mv_command = ["mv", f'{sample}_2.fastq.gz', outfile2]
     res = subprocess.run(mv_command)
     if (res.returncode != 0):
         print("The exit code was: %d" % res.returncode)
