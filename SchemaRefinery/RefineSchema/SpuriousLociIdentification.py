@@ -11,8 +11,6 @@ import plotly.express.colors as graph_colors
 from plotly.offline import plot
 from plotly.subplots import make_subplots
 
-GRAPH_COLORS = graph_colors.qualitative.Alphabet
-
 LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM", 
                                   #"ALM", 
                                   #"NIPH", 
@@ -22,6 +20,16 @@ LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM",
 DNA_BASES = 'AGCT'
 MAX_GAP_UNITS = 4
 ALIGNMENT_RATIO_THRESHOLD = 0.6
+OPACITY = 0.2
+
+def hex_to_rgb(hex_color: str) -> tuple:
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) == 3:
+        hex_color = hex_color * 2
+    return int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+
+ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
+LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
 def check_and_make_directory(dir:str):
     if not os.path.isdir(dir):
@@ -228,33 +236,90 @@ def create_subplots(nplots, ncols, titles):
                                  subplot_titles=titles)
 
     return subplots_fig
+
+def filter_alignments(original:list, inverted:list):
+    new_original = copy.deepcopy(original)
+
+    for i in inverted:
+        has_alignment = False
+        for o in original:
+            if i["query_start"] == o["subject_start"] and i["query_end"] == o["subject_end"]:
+                has_alignment = True
+                break
+        
+        if not has_alignment:
+            new_original.append(i)
+
+    return new_original
+
+def process_alignments_for_graphs(alignments_dict: dict):
+    keys_set = set()
+    processed_alignments_dict = {}
+
+    print("Processing alignments for graphs...")
+
+    for key in alignments_dict.keys():
+        locus_1, locus_2 = key.split(":")
+        inverted_key = f"{locus_2}:{locus_1}"
+
+        if inverted_key in alignments_dict.keys():
+            if key in keys_set:
+                continue
+            else:
+                original_alignments = alignments_dict[key]
+                inverted_alignments = alignments_dict[inverted_key]
+
+                filtered_alignments = filter_alignments(original_alignments, inverted_alignments)
+
+                processed_alignments_dict[key] = filtered_alignments
+
+        else:
+            processed_alignments_dict[key] = alignments_dict[key]
+            print(f"\tCould not find key: {inverted_key} in alignments.")
+
+        keys_set.add(inverted_key)
     
+    return processed_alignments_dict
+
 def printGraphs(alignments_dict: dict, output_directory):
     file_template = '{0}/{1}'
-    tick_vals = []
-    ticktext= []
-    if len(alignments_dict) > 0:
-        print("Constructing graphs...")
-        fig = make_subplots(rows=math.ceil(len(alignments_dict)/2), cols=2, column_widths=[0.5, 0.5], horizontal_spacing=0.15)
+
+    # ["GCF-000006885-protein699","GCF-000007045-protein1266"]
+
+    # print("Before processing:")
+    # print(alignments_dict["GCF-000006885-protein699_1:GCF-000007045-protein1266_1"])
+    # print()
+    # print(alignments_dict["GCF-000007045-protein1266_1:GCF-000006885-protein699_1"])
+    # print()
+
+    processed_alignments_dict = process_alignments_for_graphs(alignments_dict)
+    process_alignments_dict_length = len(processed_alignments_dict)
+
+    # print("After processing:")
+    # if "GCF-000006885-protein699_1:GCF-000007045-protein1266_1" in processed_alignments_dict.keys():
+    #     print(processed_alignments_dict["GCF-000006885-protein699_1:GCF-000007045-protein1266_1"])
+    # else:
+    #     print(processed_alignments_dict["GCF-000007045-protein1266_1:GCF-000006885-protein699_1"])
+    # print()
+
+    if process_alignments_dict_length > 0:
+        print("Rendering all alignement graphs...")
+        fig = make_subplots(rows=math.ceil(process_alignments_dict_length/2), cols=2, column_widths=[0.5, 0.5], horizontal_spacing=0.15)
         row = 1
         col = 1
-        for key, alignments in alignments_dict.items():
+        for count, (key, alignments) in enumerate(processed_alignments_dict.items(), 1):
+            print(f"Rendering graph for: {key} - {count}/{process_alignments_dict_length}")
             first_alignement_dicts = alignments[0]
             query = first_alignement_dicts["query"]
             subject = first_alignement_dicts["subject"]
             query_length = first_alignement_dicts["query_length"]
             subject_length = first_alignement_dicts["subject_length"]
-            highest_length = max(first_alignement_dicts["query_length"], first_alignement_dicts["subject_length"])
-
-            tick_vals.append(query)
-            tick_vals.append(subject)
-            ticktext.append("Query")
-            ticktext.append("Subject")
+            # highest_length = max(first_alignement_dicts["query_length"], first_alignement_dicts["subject_length"])
 
             x = []
             y = []
-            rows = [row, row, row]
-            cols = [col, col, col]
+            rows = [row, row]
+            cols = [col, col]
             for alignment in alignments:
                 x.append(alignment["query_start"])
                 x.append(alignment["subject_start"])
@@ -267,22 +332,27 @@ def printGraphs(alignments_dict: dict, output_directory):
                 y.append(query)
                 y.append(subject)
 
-            traces = [go.Scatter(x=x, y=y, mode="markers"),
-                        go.Scatter(x=[0, query_length], y=[query, query], mode="lines"),
-                        go.Scatter(x=[0, subject_length], y=[subject, subject], mode="lines")]
+            traces = [go.Scatter(x=[0, subject_length], y=[subject, subject], mode="lines", line=dict(color=LOCI_COLORS[0]), marker=dict(color=LOCI_COLORS[0])),
+                      go.Scatter(x=[0, query_length], y=[query, query], mode="lines", line=dict(color=LOCI_COLORS[2]), marker=dict(color=LOCI_COLORS[2])),
+                    ]
             
             # add dashed lines for alignments
             color_index = 0
             num_traces = 0
-            for count in range(len(x) - 1):
-                if count%2 != 0:
+            for c in range(len(x) - 1):
+                if c%2 != 0:
                     continue
                 if num_traces == 2:
                     num_traces = 0
                     color_index += 1
-                if color_index == len(GRAPH_COLORS) - 1:
+                if color_index == len(ALIGNMENT_COLORS) - 1:
                     color_index = 0
-                traces.append(go.Scatter(x=[x[count], x[count+1]], y=[y[count], y[count+1]], line=dict(width=4, color=GRAPH_COLORS[color_index], dash='dash')))
+
+                if num_traces == 0:
+                    fill = None
+                else:
+                    fill = 'tonexty'
+                traces.append(go.Scatter(x=[x[c], x[c+1]], y=[y[c], y[c+1]], line=dict(width=4, color=ALIGNMENT_COLORS[color_index], dash='dash'), fill=fill, fillcolor=ALIGNMENT_COLORS[color_index]))
                 rows.append(row)
                 cols.append(col)
                 num_traces += 1
@@ -310,7 +380,7 @@ def printGraphs(alignments_dict: dict, output_directory):
     fig.update_yaxes(title_text='Names')
 
     subplot_fig_plotfile = file_template.format(output_directory,
-                                                    'test_barplots.html')
+                                                    'test_scatter_plots.html')
     plot(fig,
              filename=subplot_fig_plotfile,
              auto_open=False)
@@ -332,7 +402,7 @@ def process_blast_results(blast_results_file):
             length = cols[8]
             score = cols[9]
 
-            key = f"{query}_{subject}"
+            key = f"{query}:{subject}"
             value = {
                     "query": query,
                     "subject": subject,
