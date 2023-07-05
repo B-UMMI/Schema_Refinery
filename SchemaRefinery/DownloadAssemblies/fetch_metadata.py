@@ -5,7 +5,6 @@
 
 import os
 import time
-import argparse
 import concurrent.futures
 from itertools import repeat
 import xml.etree.ElementTree as ET
@@ -189,52 +188,3 @@ def main(id_table_path, output_directory, email, threads, api_key, retry):
 
     # Write to TSV in output directory
     write_to_file(metadata_df, output_directory)
-
-
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-i', '--input_id_table', type=str,
-                        required=True,
-                        dest='id_table_path',
-                        help='path to table with ID')
-
-    parser.add_argument('-o', '--output-directory', type=str,
-                        required=True,
-                        dest='output_directory',
-                        help='Path to the output directory.')
-
-    parser.add_argument('-e', '--email', type=str,
-                        required=True,
-                        dest='email',
-                        help='email for entrez queries')
-
-    parser.add_argument('-t', '--threads', type=int,
-                        required=False,
-                        dest='threads',
-                        default = 1,
-                        help='number of threads, due to NCBI requests limitations recomended number of 2 without API key')
-
-    parser.add_argument('-k', '--api_key', type=str,
-                        required=False,
-                        dest='api_key',
-                        default=None,
-                        help='API key to increase the mumber of requests')
-
-    parser.add_argument('-r', '--retry', type=int,
-                        required=False, dest='retry',
-                        default=7,
-                        help='Maximum number of retries when a '
-                             'download fails.')
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-    main(**vars(args))

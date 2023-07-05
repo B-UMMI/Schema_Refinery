@@ -17,7 +17,6 @@ import sys
 import csv
 import time
 import socket
-import argparse
 import urllib.request
 import concurrent.futures
 from itertools import repeat
@@ -189,68 +188,3 @@ def main(input_table, output_directory, file_extension,
     
     with open(os.path.join(output_directory,"assemblies_ids_ncbi.tsv"),'w+') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, assemblies_ids)))
-
-
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-t', '--input-table', type=str,
-                        required=True, dest='input_table',
-                        help='TSV file downloaded from the '
-                             'NCBI Genome Assembly and Annotation '
-                             'report.')
-
-    parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the directory to which '
-                             'downloaded files will be stored.')
-
-    parser.add_argument('-s', '--species', type=str,
-                        required=True, dest='species',
-                        help='Organism name. For example: '
-                             'Streptococcus pneumoniae.')
-
-    parser.add_argument('--fe', '--file-extension', type=str,
-                        required=False,
-                        choices=['genomic.fna.gz', 'assembly_report.txt',
-                                 'assembly_status.txt', 'cds_from_genomic.fna.gz',
-                                 'feature_count.txt.gz', 'feature_table.txt.gz',
-                                 'genomic.gbff.gz', 'genomic.gff.gz',
-                                 'genomic.gtf.gz', 'protein.faa.gz',
-                                 'protein.gpff.gz', 'rna_from_genomic.fna.gz',
-                                 'translated_cds.faa.gz'],
-                        default='genomic.fna.gz',
-                        dest='file_extension',
-                        help='Choose file type to download through '
-                             'extension.')
-
-    parser.add_argument('--ftp', type=str, required=False,
-                        choices=['refseq+genbank', 'refseq', 'genbank'],
-                        default='refseq+genbank', dest='ftp',
-                        help='The script can search for the files to '
-                             'download in RefSeq or Genbank or both '
-                             '(will only search in Genbank if download '
-                             'from RefSeq fails).')
-
-    parser.add_argument('-th', '--threads', type=int,
-                        required=False, default=2,
-                        dest='threads',
-                        help='Number of threads for download.')
-
-    parser.add_argument('-r', '--retry', type=int,
-                        required=False, dest='retry',
-                        default=7,
-                        help='Maximum number of retries when a '
-                             'download fails.')
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-    main(**vars(args))

@@ -15,7 +15,6 @@ Code documentation
 import os
 import re
 import time
-import argparse
 import concurrent.futures
 from itertools import repeat
 from tqdm import tqdm
@@ -383,35 +382,3 @@ def main(input_file, output_file, email, threads, retry, api_key):
                  if file.endswith('.dtd')]
     for file in dtd_files:
         os.remove(file)
-
-
-def parse_arguments():
-
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-i', '--input-file', type=str,
-                        required=True, dest='input_file',
-                        help='Path to text file with NCBI database '
-                             'identifiers (supports identifiers from '
-                             'the Assembly, BioSample and SRA '
-                             'databases).')
-
-    parser.add_argument('-o', '--output-file', type=str,
-                        required=True, dest='output_file',
-                        help='Path to output TSV file with linked '
-                             'identifiers between supported databases.')
-
-    parser.add_argument('--email', type=str,
-                        required=True, dest='email',
-                        help='Email to perform requests with.')
-
-    args = parser.parse_args()
-
-    return args
-
-
-if __name__ == '__main__':
-
-    args = parse_arguments()
-    main(**vars(args))
