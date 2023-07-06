@@ -20,7 +20,6 @@ except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import ncbi_linked_ids
     from SchemaRefinery.DownloadAssemblies import fetch_metadata
 
-
 def find_local_conda_env():
     """
     This function fetches current conda env path by using 'conda info'.
@@ -62,6 +61,37 @@ def find_local_conda_env():
 
     return os.path.join(sr_path, 'ena661k_files')
 
+def get_all_metadata(metadata_dir, args):
+    linked_ids_file = os.path.join(metadata_dir, 'id_matches.tsv')
+    ids_file = os.path.join(metadata_dir, 'assemblies_ids_to_download.tsv')
+
+    print("\nFetching RefSeq, Genbank and SRA IDs linked and BioSample ID...")
+    ncbi_linked_ids.main(ids_file,
+                            linked_ids_file,
+                            args.email,
+                            args.threads,
+                            args.retry,
+                            args.api_key)
+
+    # fetch BioSample identifiers
+    biosamples = pd.read_csv(linked_ids_file,
+                                delimiter='\t')['BioSample'].values.tolist()
+    # exclude samples without BioSample identifier
+    biosamples = [i for i in biosamples if type(i) is str]
+    # save BioSample identifiers to file
+    biosample_file = os.path.join(metadata_dir, 'biosamples.tsv')
+    with open(biosample_file, 'w+', encoding='utf-8') as ids:
+        ids.write("\n".join(biosamples)+'\n')
+
+    print("\nFetching metadata associated to the BioSample ID...")
+    fetch_metadata.main(biosample_file,
+                        metadata_dir,
+                        args.email,
+                        args.threads,
+                        args.api_key,
+                        args.retry)
+    
+    os.remove(biosample_file)
 
 def main(args):
     # if both input table and taxon are present
@@ -71,7 +101,7 @@ def main(args):
 
     # Table or taxon name must be present
     if args.input_table is None and args.taxon is None:
-        sys.exit("\nError: Must provide an input table or a taxon name.")
+        sys.exit("\nError: Must provide an input table -i/--input-table or a taxon name -t/--taxon.")
 
     # if input table and database is set as ENA661k.
     if args.input_table is not None and 'ENA661K' in args.database:
@@ -137,18 +167,18 @@ def main(args):
 
             print(f"\n{len(assembly_ids)} passed filtering criteria.")
 
-        metadata_directory = os.path.join(args.output_directory, 'metadata_ncbi')
-        if not os.path.exists(metadata_directory):
-            os.mkdir(metadata_directory)
+        metadata_ncbi_directory = os.path.join(args.output_directory, 'metadata_ncbi')
+        if not os.path.exists(metadata_ncbi_directory):
+            os.mkdir(metadata_ncbi_directory)
 
         # save ids to download
-        valid_ids_file = os.path.join(metadata_directory,
+        valid_ids_file = os.path.join(metadata_ncbi_directory,
                                       "assemblies_ids_to_download.tsv")
         with open(valid_ids_file, 'w', encoding='utf-8') as ids_to_txt:
             ids_to_txt.write("\n".join(assembly_ids)+'\n')
 
         # save ids that failed criteria
-        failed_ids_file = os.path.join(metadata_directory,
+        failed_ids_file = os.path.join(metadata_ncbi_directory,
                                        "id_failed_criteria.tsv")
         with open(failed_ids_file, 'w', encoding='utf-8') as ids_to_txt:
             ids_to_txt.write("\n".join(failed)+'\n')
@@ -168,6 +198,9 @@ def main(args):
                 arguments.extend(['--api-key', args.api_key])
 
             if criteria['file_to_include'] is not None:
+                if "genome" not in criteria['file_to_include']:
+                    criteria['file_to_include'].append("genome")
+
                 arguments.extend(['--include', ','.join(criteria['file_to_include'])])
 
             assemblies_zip = os.path.join(args.output_directory, 'assemblies.zip')
@@ -176,6 +209,7 @@ def main(args):
             subprocess.run(arguments, check=False)
         else:
             print("\nThe list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(valid_ids_file))
+
     # Download from ENA661k
     if 'ENA661K' in args.database:
         # Path for ena661k files
@@ -186,7 +220,7 @@ def main(args):
             # if not using conda, use output directory instead
             sr_path = os.path.join(args.output_directory, 'ena661k_files')
 
-        metadata_directory = ena661k_assembly_fetcher.main(sr_path,
+        metadata_ena_directory = ena661k_assembly_fetcher.main(sr_path,
                                                            args.taxon,
                                                            args.output_directory,
                                                            args.download,
@@ -195,31 +229,9 @@ def main(args):
                                                            args.threads)
 
     if args.fetch_metadata:
-        linked_ids_file = os.path.join(metadata_directory, 'id_matches.tsv')
-        ids_file = os.path.join(metadata_directory, 'assemblies_ids_to_download.tsv')
-
-        print("\nFetching RefSeq, Genbank and SRA IDs linked to the BioSample ID...")
-        ncbi_linked_ids.main(ids_file,
-                             linked_ids_file,
-                             args.email,
-                             args.threads,
-                             args.retry,
-                             args.api_key)
-
-        # fetch BioSample identifiers
-        biosamples = pd.read_csv(linked_ids_file,
-                                 delimiter='\t')['BioSample'].values.tolist()
-        # exclude samples without BioSample identifier
-        biosamples = [i for i in biosamples if type(i) is str]
-        # save BioSample identifiers to file
-        biosample_file = os.path.join(metadata_directory, 'biosamples.tsv')
-        with open(biosample_file, 'w+', encoding='utf-8') as ids:
-            ids.write("\n".join(biosamples)+'\n')
-
-        print("\nFetching metadata associated to the BioSample ID...")
-        fetch_metadata.main(biosample_file,
-                            metadata_directory,
-                            args.email,
-                            args.threads,
-                            args.api_key,
-                            args.retry)
+        if 'NCBI' in args.database:
+            print("\nFetching metadata for NCBI assemblies...")
+            get_all_metadata(metadata_ncbi_directory, args)
+        if 'ENA661K' in args.database:
+            print("\nFetching metadata for ENA661K assemblies...")
+            get_all_metadata(metadata_ena_directory, args)

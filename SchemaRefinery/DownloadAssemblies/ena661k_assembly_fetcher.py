@@ -176,7 +176,7 @@ def main(sr_path, taxon, output_directory, ftp_download, criteria, retry, thread
     if not os.path.exists(sr_path):
         os.mkdir(sr_path)
 
-    # Verify if files are present in the conda dir env~
+    # Verify if files are present in the conda dir env
     if os.path.exists(assembly_ftp_file):
         print('\nFile with FTP links already exists...')
     else:

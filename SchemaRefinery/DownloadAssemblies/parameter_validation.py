@@ -39,7 +39,7 @@ def tryeval(val):
 def check_minimum(value, minimum):
     """Check if a value is below a threshold value."""
     if value < minimum:
-        return False
+        return None
     else:
         return True
 
@@ -47,7 +47,7 @@ def check_minimum(value, minimum):
 def check_maximum(value, maximum):
     """Check if a value is above a threshold value."""
     if value > maximum:
-        return False
+        return None
     else:
         return True
 
@@ -57,7 +57,7 @@ def check_value_interval(value, minimum, maximum):
     if check_minimum(value) and check_maximum(value):
         return True
     else:
-        False
+        return None
 
 
 def check_value_type(value, expected_type):
@@ -80,14 +80,14 @@ def check_path(value):
     if os.path.exists(value):
         return True
     else:
-        return False
+        return None
 
 
 def check_in_list(values, expected_values):
     """"""
     intersection = set.intersection(set(expected_values), set(values))
     if len(intersection) < len(values):
-        return False
+        return None
     else:
         return values
 
@@ -99,23 +99,23 @@ def check_parameter(value, validate_type, validate_minimum, validate_maximum,
     if validate_type and valid:
         value = check_value_type(value, validate_type)
         if value is None:
-            valid = False
+            valid = None
     if validate_minimum and valid:
         valid_min = check_minimum(value, validate_minimum)
         if valid_min is None:
-            valid = False
+            valid = None
     if validate_maximum and valid:
         valid_max = check_maximum(value, validate_maximum)
         if valid_max is None:
-            valid = False
+            valid = None
     if validate_path and valid:
         valid_path = check_path(value)
         if valid_path is None:
-            valid = False
+            valid = None
     if validate_list and valid:
         value = check_in_list(value.split(','), validate_list)
         if value is None:
-            valid = False
+            valid = None
 
     if valid is None:
         return valid
