@@ -57,7 +57,7 @@ def verify_assembly(metadata_assembly, size_threshold, max_contig_number,
 
             return False
 
-    if verify_status is True or verify_status is None:
+    if verify_status is True:
         
         if assembly_info['assembly_status'] == 'suppressed':
             return False
