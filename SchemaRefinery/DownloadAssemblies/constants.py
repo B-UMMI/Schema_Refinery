@@ -31,10 +31,10 @@ CRITERIA_ERRORS = {'abundance':
                        ['max_contig_number: must be int greater than 0.',
                         [int, 1, None, None, None]],
                    'known_st':
-                       ['known_st: must be True or False.',
+                       ['known_st: must bool or None (Empty or None is False).',
                         [bool, None, None, None, None]],
                    'any_quality':
-                       ['any_quality: must be True or False.',
+                       ['any_quality: must bool or None (Empty or None is True).',
                         [bool, None, None, None, None]],
                    'ST_list_path':
                        ['ST_list_path: must be a valid path to a file.',
@@ -52,10 +52,10 @@ CRITERIA_ERRORS = {'abundance':
                        ['file_to_include: one or more of the following separated by comma: genome,rna,protein,cds,gff3,gtf,gbff,seq-report,none',
                         [str, None, None, None, FILE_EXTENSIONS]],
                    'verify_status':
-                       ['verify_status: bool or None',
+                       ['verify_status: bool or None (Empty or None is False)',
                         [bool, None, None, None, None]],
                    'exclude_atypical':
-                       ['exclude_atypical: bool or None',
+                       ['exclude_atypical: bool or None (Empty or None is True)',
                         [bool, None, None, None, None]]}
 
 EBI_FTP = 'http://ftp.ebi.ac.uk'

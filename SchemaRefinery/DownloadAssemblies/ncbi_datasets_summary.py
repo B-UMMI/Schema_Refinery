@@ -102,7 +102,7 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
             arguments.extend(['--assembly-level', ','.join(criteria['assembly_level'])])
         if criteria['reference'] is True:
             arguments.extend(['--reference'])
-        if criteria['exclude_atypical'] is True:
+        if criteria['exclude_atypical'] is True or criteria['exclude_atypical'] is None:
             arguments.extend(['--exclude-atypical'])
         # filter by choosen assembly source
         if criteria['assembly_source'] is not None:
