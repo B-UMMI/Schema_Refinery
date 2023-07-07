@@ -65,7 +65,7 @@ def get_all_metadata(metadata_dir, args):
     linked_ids_file = os.path.join(metadata_dir, 'id_matches.tsv')
     ids_file = os.path.join(metadata_dir, 'assemblies_ids_to_download.tsv')
 
-    print("\nFetching RefSeq, Genbank and SRA IDs linked and BioSample ID...")
+    print("\nFetching RefSeq, Genbank, SRA and BioSample IDs...")
     ncbi_linked_ids.main(ids_file,
                             linked_ids_file,
                             args.email,
@@ -121,7 +121,9 @@ def main(args):
         os.mkdir(args.output_directory)
 
     print(f"\nFetching assemblies from {args.database} datasets.")
+
     if 'NCBI' in args.database:
+        print("\nFetching from NCBI:")
         # user provided NCBI Genome Assembly and Annotation report
         if args.input_table is not None:
             # read TSV file that contains NCBI report
@@ -129,43 +131,36 @@ def main(args):
                 assembly_ids = id_list.read().splitlines()
 
             if len(assembly_ids) == 0:
-                print("No assembly identifiers provided.")
+                os.sys.exit("No assembly identifiers provided for NCBI database.")
 
-            if criteria is not None:
-                metadata = ncbi_datasets_summary.fetch_metadata(args.input_table, None, criteria, args.api_key)
+            metadata, print_out = ncbi_datasets_summary.fetch_metadata(args.input_table, None, criteria, args.api_key)
 
-                if metadata['total_count'] == 0:
-                    os.sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
         else:
             # Fetch from taxon identifier
-            metadata = ncbi_datasets_summary.fetch_metadata(None, args.taxon, criteria, args.api_key)
+            metadata, print_out = ncbi_datasets_summary.fetch_metadata(None, args.taxon, criteria, args.api_key)
+        
+        if metadata['total_count'] == 0:
+            os.sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
             
-            if metadata['total_count'] == 0:
-                os.sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
+        assembly_ids = [sample['accession'] for sample in metadata['reports']]
 
-            assembly_ids = [sample['accession'] for sample in metadata['reports']]
+        print(f"\n{len(assembly_ids)} total of assemblies that are {','.join(print_out)}")
 
-        total_ids = len(assembly_ids)
-
-        failed = []
-        passed = []
         if criteria is not None:
-            # Validate assemblies
-            if metadata['total_count'] > 0:
-                for sample in metadata['reports']:
-                    current_accession = sample['accession']
-                    valid = ncbi_datasets_summary.verify_assembly(sample,
-                                            criteria['size_threshold'],
-                                            criteria['max_contig_number'],
-                                            criteria['genome_size'],
-                                            criteria['verify_status'])
-                    if valid is True:
-                        passed.append(current_accession)
-                    else:
-                        failed.append(current_accession)
-                assembly_ids = passed
+            assembly_ids_total = assembly_ids
 
-            print(f"\n{len(assembly_ids)} passed filtering criteria.")
+            metadata_accepted = ncbi_datasets_summary.verify_assemblies(metadata,
+                                        criteria['size_threshold'],
+                                        criteria['max_contig_number'],
+                                        criteria['genome_size'],
+                                        criteria['verify_status'])
+            
+            assembly_ids = [sample['accession'] for sample in metadata_accepted]
+
+            failed = set(assembly_ids_total).symmetric_difference(set(assembly_ids))
+
+        print(f'Selected {len(assembly_ids)} samples/assemblies that meet filtering '
+              'criteria.')
 
         metadata_ncbi_directory = os.path.join(args.output_directory, 'metadata_ncbi')
         if not os.path.exists(metadata_ncbi_directory):
@@ -197,9 +192,10 @@ def main(args):
             if args.api_key is not None:
                 arguments.extend(['--api-key', args.api_key])
 
-            if criteria['file_to_include'] is not None:
-                if "genome" not in criteria['file_to_include']:
-                    criteria['file_to_include'].append("genome")
+            if criteria is not None:
+                if criteria['file_to_include'] is not None:
+                    if "genome" not in criteria['file_to_include']:
+                        criteria['file_to_include'].append("genome")
 
                 arguments.extend(['--include', ','.join(criteria['file_to_include'])])
 
@@ -212,6 +208,7 @@ def main(args):
 
     # Download from ENA661k
     if 'ENA661K' in args.database:
+        print("\nFetching from ENA661K:")
         # Path for ena661k files
         try:
             # Find local conda path

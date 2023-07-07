@@ -218,7 +218,7 @@ def main(sr_path, taxon, output_directory, ftp_download, criteria, retry, thread
                      for line in metadata_lines[1:]
                      if all(t in line[taxon_index].split() for t in taxon.split())]
 
-    print('\nFound {0} samples for taxon={1}.'
+    print('\nFound {0} samples for Taxon={1}.'
           ''.format(len(taxon_lines), taxon))
 
     if len(taxon_lines) == 0:
@@ -315,7 +315,7 @@ def main(sr_path, taxon, output_directory, ftp_download, criteria, retry, thread
         ids_to_tsv.write("\n".join(failed_list)+'\n')
 
     if len(sample_ids) == 0:
-        sys.exit('\nNo assemblies meet the desired filtering criterias.')
+        sys.exit('\nNo assemblies that satisfy the selected criteria were found.')
     else:
         print('Selected {0} samples/assemblies that meet filtering '
               'criteria.'.format(len(sample_ids)))

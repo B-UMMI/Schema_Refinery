@@ -13,8 +13,7 @@ AUTHOR
 import json
 import subprocess
 
-
-def verify_assembly(metadata_assembly, size_threshold, max_contig_number,
+def verify_assemblies(metadata,size_threshold, max_contig_number,
                     genome_size, verify_status):
     """
     This function verifies assemblies by certain inputa criteria.
@@ -22,7 +21,7 @@ def verify_assembly(metadata_assembly, size_threshold, max_contig_number,
     Parameters
     ----------
     metadata_assembly : json object (dict)
-        For a single assembly.
+        For all assemblies.
     size_threshold : float
         (0 >= x >= 1).
     max_contig_number: int
@@ -33,37 +32,38 @@ def verify_assembly(metadata_assembly, size_threshold, max_contig_number,
 
     Returns
     -------
-    Boolean value (in order to see if passed or failed)
+    list of accepted assemblies metadata.
     """
-    assembly_stats = metadata_assembly['assembly_stats']
-    assembly_info = metadata_assembly['assembly_info']
-
+    
+    accepted_assemblies = [meta for meta in metadata["reports"]]
     if genome_size is not None and size_threshold is not None:
-
         bot_limit = genome_size - (genome_size*size_threshold)
         top_limit = genome_size + (genome_size*size_threshold)
 
-        if int(assembly_stats['total_sequence_length']) >= top_limit:
-
-            return False
-
-        if int(assembly_stats['total_sequence_length']) <= bot_limit:
-
-            return False
+        accepted_assemblies = [meta
+                        for meta in accepted_assemblies
+                        if int(meta['assembly_stats']['total_sequence_length']) >= bot_limit
+                        and int(meta['assembly_stats']['total_sequence_length']) <= top_limit]
+        print(f"{len(accepted_assemblies)} with genome size >= {bot_limit} and <= {top_limit}.")
 
     if max_contig_number is not None:
 
-        if assembly_stats['number_of_contigs'] > max_contig_number:
-
-            return False
-
-    if verify_status is True:
+        accepted_assemblies = [meta
+                    for meta in accepted_assemblies
+                    if int(meta['assembly_stats']['number_of_contigs']) <= max_contig_number]
         
-        if assembly_info['assembly_status'] == 'suppressed':
-            return False
+        print(f"{len(accepted_assemblies)} with <= {max_contig_number} contigs.")
+    
+    if verify_status is True:
 
-    return True
-
+        accepted_assemblies = [meta
+                for meta in accepted_assemblies
+                if meta['assembly_stats']['assembly_status'] != 'suppressed']
+        
+        print(f"{len(accepted_assemblies)} with assembly status not suppressed.")
+    
+    return accepted_assemblies
+    
 
 def fetch_metadata(id_list_path, taxon, criteria, api_key):
     """
@@ -87,11 +87,15 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
     metadata_assembly: json object (dict)
         for all assemblies.
     """
+
+    print_out = []
     if id_list_path is not None:
         arguments = ['datasets', 'summary', 'genome', 'accession',
                      '--inputfile', id_list_path]
+        print_out.append("Ids")
     elif taxon is not None:
         arguments = ['datasets', 'summary', 'genome', 'taxon', taxon]
+        print_out.append(f"Taxon: {taxon}")
 
     # add other chosen parameters
     if api_key is not None:
@@ -100,13 +104,18 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
     if criteria is not None:
         if criteria['assembly_level'] is not None:
             arguments.extend(['--assembly-level', ','.join(criteria['assembly_level'])])
+            print_out.append(f"with Assembly level: {','.join(criteria['assembly_level'])}")
         if criteria['reference'] is True:
             arguments.extend(['--reference'])
+            print_out.append("Reference")
         if criteria['exclude_atypical'] is True or criteria['exclude_atypical'] is None:
             arguments.extend(['--exclude-atypical'])
+            print_out.append("Not Atypical")
         # filter by choosen assembly source
         if criteria['assembly_source'] is not None:
             arguments.extend(['--assembly-source', ','.join(criteria['assembly_source'])])
+            print_out.append(f"with assembly source: {','.join(criteria['assembly_source'])}")
+
     metadata = subprocess.run(arguments,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
@@ -114,4 +123,4 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
 
     metadata = json.loads(metadata.stdout)
 
-    return metadata
+    return metadata,print_out
