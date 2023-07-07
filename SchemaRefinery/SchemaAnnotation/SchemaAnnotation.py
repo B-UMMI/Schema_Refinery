@@ -82,12 +82,17 @@ def main(args):
     dfs = []
     for file in results_files:
         current_df = pd.read_csv(file, delimiter='\t', dtype=str)
+        if 'Locus' not in current_df.columns:
+            current_df = current_df.rename({'Locus_ID': 'Locus'}, axis=1)
         dfs.append(current_df)
 
     if args.subject_annotations and matched_schemas:
         # Read TSV with subject schema annotations
         if args.subject_columns:
-            columns = ['Locus'] + args.subject_columns
+            columns = ["Locus" if col == "Locus_ID" else col for col in args.subject_columns]
+            if "Locus" not in columns:
+                columns = ['Locus'] + columns
+
             match_add = pd.read_csv(args.subject_annotations, delimiter='\t',
                                     usecols=columns, dtype=str)
         else:
@@ -97,7 +102,6 @@ def main(args):
         merged_match = pd.merge(match_add, dfs[-1], on='Locus',
                                 how='left').fillna('')
         merged_match = merged_match[merged_match.columns.tolist()[1:]]
-        merged_match = merged_match.rename({'Locus_ID': 'Locus'}, axis=1)
 
         dfs[-1] = merged_match
 
