@@ -199,7 +199,7 @@ def main(args):
 
                 arguments.extend(['--include', ','.join(criteria['file_to_include'])])
 
-            assemblies_zip = os.path.join(args.output_directory, 'assemblies.zip')
+            assemblies_zip = os.path.join(args.output_directory, 'NCBI_assemblies.zip')
             arguments.extend(['--filename', assemblies_zip])
             print("\nDownloading assemblies...")
             subprocess.run(arguments, check=False)
@@ -228,7 +228,9 @@ def main(args):
     if args.fetch_metadata:
         if 'NCBI' in args.database:
             print("\nFetching metadata for NCBI assemblies...")
+            args.database = "NCBI"
             get_all_metadata(metadata_ncbi_directory, args)
         if 'ENA661K' in args.database:
             print("\nFetching metadata for ENA661K assemblies...")
+            args.database = "ENA661K"
             get_all_metadata(metadata_ena_directory, args)

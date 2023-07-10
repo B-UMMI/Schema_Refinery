@@ -21,6 +21,7 @@ import urllib.request
 import concurrent.futures
 import gzip
 import shutil
+from tqdm import tqdm
 from itertools import repeat
 
 try:
@@ -218,7 +219,7 @@ def main(sr_path, taxon, output_directory, ftp_download, criteria, retry, thread
                      for line in metadata_lines[1:]
                      if all(t in line[taxon_index].split() for t in taxon.split())]
 
-    print('\nFound {0} samples for Taxon={1}.'
+    print('\nFound {0} samples for Taxon: {1}.'
           ''.format(len(taxon_lines), taxon))
 
     if len(taxon_lines) == 0:
@@ -366,15 +367,9 @@ def main(sr_path, taxon, output_directory, ftp_download, criteria, retry, thread
 
         print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
         failed = 0
-        downloaded = 0
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-            for res in executor.map(download_ftp_file, remote_urls, repeat(retry)):
-                if res is True:
-                    downloaded += 1
-                    print('\r', 'Downloaded {0}/{1}'.format(downloaded,
-                                                            len(remote_urls)),
-                          end='')
-                else:
+            for res in list(tqdm(executor.map(download_ftp_file, remote_urls, repeat(retry)),total=len(sample_ids))):
+                if res is False:
                     failed += 1
             print(f'\nFailed download for {failed} files.')
 
