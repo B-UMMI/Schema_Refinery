@@ -20,14 +20,10 @@ from itertools import repeat
 from tqdm import tqdm
 from Bio import Entrez
 
-
-# regex expressions to identify identifier type
-database_patterns = {'biosample': 'SAM[E|D|N][A-Z]?[0-9]+',
-                     'bioproject': 'PRJ[E|D|N][A-Z][0-9]+',
-                     'sra': '[E|D|S]RR[0-9]{6,}',
-                     'refseq': 'GCF_[0-9]{9}.[0-9]+',
-                     'genbank': 'GCA_[0-9]{9}.[0-9]+'}
-
+try:
+    from DownloadAssemblies import constants as ct
+except ModuleNotFoundError:
+    from SchemaRefinery.DownloadAssemblies import constants as ct
 
 def determine_id_type(identifier):
     """Determine the origin database for an accession number.
@@ -45,7 +41,7 @@ def determine_id_type(identifier):
         identifier type.
     """
     match = None
-    for db, pat in database_patterns.items():
+    for db, pat in ct.DATABASE_PATTERNS.items():
         db_match = re.findall(pat, identifier)
         if db_match != []:
             return db
@@ -173,7 +169,7 @@ def fetch_sra_accessions(identifiers):
         sra_record = get_esummary_record(i, 'sra')
 
         # get SRA identifier
-        sra_accession = re.findall(database_patterns['sra'],
+        sra_accession = re.findall(ct.DATABASE_PATTERNS['sra'],
                                    sra_record[0]['Runs'])
         if len(sra_accession) > 0:
             sra_accessions.append(sra_accession[0])
@@ -213,20 +209,21 @@ def fetch_assembly_accessions(identifiers):
     for i in identifiers:
         # Get Assembly Summary
         assembly_record = get_esummary_record(i, 'assembly')
+        document_summary = assembly_record['DocumentSummarySet']['DocumentSummary']
         # get RefSeq identifier
-        refseq_accession = assembly_record['DocumentSummarySet']['DocumentSummary'][0]['Synonym'].get('RefSeq', '')
+        refseq_accession = document_summary[0]['Synonym'].get('RefSeq', '')
         if refseq_accession != '':
             refseq_accessions.append(refseq_accession)
         # get GenBank identifier
-        genbank_accession = assembly_record['DocumentSummarySet']['DocumentSummary'][0]['Synonym'].get('Genbank', '')
+        genbank_accession = document_summary[0]['Synonym'].get('Genbank', '')
         if genbank_accession != '':
             genbank_accessions.append(genbank_accession)
 
         # get Biosample accession number
-        biosample_id = assembly_record['DocumentSummarySet']['DocumentSummary'][0].get('BioSampleId', '')
+        biosample_id = document_summary[0].get('BioSampleId', '')
         if biosample_id != '':
             biosample_ids.append(biosample_id)
-        biosample_accession = assembly_record['DocumentSummarySet']['DocumentSummary'][0].get('BioSampleAccn', '')
+        biosample_accession = document_summary[0].get('BioSampleAccn', '')
         if biosample_accession != '':
             biosample_accessions.append(biosample_accession)
 
@@ -304,29 +301,9 @@ def multi_threading(i, retry):
                                            i,
                                            ','.join(sra_accessions),
                                            ','.join(sequencing_platforms)]
-
-            elif match_db == 'sra':
-                # Get SRA Summary
-                esummary_record = get_esummary_record(record_ids[0], 'sra')
-
-                # get Biosample accession number (possible for one SRA Run accession to match multiple BioSample ids?)
-                biosample_accession = esummary_record[0]['ExpXml'].split('<Biosample>')[-1].split('</Biosample>')[0]
-                biosample_record = get_esearch_record(biosample_accession, 'biosample')
-                biosample_id = biosample_record['IdList'][0]
-
-                # find links to Assembly database
-                # possible to get multiple RefSeq and GenBank ids
-                elink_record = get_elink_record(biosample_id, 'biosample', 'assembly')
-                assembly_ids = get_elink_id(elink_record)
-                refseq_accessions, genbank_accessions = fetch_assembly_accessions(assembly_ids)[0:2]
-
-                identifiers = [','.join(refseq_accessions),
-                                           ','.join(genbank_accessions),
-                                           biosample_accession,
-                                           i]
         except Exception:
             rtry += 1
-            time.sleep(1)
+            time.sleep(0.15)
 
         else:
             break

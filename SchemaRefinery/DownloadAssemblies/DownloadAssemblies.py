@@ -228,9 +228,7 @@ def main(args):
     if args.fetch_metadata:
         if 'NCBI' in args.database:
             print("\nFetching metadata for NCBI assemblies...")
-            args.database = "NCBI"
             get_all_metadata(metadata_ncbi_directory, args)
         if 'ENA661K' in args.database:
             print("\nFetching metadata for ENA661K assemblies...")
-            args.database = "ENA661K"
             get_all_metadata(metadata_ena_directory, args)

@@ -89,3 +89,15 @@ SPLIT_MUST_BE_ODD = "split: must be with the following format: split    loci5   
 SPLIT_MISSING_MINUS = "split: must have '-' between two values."
 
 SPLIT_VALUE_MUST_BE_INT = "split: must have integer number separated by '-'"
+
+
+"""
+ncbi_linked_ids
+"""
+
+# regex expressions to identify identifier type
+DATABASE_PATTERNS = {'biosample': 'SAM[E|D|N][A-Z]?[0-9]+',
+                     'bioproject': 'PRJ[E|D|N][A-Z][0-9]+',
+                     'sra': '[E|D|S]RR[0-9]{6,}',
+                     'refseq': 'GCF_[0-9]{9}.[0-9]+',
+                     'genbank': 'GCA_[0-9]{9}.[0-9]+'}

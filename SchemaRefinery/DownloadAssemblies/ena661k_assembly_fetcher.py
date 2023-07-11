@@ -46,32 +46,6 @@ while True:
 # set socket timeout for urllib calls
 socket.setdefaulttimeout(60)
 
-
-# function passed to urllib.request.urlretrieve to track progress
-def handle_progress(block_num, block_size, total_size):
-    """Calculate %the progress of the downloads that have been made.
-    """
-    read_data = 0
-    # calculating the progress
-    # storing a temporary value to store downloaded bytes so that we can
-    # add it later to the overall downloaded data
-    temp = block_num * block_size
-    read_data = temp + read_data
-    # calculating the remaining size
-    remaining_size = total_size - read_data
-    if remaining_size <= 0:
-        downloaded_percentage = 100
-        remaining_size = 0
-    else:
-        downloaded_percentage = int(((total_size-remaining_size) / total_size)*(100))
-
-    if downloaded_percentage == 100:
-        print(f'Downloaded: {downloaded_percentage}% ', end="\n")
-    else:
-        print(" ", end="\r")
-        print(f'Downloaded: {downloaded_percentage}% ', end="\r")
-
-
 def check_download(file: str, file_hash: str, remove=False):
     """
     Check the integrity of a downloaded file.
@@ -123,7 +97,7 @@ def read_table(file_path, delimiter='\t'):
     return lines
 
 
-def download_ftp_file(data, retry, verify=True, progress=False):
+def download_ftp_file(data, retry, verify=True):
     """
     Download a file from a FTP server.
 
@@ -149,12 +123,9 @@ def download_ftp_file(data, retry, verify=True, progress=False):
     downloaded = False
     while downloaded is False and tries < retry:
         try:
-            if progress is False:
-                res = urllib.request.urlretrieve(file_url, out_file)
-            else:
-                res = urllib.request.urlretrieve(file_url, out_file, handle_progress)
+            res = urllib.request.urlretrieve(file_url, out_file)
         except:
-            time.sleep(1)
+            time.sleep(0.15)
         tries += 1
 
         if os.path.isfile(out_file) is True:
