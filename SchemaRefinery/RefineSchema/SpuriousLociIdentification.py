@@ -31,6 +31,10 @@ def hex_to_rgb(hex_color: str) -> tuple:
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
+def check_and_delete_file(file:str):
+    if os.path.isfile(file):
+        os.remove(file)
+
 def check_and_make_directory(dir:str):
     if not os.path.isdir(dir):
         os.mkdir(dir)
@@ -172,7 +176,9 @@ def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir,
         print(stderr)
 
 def join_intervals(alignments):
-    start_stop_list_for_processing = [{"start": i[0], "stop": i[1], "joined_intervals": set()} for i in alignments]
+    start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
+                                       "joined_intervals": set(), "pident": alignment[4], 
+                                       "gaps": alignment[5]} for alignment in alignments]
     found_new_interval = True
     
     new_index = 0
@@ -194,7 +200,7 @@ def join_intervals(alignments):
                     new_first = first["start"]
 
                 new_joined_intervals = first["joined_intervals"].union(second["joined_intervals"]).union(set(((first['start'], first['stop']), (second['start'], second['stop']))))
-                new_interval = {"start": new_first, "stop": new_last, "joined_intervals": new_joined_intervals}
+                new_interval = {"start": new_first, "stop": new_last, "joined_intervals": new_joined_intervals, "pident": f"{first['pident']};{second['pident']}", "gaps": f"{first['gaps']};{second['gaps']}"}
                 found_new_interval = True
                 start_stop_list_for_processing = start_stop_list_for_processing[0:i] + [new_interval] + start_stop_list_for_processing[i+2:]
                 new_index = i
@@ -284,9 +290,18 @@ def process_alignments_for_graphs(alignments_dict: dict):
 def printGraphs(alignments_dict: dict, filename:str, output_directory):
     file_template = '{0}/{1}'
 
+    alignments_dict_length = len(alignments_dict)
     processed_alignments_dict = process_alignments_for_graphs(alignments_dict)
+    print("\n\nFinished processing for graphs.\n")
     process_alignments_dict_length = len(processed_alignments_dict)
 
+    with open(info_file_path, 'a') as info_file:
+        info_file.writelines([
+            f"Before joining alignments with their corresponding inverse (query/subject - subject/query),\nthere were {alignments_dict_length} entries.\n",
+            f"After joining alignments with their corresponding inverse (query/subject - subject/query),\n{filename} file should have {process_alignments_dict_length} graphs.\n", 
+            "\n"])
+
+    # Render graphs to html here
     if process_alignments_dict_length > 0:
         fig = make_subplots(rows=math.ceil(process_alignments_dict_length/2), cols=2, column_widths=[0.5, 0.5], horizontal_spacing=0.15)
         row = 1
@@ -357,7 +372,6 @@ def printGraphs(alignments_dict: dict, filename:str, output_directory):
                                   template='ggplot2'
                                   )
 
-    # log transform axes for more compact scaling
     fig.update_xaxes(type='linear',
                                  title_text='Length')
     fig.update_yaxes(title_text='Names')
@@ -385,6 +399,7 @@ def process_blast_results(blast_results_file):
             length = cols[8]
             score = cols[9]
             gaps = cols[10]
+            pident = cols[11]
 
             key = f"{query}:{subject}"
             value = {
@@ -398,7 +413,8 @@ def process_blast_results(blast_results_file):
                     "subject_end": int(subject_end),
                     "length": int(length),
                     "score": int(score),
-                    "gaps": int(gaps)
+                    "gaps": int(gaps),
+                    "pident": float(pident)
                     }
             
             if not key in alignments_dict.keys():
@@ -409,12 +425,20 @@ def process_blast_results(blast_results_file):
     alignment_strings = []
     alignment_query = []
     alignment_subject = []
+
+    # filter alignments by pident
+    alignments_dict = {key: [alignment for alignment in alignments if alignment["pident"] >= 90] 
+                       for key, alignments in alignments_dict.items()}
+    # remove dictionary entries with zero alignments after filtering by pident
+    alignments_dict = {key: alignments
+                       for key, alignments in alignments_dict.items() if len(alignments) != 0}
+
     filtered_alignments_dict = copy.deepcopy(alignments_dict)
     for key, alignments in alignments_dict.items():
+    
         if len(alignments) > 0:
             query = alignments[0]['query']
             subject = alignments[0]['subject']
-            gaps = alignments[0]['gaps']
 
             if query == subject:
                 del filtered_alignments_dict[key]
@@ -423,12 +447,16 @@ def process_blast_results(blast_results_file):
                 subject_length = alignments[0]["subject_length"]
 
                 alignments.sort(key=lambda x : x["query_start"])
-                query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
+                query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"]] for entry in alignments]
                 alignments.sort(key=lambda x : x["subject_start"])
-                subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"]] for entry in alignments]
+                subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"]] for entry in alignments]
 
                 final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
                 final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
+
+                # print("cena: ", alignment_query)
+                final_gaps = ';'.join([str(alignment["gaps"]) for alignment in alignment_query])
+                final_pident = ';'.join([str(alignment["pident"]) for alignment in alignment_query])
 
                 #filter for alignment percentage
                 alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
@@ -443,12 +471,26 @@ def process_blast_results(blast_results_file):
                 if query_ratio >= ALIGNMENT_RATIO_THRESHOLD or subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
                     query_start_stops = ';'.join(final_query_start_stop_list)
                     subject_start_stops = ';'.join(final_subject_start_stop_list)
-                    alignment_string = f"{query}\t{subject}\t{query_start_stops}\t{subject_start_stops}\t{query_ratio}\t{subject_ratio}\t{gaps}\n"
+                    alignment_string = f"{query}\t{subject}\t{query_start_stops}\t{subject_start_stops}\t{query_ratio}\t{subject_ratio}\t{query_length}\t{subject_length}\t{final_gaps}\t{final_pident}\n"
                     alignment_strings.append(alignment_string)
                 else:
                     del filtered_alignments_dict[key]
 
     return (alignment_strings, filtered_alignments_dict)
+
+def locus_alleles_protein_translation(locus_file_path, translation_file_path):
+    with open(locus_file_path, "r") as alleles_file:
+        lines = alleles_file.readlines()
+        with open(translation_file_path, "w") as alleles_protein_file:
+            for j in range(0, len(lines), 2):
+                protein_translation = translate_dna(lines[j+1].replace('\n', ''), "Standard", 0)
+                # the protein translation was succesful
+                if isinstance(protein_translation, list):
+                    alleles_protein_file.writelines([lines[j]])
+                    alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
+                else: # protein translation was not succesful
+                    # TODO: something to handle dna sequences that couldn't be translated to protein
+                    pass
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
@@ -461,79 +503,91 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     check_and_make_directory(blast_results_alignments)
 
     report_file_path = os.path.join(output_directory, "report.tsv")
+    alleles_report_file_path = os.path.join(output_directory, "alleles_report.tsv")
 
     print("Running Blast for all representatives...")
 
     all_alignments_dict = {}
     best_allele_alignments_dict = {}
     total_loci = len(loci)
+    allele_protein_translation_dict = {}
     with open(report_file_path, 'w') as report_file:
-        report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\t", "Number of Gaps\n"])
-        for idx, locus in enumerate(loci, 1):
-            blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
-            blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps', '-out', blast_results_file]
+        with open(alleles_report_file_path, 'w') as alleles_report_file:
+            report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", "Pident - Percentage of identical matches\n"])
+            for idx, locus in enumerate(loci, 1):
+                blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
+                blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
 
-            print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
-            run_blast(blast_args)
-
-            # check results file for alignments
-            _, alignments_dict = process_blast_results(blast_results_file)
-            schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
-
-            # report_file.writelines(alignments_string)
-
-            all_alignments_dict.update(alignments_dict)
-
-            total_alignments = len(alignments_dict)
-            alignments_list = [key.split(":")[1].split("_")[0] for key in alignments_dict.keys()]
-
-            for i, alignment in enumerate(alignments_list, 1):
-                if not alignment in schema_files:
-                    #TODO handle loci that appear in short directory but don't appear on main schema directory
-                    print(f"\tSkipped alignment: {alignment}")
-                    continue
-                alignment_file_path = os.path.join(schema, schema_files[alignment])
-                alleles_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment}")
-                with open(alignment_file_path, "r") as alleles_file:
-                    lines = alleles_file.readlines()
-                    with open(alleles_protein_file_path, "w") as alleles_protein_file:
-                        for j in range(0, len(lines), 2):
-                            protein_translation = translate_dna(lines[j+1].replace('\n', ''), "Standard", 0)
-                            # the protein translation was succesful
-                            if isinstance(protein_translation, list):
-                                alleles_protein_file.writelines([lines[j]])
-                                alleles_protein_file.writelines([f"{str(protein_translation[0][0])}\n"])
-                            else: # protein translation was not succesful
-                                # TODO: something to handle dna sequences that couldn't be translated to protein
-                                pass
-                
-                # run blast for alignment locus alleles
-                allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.tsv")
-                blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', alleles_protein_file_path, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps', '-out', allele_blast_results_file]
-
-                print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
+                print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
                 run_blast(blast_args)
 
-                # process the blast file for this alignment
-                allele_alignments_string, allele_alignments_dict = process_blast_results(allele_blast_results_file)
+                # check results file for alignments
+                alignments_string, alignments_dict = process_blast_results(blast_results_file)
+                schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
 
-                # Choose alignment with best score to make a graph of it
-                best_score = 0
-                best_alignment = None
-                for key, l in allele_alignments_dict.items():
-                    for alig in l:
-                        if alig["score"] > best_score:
-                            best_score = alig["score"]
-                            best_alignment = {key: [alig]}
+                report_file.writelines(alignments_string)
 
-                best_allele_alignments_dict.update(best_alignment)
+                all_alignments_dict.update(alignments_dict)
 
-                # if not best_allele_alignment:
-                #     best_allele_alignment = best_alignment
-                # elif best_score > best_allele_alignment[best_key][0]["score"]:
-                #     best_allele_alignment = best_alignment
+                total_alignments = len(alignments_dict)
+                alignments_list = [key.split(":")[1].split("_")[0] for key in alignments_dict.keys()]
 
-                report_file.writelines(allele_alignments_string)
+                for i, alignment in enumerate(alignments_list, 1):
+                    if not alignment in schema_files:
+                        #TODO handle loci that appear in short directory but don't appear on main schema directory
+                        print(f"\tSkipped alignment: {alignment}")
+                        continue
+                    query_locus_file_path = os.path.join(schema, schema_files[locus])
+                    alignment_file_path = os.path.join(schema, schema_files[alignment])
+                    alleles_query_locus_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{locus}")
+                    alleles_alignment_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment}")
+
+                    if locus not in allele_protein_translation_dict:
+                        locus_alleles_protein_translation(query_locus_file_path, alleles_query_locus_protein_file_path)
+                        allele_protein_translation_dict[locus] = alleles_query_locus_protein_file_path
+
+                    if alignment not in allele_protein_translation_dict:
+                        locus_alleles_protein_translation(alignment_file_path, alleles_alignment_protein_file_path)
+                        allele_protein_translation_dict[alignment] = alleles_alignment_protein_file_path
+                        
+                    # run blast for alignment locus alleles
+                    allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment}.tsv")
+                    blast_args = ['blastp', '-query', allele_protein_translation_dict[locus], '-subject', allele_protein_translation_dict[alignment], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
+
+                    print(f"\tRunning BLAST for alignment: {alignment} - {i}/{total_alignments}")
+                    run_blast(blast_args)
+
+                    # process the blast file for this alignment
+                    allele_alignments_string, allele_alignments_dict = process_blast_results(allele_blast_results_file)
+
+                    # Choose alignment with best score to make a graph of it
+                    best_score = 0
+                    best_alignment = None
+                    best_alignment_key = ""
+                    for key, l in allele_alignments_dict.items():
+                        for alig in l:
+                            if alig["score"] > best_score:
+                                best_score = alig["score"]
+                                best_alignment = {key: [alig]}
+                                best_alignment_key = key
+
+                    if best_alignment:
+                        best_allele_alignments_dict.update(best_alignment)
+                        # filter for the best alignment on the list of alignment strings
+                        locus_1, locus_2 = best_alignment_key.split(":")
+                        # print(filter(lambda x: f'{locus_1}\t{locus_2}\t' in x, allele_alignments_string))
+                        # print(allele_alignments_string)
+                        allele_alignments_string = filter(lambda x: f'{locus_1}\t{locus_2}\t' in x, allele_alignments_string)
+
+                    alleles_report_file.writelines(allele_alignments_string)
+
+    unique_alignent_ids = set()
+    for key in all_alignments_dict.keys():
+        locus = key.split(":")[0]
+        unique_alignent_ids.add(locus)
+
+    with open(info_file_path, 'a') as info_file:
+        info_file.writelines([f"There were {len(unique_alignent_ids)} different Loci that aligned with another Locus.\n\n"])
 
     print("Rendering all alignement graphs...")
     printGraphs(all_alignments_dict, "Scatter_plots_all_representatives", output_directory)
@@ -546,6 +600,12 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     # shutil.rmtree(blast_results_all_representatives)
 
 def main(schema, output_directory, missing_classes_fasta, threshold):
+    global info_file_path
+    info_file_path = os.path.join(output_directory, "info.txt")
+
+    # delete the old file for the info if it already exists, since we're appending lines to it
+    check_and_delete_file(info_file_path)
+
     # use short directory fasta files
     schema_short = os.path.join(schema, "short")
 
@@ -559,6 +619,8 @@ def main(schema, output_directory, missing_classes_fasta, threshold):
 
     schema_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and ".fasta" in f}
     loci = set(schema_files_paths.keys())
+
+    print(f"Found {len(loci)} in schema dir (short).")
 
     all_representatives_file = os.path.join(representatives_dir, f"All_representatives.fasta")
     representative_file_dict = {}
@@ -589,7 +651,7 @@ def main(schema, output_directory, missing_classes_fasta, threshold):
                             filtered_loci.remove(locus)
                             not_translated_dna_sequences[locus] = protein_translation
 
-    # filtered_loci = ["GCF-000006885-protein699","GCF-000007045-protein1266"]
+    # filtered_loci = list(filtered_loci)[:100]
 
     # only received the schema
     if schema and not missing_classes_fasta:
