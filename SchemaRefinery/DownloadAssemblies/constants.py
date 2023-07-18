@@ -16,7 +16,7 @@ ASSEMBLY_SOURCES = ['RefSeq', 'GenBank', 'all']
 
 FILE_EXTENSIONS = ['genome', 'rna', 'protein',
                    'cds', 'gff3', 'gtf',
-                   'gbff', 'seq-report', 'none']
+                   'gbff', 'seq-report']
 
 CRITERIA_ERRORS = {'abundance':
                        ['abundance: must be float between 0.0 and 1.0.',

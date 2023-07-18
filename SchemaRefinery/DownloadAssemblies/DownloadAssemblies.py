@@ -192,11 +192,7 @@ def main(args):
             if args.api_key is not None:
                 arguments.extend(['--api-key', args.api_key])
 
-            if criteria is not None:
-                if criteria['file_to_include'] is not None:
-                    if "genome" not in criteria['file_to_include']:
-                        criteria['file_to_include'].append("genome")
-
+            if criteria['file_to_include'] is not None:
                 arguments.extend(['--include', ','.join(criteria['file_to_include'])])
 
             assemblies_zip = os.path.join(args.output_directory, 'NCBI_assemblies.zip')
