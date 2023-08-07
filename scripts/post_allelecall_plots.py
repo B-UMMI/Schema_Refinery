@@ -145,7 +145,7 @@ def main(matrix_path,output_directory, num_bins, missing_alleles):
     print("writing html...")
     histplot_full.write_html(os.path.join(output_directory,"histplot_full.html"))
 
-    histplot_partial.write_html(os.path.join(output_directory,"histplot_partial_100.html"))
+    histplot_partial.write_html(os.path.join(output_directory,"histplot_partial.html"))
                                     
     stacked_bar.write_html(os.path.join(output_directory,"stacked_barplot.html"))
                            
