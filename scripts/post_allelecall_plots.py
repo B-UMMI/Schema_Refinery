@@ -11,6 +11,7 @@ output:
 
 import os
 import argparse
+from pickle import FALSE
 import pandas as pd
 
 import plotly.graph_objs as go
@@ -59,7 +60,7 @@ def count_occurences(matrix, masked_profiles, classes):
     else:
         pass
 
-def missing_alleles_count_plot(matrix_counts):
+def missing_alleles_count_plot(matrix_counts, num_bins, missing_alleles):
     
     matrix_counts_sum = matrix_counts.apply(pd.Series.sum)
     
@@ -67,15 +68,19 @@ def missing_alleles_count_plot(matrix_counts):
     
     matrix_counts_sum.columns = ["Locus","Missing"]
     
-    histplot_full = px.histogram(matrix_counts_sum,x="Missing",nbins=200,
+    nbins = len(matrix_counts_sum["Missing"])
+
+    nbins_partial = round(nbins*num_bins)
+    histplot_full = px.histogram(matrix_counts_sum,x="Missing",nbins=nbins,
                         labels={'Missing':'Missing Alleles'}
                         ,text_auto=True)
     
-    histplot_partial_100 = px.histogram(matrix_counts_sum[matrix_counts_sum["Missing"] <= 100], x="Missing",nbins=101,
+    histplot_partial = px.histogram(matrix_counts_sum[matrix_counts_sum["Missing"] <= missing_alleles], x="Missing",nbins=nbins_partial,
                         labels={'Missing':'Missing Alleles'}
                         ,text_auto=True)
-    
-    return histplot_full, histplot_partial_100
+    print(f"print partial plot max number {nbins_partial}")
+    print(f"numer of missing alleles {missing_alleles}")
+    return histplot_full, histplot_partial
 
 def stacked_barplot_classes(matrix_counts_t, matrix_counts_sum, assembly_ids):
     
@@ -110,7 +115,7 @@ def stacked_barplot_classes(matrix_counts_t, matrix_counts_sum, assembly_ids):
     
     return stacked_bar
 
-def main(matrix_path,output_directory):
+def main(matrix_path,output_directory, num_bins, missing_alleles):
     
     #import matrix obtained from allele call
     print("loading matrix...")
@@ -130,7 +135,7 @@ def main(matrix_path,output_directory):
     
     #Show histogram of the number of loci vs missing alelles
     print("\ngenerating histogram...")
-    histplot_full, histplot_partial_100 = missing_alleles_count_plot(matrix_counts)
+    histplot_full, histplot_partial = missing_alleles_count_plot(matrix_counts, num_bins, missing_alleles)
     
     #stacked barplot of classes for each locus
     print("\ngenerating stacked barplot...")
@@ -140,7 +145,7 @@ def main(matrix_path,output_directory):
     print("writing html...")
     histplot_full.write_html(os.path.join(output_directory,"histplot_full.html"))
 
-    histplot_partial_100.write_html(os.path.join(output_directory,"histplot_partial_100.html"))
+    histplot_partial.write_html(os.path.join(output_directory,"histplot_partial_100.html"))
                                     
     stacked_bar.write_html(os.path.join(output_directory,"stacked_barplot.html"))
                            
@@ -163,6 +168,18 @@ def parse_arguments():
                         required=True,
                         dest='output_directory',
                         help='Path to the output directory.')
+    
+    parser.add_argument('-bins', '--number_bins_show_partial', type=str,
+                        required=False,
+                        default= 0.025,
+                        dest='num_bins',
+                        help='number of bins to show in partial graph (0<x<=1)')
+
+    parser.add_argument('-ma', '--missing_alleles', type=str,
+                        required=False,
+                        default= 100,
+                        dest='missing_alleles',
+                        help='maximum missing alleles to display')
 
 
     args = parser.parse_args()
