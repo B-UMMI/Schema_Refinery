@@ -5,7 +5,7 @@ Purpose
 -------
 This script enables the download of genome assemblies from the
 ENA661k study ("Exploring bacterial diversity via a curated
-and searchable snapshot of archived DNA sequences").
+and searchable snapshot of archived DNA sequences" PMID: 34752446).
 
 Code documentation
 ------------------
