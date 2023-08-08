@@ -1,183 +1,27 @@
 import os
 import copy
-import math
-import subprocess
-from Bio.Seq import Seq
 import shutil
-import statistics
 import datapane as dp
-
 import plotly.graph_objs as go
 import plotly.express.colors as graph_colors
-from plotly.offline import plot
-from plotly.subplots import make_subplots
 
-LOCUS_CLASSIFICATIONS_TO_CHECK = ["ASM", 
-                                  #"ALM", 
-                                  #"NIPH", 
-                                  #"NIPHEM"
-                                  ]
-
-DNA_BASES = 'AGCT'
-MAX_GAP_UNITS = 4
-ALIGNMENT_RATIO_THRESHOLD = 0.6
-PIDENT_THRESHOLD = 75
-OPACITY = 0.2
-
-def hex_to_rgb(hex_color: str) -> tuple:
-    hex_color = hex_color.lstrip("#")
-    if len(hex_color) == 3:
-        hex_color = hex_color * 2
-    return int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+try:
+    from utils.constants import OPACITY, MAX_GAP_UNITS, PIDENT_THRESHOLD, ALIGNMENT_RATIO_THRESHOLD
+    from utils.other import hex_to_rgb
+    from utils.file_functions import check_and_delete_file, create_directory
+    from utils.sequence_functions import translate_dna
+    from utils.blast_functions import run_blast_with_args_only
+except ModuleNotFoundError:
+    from SchemaRefinery.utils.constants import OPACITY, MAX_GAP_UNITS, PIDENT_THRESHOLD, ALIGNMENT_RATIO_THRESHOLD
+    from SchemaRefinery.utils.other import hex_to_rgb
+    from SchemaRefinery.utils.file_functions import check_and_delete_file, create_directory
+    from SchemaRefinery.utils.sequence_functions import translate_dna
 
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
-def check_and_delete_file(file:str):
-    if os.path.isfile(file):
-        os.remove(file)
-
-def check_and_make_directory(dir:str):
-    if not os.path.isdir(dir):
-        os.mkdir(dir)
-
-def check_str_alphabet(input_string, alphabet):
-    alphabet_chars = set(alphabet)
-    string_chars = set(input_string)
-
-    diff = string_chars - alphabet_chars
-
-    return len(diff) == 0
-
-def check_str_multiple(input_string, number):
-    return (len(input_string) % number) == 0
-
-def reverse_str(input_string):
-    revstr = input_string[::-1]
-
-    return revstr
-
-def reverse_complement(input_string, alphabet):
-    translation_table = str.maketrans(alphabet, alphabet[::-1])
-
-    upper_string = input_string.upper()
-    complement_string = upper_string.translate(translation_table)
-    reverse_complement_string = reverse_str(complement_string)
-
-    return reverse_complement_string
-
-def translate_sequence(dna_str, table_id):
-    myseq_obj = Seq(dna_str)
-    protseq = Seq.translate(myseq_obj, table=table_id)
-
-    return protseq
-
-def translate_dna_aux(dna_sequence, method, table_id):
-    myseq = dna_sequence
-    # try to translate original sequence
-    if method == 'original':
-        try:
-            protseq = translate_sequence(myseq, table_id)
-        except Exception as argh:
-            return argh
-    # try to translate the reverse complement
-    elif method == 'revcomp':
-        try:
-            myseq = reverse_complement(myseq, DNA_BASES)
-            protseq = translate_sequence(myseq, table_id)
-        except Exception as argh:
-            return argh
-    # try to translate the reverse
-    elif method == 'rev':
-        try:
-            myseq = reverse_str(myseq)
-            protseq = translate_sequence(myseq, table_id)
-        except Exception as argh:
-            return argh
-    # try to translate the reverse reverse complement
-    elif method == 'revrevcomp':
-        try:
-            myseq = reverse_str(myseq)
-            myseq = reverse_complement(myseq, DNA_BASES)
-            protseq = translate_sequence(myseq, table_id)
-        except Exception as argh:
-            return argh
-
-    return [protseq, myseq]
-
-def translate_dna(dna_sequence, table_id, min_len):
-    original_seq = dna_sequence.upper()
-    exception_collector = []
-    strands = ['sense', 'antisense', 'revsense', 'revantisense']
-    translating_methods = ['original', 'revcomp', 'rev', 'revrevcomp']
-
-    # check if the sequence has ambiguous bases
-    valid_dna = check_str_alphabet(original_seq, DNA_BASES)
-    if valid_dna is not True:
-        return 'ambiguous or invalid characters'
-
-    # check if sequence size is multiple of three
-    valid_length = check_str_multiple(original_seq, 3)
-    if valid_length is not True:
-        return 'sequence length is not a multiple of 3'
-
-    # check if sequence is not shorter than the accepted minimum length
-    if len(original_seq) < min_len:
-        return 'sequence shorter than {0} nucleotides'.format(min_len)
-
-    # try to translate in 4 different orientations
-    # or reach the conclusion that the sequence cannot be translated
-    i = 0
-    translated = False
-    while translated is False:
-        translated_seq = translate_dna_aux(original_seq, translating_methods[i], table_id)
-        if not isinstance(translated_seq, list):
-            exception_collector.append('{0}({1})'.format(strands[i],
-                                                         translated_seq.args[0]))
-
-        i += 1
-        if i == len(strands) or isinstance(translated_seq, list) is True:
-            translated = True
-
-    coding_strand = strands[i-1]
-
-    # if the sequence could be translated, return list with protein and DNA
-    # sequence in correct orientation
-    if isinstance(translated_seq, list):
-        return [translated_seq, coding_strand]
-    # if it could not be translated, return the string with all exception
-    # that were collected
-    else:
-        exception_str = ','.join(exception_collector)
-        return exception_str
-    
-def run_blast(blast_args):
-    blast_proc = subprocess.Popen(blast_args,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE)
-
-    stderr = blast_proc.stderr.readlines()
-    if len(stderr) > 0:
-        print(stderr)
-
-
-def run_blast_for_CDS(locus, classification, subjects_number, blast_results_dir, representative_file, current_cds_file):
-    blast_results_file = os.path.join(blast_results_dir, f"blast_results_{locus}_{classification}.txt")
-    blast_args = ['blastn', '-query', representative_file, '-subject', current_cds_file, '-out', blast_results_file]
-
-    print(f"Running BLAST for locus: {locus}")
-    print(f"Classification: {classification}.")
-    print(f"Number of subjects - {subjects_number}")
-
-    blast_proc = subprocess.Popen(blast_args,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE)
-
-    stderr = blast_proc.stderr.readlines()
-    if len(stderr) > 0:
-        print(stderr)
-
 def join_intervals(alignments):
+    # function to join alignments that intersect with eachother and merge them into one single alignment
     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
                                        "joined_intervals": set(), "pident": alignment[4], 
                                        "gaps": alignment[5], "length": alignment[6]} for alignment in alignments]
@@ -221,7 +65,9 @@ def join_intervals(alignments):
     
     return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
 
-def join_and_filter_intervals_for_alleles(alignments):
+def join_intervals_for_alleles(alignments):
+    # function to join alignments that intersect with eachother and merge them into one single alignment
+    # but this one takes into account the custom scoring that needs to be calculated for the alleles
     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
                                        "joined_intervals": set(), "pident": alignment[4]/100, 
                                        "gaps": alignment[5], "length": alignment[6],
@@ -281,31 +127,7 @@ def join_and_filter_intervals_for_alleles(alignments):
 
     return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
 
-def create_subplots(nplots, ncols, titles):
-    """Create a Figure objcet with predefined subplots.
-
-    Parameters
-    ----------
-    nplots : int
-        Number of plots that will be displayed.
-    ncols : int
-        Number of subplots per row.
-    titles : list
-        Subplot titles.
-
-    Returns
-    -------
-    subplots_fig : plotly.graph_objs._figure.Figure
-        Figure object with predefined subplots.
-    """
-    # determine number of rows
-    nrows = statistics.math.ceil((nplots / ncols))
-    subplots_fig = make_subplots(rows=nrows, cols=ncols,
-                                 subplot_titles=titles)
-
-    return subplots_fig
-
-def filter_alignments(original:list, inverted:list):
+def filter_out_equal_alignments(original:list, inverted:list):
     new_original = copy.deepcopy(original)
 
     for i in inverted:
@@ -321,6 +143,8 @@ def filter_alignments(original:list, inverted:list):
     return new_original
 
 def process_alignments_for_graphs(alignments_dict: dict):
+    # This function tries to join alignments from an inverse of another alignment,
+    # if it exists, so they appear in the same graph
     keys_set = set()
     processed_alignments_dict = {}
 
@@ -337,19 +161,20 @@ def process_alignments_for_graphs(alignments_dict: dict):
                 original_alignments = alignments_dict[key]
                 inverted_alignments = alignments_dict[inverted_key]
 
-                filtered_alignments = filter_alignments(original_alignments, inverted_alignments)
+                filtered_alignments = filter_out_equal_alignments(original_alignments, inverted_alignments)
 
                 processed_alignments_dict[key] = filtered_alignments
 
         else:
             processed_alignments_dict[key] = alignments_dict[key]
-            # print(f"\tCould not find key: {inverted_key} in alignments.")
 
         keys_set.add(inverted_key)
     
     return processed_alignments_dict
 
 def build_graph(key: str, alignments: list):
+    # build a graph with a list of alignments
+    # returns the go.Figure with all the traces built into a graph
     query, subject = key.split(":")
     first_alignement_dicts = alignments[0]
     query = first_alignement_dicts["query"]
@@ -394,9 +219,9 @@ def build_graph(key: str, alignments: list):
         traces.append(go.Scatter(x=[x[c], x[c+1]], y=[y[c], y[c+1]], line=dict(width=4, color=ALIGNMENT_COLORS[color_index], dash='dash'), fill=fill, fillcolor=ALIGNMENT_COLORS[color_index]))
         num_traces += 1
 
-    return traces
+    return go.Figure(traces)
 
-def printGraphs(representatives_dict: dict, alleles_dict:dict, filename:str, graph_title: str, output_directory):
+def renderGraphs(representatives_dict: dict, alleles_dict:dict, filename:str, graph_title: str, output_directory):
     all_graphs_structured = []
     processed_representatives_dict = process_alignments_for_graphs(representatives_dict)
     processed_representatives_dict_length = len(processed_representatives_dict)
@@ -407,25 +232,24 @@ def printGraphs(representatives_dict: dict, alleles_dict:dict, filename:str, gra
         # fig = make_subplots(rows=math.ceil(process_alignments_dict_length/2), cols=2, column_widths=[0.5, 0.5], horizontal_spacing=0.15)
 
         for (key, alignments) in processed_representatives_dict.items():
-            representative_traces = build_graph(key, alignments)
+            representative_graph = build_graph(key, alignments).update_layout(
+                                    showlegend=False,
+                                    bargap=0.5,
+                                    template='ggplot2'
+                                    )
             alleles_graphs = []
             for (allele_key, allele_alignments) in alleles_dict[key].items():
-                alignment_traces = build_graph(allele_key, allele_alignments)
-                alleles_graphs.append(dp.Plot(go.Figure(alignment_traces).update_layout(
+                alignment_graph = build_graph(allele_key, allele_alignments).update_layout(
                                             showlegend=False,
                                             bargap=0.5,
                                             template='ggplot2'
-                                        )
-                                    ))
+                                            )
+                alleles_graphs.append(dp.Plot(alignment_graph))
 
             all_graphs_structured.append(
                     dp.Select(
                         blocks=[
-                            dp.Plot(go.Figure(representative_traces).update_layout(
-                                    showlegend=False,
-                                    bargap=0.5,
-                                    template='ggplot2'
-                                    ), 
+                            dp.Plot(representative_graph, 
                                 label="Representative"),
                             dp.Group(
                                 *alleles_graphs,
@@ -450,6 +274,10 @@ def printGraphs(representatives_dict: dict, alleles_dict:dict, filename:str, gra
         print(f"Did not print a graph for {filename} - there were no graphs to process.")
 
 def get_alignments_dict(blast_results_file):
+    # organize alignments with the same key "Locus_A:Locus_B"
+    # into othe same dictionary
+    # builds a dictionary where key = "Locus_A:Locus_B" and
+    # value = a list of all alignments for that key correspondence
     alignments_dict = {}
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
@@ -492,6 +320,10 @@ def get_alignments_dict(blast_results_file):
     return alignments_dict
 
 def process_blast_results(blast_results_file):
+    # main function to process the received blast results
+    # filters the results, organizes the alignments and return 
+    # a string with the information of the selected alignments for the report
+    # a dictionary with all the selected alignments to build the graphs
     alignments_dict = get_alignments_dict(blast_results_file)
 
     # filter alignments
@@ -551,6 +383,12 @@ def process_blast_results(blast_results_file):
     return (alignment_strings, filtered_alignments_dict)
 
 def process_blast_results_for_alleles(blast_results_file):
+    # main function to process the received blast results
+    # filters the results, organizes the alignments and return 
+    # a string with the information of the selected alignments for the report
+    # a dictionary with all the selected alignments to build the graphs
+    # this one takes into account the selection of best and worst alignment for
+    # the alleles
     alignments_dict = get_alignments_dict(blast_results_file)
 
     # filter alignments by pident
@@ -585,7 +423,7 @@ def process_blast_results_for_alleles(blast_results_file):
                 alignments.sort(key=lambda x : x["query_start"])
                 query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
 
-                final_query_start_stop_list, alignment_query = join_and_filter_intervals_for_alleles(query_start_stops_list)
+                final_query_start_stop_list, alignment_query = join_intervals_for_alleles(query_start_stops_list)
 
                 alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
                 bigger_query_alignment = alignment_query[0]["stop"] - alignment_query[0]["start"]
@@ -654,13 +492,13 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
-    check_and_make_directory(blast_results_all_representatives)
+    create_directory(blast_results_all_representatives)
 
     alleles_protein_dir = os.path.join(output_directory, "alleles_protein")
-    check_and_make_directory(alleles_protein_dir)
+    create_directory(alleles_protein_dir)
 
     blast_results_alignments = os.path.join(blast_results_all_representatives, "alignments")
-    check_and_make_directory(blast_results_alignments)
+    create_directory(blast_results_alignments)
 
     report_file_path = os.path.join(output_directory, "report.tsv")
     alleles_report_file_path = os.path.join(output_directory, "alleles_report.tsv")
@@ -681,7 +519,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                 blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
 
                 print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
-                run_blast(blast_args)
+                run_blast_with_args_only(blast_args)
 
                 # check results file for alignments
                 alignments_string, alignments_dict = process_blast_results(blast_results_file)
@@ -738,7 +576,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                     allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
                     blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
                     print(f"\tRunning BLAST for alignment: {alignment_before_underscore} - {i}/{total_alignments}")
-                    run_blast(blast_args)
+                    run_blast_with_args_only(blast_args)
                     allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
                     
                     alleles_report_file.writelines(allele_alignments_string)
@@ -748,7 +586,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                     allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
                     blast_args = ['blastp', '-query', representative_file_dict[alignment_before_underscore], '-subject', allele_protein_translation_dict[locus], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
                     print(f"\tRunning BLAST for the reverse of previous alignment.")
-                    run_blast(blast_args)
+                    run_blast_with_args_only(blast_args)
                     allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
                     
                     alleles_report_file.writelines(allele_alignments_string)
@@ -769,7 +607,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         info_file.writelines([f"There were {len(unique_alignent_ids)} different Loci that aligned with another Locus.\n\n"])
 
     print("Rendering graphs...")
-    printGraphs(all_representatives_alignments_dict, all_allele_alignments_dict, "Scatter_plots_all_representatives", "Scatter plots for all representatives", output_directory)
+    renderGraphs(all_representatives_alignments_dict, all_allele_alignments_dict, "Scatter_plots_all_representatives", "Scatter plots for all representatives", output_directory)
    
     # shutil.rmtree(blast_results_alignments)
     shutil.rmtree(alleles_protein_dir)
@@ -785,13 +623,13 @@ def main(schema, output_directory, missing_classes_fasta):
     # use short directory fasta files
     schema_short = os.path.join(schema, "short")
 
-    check_and_make_directory(output_directory)
+    create_directory(output_directory)
 
     blast_results_dir = os.path.join(output_directory, "blast_results")
-    check_and_make_directory(blast_results_dir)
+    create_directory(blast_results_dir)
 
     representatives_dir = os.path.join(output_directory, "representatives")
-    check_and_make_directory(representatives_dir)
+    create_directory(representatives_dir)
 
     schema_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and ".fasta" in f}
     loci = set(schema_files_paths.keys())
