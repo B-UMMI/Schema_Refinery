@@ -20,57 +20,6 @@ except ModuleNotFoundError:
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
-# def join_intervals(alignments):
-#     # function to join alignments that intersect with eachother and merge them into one single alignment
-#     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
-#                                        "joined_intervals": set(), "pident": alignment[4], 
-#                                        "gaps": alignment[5], "length": alignment[6],
-#                                        "internal_alignments": [alignment[9]]} for alignment in alignments]
-#     found_new_interval = True
-    
-#     new_index = 0
-#     while found_new_interval:
-#         found_new_interval = False
-#         for i in range(new_index, len(start_stop_list_for_processing) - 1):
-#             first = start_stop_list_for_processing[i]
-#             second = start_stop_list_for_processing[i+1]
-
-#             if second["start"] - first["stop"] <= MAX_GAP_UNITS:
-#                 if second["stop"] >= first["stop"]:
-#                     new_last = second["stop"]
-#                 else:
-#                     new_last = first["stop"]
-
-#                 if second["start"] <= first["start"]:
-#                     new_first = second["start"]
-#                 else:
-#                     new_first = first["start"]
-
-#                 new_joined_intervals = first["joined_intervals"].union(second["joined_intervals"]).union(set(((first['start'], first['stop']), (second['start'], second['stop']))))
-#                 new_interval = {"start": new_first, 
-#                                 "stop": new_last, 
-#                                 "joined_intervals": new_joined_intervals, 
-#                                 "pident": f"{first['pident']};{second['pident']}", 
-#                                 "gaps": f"{first['gaps']};{second['gaps']}",
-#                                 "internal_alignments": first["internal_alignments"] + second["internal_alignments"]}
-#                 found_new_interval = True
-#                 start_stop_list_for_processing = start_stop_list_for_processing[0:i] + [new_interval] + start_stop_list_for_processing[i+2:]
-#                 new_index = i
-#                 break
-#             else:
-#                 continue
-
-#     for interval in start_stop_list_for_processing:
-#         interval['joined_intervals'] = list(interval['joined_intervals'])
-#         interval['joined_intervals'].sort(key=lambda x : x[0])
-#         interval['joined_intervals'] = [f"{i[0]}-{i[1]}" for i in interval['joined_intervals']]
-#         if len(interval['joined_intervals']) > 0:
-#             interval['joined_intervals'] = f"({';'.join(interval['joined_intervals'])})"
-#         else:
-#            interval['joined_intervals'] = "" 
-    
-#     return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
-
 def join_intervals(alignments):
     # function to join alignments that intersect with eachother and merge them into one single alignment
     # but this one takes into account the custom scoring that needs to be calculated for the alleles
@@ -134,6 +83,10 @@ def join_intervals(alignments):
     return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
 
 def filter_out_equal_alignments(original:list, inverted:list):
+    # we loop through a list of alignments and another list of
+    # alignments but with the key (locus1:locus2) inverted
+    # if it finds an interval with different start and stop,
+    # it means that its a different alignment and we add it to the original list
     new_original = copy.deepcopy(original)
 
     for i in inverted:
