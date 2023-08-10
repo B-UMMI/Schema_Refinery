@@ -20,52 +20,58 @@ except ModuleNotFoundError:
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
+# def join_intervals(alignments):
+#     # function to join alignments that intersect with eachother and merge them into one single alignment
+#     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
+#                                        "joined_intervals": set(), "pident": alignment[4], 
+#                                        "gaps": alignment[5], "length": alignment[6],
+#                                        "internal_alignments": [alignment[9]]} for alignment in alignments]
+#     found_new_interval = True
+    
+#     new_index = 0
+#     while found_new_interval:
+#         found_new_interval = False
+#         for i in range(new_index, len(start_stop_list_for_processing) - 1):
+#             first = start_stop_list_for_processing[i]
+#             second = start_stop_list_for_processing[i+1]
+
+#             if second["start"] - first["stop"] <= MAX_GAP_UNITS:
+#                 if second["stop"] >= first["stop"]:
+#                     new_last = second["stop"]
+#                 else:
+#                     new_last = first["stop"]
+
+#                 if second["start"] <= first["start"]:
+#                     new_first = second["start"]
+#                 else:
+#                     new_first = first["start"]
+
+#                 new_joined_intervals = first["joined_intervals"].union(second["joined_intervals"]).union(set(((first['start'], first['stop']), (second['start'], second['stop']))))
+#                 new_interval = {"start": new_first, 
+#                                 "stop": new_last, 
+#                                 "joined_intervals": new_joined_intervals, 
+#                                 "pident": f"{first['pident']};{second['pident']}", 
+#                                 "gaps": f"{first['gaps']};{second['gaps']}",
+#                                 "internal_alignments": first["internal_alignments"] + second["internal_alignments"]}
+#                 found_new_interval = True
+#                 start_stop_list_for_processing = start_stop_list_for_processing[0:i] + [new_interval] + start_stop_list_for_processing[i+2:]
+#                 new_index = i
+#                 break
+#             else:
+#                 continue
+
+#     for interval in start_stop_list_for_processing:
+#         interval['joined_intervals'] = list(interval['joined_intervals'])
+#         interval['joined_intervals'].sort(key=lambda x : x[0])
+#         interval['joined_intervals'] = [f"{i[0]}-{i[1]}" for i in interval['joined_intervals']]
+#         if len(interval['joined_intervals']) > 0:
+#             interval['joined_intervals'] = f"({';'.join(interval['joined_intervals'])})"
+#         else:
+#            interval['joined_intervals'] = "" 
+    
+#     return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
+
 def join_intervals(alignments):
-    # function to join alignments that intersect with eachother and merge them into one single alignment
-    start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
-                                       "joined_intervals": set(), "pident": alignment[4], 
-                                       "gaps": alignment[5], "length": alignment[6]} for alignment in alignments]
-    found_new_interval = True
-    
-    new_index = 0
-    while found_new_interval:
-        found_new_interval = False
-        for i in range(new_index, len(start_stop_list_for_processing) - 1):
-            first = start_stop_list_for_processing[i]
-            second = start_stop_list_for_processing[i+1]
-
-            if second["start"] - first["stop"] <= MAX_GAP_UNITS:
-                if second["stop"] >= first["stop"]:
-                    new_last = second["stop"]
-                else:
-                    new_last = first["stop"]
-
-                if second["start"] <= first["start"]:
-                    new_first = second["start"]
-                else:
-                    new_first = first["start"]
-
-                new_joined_intervals = first["joined_intervals"].union(second["joined_intervals"]).union(set(((first['start'], first['stop']), (second['start'], second['stop']))))
-                new_interval = {"start": new_first, "stop": new_last, "joined_intervals": new_joined_intervals, "pident": f"{first['pident']};{second['pident']}", "gaps": f"{first['gaps']};{second['gaps']}"}
-                found_new_interval = True
-                start_stop_list_for_processing = start_stop_list_for_processing[0:i] + [new_interval] + start_stop_list_for_processing[i+2:]
-                new_index = i
-                break
-            else:
-                continue
-
-    for interval in start_stop_list_for_processing:
-        interval['joined_intervals'] = list(interval['joined_intervals'])
-        interval['joined_intervals'].sort(key=lambda x : x[0])
-        interval['joined_intervals'] = [f"{i[0]}-{i[1]}" for i in interval['joined_intervals']]
-        if len(interval['joined_intervals']) > 0:
-            interval['joined_intervals'] = f"({';'.join(interval['joined_intervals'])})"
-        else:
-           interval['joined_intervals'] = "" 
-    
-    return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
-
-def join_intervals_for_alleles(alignments):
     # function to join alignments that intersect with eachother and merge them into one single alignment
     # but this one takes into account the custom scoring that needs to be calculated for the alleles
     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
@@ -246,20 +252,23 @@ def renderGraphs(representatives_dict: dict, alleles_dict:dict, filename:str, gr
                                             )
                 alleles_graphs.append(dp.Plot(alignment_graph))
 
-            all_graphs_structured.append(
-                    dp.Select(
-                        blocks=[
-                            dp.Plot(representative_graph, 
-                                label="Representative"),
-                            dp.Group(
-                                *alleles_graphs,
-                                columns=2,
-                                label="Alleles",
-                            ),
-                        ],
-                        type=dp.SelectType.DROPDOWN,
-                    ),
-                )
+            if len(alleles_graphs) > 0:
+                all_graphs_structured.append(
+                        dp.Select(
+                            blocks=[
+                                dp.Plot(representative_graph, 
+                                    label="Representative"),
+                                dp.Group(
+                                    *alleles_graphs,
+                                    columns=2,
+                                    label="Alleles",
+                                ),
+                            ],
+                            type=dp.SelectType.DROPDOWN,
+                        ),
+                    )
+            else:
+                print("No allele graphs for key: ", key)
 
         datapane_view = dp.View(
             dp.Text(f'# {graph_title}'),
@@ -354,9 +363,9 @@ def process_blast_results(blast_results_file):
                 subject_length = alignments[0]["subject_length"]
 
                 alignments.sort(key=lambda x : x["query_start"])
-                query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"]] for entry in alignments]
+                query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
                 alignments.sort(key=lambda x : x["subject_start"])
-                subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"]] for entry in alignments]
+                subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
 
                 final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
                 final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
@@ -384,7 +393,7 @@ def process_blast_results(blast_results_file):
 
 def process_blast_results_for_alleles(blast_results_file):
     # main function to process the received blast results
-    # filters the results, organizes the alignments and return 
+    # filters the results, organizes the alignments and returns 
     # a string with the information of the selected alignments for the report
     # a dictionary with all the selected alignments to build the graphs
     # this one takes into account the selection of best and worst alignment for
@@ -408,43 +417,74 @@ def process_blast_results_for_alleles(blast_results_file):
     worst_list_of_alignments = []
     best_scoring = 0
     worst_scoring = 1
+    num_alignments_passing_alignment_ratio_threshold = 0
 
-    for key, alignments in alignments_dict.items():
+    for _, alignments in alignments_dict.items():
     
         if len(alignments) > 0:
             query = alignments[0]['query']
             subject = alignments[0]['subject']
 
             # filter out allele blast with itself result
-            if query == subject:
-                del filtered_alignments_dict[key]
-            else:
+            if query != subject:
                 query_length = alignments[0]["query_length"]
+                subject_length = alignments[0]["subject_length"]
                 alignments.sort(key=lambda x : x["query_start"])
                 query_start_stops_list = [[entry["query_start"], entry["query_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
+                alignments.sort(key=lambda x : x["subject_start"])
+                subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"], entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
 
-                final_query_start_stop_list, alignment_query = join_intervals_for_alleles(query_start_stops_list)
+                final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
+                final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
 
                 alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
+                alignment_subject.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
                 bigger_query_alignment = alignment_query[0]["stop"] - alignment_query[0]["start"]
+                bigger_subject_alignment = alignment_subject[0]["stop"] - alignment_subject[0]["start"]
 
-                query_ratio = bigger_query_alignment / query_length
+                bigger_query_ratio = bigger_query_alignment / query_length
+                bigger_subject_ratio = bigger_subject_alignment / subject_length
 
-                if query_ratio >= ALIGNMENT_RATIO_THRESHOLD:
+                if bigger_query_ratio >= ALIGNMENT_RATIO_THRESHOLD or bigger_subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
+                    # go through query alignments to find best and worst
                     for idx, alignment in enumerate(alignment_query):
                         custom_scoring = alignment["custom_scoring"]
-                        if custom_scoring > best_scoring:
-                            best_scoring = custom_scoring
-                            best_list_of_alignments = alignment["internal_alignments"]
-                            best_alignment_dict = alignment
-                            best_alignment_string = final_query_start_stop_list[idx]
-                        if custom_scoring < worst_scoring:
-                            worst_scoring = custom_scoring
-                            worst_alignment_dict = alignment
-                            worst_list_of_alignments = alignment["internal_alignments"]
-                            worst_alignment_string = final_query_start_stop_list[idx]
+                        query_alignment_size = alignment["stop"] - alignment["start"]
+                        query_ratio = query_alignment_size / query_length
+
+                        if query_ratio >= ALIGNMENT_RATIO_THRESHOLD:
+                            num_alignments_passing_alignment_ratio_threshold += 1
+                            if custom_scoring > best_scoring:
+                                best_scoring = custom_scoring
+                                best_list_of_alignments = alignment["internal_alignments"]
+                                best_alignment_dict = alignment
+                                best_alignment_string = final_query_start_stop_list[idx]
+                            if custom_scoring < worst_scoring:
+                                worst_scoring = custom_scoring
+                                worst_alignment_dict = alignment
+                                worst_list_of_alignments = alignment["internal_alignments"]
+                                worst_alignment_string = final_query_start_stop_list[idx]
+                    
+                    # go through subject alignments to find best and worst
+                    for idx, alignment in enumerate(alignment_subject):
+                        custom_scoring = alignment["custom_scoring"]
+                        subject_alignment_size = alignment["stop"] - alignment["start"]
+                        subject_ratio = subject_alignment_size / subject_length
+
+                        if subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
+                            num_alignments_passing_alignment_ratio_threshold += 1
+                            if custom_scoring > best_scoring:
+                                best_scoring = custom_scoring
+                                best_list_of_alignments = alignment["internal_alignments"]
+                                best_alignment_dict = alignment
+                                best_alignment_string = final_subject_start_stop_list[idx]
+                            if custom_scoring < worst_scoring:
+                                worst_scoring = custom_scoring
+                                worst_alignment_dict = alignment
+                                worst_list_of_alignments = alignment["internal_alignments"]
+                                worst_alignment_string = final_subject_start_stop_list[idx]
     
-    if len(alignments_dict) >= 2:
+    if num_alignments_passing_alignment_ratio_threshold >= 2:
         alignment_strings = [
                             f"{best_alignment_dict['query']}\t{best_alignment_dict['subject']}\t{best_alignment_string}\t{best_alignment_dict['custom_scoring']}\n", 
                             f"{worst_alignment_dict['query']}\t{worst_alignment_dict['subject']}\t{worst_alignment_string}\t{worst_alignment_dict['custom_scoring']}\n", 
@@ -462,7 +502,7 @@ def process_blast_results_for_alleles(blast_results_file):
                 best_filtered_key: best_list_of_alignments + worst_list_of_alignments
             }
 
-    if len(alignments_dict) == 1:
+    if num_alignments_passing_alignment_ratio_threshold == 1:
         alignment_strings = [
                             f"{best_alignment_dict['query']}\t{best_alignment_dict['subject']}\t{best_alignment_string}\t{best_alignment_dict['custom_scoring']}\n"
                             ]
@@ -478,7 +518,7 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
         lines = alleles_file.readlines()
         with open(translation_file_path, "w") as alleles_protein_file:
             for j in range(0, len(lines), 2):
-                protein_translation = translate_dna(lines[j+1].replace('\n', ''), "Standard", 0)
+                protein_translation = translate_dna(lines[j+1].replace('\n', ''), "Standard", 0, cds=False)
                 # the protein translation was succesful
                 if isinstance(protein_translation, list):
                     alleles_protein_file.writelines([lines[j]])
@@ -513,7 +553,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     with open(report_file_path, 'w') as report_file:
         with open(alleles_report_file_path, 'w') as alleles_report_file:
             report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", "Pident - Percentage of identical matches\n"])
-            alleles_report_file.writelines(["Query\t", "Subject\t", "Start - End\t", "Custom Score\n"])
+            alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"])
             for idx, locus in enumerate(loci, 1):
                 blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
                 blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
@@ -530,7 +570,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                 # since we are running the inverse for the alleles
                 # we have to filter the alignment if the inverse has ran previously
                 # or else we will have repeated results on the alleles report
-                filtered_alignments_dict = copy.deepcopy()
+                filtered_alignments_dict = copy.deepcopy(alignments_dict)
                 for key in alignments_dict.keys():
                     query, subject = key.split(":")
                     inverse_key = f"{subject}:{query}"
@@ -607,13 +647,13 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         info_file.writelines([f"There were {len(unique_alignent_ids)} different Loci that aligned with another Locus.\n\n"])
 
     print("Rendering graphs...")
-    renderGraphs(all_representatives_alignments_dict, all_allele_alignments_dict, "Scatter_plots_all_representatives", "Scatter plots for all representatives", output_directory)
+    renderGraphs(all_representatives_alignments_dict, all_allele_alignments_dict, "graphs", "Graphs", output_directory)
    
     # shutil.rmtree(blast_results_alignments)
     shutil.rmtree(alleles_protein_dir)
     # shutil.rmtree(blast_results_all_representatives)
 
-def main(schema, output_directory, missing_classes_fasta):
+def main(schema, output_directory, missing_classes_fasta, threshold):
     global info_file_path
     info_file_path = os.path.join(output_directory, "info.txt")
 
@@ -651,7 +691,7 @@ def main(schema, output_directory, missing_classes_fasta):
                 locus_file_lines = locus_file.readlines()
                 found_translation = False
                 for j in range(0, len(locus_file_lines), 2):
-                    protein_translation = translate_dna(locus_file_lines[j+1].replace('\n', ''), "Standard", 0)
+                    protein_translation = translate_dna(locus_file_lines[j+1].replace('\n', ''), "Standard", 0, cds=False)
                     # the protein translation was succesful
                     if isinstance(protein_translation, list):
                         with open(representative_file, "w") as rep_file:
