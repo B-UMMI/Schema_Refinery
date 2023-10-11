@@ -1,6 +1,9 @@
 import os
 import copy
 import shutil
+import concurrent.futures
+from itertools import repeat
+
 import datapane as dp
 import plotly.graph_objs as go
 import plotly.express.colors as graph_colors
@@ -16,6 +19,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils.other import hex_to_rgb
     from SchemaRefinery.utils.file_functions import check_and_delete_file, create_directory
     from SchemaRefinery.utils.sequence_functions import translate_dna
+    from SchemaRefinery.utils.blast_functions import run_blast_with_args_only
 
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
@@ -483,7 +487,88 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
     
     return successful_translation
 
-def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema):
+def run_blast_with_args_multithread(locus, representative_file_dict, all_representatives_file, schema, blast_results_all_representatives, 
+                                    report_file, alleles_report_file, blast_results_alignments, alleles_protein_dir):
+    
+    blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
+    blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
+
+    run_blast_with_args_only(blast_args)
+
+    # check results file for alignments
+    alignments_string, alignments_dict = process_blast_results(blast_results_file)
+    schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
+
+    report_file.writelines(alignments_string)
+
+    # since we are running the inverse for the alleles
+    # we have to filter the alignment if the inverse has ran previously
+    # or else we will have repeated results on the alleles report
+    filtered_alignments_dict = copy.deepcopy(alignments_dict)
+    for key in alignments_dict.keys():
+        query, subject = key.split(":")
+        inverse_key = f"{subject}:{query}"
+        if inverse_key in all_representatives_alignments_dict:
+            del filtered_alignments_dict[key]
+
+    all_representatives_alignments_dict.update(filtered_alignments_dict)
+
+    total_alignments = len(filtered_alignments_dict)
+    alignments_pair_list = [key.split(":") for key in filtered_alignments_dict.keys()]
+
+    for i, alignment_pair in enumerate(alignments_pair_list, 1):
+        locus_for_key = alignment_pair[0]
+        alignment = alignment_pair[1]
+        alignment_before_underscore = alignment_pair[1].split('_')[0]
+        key_to_process = f"{locus_for_key}:{alignment}"
+        if not key_to_process in all_allele_alignments_dict:
+            all_allele_alignments_dict[key_to_process] = {}
+
+        # create files for allele protein translation
+        query_locus_file_path = os.path.join(schema, schema_files[locus])
+        alignment_file_path = os.path.join(schema, schema_files[alignment_before_underscore])
+        alleles_query_locus_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{locus}")
+        alleles_alignment_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment_before_underscore}")
+
+        locus_translation_successful = True
+        alignment_translation_successful = True
+        if locus not in allele_protein_translation_dict:
+            locus_translation_successful = locus_alleles_protein_translation(query_locus_file_path, alleles_query_locus_protein_file_path)
+            allele_protein_translation_dict[locus] = alleles_query_locus_protein_file_path
+
+        if alignment_before_underscore not in allele_protein_translation_dict:
+            alignment_translation_successful = locus_alleles_protein_translation(alignment_file_path, alleles_alignment_protein_file_path)
+            allele_protein_translation_dict[alignment_before_underscore] = alleles_alignment_protein_file_path
+
+        # if these entries are still not on the dictionary it means the protein translation was not successful
+        # so we skip them and don't run BLASTp for them
+        if not alignment_translation_successful or not locus_translation_successful:
+            print(f"\tSkipped alignment: {alignment_before_underscore} - {i}/{total_alignments} -> Failure in protein translation.")
+            continue
+
+        # Run Blast for representative A - Alleles B
+        allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
+        blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
+        print(f"\tRunning BLAST for alignment: {alignment_before_underscore} - {i}/{total_alignments}")
+        run_blast_with_args_only(blast_args)
+        allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
+        
+        alleles_report_file.writelines(allele_alignments_string)
+        all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
+
+        # Run Blast for representative B - Alleles A (inverse)
+        allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
+        blast_args = ['blastp', '-query', representative_file_dict[alignment_before_underscore], '-subject', allele_protein_translation_dict[locus], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
+        print(f"\tRunning BLAST for the reverse of previous alignment.")
+        run_blast_with_args_only(blast_args)
+        allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
+        
+        alleles_report_file.writelines(allele_alignments_string)
+        all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
+
+    return locus
+
+def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, threads):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
     create_directory(blast_results_all_representatives)
 
@@ -497,94 +582,28 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     alleles_report_file_path = os.path.join(output_directory, "alleles_report.tsv")
 
     print("Running Blast for all representatives...")
-
+    global all_representatives_alignments_dict
+    global all_allele_alignments_dict
+    global allele_protein_translation_dict
     all_representatives_alignments_dict = {}
     all_allele_alignments_dict = {}
     total_loci = len(loci)
     allele_protein_translation_dict = {}
+
     # allele_blast_pairs_processed = set()
     with open(report_file_path, 'w') as report_file:
         with open(alleles_report_file_path, 'w') as alleles_report_file:
             report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", "Pident - Percentage of identical matches\n"])
             alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"])
-            for idx, locus in enumerate(loci, 1):
-                blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
-                blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
-
-                print(f"Running BLAST for locus: {locus} - {idx}/{total_loci}")
-                run_blast_with_args_only(blast_args)
-
-                # check results file for alignments
-                alignments_string, alignments_dict = process_blast_results(blast_results_file)
-                schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
-
-                report_file.writelines(alignments_string)
-
-                # since we are running the inverse for the alleles
-                # we have to filter the alignment if the inverse has ran previously
-                # or else we will have repeated results on the alleles report
-                filtered_alignments_dict = copy.deepcopy(alignments_dict)
-                for key in alignments_dict.keys():
-                    query, subject = key.split(":")
-                    inverse_key = f"{subject}:{query}"
-                    if inverse_key in all_representatives_alignments_dict:
-                        del filtered_alignments_dict[key]
-
-                all_representatives_alignments_dict.update(filtered_alignments_dict)
-
-                total_alignments = len(filtered_alignments_dict)
-                alignments_pair_list = [key.split(":") for key in filtered_alignments_dict.keys()]
-
-                for i, alignment_pair in enumerate(alignments_pair_list, 1):
-                    locus_for_key = alignment_pair[0]
-                    alignment = alignment_pair[1]
-                    alignment_before_underscore = alignment_pair[1].split('_')[0]
-                    key_to_process = f"{locus_for_key}:{alignment}"
-                    if not key_to_process in all_allele_alignments_dict:
-                        all_allele_alignments_dict[key_to_process] = {}
-
-                    # create files for allele protein translation
-                    query_locus_file_path = os.path.join(schema, schema_files[locus])
-                    alignment_file_path = os.path.join(schema, schema_files[alignment_before_underscore])
-                    alleles_query_locus_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{locus}")
-                    alleles_alignment_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment_before_underscore}")
-
-                    locus_translation_successful = True
-                    alignment_translation_successful = True
-                    if locus not in allele_protein_translation_dict:
-                        locus_translation_successful = locus_alleles_protein_translation(query_locus_file_path, alleles_query_locus_protein_file_path)
-                        allele_protein_translation_dict[locus] = alleles_query_locus_protein_file_path
-
-                    if alignment_before_underscore not in allele_protein_translation_dict:
-                        alignment_translation_successful = locus_alleles_protein_translation(alignment_file_path, alleles_alignment_protein_file_path)
-                        allele_protein_translation_dict[alignment_before_underscore] = alleles_alignment_protein_file_path
-
-                    # if these entries are still not on the dictionary it means the protein translation was not successful
-                    # so we skip them and don't run BLASTp for them
-                    if not alignment_translation_successful or not locus_translation_successful:
-                        print(f"\tSkipped alignment: {alignment_before_underscore} - {i}/{total_alignments} -> Failure in protein translation.")
-                        continue
-
-                    # Run Blast for representative A - Alleles B
-                    allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
-                    blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
-                    print(f"\tRunning BLAST for alignment: {alignment_before_underscore} - {i}/{total_alignments}")
-                    run_blast_with_args_only(blast_args)
-                    allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
+            
+            i=1
+            with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+                for res in executor.map(run_blast_with_args_multithread, loci, repeat(representative_file_dict), repeat(all_representatives_file), 
+                                        repeat(schema), repeat(blast_results_all_representatives), repeat(report_file), 
+                                        repeat(alleles_report_file), repeat(blast_results_alignments), repeat(alleles_protein_dir)):
                     
-                    alleles_report_file.writelines(allele_alignments_string)
-                    all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
-
-                    # Run Blast for representative B - Alleles A (inverse)
-                    allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
-                    blast_args = ['blastp', '-query', representative_file_dict[alignment_before_underscore], '-subject', allele_protein_translation_dict[locus], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
-                    print(f"\tRunning BLAST for the reverse of previous alignment.")
-                    run_blast_with_args_only(blast_args)
-                    allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
-                    
-                    alleles_report_file.writelines(allele_alignments_string)
-                    all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
-
+                    print(f'Running BLAST for locus: {res} - {i}/{total_loci}')
+                    i+=1
     # calculate unique loci that had significant alignments
     unique_alignent_ids = set()
     for key in all_representatives_alignments_dict.keys():
@@ -606,7 +625,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     shutil.rmtree(alleles_protein_dir)
     # shutil.rmtree(blast_results_all_representatives)
 
-def main(schema, output_directory, missing_classes_fasta, threshold):
+def main(schema, output_directory, missing_classes_fasta, threshold, threads):
     global info_file_path
     info_file_path = os.path.join(output_directory, "info.txt")
 
@@ -670,7 +689,7 @@ def main(schema, output_directory, missing_classes_fasta, threshold):
     # only received the schema
     if schema and not missing_classes_fasta:
         # Run BLAST for all representatives
-        run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, schema)
+        run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, schema, threads)
 
     # received both arguments
     if schema and missing_classes_fasta:

@@ -52,7 +52,7 @@ def download_assemblies():
                         help='Scientific name of the taxon.')
 
     parser.add_argument('-th', '--threads', type=int,
-                        required=False, default=3,
+                        required=False, default=1,
                         dest='threads',
                         help='Number of threads used for download. You should '
                              'provide an API key to perform more requests '
@@ -124,6 +124,11 @@ def refine_schema():
     parser.add_argument('-t', '--threshold', type=str,
                         required=False, dest='threshold',
                         default=0, help='')
+    
+    parser.add_argument('-th', '--threads', type=int,
+                    required=False, dest='threads',
+                    default=1, 
+                    help='Number of threads to run blast instances')
 
     args = parser.parse_args()
 
