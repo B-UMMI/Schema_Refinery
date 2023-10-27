@@ -114,8 +114,8 @@ def process_alignments_for_graphs(alignments_dict: dict):
     print("Processing alignments for graphs...")
 
     for key in alignments_dict.keys():
-        locus_1, locus_2 = key.split(":")
-        inverted_key = f"{locus_2}:{locus_1}"
+        locus_1, locus_2 = key.split(";")
+        inverted_key = f"{locus_2};{locus_1}"
 
         if inverted_key in alignments_dict.keys():
             if key in keys_set:
@@ -138,7 +138,7 @@ def process_alignments_for_graphs(alignments_dict: dict):
 def build_graph(key: str, alignments: list):
     # build a graph with a list of alignments
     # returns the go.Figure with all the traces built into a graph
-    query, subject = key.split(":")
+    query, subject = key.split(";")
     first_alignement_dicts = alignments[0]
     query = first_alignement_dicts["query"]
     subject = first_alignement_dicts["subject"]
@@ -262,7 +262,7 @@ def get_alignments_dict(blast_results_file):
             gaps = cols[10]
             pident = cols[11]
 
-            key = f"{query}:{subject}"
+            key = f"{query};{subject}"
             value = {
                     "query": query,
                     "subject": subject,
@@ -411,12 +411,12 @@ def process_blast_results_for_alleles(blast_results_file):
 
                         if query_ratio >= ALIGNMENT_RATIO_THRESHOLD:
                             num_alignments_passing_alignment_ratio_threshold += 1
-                            if custom_scoring > best_scoring:
+                            if custom_scoring >= best_scoring:
                                 best_scoring = custom_scoring
                                 best_list_of_alignments = alignment["internal_alignments"]
                                 best_alignment_dict = alignment
                                 best_alignment_string = final_query_start_stop_list[idx]
-                            if custom_scoring < worst_scoring:
+                            if custom_scoring <= worst_scoring:
                                 worst_scoring = custom_scoring
                                 worst_alignment_dict = alignment
                                 worst_list_of_alignments = alignment["internal_alignments"]
@@ -430,12 +430,12 @@ def process_blast_results_for_alleles(blast_results_file):
 
                         if subject_ratio >= ALIGNMENT_RATIO_THRESHOLD:
                             num_alignments_passing_alignment_ratio_threshold += 1
-                            if custom_scoring > best_scoring:
+                            if custom_scoring >= best_scoring:
                                 best_scoring = custom_scoring
                                 best_list_of_alignments = alignment["internal_alignments"]
                                 best_alignment_dict = alignment
                                 best_alignment_string = final_subject_start_stop_list[idx]
-                            if custom_scoring < worst_scoring:
+                            if custom_scoring <= worst_scoring:
                                 worst_scoring = custom_scoring
                                 worst_alignment_dict = alignment
                                 worst_list_of_alignments = alignment["internal_alignments"]
@@ -446,8 +446,8 @@ def process_blast_results_for_alleles(blast_results_file):
                             f"{best_alignment_dict['query']}\t{best_alignment_dict['subject']}\t{best_alignment_string}\t{best_alignment_dict['custom_scoring']}\n", 
                             f"{worst_alignment_dict['query']}\t{worst_alignment_dict['subject']}\t{worst_alignment_string}\t{worst_alignment_dict['custom_scoring']}\n", 
                             ]
-        best_filtered_key = f"{best_alignment_dict['query']}:{best_alignment_dict['subject']}"
-        worst_filtered_key = f"{worst_alignment_dict['query']}:{worst_alignment_dict['subject']}"
+        best_filtered_key = f"{best_alignment_dict['query']};{best_alignment_dict['subject']}"
+        worst_filtered_key = f"{worst_alignment_dict['query']};{worst_alignment_dict['subject']}"
         if best_filtered_key != worst_filtered_key:
             filtered_alignments_dict = {
                 best_filtered_key: best_list_of_alignments,
@@ -464,7 +464,7 @@ def process_blast_results_for_alleles(blast_results_file):
                             f"{best_alignment_dict['query']}\t{best_alignment_dict['subject']}\t{best_alignment_string}\t{best_alignment_dict['custom_scoring']}\n"
                             ]
         filtered_alignments_dict = {
-            f"{best_alignment_dict['query']}:{best_alignment_dict['subject']}": best_list_of_alignments
+            f"{best_alignment_dict['query']};{best_alignment_dict['subject']}": best_list_of_alignments
         }
 
     return (alignment_strings, filtered_alignments_dict)
@@ -497,7 +497,7 @@ def run_blast_with_args_multithread(locus, representative_file_dict, all_represe
 
     # check results file for alignments
     alignments_string, alignments_dict = process_blast_results(blast_results_file)
-    schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if ".fasta" in f}
+    schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
 
     report_file.writelines(alignments_string)
 
@@ -506,21 +506,21 @@ def run_blast_with_args_multithread(locus, representative_file_dict, all_represe
     # or else we will have repeated results on the alleles report
     filtered_alignments_dict = copy.deepcopy(alignments_dict)
     for key in alignments_dict.keys():
-        query, subject = key.split(":")
-        inverse_key = f"{subject}:{query}"
+        query, subject = key.split(";")
+        inverse_key = f"{subject};{query}"
         if inverse_key in all_representatives_alignments_dict:
             del filtered_alignments_dict[key]
 
     all_representatives_alignments_dict.update(filtered_alignments_dict)
 
     total_alignments = len(filtered_alignments_dict)
-    alignments_pair_list = [key.split(":") for key in filtered_alignments_dict.keys()]
+    alignments_pair_list = [key.split(";") for key in filtered_alignments_dict.keys()]
 
     for i, alignment_pair in enumerate(alignments_pair_list, 1):
         locus_for_key = alignment_pair[0]
         alignment = alignment_pair[1]
         alignment_before_underscore = alignment_pair[1].split('_')[0]
-        key_to_process = f"{locus_for_key}:{alignment}"
+        key_to_process = f"{locus_for_key};{alignment}"
         if not key_to_process in all_allele_alignments_dict:
             all_allele_alignments_dict[key_to_process] = {}
 
@@ -549,7 +549,7 @@ def run_blast_with_args_multithread(locus, representative_file_dict, all_represe
         # Run Blast for representative A - Alleles B
         allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
         blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
-        print(f"\tRunning BLAST for alignment: {alignment_before_underscore} - {i}/{total_alignments}")
+        print(f"\tRunning BLAST for alignment: {locus} against {alignment_before_underscore} - {i}/{total_alignments}")
         run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
         
@@ -587,8 +587,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     global allele_protein_translation_dict
     all_representatives_alignments_dict = {}
     all_allele_alignments_dict = {}
-    total_loci = len(loci)
     allele_protein_translation_dict = {}
+    total_loci = len(loci)
 
     # allele_blast_pairs_processed = set()
     with open(report_file_path, 'w') as report_file:
@@ -601,14 +601,16 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                 for res in executor.map(run_blast_with_args_multithread, loci, repeat(representative_file_dict), repeat(all_representatives_file), 
                                         repeat(schema), repeat(blast_results_all_representatives), repeat(report_file), 
                                         repeat(alleles_report_file), repeat(blast_results_alignments), repeat(alleles_protein_dir)):
-                    
+
                     print(f'Running BLAST for locus: {res} - {i}/{total_loci}')
                     i+=1
+
     # calculate unique loci that had significant alignments
     unique_alignent_ids = set()
     for key in all_representatives_alignments_dict.keys():
-        locus_query, _ = key.split(":")
-        unique_alignent_ids.add(locus_query.split('_')[0])
+        for locus in key.split(";"):
+            unique_alignent_ids.add(locus.split('_')[0])
+
 
     unique_ids_file_path = os.path.join(output_directory, "unique_loci.tsv")
     with open(unique_ids_file_path, 'w') as unique_ids_file:
@@ -643,7 +645,7 @@ def main(schema, output_directory, missing_classes_fasta, threshold, threads):
     representatives_dir = os.path.join(output_directory, "representatives")
     create_directory(representatives_dir)
 
-    schema_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and ".fasta" in f}
+    schema_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and f.endswith(".fasta")}
     loci = set(schema_files_paths.keys())
 
     print(f"Found {len(loci)} in schema dir (short).")
@@ -659,7 +661,7 @@ def main(schema, output_directory, missing_classes_fasta, threshold, threads):
             representative_file = os.path.join(representatives_dir, f"{locus}_representative.fasta")
             representative_file_dict[locus] = representative_file
 
-            with open(schema_files_paths[locus], "r") as locus_file:
+            with open(schema_files_paths[locus], "r", encoding='utf-8') as locus_file:
                 locus_file_lines = locus_file.readlines()
                 found_translation = False
                 for j in range(0, len(locus_file_lines), 2):
