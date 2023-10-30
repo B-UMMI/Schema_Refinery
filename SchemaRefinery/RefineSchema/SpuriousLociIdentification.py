@@ -618,9 +618,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     # calculate unique loci that had significant alignments
     unique_alignent_ids = set()
     for key in all_representatives_alignments_dict.keys():
-        locus_1, locus_2 = key.split(";")
-        unique_alignent_ids.add(locus_1.split('_')[0])
-        unique_alignent_ids.add(locus_2.split('_')[0])
+        for locus in key.split(";"):
+            unique_alignent_ids.add(locus.split('_')[0])
 
     unique_ids_file_path = os.path.join(output_directory, "unique_loci.tsv")
     with open(unique_ids_file_path, 'w') as unique_ids_file:
