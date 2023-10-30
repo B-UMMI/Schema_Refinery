@@ -1,12 +1,11 @@
 import os
 import copy
 import shutil
-import concurrent.futures
-from itertools import repeat
-
 import datapane as dp
 import plotly.graph_objs as go
 import plotly.express.colors as graph_colors
+import concurrent.futures
+from itertools import repeat
 
 try:
     from utils.constants import OPACITY, MAX_GAP_UNITS, PIDENT_THRESHOLD, ALIGNMENT_RATIO_THRESHOLD
@@ -486,17 +485,23 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
                     pass
     
     return successful_translation
-
-def run_blast_with_args_multithread(locus, representative_file_dict, all_representatives_file, schema, blast_results_all_representatives, 
-                                    report_file, alleles_report_file, blast_results_alignments, alleles_protein_dir):
-    
+def run_all_representative_blasts_multithread(locus, blast_results_all_representatives, representative_file_dict, all_representatives_file):
     blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
     blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
 
     run_blast_with_args_only(blast_args)
 
-    # check results file for alignments
-    alignments_string, alignments_dict = process_blast_results(blast_results_file)
+    return [locus, blast_results_file]
+
+def run_blast_representatives_vs_alleles_multithreads(representative_blast_results, all_representatives_alignments_dict, all_allele_alignments_dict, 
+                                                allele_protein_translation_dict, file_paths, representative_file_dict, report_file, alleles_report_file):
+    locus = representative_blast_results[0]
+    alignments_string = representative_blast_results[1][0]
+    alignments_dict = representative_blast_results[1][1]
+    schema = file_paths[0]
+    alleles_protein_dir = file_paths[1]
+    blast_results_alignments = file_paths[2]
+    
     schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
 
     report_file.writelines(alignments_string)
@@ -549,7 +554,7 @@ def run_blast_with_args_multithread(locus, representative_file_dict, all_represe
         # Run Blast for representative A - Alleles B
         allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
         blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
-        print(f"\tRunning BLAST for alignment: {locus} against {alignment_before_underscore} - {i}/{total_alignments}")
+        print(f"Running BLAST for alignment: {locus} against {alignment_before_underscore} - {i}/{total_alignments}")
         run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
         
@@ -559,14 +564,12 @@ def run_blast_with_args_multithread(locus, representative_file_dict, all_represe
         # Run Blast for representative B - Alleles A (inverse)
         allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
         blast_args = ['blastp', '-query', representative_file_dict[alignment_before_underscore], '-subject', allele_protein_translation_dict[locus], '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
-        print(f"\tRunning BLAST for the reverse of previous alignment.")
+        print(f"Running BLAST for the reverse of previous alignment.")
         run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file)
         
         alleles_report_file.writelines(allele_alignments_string)
         all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
-
-    return locus
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, threads):
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
@@ -582,35 +585,42 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     alleles_report_file_path = os.path.join(output_directory, "alleles_report.tsv")
 
     print("Running Blast for all representatives...")
-    global all_representatives_alignments_dict
-    global all_allele_alignments_dict
-    global allele_protein_translation_dict
+
     all_representatives_alignments_dict = {}
     all_allele_alignments_dict = {}
     allele_protein_translation_dict = {}
     total_loci = len(loci)
+    representative_blast_results = []
 
-    # allele_blast_pairs_processed = set()
-    with open(report_file_path, 'w') as report_file:
-        with open(alleles_report_file_path, 'w') as alleles_report_file:
-            report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", "Pident - Percentage of identical matches\n"])
-            alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"])
+    file_paths = [schema, alleles_protein_dir, blast_results_alignments]
+
+    i=1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        for res in executor.map(run_all_representative_blasts_multithread, loci, repeat(blast_results_all_representatives), 
+                                repeat(representative_file_dict), repeat(all_representatives_file)):
             
-            i=1
-            with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-                for res in executor.map(run_blast_with_args_multithread, loci, repeat(representative_file_dict), repeat(all_representatives_file), 
-                                        repeat(schema), repeat(blast_results_all_representatives), repeat(report_file), 
-                                        repeat(alleles_report_file), repeat(blast_results_alignments), repeat(alleles_protein_dir)):
+            representative_blast_results.append([res[0], process_blast_results(res[1])])
 
-                    print(f'Running BLAST for locus: {res} - {i}/{total_loci}')
-                    i+=1
+            print(f"Running BLAST for locus representatives: {res[0]} - {i}/{total_loci}")
+            i+=1
+
+    with open(report_file_path, 'w') as report_file:
+        report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", "Pident - Percentage of identical matches\n"])
+        with open(alleles_report_file_path, 'w') as alleles_report_file:
+            alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"]) 
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+                executor.map(run_blast_representatives_vs_alleles_multithreads, representative_blast_results, repeat(all_representatives_alignments_dict), 
+                                        repeat(all_allele_alignments_dict), repeat(allele_protein_translation_dict), repeat(file_paths), repeat(representative_file_dict),
+                                        repeat(report_file), repeat(alleles_report_file))
+
 
     # calculate unique loci that had significant alignments
     unique_alignent_ids = set()
     for key in all_representatives_alignments_dict.keys():
-        for locus in key.split(";"):
-            unique_alignent_ids.add(locus.split('_')[0])
-
+        locus_1, locus_2 = key.split(";")
+        unique_alignent_ids.add(locus_1.split('_')[0])
+        unique_alignent_ids.add(locus_2.split('_')[0])
 
     unique_ids_file_path = os.path.join(output_directory, "unique_loci.tsv")
     with open(unique_ids_file_path, 'w') as unique_ids_file:
@@ -661,7 +671,7 @@ def main(schema, output_directory, missing_classes_fasta, threshold, threads):
             representative_file = os.path.join(representatives_dir, f"{locus}_representative.fasta")
             representative_file_dict[locus] = representative_file
 
-            with open(schema_files_paths[locus], "r", encoding='utf-8') as locus_file:
+            with open(schema_files_paths[locus], "r") as locus_file:
                 locus_file_lines = locus_file.readlines()
                 found_translation = False
                 for j in range(0, len(locus_file_lines), 2):
