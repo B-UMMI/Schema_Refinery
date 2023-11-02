@@ -1,9 +1,9 @@
 from Bio.Seq import Seq
 
 try:
-    from utils.constants import DNA_BASES
+    from RefineSchema.constants import DNA_BASES
 except ModuleNotFoundError:
-    from SchemaRefinery.utils.constants import DNA_BASES
+    from SchemaRefinery.RefineSchema.constants import DNA_BASES
 
 def check_str_alphabet(input_string, alphabet):
     alphabet_chars = set(alphabet)

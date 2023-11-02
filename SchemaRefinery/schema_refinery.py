@@ -15,11 +15,11 @@ import argparse
 
 try:
     from DownloadAssemblies import DownloadAssemblies
-    from DownloadAssemblies import parameter_validation as pv
+    from utils import parameter_validation as pv
     from RefineSchema import SpuriousLociIdentification
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
-    from SchemaRefinery.DownloadAssemblies import parameter_validation as pv
+    from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import SpuriousLociIdentification
 
 
@@ -121,14 +121,22 @@ def refine_schema():
                         help='Path to the directory to which '
                              'files will be stored.')
     
-    parser.add_argument('-t', '--threshold', type=str,
-                        required=False, dest='threshold',
-                        default=0, help='')
+    parser.add_argument('-a', '--aligment_ratio_threshold', type=float,
+                        required=False, dest='aligment_ratio_threshold',
+                        default=0.6, help='Threshold value for aligment (float: 0-1).')
+    
+    parser.add_argument('-p', '--pident_threshold', type=int,
+                    required=False, dest='pident_threshold',
+                    default=70, help='Threshold value for pident values (int 0-100).')
+
+    parser.add_argument('-g', '--num_graphs', type=int,
+                        required=False, dest='num_graphs',
+                        default=100, help='Number of graphs to put in each file.')
     
     parser.add_argument('-th', '--threads', type=int,
                     required=False, dest='threads',
                     default=1, 
-                    help='Number of threads to run blast instances')
+                    help='Number of threads to run blast instances.')
 
     args = parser.parse_args()
 
