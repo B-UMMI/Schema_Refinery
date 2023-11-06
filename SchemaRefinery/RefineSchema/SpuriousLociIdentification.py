@@ -5,6 +5,7 @@ import datapane as dp
 import plotly.graph_objs as go
 import plotly.express.colors as graph_colors
 import concurrent.futures
+import networkx as nx
 from itertools import repeat
 
 try:
@@ -595,6 +596,36 @@ def split_dictionary(input_dict, chunk_size):
     dict_list.append(new_dict)
     return dict_list
 
+def cluster_based_on_ids(processed_representatives_dict):
+    pairs_list = set()
+
+    for key in processed_representatives_dict.keys():
+
+        pairs_list.add(tuple([locus.split("_")[0] for locus in key.split(";")]))
+
+    G = nx.Graph()
+    G.add_edges_from(pairs_list)
+
+    connected = nx.connected_components(G)
+
+    return connected
+
+def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
+
+    results_dicts = []
+
+    for loci in clustered_loci:
+        loci = list(loci)
+        new_dict = {}
+        for key_pair in list(processed_representatives_dict.keys()):
+            if any(key.split("_")[0] in loci for key in key_pair.split(";")):
+                new_dict[key_pair] = processed_representatives_dict[key_pair]
+                del processed_representatives_dict[key_pair]
+
+        results_dicts.append(new_dict)
+    
+    return results_dicts
+
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, num_graphs, info_file_path, 
                                       constants_threshold, threads):
     
@@ -663,10 +694,25 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     graph_dir = os.path.join(output_directory,'graphs')
     os.mkdir(graph_dir)
+
     processed_representatives_dict = process_alignments_for_graphs(all_representatives_alignments_dict)
 
-    for i, representative_dict in enumerate(split_dictionary(processed_representatives_dict, num_graphs),1):
+    clustered_loci = cluster_based_on_ids(processed_representatives_dict)
+    clustered_loci_list = []
+    paralagous_path = os.path.join(output_directory,'potential_paralagous_groups.tsv')
+    with open(paralagous_path,'w') as paralogous_file:
+        for group in clustered_loci:
+            paralogous_file.write('\t'.join(map(str, group)) + '\n')
+
+            clustered_loci_list.append(group)
+
+
+    for i, representative_dict in enumerate(split_dict_into_clusters(clustered_loci_list, processed_representatives_dict), 1):
         renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
+
+
+    # for i, representative_dict in enumerate(split_dictionary(processed_representatives_dict, num_graphs),1):
+    #     renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
    
     # shutil.rmtree(blast_results_alignments)
     shutil.rmtree(alleles_protein_dir)
