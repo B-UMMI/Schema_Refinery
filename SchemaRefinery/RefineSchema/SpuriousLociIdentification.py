@@ -25,8 +25,20 @@ ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_co
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
 def join_intervals(alignments):
-    # function to join alignments that intersect with eachother and merge them into one single alignment
-    # but this one takes into account the custom scoring that needs to be calculated for the alleles
+    """
+    function to join alignments that intersect with each other and merge them into one single alignment
+    but this one takes into account the custom scoring that needs to be calculated for the alleles.
+
+    Parameters
+    ----------
+    alignments : list
+        List containing the data obtained from blast.
+
+    Returns
+    -------
+        Tuple containing final_start_stop_list and start_stop_list_for_processing
+
+    """
     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
                                        "joined_intervals": set(), "pident": alignment[4]/100, 
                                        "gaps": alignment[5], "length": alignment[6],
@@ -87,10 +99,21 @@ def join_intervals(alignments):
     return ([f"{interval['start']}-{interval['stop']}{interval['joined_intervals']}" for interval in start_stop_list_for_processing], start_stop_list_for_processing)
 
 def filter_out_equal_alignments(original:list, inverted:list):
-    # we loop through a list of alignments and another list of
-    # alignments but with the key (locus1:locus2) inverted
-    # if it finds an interval with different start and stop,
-    # it means that its a different alignment and we add it to the original list
+    """
+    Loop through a list of alignments and another list of alignments but with the key (locus1:locus2) inverted if it finds
+    an interval with different start and stop, it means that its a different alignment and we add it to the original list.
+
+    Parameters
+    ----------
+    original : list
+        List containing alignment related to one key.
+    inverted : list
+        List containing alignments related to the inverse of previous key.
+
+    Returns
+    -------
+        new original alignment.
+    """
     new_original = copy.deepcopy(original)
 
     for i in inverted:
@@ -106,8 +129,17 @@ def filter_out_equal_alignments(original:list, inverted:list):
     return new_original
 
 def process_alignments_for_graphs(alignments_dict: dict):
-    # This function tries to join alignments from an inverse of another alignment,
-    # if it exists, so they appear in the same graph
+    """
+    This function tries to join alignments from an inverse of another alignment, if it exists, so they appear in the same graph.
+
+    Parameters
+    ----------
+    alignments_dict : dict
+
+    Returns
+    -------
+        Processed alignment dict
+    """
     keys_set = set()
     processed_alignments_dict = {}
 
@@ -136,8 +168,20 @@ def process_alignments_for_graphs(alignments_dict: dict):
     return processed_alignments_dict
 
 def build_graph(key: str, alignments: list):
-    # build a graph with a list of alignments
-    # returns the go.Figure with all the traces built into a graph
+    """
+    Build a graph with a list of alignments returns the go.Figure with all the traces built into a graph.
+
+    Parameters
+    ----------
+    key : str
+        alignment_string with the format locus_A;locus_B.
+    alignments : list
+        List containing alignments, either repesentatives alignment or allele alignment.
+
+    Returns
+    -------
+        go.Figure with all of the traces build into a graph.
+    """
     query, subject = key.split(";")
     first_alignement_dicts = alignments[0]
     query = first_alignement_dicts["query"]
@@ -184,7 +228,29 @@ def build_graph(key: str, alignments: list):
 
     return go.Figure(traces)
 
-def renderGraphs(processed_representatives_dict: dict, alleles_dict:dict, filename:str, graph_title: str, output_directory):
+def renderGraphs(processed_representatives_dict: dict, all_allele_alignments_dict: dict, filename: str, graph_title: str, graph_dir):
+    """
+    Renders graphs based on input dict.
+
+    Parameters
+    ----------
+    processed_representatives_dict : dict
+        dict that contains all the info necessary to render the graphs.
+    all_allele_alignments_dict : dict
+        Dict that contains all of the results of blast of representatives vs alleles for both loci that matched during representatives 
+        blast step.
+    filename : str
+        Output file name.
+    graph_title : str
+        Title displayed in the graph.
+    graph_dir : str
+        Graph dir path.
+
+    Returns
+    -------
+        Creates the graph based on input dict in graph dir path.
+    """
+
     all_graphs_structured = []
     processed_representatives_dict_length = len(processed_representatives_dict)
 
@@ -239,10 +305,19 @@ def renderGraphs(processed_representatives_dict: dict, alleles_dict:dict, filena
         print(f"Did not print a graph for {filename} - there were no graphs to process.")
 
 def get_alignments_dict(blast_results_file):
-    # organize alignments with the same key "Locus_A:Locus_B"
-    # into othe same dictionary
-    # builds a dictionary where key = "Locus_A:Locus_B" and
-    # value = a list of all alignments for that key correspondence
+    """
+    organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
+    and value = a list of all alignments for that key correspondence.
+
+    Parameters
+    ----------
+    blast_results_file : str
+        Path to the blast result file.
+
+    Returns
+    -------
+        Dictionary containing the necessary information for graph building and representatives vs alleles blast.
+    """
     alignments_dict = {}
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
@@ -285,13 +360,26 @@ def get_alignments_dict(blast_results_file):
     return alignments_dict
 
 def process_blast_results(blast_results_file, constants_threshold):
-    # main function to process the received blast results
-    # filters the results, organizes the alignments and return 
-    # a string with the information of the selected alignments for the report
-    # a dictionary with all the selected alignments to build the graphs
+"""
+    Main function to process the received blast results filters the results, organizes the alignments and return 
+    a string with the information of the selected alignments for the report a dictionary with all the selected 
+    alignments to build the graphs.
+
+    Parameters
+    ----------
+    blast_results_file : str
+        Path to the blast result file.
+    constants_threshold : list
+        List that contains two constants, alignment_ratio_threshold, pident_threshold.
+
+    Returns
+    -------
+        Tuple containing alignment_strings used to write inside report file and filtered_alignments_dict used downstream to
+        generate graphs.    
+"""
     alignments_dict = get_alignments_dict(blast_results_file)
 
-    aligment_ratio_threshold, pident_threshold = constants_threshold
+    alignment_ratio_threshold, pident_threshold = constants_threshold
 
     # filter alignments
     alignment_strings = []
@@ -339,7 +427,7 @@ def process_blast_results(blast_results_file, constants_threshold):
                 query_ratio = bigger_query_alignment / query_length
                 subject_ratio = bigger_subject_alignment / subject_length
 
-                if query_ratio >= aligment_ratio_threshold or subject_ratio >= aligment_ratio_threshold:
+                if query_ratio >= alignment_ratio_threshold or subject_ratio >= alignment_ratio_threshold:
                     query_start_stops = ';'.join(final_query_start_stop_list)
                     subject_start_stops = ';'.join(final_subject_start_stop_list)
                     alignment_string = f"{query}\t{subject}\t{query_start_stops}\t{subject_start_stops}\t{query_ratio}\t{subject_ratio}\t{query_length}\t{subject_length}\t{final_gaps}\t{final_pident}\n"
@@ -349,13 +437,27 @@ def process_blast_results(blast_results_file, constants_threshold):
 
     return (alignment_strings, filtered_alignments_dict)
 
-def process_blast_results_for_alleles(blast_results_file, aligment_ratio_threshold, pident_threshold):
-    # main function to process the received blast results
-    # filters the results, organizes the alignments and returns 
-    # a string with the information of the selected alignments for the report
-    # a dictionary with all the selected alignments to build the graphs
-    # this one takes into account the selection of best and worst alignment for
-    # the alleles
+def process_blast_results_for_alleles(blast_results_file, alignment_ratio_threshold, pident_threshold):
+    """
+    main function to process the received blast results filters the results, organizes the alignments and returns a string with 
+    the information of the selected alignments for the report a dictionary with all the selected alignments to build the graphs 
+    this one takes into account the selection of best and worst alignment for the alleles.
+
+    Parameters
+    ----------
+    blast_results_file : str
+        Path to the blast result file.
+    alignment_ratio_threshold : float
+        Minimum alignment threshold value.
+    pident_threshold : int
+        Minimum pident threshold value.
+
+    Returns
+    -------
+        Tuple containing alignment_strings used to write inside alleles_report file and filtered_alignments_dict used downstream to
+        generate graphs.
+    """
+
     alignments_dict = get_alignments_dict(blast_results_file)
 
     # filter alignments by pident
@@ -375,7 +477,7 @@ def process_blast_results_for_alleles(blast_results_file, aligment_ratio_thresho
     worst_list_of_alignments = []
     best_scoring = 0
     worst_scoring = 1
-    num_alignments_passing_aligment_ratio_threshold = 0
+    num_alignments_passing_alignment_ratio_threshold = 0
 
     for _, alignments in alignments_dict.items():
     
@@ -407,15 +509,15 @@ def process_blast_results_for_alleles(blast_results_file, aligment_ratio_thresho
                 bigger_query_ratio = bigger_query_alignment / query_length
                 bigger_subject_ratio = bigger_subject_alignment / subject_length
 
-                if bigger_query_ratio >= aligment_ratio_threshold or bigger_subject_ratio >= aligment_ratio_threshold:
+                if bigger_query_ratio >= alignment_ratio_threshold or bigger_subject_ratio >= alignment_ratio_threshold:
                     # go through query alignments to find best and worst
                     for idx, alignment in enumerate(alignment_query):
                         custom_scoring = alignment["custom_scoring"]
                         query_alignment_size = alignment["stop"] - alignment["start"]
                         query_ratio = query_alignment_size / query_length
 
-                        if query_ratio >= aligment_ratio_threshold:
-                            num_alignments_passing_aligment_ratio_threshold += 1
+                        if query_ratio >= alignment_ratio_threshold:
+                            num_alignments_passing_alignment_ratio_threshold += 1
                             if custom_scoring >= best_scoring:
                                 best_scoring = custom_scoring
                                 best_list_of_alignments = alignment["internal_alignments"]
@@ -433,8 +535,8 @@ def process_blast_results_for_alleles(blast_results_file, aligment_ratio_thresho
                         subject_alignment_size = alignment["stop"] - alignment["start"]
                         subject_ratio = subject_alignment_size / subject_length
 
-                        if subject_ratio >= aligment_ratio_threshold:
-                            num_alignments_passing_aligment_ratio_threshold += 1
+                        if subject_ratio >= alignment_ratio_threshold:
+                            num_alignments_passing_alignment_ratio_threshold += 1
                             if custom_scoring >= best_scoring:
                                 best_scoring = custom_scoring
                                 best_list_of_alignments = alignment["internal_alignments"]
@@ -446,7 +548,7 @@ def process_blast_results_for_alleles(blast_results_file, aligment_ratio_thresho
                                 worst_list_of_alignments = alignment["internal_alignments"]
                                 worst_alignment_string = final_subject_start_stop_list[idx]
     
-    if num_alignments_passing_aligment_ratio_threshold >= 2:
+    if num_alignments_passing_alignment_ratio_threshold >= 2:
         alignment_strings = [
                             f"{best_alignment_dict['query']}\t{best_alignment_dict['subject']}\t{best_alignment_string}\t{best_alignment_dict['custom_scoring']}\n", 
                             f"{worst_alignment_dict['query']}\t{worst_alignment_dict['subject']}\t{worst_alignment_string}\t{worst_alignment_dict['custom_scoring']}\n", 
@@ -464,7 +566,7 @@ def process_blast_results_for_alleles(blast_results_file, aligment_ratio_thresho
                 best_filtered_key: best_list_of_alignments + worst_list_of_alignments
             }
 
-    if num_alignments_passing_aligment_ratio_threshold == 1:
+    if num_alignments_passing_alignment_ratio_threshold == 1:
         alignment_strings = [
                             f"{best_alignment_dict['query']}\t{best_alignment_dict['subject']}\t{best_alignment_string}\t{best_alignment_dict['custom_scoring']}\n"
                             ]
@@ -475,6 +577,21 @@ def process_blast_results_for_alleles(blast_results_file, aligment_ratio_thresho
     return (alignment_strings, filtered_alignments_dict)
 
 def locus_alleles_protein_translation(locus_file_path, translation_file_path):
+    """
+    Translated the allele sequences to protein.
+
+    Parameters
+    ----------
+    locus_file_path : str
+        Path to the locus in the schema
+    translation_file_path : str
+        Path to the file where to write the translation of the alleles.
+
+    Returns
+    -------
+        Creates files in the folder alleles_protein_dir and returns a bool if translation was successful or not.
+    """
+
     successful_translation = False
     with open(locus_file_path, "r") as alleles_file:
         lines = alleles_file.readlines()
@@ -492,6 +609,25 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
     
     return successful_translation
 def run_all_representative_blasts_multithread(locus, blast_results_all_representatives, representative_file_dict, all_representatives_file):
+    """
+    This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
+
+    Parameters
+    ----------
+    locus : str
+        id of the locus that will be blasted against all of the representatives sequences.
+    blast_results_all_representatives : str
+        Path to the folder where all of the loci representatives and their consolidated file is stored.
+    representative_file_dict : dict
+        Dict that contains the path to representative file for each locus(key).
+    all_representatives_file : str
+        path to the consolidated file of all of the represenatives sequences.
+
+    Returns
+    -------
+        list containing locus id and path to the blast_results_file for that locus.
+    """
+
     blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{locus}.tsv")
     blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', all_representatives_file, 
                   '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
@@ -502,14 +638,43 @@ def run_all_representative_blasts_multithread(locus, blast_results_all_represent
 
 def run_blast_representatives_vs_alleles_multithreads(representative_blast_results, all_representatives_alignments_dict, all_allele_alignments_dict, 
                                                 allele_protein_translation_dict, file_paths, representative_file_dict, report_file, alleles_report_file, constants_threshold):
-    
+    """
+    This function, based on representatives ids, runs blast of the chosen locus representative vs all of the other locus alleles and vice versa.
+
+    Parameters
+    ----------
+    representative_blast_results : list
+        Contains the locus id and representative_blast_results.
+    all_representatives_alignments_dict :
+        Dict that contains all of the loci representatives that matched and their blast results. (updated in this function)
+    all_allele_alignments_dict :
+        Dict that contains all of the results of blast of representatives vs alleles for both loci that matched during representatives 
+        blast step. (updated in this function)
+    allele_protein_translation_dict :
+        Dict that contains translation os protein sequences of all of the alleles. (updated in this function)
+    file_paths : list
+        List that contains file paths to schema, alleles_protein_dir and blast_results_alignments.
+    representative_file_dict : dict
+        Dict that contains the path to representative file for each locus(key).
+    report_file : file object
+        file object used to write the results of the representatives matches.
+    alleles_report_file : file object
+        file object used to write the results of allele matches with the representatives.
+    constants_threshold : list
+        List that contains two constants, alignment_ratio_threshold, pident_threshold.
+
+    Returns
+    -------
+        None, this function creates files used downstream processes.
+    """
+
     locus = representative_blast_results[0]
     alignments_string = representative_blast_results[1][0]
     alignments_dict = representative_blast_results[1][1]
     schema = file_paths[0]
     alleles_protein_dir = file_paths[1]
     blast_results_alignments = file_paths[2]
-    aligment_ratio_threshold, pident_threshold = constants_threshold
+    alignment_ratio_threshold, pident_threshold = constants_threshold
     
     schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
 
@@ -567,7 +732,7 @@ def run_blast_representatives_vs_alleles_multithreads(representative_blast_resul
         
         print(f"Running BLAST for alignment: {locus} against {alignment_before_underscore} - {i}/{total_alignments}")
         run_blast_with_args_only(blast_args)
-        allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, aligment_ratio_threshold, pident_threshold)
+        allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, alignment_ratio_threshold, pident_threshold)
         
         alleles_report_file.writelines(allele_alignments_string)
         all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
@@ -579,12 +744,26 @@ def run_blast_representatives_vs_alleles_multithreads(representative_blast_resul
         
         print(f"Running BLAST for the reverse of previous alignment.")
         run_blast_with_args_only(blast_args)
-        allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, aligment_ratio_threshold, pident_threshold)
+        allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, alignment_ratio_threshold, pident_threshold)
         
         alleles_report_file.writelines(allele_alignments_string)
         all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
 
 def cluster_based_on_ids(processed_representatives_dict):
+    """
+    Employs networkx to cluster loci based on their connection through ids. e.g x matches with y
+    y matches with z, all three are put inside the same cluster x,y and z.
+
+    Parameters
+    ----------
+    processed_representatives_dict : dict
+        dict that contains all the info necessary to render the graphs.
+
+    Returns
+    -------
+        list containing lists of the ids of the clustered loci.
+    """
+
     pairs_list = set()
 
     for key in processed_representatives_dict.keys():
@@ -599,6 +778,21 @@ def cluster_based_on_ids(processed_representatives_dict):
     return connected
 
 def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
+    """
+    Based on the determined clusters at cluster_based_on_ids function, splits the processed_representatives_dict
+    into various dicts and puts them inside a list.
+
+    Parameters
+    ----------
+    clustered_loci : list
+        list containing lists of the ids of the clustered loci.
+    processed_representatives_dict : dict
+        dict that contains all the info necessary to render the graphs.
+
+    Returns
+    -------
+        list that contains dicts with the information to render the graphs.
+    """
 
     results_dicts = []
 
@@ -616,6 +810,32 @@ def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, info_file_path, 
                                       constants_threshold, threads):
+    """
+    Main function to run the blast for representatives, alleles and render graphs.
+
+    Parameters
+    ----------
+    loci : set
+        Contains all of the loci ids found in the schema.
+    representative_file_dict : dict
+        Dict that contains the path to representative file for each locus(key).    
+    all_representatives_file : str
+        path to the consolidated file of all of the represenatives sequences.    
+    output_directory : str
+        Path to the output dir.
+    schema :
+        Path to schema dir.
+    info_file_path : str
+        Path to the info file, where the number of loci found and how many loci aligned with another locus is written.
+    constants_threshold : list
+        List that contains two constants, alignment_ratio_threshold, pident_threshold.    
+    threads : int
+        Number of threads to use during the run.
+
+    Returns
+    -------
+        Various files created during the process and graphs representing the potential paralogous loci.
+    """
     
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
     create_directory(blast_results_all_representatives)
@@ -694,19 +914,15 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
             clustered_loci_list.append(group)
 
-
+    #Render graphs based on previously clustered groups
     for i, representative_dict in enumerate(split_dict_into_clusters(clustered_loci_list, processed_representatives_dict), 1):
         renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
-   
-    # shutil.rmtree(blast_results_alignments)
-    shutil.rmtree(alleles_protein_dir)
-    # shutil.rmtree(blast_results_all_representatives)
 
-def main(schema, output_directory, missing_classes_fasta, aligment_ratio_threshold, pident_threshold, threads):
+def main(schema, output_directory, missing_classes_fasta, alignment_ratio_threshold, pident_threshold, threads):
 
     info_file_path = os.path.join(output_directory, "info.txt")
 
-    constants_threshold = [aligment_ratio_threshold, pident_threshold]
+    constants_threshold = [alignment_ratio_threshold, pident_threshold]
     # delete the old file for the info if it already exists, since we're appending lines to it
     check_and_delete_file(info_file_path)
 
