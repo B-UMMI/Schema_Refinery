@@ -584,18 +584,6 @@ def run_blast_representatives_vs_alleles_multithreads(representative_blast_resul
         alleles_report_file.writelines(allele_alignments_string)
         all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
 
-def split_dictionary(input_dict, chunk_size):
-    dict_list = []
-    new_dict = {}
-    for k, v in input_dict.items():
-        if len(new_dict) <= chunk_size:
-            new_dict[k] = v
-        else:
-            dict_list.append(new_dict)
-            new_dict = {k: v}
-    dict_list.append(new_dict)
-    return dict_list
-
 def cluster_based_on_ids(processed_representatives_dict):
     pairs_list = set()
 
@@ -626,7 +614,7 @@ def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
     
     return results_dicts
 
-def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, num_graphs, info_file_path, 
+def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, info_file_path, 
                                       constants_threshold, threads):
     
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
@@ -709,16 +697,12 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     for i, representative_dict in enumerate(split_dict_into_clusters(clustered_loci_list, processed_representatives_dict), 1):
         renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
-
-
-    # for i, representative_dict in enumerate(split_dictionary(processed_representatives_dict, num_graphs),1):
-    #     renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
    
     # shutil.rmtree(blast_results_alignments)
     shutil.rmtree(alleles_protein_dir)
     # shutil.rmtree(blast_results_all_representatives)
 
-def main(schema, output_directory, missing_classes_fasta, aligment_ratio_threshold, pident_threshold, num_graphs, threads):
+def main(schema, output_directory, missing_classes_fasta, aligment_ratio_threshold, pident_threshold, threads):
 
     info_file_path = os.path.join(output_directory, "info.txt")
 
@@ -781,7 +765,7 @@ def main(schema, output_directory, missing_classes_fasta, aligment_ratio_thresho
     if schema and not missing_classes_fasta:
         # Run BLAST for all representatives
         run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, 
-                                          schema, num_graphs, info_file_path, constants_threshold, threads)
+                                          schema, info_file_path, constants_threshold, threads)
 
     # received both arguments
     if schema and missing_classes_fasta:

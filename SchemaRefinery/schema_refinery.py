@@ -128,10 +128,6 @@ def refine_schema():
     parser.add_argument('-p', '--pident_threshold', type=int,
                     required=False, dest='pident_threshold',
                     default=70, help='Threshold value for pident values (int 0-100).')
-
-    parser.add_argument('-g', '--num_graphs', type=int,
-                        required=False, dest='num_graphs',
-                        default=100, help='Number of graphs to put in each file.')
     
     parser.add_argument('-th', '--threads', type=int,
                     required=False, dest='threads',
