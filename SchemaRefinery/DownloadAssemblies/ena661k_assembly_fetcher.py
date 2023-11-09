@@ -49,7 +49,21 @@ socket.setdefaulttimeout(60)
 
 # function passed to urllib.request.urlretrieve to track progress
 def handle_progress(block_num, block_size, total_size):
-    """Calculate %the progress of the downloads that have been made.
+    """
+    Calculate the progress of the downloads that have been made.
+
+    Parameters
+    ----------
+    block_num : int
+        number of blocks
+    block_size : int
+        blocks size in bytes
+    total_size : int
+        size of the file to be downloaded in bytes
+
+    Returns
+    -------
+        Prints % of the download in terminal.
     """
     read_data = 0
     # calculating the progress
@@ -85,8 +99,9 @@ def check_download(file: str, file_hash: str, remove=False):
 
     Returns
     -------
-    True if the hash determined for the file contents matches
-    the expected hash, False otherwise.
+    return : bool
+        True if the hash determined for the file contents matches
+        the expected hash, False otherwise.
     """
     with open(file, 'rb') as infile:
         data = infile.read()
@@ -114,8 +129,7 @@ def read_table(file_path, delimiter='\t'):
     Returns
     -------
     lines : list
-        List that contains one sublist per
-        line in the input tabular file.
+        List that contains one sublist per line in the input tabular file.
     """
     with open(file_path, 'r', encoding='utf-8') as infile:
         lines = list(csv.reader(infile, delimiter=delimiter))

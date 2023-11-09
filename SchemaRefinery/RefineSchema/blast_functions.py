@@ -13,6 +13,10 @@ def make_blast_db(input_fasta, output_path, db_type):
     db_type : str
         Type of the database, nucleotide (nuc) or
         protein (prot).
+
+    Returns
+    -------
+        None, creates blast database
     """
     blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
                    '-parse_seqids', '-dbtype', db_type]

@@ -122,15 +122,15 @@ def refine_schema():
                              'files will be stored.')
     
     parser.add_argument('-a', '--aligment_ratio_threshold', type=float,
-                        required=False, dest='aligment_ratio_threshold',
+                        required=False, dest='alignment_ratio_threshold',
                         default=0.6, help='Threshold value for aligment (float: 0-1).')
     
     parser.add_argument('-p', '--pident_threshold', type=int,
                     required=False, dest='pident_threshold',
                     default=70, help='Threshold value for pident values (int 0-100).')
     
-    parser.add_argument('-th', '--threads', type=int,
-                    required=False, dest='threads',
+    parser.add_argument('-c', '--cpu', type=int,
+                    required=False, dest='cpu',
                     default=1, 
                     help='Number of threads to run blast instances.')
 

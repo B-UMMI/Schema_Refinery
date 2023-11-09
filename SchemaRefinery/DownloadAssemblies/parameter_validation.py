@@ -124,7 +124,21 @@ def check_parameter(value, validate_type, validate_minimum, validate_maximum,
 
 
 def validate_criteria_file(file_path, expected_criteria=ct.FILTERING_CRITERIA):
-    """"""
+    """
+    Validates intial input criteria arguments file to be according to the desired format.
+
+    Parameter
+    ---------
+    file_path : str
+        File path to the criteria file.
+    expected_criteria : dict
+        Contains the type and format that criteria file is suposed to have.
+
+    Returns
+    -------
+    parameter_values : dict
+        Dictionary that contains the parameters values extracted from criteria file.
+    """
     with open(file_path, 'r', encoding='utf-8') as filters:
         criteria = dict(csv.reader(filters, delimiter='\t'))
 

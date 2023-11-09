@@ -36,6 +36,9 @@ def join_intervals(alignments):
 
     Returns
     -------
+    return : tuple
+        final_start_stop_list : list
+        start_stop_list_for_processing : list
         Tuple containing final_start_stop_list and start_stop_list_for_processing
 
     """
@@ -112,8 +115,10 @@ def filter_out_equal_alignments(original:list, inverted:list):
 
     Returns
     -------
+    new_original : list
         new original alignment.
     """
+
     new_original = copy.deepcopy(original)
 
     for i in inverted:
@@ -138,8 +143,10 @@ def process_alignments_for_graphs(alignments_dict: dict):
 
     Returns
     -------
-        Processed alignment dict
+    processed_alignments_dict : dict
+        Processed input
     """
+
     keys_set = set()
     processed_alignments_dict = {}
 
@@ -180,8 +187,10 @@ def build_graph(key: str, alignments: list):
 
     Returns
     -------
+    go.Figure(traces) : object
         go.Figure with all of the traces build into a graph.
     """
+
     query, subject = key.split(";")
     first_alignement_dicts = alignments[0]
     query = first_alignement_dicts["query"]
@@ -248,7 +257,7 @@ def renderGraphs(processed_representatives_dict: dict, all_allele_alignments_dic
 
     Returns
     -------
-        Creates the graph based on input dict in graph dir path.
+        Generates the graph based on input dict in graph dir path.
     """
 
     all_graphs_structured = []
@@ -316,8 +325,10 @@ def get_alignments_dict(blast_results_file):
 
     Returns
     -------
+    alignments_dict : dict
         Dictionary containing the necessary information for graph building and representatives vs alleles blast.
     """
+
     alignments_dict = {}
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
@@ -360,7 +371,7 @@ def get_alignments_dict(blast_results_file):
     return alignments_dict
 
 def process_blast_results(blast_results_file, constants_threshold):
-"""
+    """
     Main function to process the received blast results filters the results, organizes the alignments and return 
     a string with the information of the selected alignments for the report a dictionary with all the selected 
     alignments to build the graphs.
@@ -374,9 +385,13 @@ def process_blast_results(blast_results_file, constants_threshold):
 
     Returns
     -------
-        Tuple containing alignment_strings used to write inside report file and filtered_alignments_dict used downstream to
-        generate graphs.    
-"""
+    return : tuple
+        alignment_strings : str
+            Used to write inside alleles_report file
+        filtered_alignments_dict : dict
+            Used downstream to generate graphs. 
+    """
+
     alignments_dict = get_alignments_dict(blast_results_file)
 
     alignment_ratio_threshold, pident_threshold = constants_threshold
@@ -454,8 +469,11 @@ def process_blast_results_for_alleles(blast_results_file, alignment_ratio_thresh
 
     Returns
     -------
-        Tuple containing alignment_strings used to write inside alleles_report file and filtered_alignments_dict used downstream to
-        generate graphs.
+    return : tuple
+        alignment_strings : str
+            Used to write inside alleles_report.
+        filtered_alignments_dict : dict
+            Used downstream to generate graphs.
     """
 
     alignments_dict = get_alignments_dict(blast_results_file)
@@ -589,6 +607,7 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
 
     Returns
     -------
+    successful_translation : bool
         Creates files in the folder alleles_protein_dir and returns a bool if translation was successful or not.
     """
 
@@ -608,7 +627,7 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
                     pass
     
     return successful_translation
-def run_all_representative_blasts_multithread(locus, blast_results_all_representatives, representative_file_dict, all_representatives_file):
+def run_all_representative_blasts_multiprocessing(locus, blast_results_all_representatives, representative_file_dict, all_representatives_file):
     """
     This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
 
@@ -625,6 +644,9 @@ def run_all_representative_blasts_multithread(locus, blast_results_all_represent
 
     Returns
     -------
+    return : list
+        locus : str
+        blast_results_file : str
         list containing locus id and path to the blast_results_file for that locus.
     """
 
@@ -636,7 +658,7 @@ def run_all_representative_blasts_multithread(locus, blast_results_all_represent
 
     return [locus, blast_results_file]
 
-def run_blast_representatives_vs_alleles_multithreads(representative_blast_results, all_representatives_alignments_dict, all_allele_alignments_dict, 
+def run_blast_representatives_vs_alleles_multiprocessing(representative_blast_results, all_representatives_alignments_dict, all_allele_alignments_dict, 
                                                 allele_protein_translation_dict, file_paths, representative_file_dict, report_file, alleles_report_file, constants_threshold):
     """
     This function, based on representatives ids, runs blast of the chosen locus representative vs all of the other locus alleles and vice versa.
@@ -665,7 +687,7 @@ def run_blast_representatives_vs_alleles_multithreads(representative_blast_resul
 
     Returns
     -------
-        None, this function creates files used downstream processes.
+        This function creates files used downstream processes.
     """
 
     locus = representative_blast_results[0]
@@ -761,6 +783,7 @@ def cluster_based_on_ids(processed_representatives_dict):
 
     Returns
     -------
+    connected : list
         list containing lists of the ids of the clustered loci.
     """
 
@@ -791,6 +814,7 @@ def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
 
     Returns
     -------
+    results_dicts : list
         list that contains dicts with the information to render the graphs.
     """
 
@@ -809,7 +833,7 @@ def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
     return results_dicts
 
 def run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, schema, info_file_path, 
-                                      constants_threshold, threads):
+                                      constants_threshold, cpu):
     """
     Main function to run the blast for representatives, alleles and render graphs.
 
@@ -823,14 +847,14 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         path to the consolidated file of all of the represenatives sequences.    
     output_directory : str
         Path to the output dir.
-    schema :
+    schema : str
         Path to schema dir.
     info_file_path : str
         Path to the info file, where the number of loci found and how many loci aligned with another locus is written.
     constants_threshold : list
         List that contains two constants, alignment_ratio_threshold, pident_threshold.    
-    threads : int
-        Number of threads to use during the run.
+    cpu : int
+        Number of cpus to use during the run.
 
     Returns
     -------
@@ -861,8 +885,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     i=1
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-        for res in executor.map(run_all_representative_blasts_multithread, loci, repeat(blast_results_all_representatives), 
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(run_all_representative_blasts_multiprocessing, loci, repeat(blast_results_all_representatives), 
                                 repeat(representative_file_dict), repeat(all_representatives_file)):
             
             representative_blast_results.append([res[0], process_blast_results(res[1], constants_threshold)])
@@ -878,8 +902,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         with open(alleles_report_file_path, 'w') as alleles_report_file:
             alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"]) 
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-                executor.map(run_blast_representatives_vs_alleles_multithreads, representative_blast_results, repeat(all_representatives_alignments_dict), 
+            with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+                executor.map(run_blast_representatives_vs_alleles_multiprocessing, representative_blast_results, repeat(all_representatives_alignments_dict), 
                                         repeat(all_allele_alignments_dict), repeat(allele_protein_translation_dict), repeat(file_paths), repeat(representative_file_dict),
                                         repeat(report_file), repeat(alleles_report_file), repeat(constants_threshold))
 
@@ -901,7 +925,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     print("Rendering graphs...")
 
     graph_dir = os.path.join(output_directory,'graphs')
-    os.mkdir(graph_dir)
+    create_directory(graph_dir)
 
     processed_representatives_dict = process_alignments_for_graphs(all_representatives_alignments_dict)
 
@@ -918,7 +942,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     for i, representative_dict in enumerate(split_dict_into_clusters(clustered_loci_list, processed_representatives_dict), 1):
         renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
 
-def main(schema, output_directory, missing_classes_fasta, alignment_ratio_threshold, pident_threshold, threads):
+def main(schema, output_directory, missing_classes_fasta, alignment_ratio_threshold, pident_threshold, cpu):
 
     info_file_path = os.path.join(output_directory, "info.txt")
 
@@ -981,7 +1005,7 @@ def main(schema, output_directory, missing_classes_fasta, alignment_ratio_thresh
     if schema and not missing_classes_fasta:
         # Run BLAST for all representatives
         run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, 
-                                          schema, info_file_path, constants_threshold, threads)
+                                          schema, info_file_path, constants_threshold, cpu)
 
     # received both arguments
     if schema and missing_classes_fasta:

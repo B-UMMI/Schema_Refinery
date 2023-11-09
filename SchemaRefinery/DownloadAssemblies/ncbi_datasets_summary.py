@@ -33,7 +33,8 @@ def verify_assembly(metadata_assembly, size_threshold, max_contig_number,
 
     Returns
     -------
-    Boolean value (in order to see if passed or failed)
+    return : bool
+        Boolean value (in order to see if passed or failed)
     """
     assembly_stats = metadata_assembly['assembly_stats']
     assembly_info = metadata_assembly['assembly_info']
@@ -72,20 +73,19 @@ def fetch_metadata(id_list_path, taxon, criteria, api_key):
 
     Parameters
     ----------
-    input_id : list of str
-        starts with GCF_ or GCA_ .
-    assembly_level : str
-        containing assembly levels separated by ",".
-    reference: Bool
+    id_list_path : list of str
+        Starts with GCF_ or GCA_ .
+    taxon : str
+        Contains desired taxon name.
+    criteria: dict
+        Contains filtering criteria.
     api_key: str
-
+        Key to NCBI API.
     Returns
     -------
-    found_metadata: bool
-    failed_list: list
-        containing ids that failed initial processing.
-    metadata_assembly: json object (dict)
-        for all assemblies.
+    metadata : object
+        json object that contains metadata
+
     """
     if id_list_path is not None:
         arguments = ['datasets', 'summary', 'genome', 'accession',
