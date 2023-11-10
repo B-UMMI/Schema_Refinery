@@ -449,7 +449,7 @@ def process_blast_results(blast_results_file, constants_threshold):
                     alignment_strings.append(alignment_string)
                 else:
                     del filtered_alignments_dict[key]
-
+        
     return (alignment_strings, filtered_alignments_dict)
 
 def process_blast_results_for_alleles(blast_results_file, alignment_ratio_threshold, pident_threshold):
@@ -628,6 +628,7 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
                     pass
     
     return successful_translation
+
 def run_all_representative_blasts_multiprocessing(locus, blast_results_all_representatives, representative_file_dict, all_representatives_file):
     """
     This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
@@ -659,53 +660,24 @@ def run_all_representative_blasts_multiprocessing(locus, blast_results_all_repre
 
     return [locus, blast_results_file]
 
-def run_blast_representatives_vs_alleles_multiprocessing(representative_blast_results, all_representatives_alignments_dict, all_allele_alignments_dict, 
-                                                allele_protein_translation_dict, file_paths, representative_file_dict, report_file, alleles_report_file, constants_threshold):
+def remove_inverse_alignments(alignments_dict, all_representatives_alignments_dict):
     """
-    This function, based on representatives ids, runs blast of the chosen locus representative vs all of the other locus alleles and vice versa.
+    Since we are running the inverse for the alleles we have to filter the alignment if the inverse so that inverse of this alignment doesn't run again
+    or else we will have repeated results on the alleles report.
 
     Parameters
     ----------
-    representative_blast_results : list
-        Contains the locus id and representative_blast_results.
-    all_representatives_alignments_dict :
-        Dict that contains all of the loci representatives that matched and their blast results. (updated in this function)
-    all_allele_alignments_dict :
-        Dict that contains all of the results of blast of representatives vs alleles for both loci that matched during representatives 
-        blast step. (updated in this function)
-    allele_protein_translation_dict :
-        Dict that contains translation os protein sequences of all of the alleles. (updated in this function)
-    file_paths : list
-        List that contains file paths to schema, alleles_protein_dir and blast_results_alignments.
-    representative_file_dict : dict
-        Dict that contains the path to representative file for each locus(key).
-    report_file : file object
-        file object used to write the results of the representatives matches.
-    alleles_report_file : file object
-        file object used to write the results of allele matches with the representatives.
-    constants_threshold : list
-        List that contains two constants, alignment_ratio_threshold, pident_threshold.
+    alignments_dict : dict
+        Aligment dict containing aligment of the representative loci.
+    all_representatives_alignments_dict : dict
+        Alignment dict containg all of representative loci without the inverse of themselves.
 
     Returns
     -------
-        This function creates files used downstream processes.
+    alignments_pair_list : list
+        list of list containing for each sublist the loci alignment pair ids.
     """
 
-    locus = representative_blast_results[0]
-    alignments_string = representative_blast_results[1][0]
-    alignments_dict = representative_blast_results[1][1]
-    schema = file_paths[0]
-    alleles_protein_dir = file_paths[1]
-    blast_results_alignments = file_paths[2]
-    alignment_ratio_threshold, pident_threshold = constants_threshold
-    
-    schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
-
-    report_file.writelines(alignments_string)
-
-    # since we are running the inverse for the alleles
-    # we have to filter the alignment if the inverse has ran previously
-    # or else we will have repeated results on the alleles report
     filtered_alignments_dict = copy.deepcopy(alignments_dict)
     for key in alignments_dict.keys():
         query, subject = key.split(";")
@@ -715,62 +687,77 @@ def run_blast_representatives_vs_alleles_multiprocessing(representative_blast_re
 
     all_representatives_alignments_dict.update(filtered_alignments_dict)
 
-    total_alignments = len(filtered_alignments_dict)
     alignments_pair_list = [key.split(";") for key in filtered_alignments_dict.keys()]
 
-    for i, alignment_pair in enumerate(alignments_pair_list, 1):
-        locus_for_key = alignment_pair[0]
-        alignment = alignment_pair[1]
+    return alignments_pair_list
+
+def run_blast_representatives_vs_alleles_multiprocessing(locus_alignment_pairs_list, allele_protein_translation_dict, 
+                                                         blast_results_alignments_dir, representative_file_dict, constants_threshold):
+    """
+    This function, based on representatives ids, runs blast of the chosen locus representative vs all of the other locus alleles and vice versa.
+
+    Parameters
+    ----------
+    locus_alignment_pairs_list : list
+        Contains the locus id and alignments_pair_list.
+    allele_protein_translation_dict :
+        Dict that contains translation os protein sequences of all of the alleles. (updated in this function)
+    blast_results_alignments_dir : str
+        Path to the blast alignment directory.
+    representative_file_dict : dict
+        Dict that contains the path to representative file for each locus(key).
+    constants_threshold : list
+        List that contains two constants, alignment_ratio_threshold, pident_threshold.
+
+    Returns
+    -------
+    return : list
+        alignments_dict_allele : dict
+            Dict used downstream to generate graphs for alleles (this is subdict that updated master dict).
+        allele_alignments_string_list : list
+            List used to write to allele report file.
+    """
+
+    locus = locus_alignment_pairs_list[0]
+    alignments_pair_list = locus_alignment_pairs_list[1]
+    alignment_ratio_threshold, pident_threshold = constants_threshold
+
+
+    alignments_dict_allele = {}
+    allele_alignments_string_list = []
+
+    for alignment_pair in alignments_pair_list:
         alignment_before_underscore = alignment_pair[1].split('_')[0]
-        key_to_process = f"{locus_for_key};{alignment}"
-        if not key_to_process in all_allele_alignments_dict:
-            all_allele_alignments_dict[key_to_process] = {}
+        key_to_process = f"{alignment_pair[0]};{alignment_pair[1]}"
 
-        # create files for allele protein translation
-        query_locus_file_path = os.path.join(schema, schema_files[locus])
-        alignment_file_path = os.path.join(schema, schema_files[alignment_before_underscore])
-        alleles_query_locus_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{locus}")
-        alleles_alignment_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{alignment_before_underscore}")
+        if not key_to_process in alignments_dict_allele:
+            alignments_dict_allele[key_to_process] = {}
 
-        locus_translation_successful = True
-        alignment_translation_successful = True
-        if locus not in allele_protein_translation_dict:
-            locus_translation_successful = locus_alleles_protein_translation(query_locus_file_path, alleles_query_locus_protein_file_path)
-            allele_protein_translation_dict[locus] = alleles_query_locus_protein_file_path
-
-        if alignment_before_underscore not in allele_protein_translation_dict:
-            alignment_translation_successful = locus_alleles_protein_translation(alignment_file_path, alleles_alignment_protein_file_path)
-            allele_protein_translation_dict[alignment_before_underscore] = alleles_alignment_protein_file_path
-
-        # if these entries are still not on the dictionary it means the protein translation was not successful
-        # so we skip them and don't run BLASTp for them
-        if not alignment_translation_successful or not locus_translation_successful:
-            print(f"\tSkipped alignment: {alignment_before_underscore} - {i}/{total_alignments} -> Failure in protein translation.")
-            continue
+        print(f"Blasting {locus} representative vs {alignment_before_underscore} alleles and vice versa.")
 
         # Run Blast for representative A - Alleles B
-        allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
+        allele_blast_results_file = os.path.join(blast_results_alignments_dir, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
         blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], 
                       '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
         
-        print(f"Running BLAST for alignment: {locus} against {alignment_before_underscore} - {i}/{total_alignments}")
         run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, alignment_ratio_threshold, pident_threshold)
         
-        alleles_report_file.writelines(allele_alignments_string)
-        all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
+        allele_alignments_string_list.append(allele_alignments_string)
+        alignments_dict_allele[key_to_process].update(allele_alignments_dict)
 
         # Run Blast for representative B - Alleles A (inverse)
-        allele_blast_results_file = os.path.join(blast_results_alignments, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
+        allele_blast_results_file = os.path.join(blast_results_alignments_dir, f"blast_results_alignment_{locus}_-_{alignment_before_underscore}.tsv")
         blast_args = ['blastp', '-query', representative_file_dict[alignment_before_underscore], '-subject', allele_protein_translation_dict[locus], 
                       '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
-        
-        print(f"Running BLAST for the reverse of previous alignment.")
+
         run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, alignment_ratio_threshold, pident_threshold)
         
-        alleles_report_file.writelines(allele_alignments_string)
-        all_allele_alignments_dict[key_to_process].update(allele_alignments_dict)
+        allele_alignments_string_list.append(allele_alignments_string)
+        alignments_dict_allele[key_to_process].update(allele_alignments_dict)
+
+    return [alignments_dict_allele, allele_alignments_string_list]
 
 def cluster_based_on_ids(processed_representatives_dict):
     """
@@ -868,8 +855,8 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     alleles_protein_dir = os.path.join(output_directory, "alleles_protein")
     create_directory(alleles_protein_dir)
 
-    blast_results_alignments = os.path.join(blast_results_all_representatives, "alignments")
-    create_directory(blast_results_alignments)
+    blast_results_alignments_dir = os.path.join(blast_results_all_representatives, "alignments")
+    create_directory(blast_results_alignments_dir)
 
     report_file_path = os.path.join(output_directory, "report.tsv")
     alleles_report_file_path = os.path.join(output_directory, "alleles_report.tsv")
@@ -882,43 +869,74 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     total_loci = len(loci)
     representative_blast_results = []
 
-    file_paths = [schema, alleles_protein_dir, blast_results_alignments]
-
     i=1
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(run_all_representative_blasts_multiprocessing, loci, repeat(blast_results_all_representatives), 
                                 repeat(representative_file_dict), repeat(all_representatives_file)):
             
-            representative_blast_results.append([res[0], process_blast_results(res[1], constants_threshold)])
+            alignment_strings, filtered_alignments_dict = process_blast_results(res[1], constants_threshold)
+            representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
 
             print(f"Running BLAST for locus representatives: {res[0]} - {i}/{total_loci}")
             i+=1
 
     with open(report_file_path, 'w') as report_file:
         report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
-                                "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
-                                "Pident - Percentage of identical matches\n"])
+                            "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
+                            "Pident - Percentage of identical matches\n"])
         
-        with open(alleles_report_file_path, 'w') as alleles_report_file:
-            alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"]) 
+        locus_alignment_pairs_list = []
+        for alignment in representative_blast_results:
+            locus_alignment_pairs_list.append([alignment[0], remove_inverse_alignments(alignment[1][1], all_representatives_alignments_dict)])
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=cpu) as executor:
-                executor.map(run_blast_representatives_vs_alleles_multiprocessing, representative_blast_results, repeat(all_representatives_alignments_dict), 
-                                        repeat(all_allele_alignments_dict), repeat(allele_protein_translation_dict), repeat(file_paths), repeat(representative_file_dict),
-                                        repeat(report_file), repeat(alleles_report_file), repeat(constants_threshold))
+            report_file.writelines(alignment[1][0])
 
-
-    # calculate unique loci that had significant alignments
+    # calculate unique loci that had significant alignments            
     unique_alignent_ids = set()
     for key in all_representatives_alignments_dict.keys():
         for locus in key.split(";"):
             unique_alignent_ids.add(locus.split('_')[0])
-
+            
     unique_ids_file_path = os.path.join(output_directory, "unique_loci.tsv")
     with open(unique_ids_file_path, 'w') as unique_ids_file:
         unique_ids_file.writelines(["Locus\n"])
         unique_ids_file.writelines([f"{id}\n" for id in unique_alignent_ids])
+    
+    locus_alignment_pairs_list = [[locus, alignment_pair] for [locus, alignment_pair] in locus_alignment_pairs_list if locus in unique_alignent_ids]
+
+    schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
+    number_of_loci = len(schema_files)
+
+    for i, alignment_data in enumerate(locus_alignment_pairs_list, 1):
+        locus = alignment_data[0]
+
+        # create files for allele protein translation
+        query_locus_file_path = os.path.join(schema, schema_files[locus])
+        alleles_query_locus_protein_file_path = os.path.join(alleles_protein_dir, f"protein_translation_{locus}")
+        locus_translation_successful = True
+
+        if locus not in allele_protein_translation_dict:
+            print(f"Translating: {locus} {i}/{number_of_loci}")
+            locus_translation_successful = locus_alleles_protein_translation(query_locus_file_path, alleles_query_locus_protein_file_path)
+            allele_protein_translation_dict[locus] = alleles_query_locus_protein_file_path
+
+        # if these entries are still not on the dictionary it means the protein translation was not successful
+        # so we skip them and don't run BLASTp for them
+        if not locus_translation_successful:
+            print(f"\tSkipped alignment: {locus} -> Failure in protein translation.")
+            continue
+
+    with open(alleles_report_file_path, 'w') as alleles_report_file:
+        alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"])
+        with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+            for res in executor.map(run_blast_representatives_vs_alleles_multiprocessing, locus_alignment_pairs_list,
+                                    repeat(allele_protein_translation_dict), repeat(blast_results_alignments_dir), repeat(representative_file_dict)
+                                    , repeat(constants_threshold)):
+                
+                all_allele_alignments_dict.update(res[0])
+                for string in res[1]:
+                    alleles_report_file.writelines(string)
 
     with open(info_file_path, 'a') as info_file:
         info_file.writelines([f"There were {len(unique_alignent_ids)} different Loci that aligned with another Locus.\n\n"])
