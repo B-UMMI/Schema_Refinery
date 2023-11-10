@@ -358,7 +358,7 @@ def main(input_file, output_file, email, threads, retry, api_key):
 
     Returns
     -------
-        Creates a file with linked ids.
+    Creates a file with linked ids.
     """
 
     # read identifiers

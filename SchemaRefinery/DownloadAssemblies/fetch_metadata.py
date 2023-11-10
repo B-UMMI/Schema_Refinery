@@ -125,7 +125,7 @@ def write_to_file(metadata_df, output_directory):
 
     Returns
     -------
-        Creates file in the output directory
+    Creates file in the output directory
     """
     metadata_df.to_csv(os.path.join(output_directory, "metadata.tsv"),
                        mode='a', header=not os.path.exists(os.path.join(

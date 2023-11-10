@@ -46,9 +46,7 @@ def download_file(url, file_name, retry):
     Returns
     -------
     response : str
-        A string indicating that the download failed or
-        an object with the response information for a
-        successful download.
+        A string indicating that the download failed or an object with the response information for a successful download.
     """
     tries = 0
     while tries < retry:

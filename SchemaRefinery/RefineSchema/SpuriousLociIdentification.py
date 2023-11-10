@@ -11,15 +11,15 @@ from itertools import repeat
 try:
     from RefineSchema.constants import OPACITY, MAX_GAP_UNITS
     from RefineSchema.other import hex_to_rgb
-    from RefineSchema.file_functions import check_and_delete_file, create_directory
-    from RefineSchema.sequence_functions import translate_dna
-    from RefineSchema.blast_functions import run_blast_with_args_only
+    from utils.file_functions import check_and_delete_file, create_directory
+    from utils.sequence_functions import translate_dna
+    from utils.blast_functions import run_blast_with_args_only
 except ModuleNotFoundError:
     from SchemaRefinery.RefineSchema.constants import OPACITY, MAX_GAP_UNITS
     from SchemaRefinery.RefineSchema.other import hex_to_rgb
-    from SchemaRefinery.RefineSchema.file_functions import check_and_delete_file, create_directory
-    from SchemaRefinery.RefineSchema.sequence_functions import translate_dna
-    from SchemaRefinery.RefineSchema.blast_functions import run_blast_with_args_only
+    from SchemaRefinery.utils.file_functions import check_and_delete_file, create_directory
+    from SchemaRefinery.utils.sequence_functions import translate_dna
+    from SchemaRefinery.utils.blast_functions import run_blast_with_args_only
 
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
@@ -257,7 +257,7 @@ def renderGraphs(processed_representatives_dict: dict, all_allele_alignments_dic
 
     Returns
     -------
-        Generates the graph based on input dict in graph dir path.
+    Generates the graph based on input dict in graph dir path.
     """
 
     all_graphs_structured = []
@@ -275,7 +275,7 @@ def renderGraphs(processed_representatives_dict: dict, all_allele_alignments_dic
                                     template='ggplot2'
                                     )
             alleles_graphs = []
-            for (allele_key, allele_alignments) in alleles_dict[key].items():
+            for (allele_key, allele_alignments) in all_allele_alignments_dict[key].items():
                 alignment_graph = build_graph(allele_key, allele_alignments).update_layout(
                                             showlegend=False,
                                             bargap=0.5,
@@ -308,7 +308,7 @@ def renderGraphs(processed_representatives_dict: dict, all_allele_alignments_dic
             )
         )
 
-        dp.save_report(datapane_view, os.path.join(output_directory, f'{filename}.html'))
+        dp.save_report(datapane_view, os.path.join(graph_dir, f'{filename}.html'))
 
     else:
         print(f"Did not print a graph for {filename} - there were no graphs to process.")
@@ -608,7 +608,8 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
     Returns
     -------
     successful_translation : bool
-        Creates files in the folder alleles_protein_dir and returns a bool if translation was successful or not.
+        if translation was successful or not
+    Creates files in the folder alleles_protein_dir.
     """
 
     successful_translation = False
@@ -858,7 +859,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
     Returns
     -------
-        Various files created during the process and graphs representing the potential paralogous loci.
+    Various files created during the process and graphs representing the potential paralogous loci.
     """
     
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
@@ -902,7 +903,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         with open(alleles_report_file_path, 'w') as alleles_report_file:
             alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"]) 
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=cpu) as executor:
                 executor.map(run_blast_representatives_vs_alleles_multiprocessing, representative_blast_results, repeat(all_representatives_alignments_dict), 
                                         repeat(all_allele_alignments_dict), repeat(allele_protein_translation_dict), repeat(file_paths), repeat(representative_file_dict),
                                         repeat(report_file), repeat(alleles_report_file), repeat(constants_threshold))

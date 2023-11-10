@@ -63,7 +63,7 @@ def handle_progress(block_num, block_size, total_size):
 
     Returns
     -------
-        Prints % of the download in terminal.
+    Prints % of the download in terminal.
     """
     read_data = 0
     # calculating the progress
