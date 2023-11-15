@@ -2,7 +2,8 @@ import subprocess
 
 
 def make_blast_db(input_fasta, output_path, db_type):
-    """Create a BLAST database.
+    """
+    Create a BLAST database.
 
     Parameters
     ----------
@@ -16,7 +17,8 @@ def make_blast_db(input_fasta, output_path, db_type):
 
     Returns
     -------
-        None, creates blast database
+        returns : No return
+            Creates blast database
     """
     blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
                    '-parse_seqids', '-dbtype', db_type]
@@ -34,7 +36,8 @@ def make_blast_db(input_fasta, output_path, db_type):
 def run_blast(blast_path, blast_db, fasta_file, blast_output,
               max_hsps=1, threads=1, ids_file=None, blast_task=None,
               max_targets=None):
-    """Execute BLAST.
+    """
+    Execute BLAST.
 
     Parameters
     ----------
@@ -87,6 +90,19 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     return stderr
 
 def run_blast_with_args_only(blast_args):
+    """
+    Runs BLAST based on input arguments.
+
+    Parameters
+    ----------
+    blast_args : list
+        Contains list with arguments used in subprocess.
+
+    Returns
+    -------
+    returns : No return
+        Generates BLAST files at output directory
+    """
     blast_proc = subprocess.Popen(blast_args,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE)

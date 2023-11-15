@@ -11,6 +11,7 @@ def create_directory(dir:str):
 
     Returns
     -------
+    return : No return
         Creates directory at desired dir path.
     """
 
@@ -28,6 +29,7 @@ def check_and_delete_file(file:str):
 
     Returns
     -------
+    return : No return
         Deletes file based on input file path
     """
     

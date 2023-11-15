@@ -713,7 +713,7 @@ def run_blast_representatives_vs_alleles_multiprocessing(locus_alignment_pairs_l
     -------
     return : list
         alignments_dict_allele : dict
-            Dict used downstream to generate graphs for alleles (this is subdict that updated master dict).
+            Dict used downstream to generate graphs for alleles (this is subdict that updates master dict).
         allele_alignments_string_list : list
             List used to write to allele report file.
     """

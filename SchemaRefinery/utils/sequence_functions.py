@@ -6,6 +6,22 @@ except ModuleNotFoundError:
     from SchemaRefinery.RefineSchema.constants import DNA_BASES
 
 def check_str_alphabet(input_string, alphabet):
+    """
+    Verifies if input string has valid characters.
+
+    Parameters
+    ----------
+    input_string : str
+        Input sequence.
+    alphabet : list
+        Contains list or set of letters for comparison.
+
+    Returns
+    -------
+    return : bool
+        if is or not multiple.
+    """
+
     alphabet_chars = set(alphabet)
     string_chars = set(input_string)
 
@@ -14,6 +30,22 @@ def check_str_alphabet(input_string, alphabet):
     return len(diff) == 0
 
 def check_str_multiple(input_string, number):
+    """
+    Verifies is input string length is multiple of input number.
+    
+    Parameters
+    ----------
+    input_string : str
+        Input sequence.
+    number : int
+        number to be multiple of.
+
+    Returns
+    -------
+    return : bool
+        if is or not multiple.    
+    """
+
     return (len(input_string) % number) == 0
 
 def reverse_str(string):
@@ -92,6 +124,30 @@ def translate_sequence(dna_str, table_id, cds=True):
     return protseq
 
 def translate_dna_aux(dna_sequence, method, table_id, cds=True):
+    """
+    Translates DNA sequence to protein sequence.
+
+    Parameters
+    ----------
+    dna_sequence : str
+        DNA sequence.
+    table_id : string
+        translation method.
+    method : str
+        Translation orientatio.
+    cds : bool
+        if has cds.
+
+    Returns
+    -------
+    argh : exception
+        returns exception error.
+    protseq : str
+        Translated sequence.
+    myseq : str
+        Original DNA sequence.
+    """
+
     myseq = dna_sequence
     # try to translate original sequence
     if method == 'original':
@@ -125,6 +181,32 @@ def translate_dna_aux(dna_sequence, method, table_id, cds=True):
     return [protseq, myseq]
 
 def translate_dna(dna_sequence, table_id, min_len, cds=True):
+    """
+    Translates DNA sequence to protein sequence.
+
+    Parameters
+    ----------
+    dna_sequence : str
+        DNA sequence.
+    table_id : string
+        translation method.
+    min_len : int
+        minimum length for the sequence.
+    cds : bool
+        if has cds
+
+    Returns
+    -------
+    returns : str
+        If failed verification steps, return string explaining what has failed.
+    translated_seq : str
+        Translated sequence.
+    coding_strand : str
+        DNA strand in correct orientation.
+    exception_str : str
+        String containing all the exceptions found.
+    """
+
     original_seq = dna_sequence.upper()
     exception_collector = []
     strands = ['sense', 'antisense', 'revsense', 'revantisense']
