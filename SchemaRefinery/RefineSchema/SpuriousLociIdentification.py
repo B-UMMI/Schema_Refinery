@@ -832,7 +832,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     representative_file_dict : dict
         Dict that contains the path to representative file for each locus(key).    
     all_representatives_file : str
-        path to the consolidated file of all of the represenatives sequences.    
+        Path to the consolidated file of all of the represenatives sequences.    
     output_directory : str
         Path to the output dir.
     schema : str
@@ -951,6 +951,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     clustered_loci = cluster_based_on_ids(processed_representatives_dict)
     clustered_loci_list = []
     paralagous_path = os.path.join(output_directory,'potential_paralagous_groups.tsv')
+
     with open(paralagous_path,'w') as paralogous_file:
         for group in clustered_loci:
             paralogous_file.write('\t'.join(map(str, group)) + '\n')
@@ -961,7 +962,35 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     for i, representative_dict in enumerate(split_dict_into_clusters(clustered_loci_list, processed_representatives_dict), 1):
         renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
 
-def main(schema, output_directory, missing_classes_fasta, alignment_ratio_threshold, pident_threshold, cpu):
+def translate_representatives(schema, output_directory, alignment_ratio_threshold, pident_threshold):
+    """
+    Translates the representatives and creates the necessary files and dicts for downstream usage.
+
+    Parameters
+    ----------
+    schema : str
+        Path to the schema directory.
+    output_directory : str
+        Path to the output directory.
+    alignment_ratio_threshold : float
+        Aligment ratio threshold for BLAST.
+    pident_threshold : int
+        Pident threshold for BLAST
+
+    Returns
+    -------
+    returns : list
+        filtered_loci : set
+            Contains all of the loci ids found in the schema.
+        representative_file_dict : dict
+            Dict that contains the path to representative file for each locus(key). 
+        all_representatives_file : str
+            Path to the consolidated file of all of the represenatives sequences.
+        info_file_path : str
+            Path to the info file, where the number of loci found and how many loci aligned with another locus is written.
+        constants_threshold : list
+            List that contains two constants, alignment_ratio_threshold, pident_threshold.
+    """
 
     info_file_path = os.path.join(output_directory, "info.txt")
 
@@ -1019,11 +1048,20 @@ def main(schema, output_directory, missing_classes_fasta, alignment_ratio_thresh
         info_file.writelines([
             f"Found {len(loci)} in schema dir (short).\n"
             ])
+        
+    return [filtered_loci, representative_file_dict, all_representatives_file, info_file_path, constants_threshold]
+        
+def main(schema, output_directory, missing_classes_fasta, alignment_ratio_threshold, pident_threshold, cpu):
+
+    loci, representative_file_dict, all_representatives_file, info_file_path, constants_threshold = translate_representatives(schema, 
+                                                                                                                              output_directory, 
+                                                                                                                              alignment_ratio_threshold, 
+                                                                                                                              pident_threshold)
 
     # only received the schema
     if schema and not missing_classes_fasta:
         # Run BLAST for all representatives
-        run_blast_for_all_representatives(filtered_loci, representative_file_dict, all_representatives_file, output_directory, 
+        run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, output_directory, 
                                           schema, info_file_path, constants_threshold, cpu)
 
     # received both arguments
