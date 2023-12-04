@@ -1,4 +1,6 @@
+import hashlib
 from Bio.Seq import Seq
+from Bio import SeqIO
 
 try:
     from RefineSchema.constants import DNA_BASES
@@ -251,3 +253,36 @@ def translate_dna(dna_sequence, table_id, min_len, cds=True):
     else:
         exception_str = ','.join(exception_collector)
         return exception_str
+
+def read_fasta_file(file):
+    """
+    Reads fasta files and puts it into a dict.
+
+    Parameters
+    ----------
+    file : str
+        Path to the file
+
+    Returns
+    -------
+    return : dict
+        Returns iterator to read fasta file.
+    """
+    return SeqIO.parse(file, "fasta")
+
+def seq_to_hash(seq):
+    """
+    Converts a sequence into hash.
+
+    Parameters
+    ----------
+    seq : str
+        Sequence
+
+    Returns
+    -------
+    return : str
+        Returns a hash string.
+    """
+    
+    return hashlib.sha256(seq.encode('utf-8')).hexdigest()

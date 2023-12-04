@@ -110,11 +110,6 @@ def refine_schema():
     parser.add_argument('-s', '--schema', type=str,
                         required=True, dest='schema',
                         help='')
-    
-    parser.add_argument('-msf', '--missing-classes-fasta', type=str,
-                        default=None,
-                        required=False, dest='missing_classes_fasta',
-                        help='')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
