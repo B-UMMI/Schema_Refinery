@@ -4,34 +4,40 @@ import concurrent.futures
 from itertools import repeat
 
 try:
-    from utils.sequence_functions import read_fasta_file, seq_to_hash
+    from utils.file_functions import check_and_delete_file, create_directory
+    from utils.sequence_functions import seq_to_hash, read_fasta_file_iterator
+    from utils.kmers_functions import determine_minimizers
+    from utils.sequence_functions import translate_dna
+    from utils.clustering_functions import minimizer_clustering
 except ModuleNotFoundError:
-    from SchemaRefinery.utils.sequence_functions import read_fasta_file, seq_to_hash
+    from SchemaRefinery.utils.file_functions import check_and_delete_file, create_directory
+    from SchemaRefinery.utils.sequence_functions import seq_to_hash, read_fasta_file_iterator
+    from SchemaRefinery.utils.kmers_functions import determine_minimizers
+    from SchemaRefinery.utils.sequence_functions import translate_dna
+    from SchemaRefinery.utils.clustering_functions import minimizer_clustering
 
-def hash_sequences(file_paths):
+def hash_sequences(file_path):
     """
-    Hashes sequences in fasta files based on input file_paths.
+    Hashes sequences in fasta file based on input file_path.
 
     Parameters
     ----------
-    file_paths : list
+    file_paths : str
         Contains file path to the fasta files.
 
     Returns
     -------
-    return : list
+    hash_list : set
         Returns a list containing all of the sequences hashes present in the input files.
     """
 
-    hash_list = []
-    for fasta in file_paths.values():
+    hash_set = set()
+    for rec in read_fasta_file_iterator(file_path):
+        hash_set.add(seq_to_hash(str(rec.seq)))
 
-        for seq in read_fasta_file(fasta).values():
-            hash_list += seq_to_hash(seq)
+    return hash_set
 
-    return hash_list
-
-def not_included_cds(hash_list, file_path_cds):
+def fetch_not_included_cds(all_schema_hashes, file_path_cds):
     """
     Compares the hashes list with the hashes obtained from cds.
 
@@ -42,23 +48,66 @@ def not_included_cds(hash_list, file_path_cds):
 
     Returns
     -------
-    return : dict
+    not_included_cds : dict
         Returns dict with key as fasta header and value as fasta sequence.
     """
-
     not_included_cds = {}
-    for record in read_fasta_file(file_path_cds):
-        if seq_to_hash(str(record.seq)) not in hash_list:
-            not_included_cds[record.id] = str(record.seq)
+    i = 1
+
+    for rec in read_fasta_file_iterator(file_path_cds):
+        print(f"Processed {i} CDS")
+        i +=1
+        if seq_to_hash(str(rec.seq)) not in all_schema_hashes:
+            not_included_cds[rec.id] = rec.seq
 
     return not_included_cds
 
-def main(schema, output_directory, allelecall_directory):
-
-    schema_file_paths = {f.replace(".fasta", ""): os.path.join(schema, f) for f in os.listdir(schema) if not os.path.isdir(f) and f.endswith(".fasta")}
+def main(schema, output_directory, allelecall_directory, cpu):
+    create_directory(output_directory)
     file_path_cds = os.path.join(allelecall_directory, "temp", "3_cds_preprocess", "cds_deduplication", "distinct_cds_merged.fasta")
-
     if not os.path.exists(file_path_cds):
-        sys.exit(f"Error: {file_path_cds} must exist, make sure that allele call was run using --no-cleanup flag.")
+        sys.exit(f"Error: {file_path_cds} must exist, make sure that AlleleCall was run using --no-cleanup flag.")
 
-    not_included_cds = not_included_cds(hash_sequences(schema_file_paths), file_path_cds)
+    print("Identifying CDS not present in the schema...")
+    schema_file_paths = {f.replace(".fasta", ""): os.path.join(schema, f) for f in os.listdir(schema) if not os.path.isdir(f) and f.endswith(".fasta")}
+    all_schema_hashes = set()
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(hash_sequences, schema_file_paths.values()):
+            all_schema_hashes.update(res)
+
+    not_included_cds = fetch_not_included_cds(all_schema_hashes, file_path_cds)
+
+    print(f"Identified {len(not_included_cds)} CDS not present in the schema")
+
+    cds_not_present_file_path = os.path.join(output_directory, "CDS_not_found.fasta")
+    with open(cds_not_present_file_path, 'w') as cds_not_found:
+        for id, sequence in not_included_cds.items():
+            cds_not_found.writelines(id+"\n")
+            cds_not_found.writelines(str(sequence)+"\n")
+
+
+    print("Translate not found CDS...")
+    cds_translation_dict = {}
+    cds_not_present_translation_file_path = os.path.join(output_directory, "CDS_not_found_translation.fasta")
+    i = 1
+    total = len(not_included_cds)
+    with open(cds_not_present_translation_file_path, 'w') as translation:
+        for id, sequence in not_included_cds.items():
+            print(f"Translated {i}/{total} CDS")
+            i +=1
+            protein_translation = str(translate_dna(str(sequence), "Standard", 0, True)[0][0])
+            cds_translation_dict[id] = protein_translation
+            translation.writelines(id+"\n")
+            translation.writelines(protein_translation+"\n")
+
+    schema_short = os.path.join(schema, "short")
+    schema_short_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and f.endswith(".fasta")}
+
+    print("Extracting minimizers for the translated sequences and clustering...")
+
+    reps_groups = {}
+    clusters = {}
+    reps_sequences = {}
+    clusters, reps_sequences, reps_groups  = minimizer_clustering(cds_translation_dict, 5, 5, True, 1, clusters, reps_sequences, reps_groups, 20, 0.9, True)
+
+

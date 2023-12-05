@@ -1,11 +1,9 @@
 import os
 import copy
-import shutil
 import datapane as dp
 import plotly.graph_objs as go
 import plotly.express.colors as graph_colors
 import concurrent.futures
-import networkx as nx
 from itertools import repeat
 
 try:
@@ -14,12 +12,14 @@ try:
     from utils.file_functions import check_and_delete_file, create_directory
     from utils.sequence_functions import translate_dna
     from utils.blast_functions import run_blast_with_args_only
+    from utils.clustering_functions import cluster_based_on_ids
 except ModuleNotFoundError:
     from SchemaRefinery.RefineSchema.constants import OPACITY, MAX_GAP_UNITS
     from SchemaRefinery.RefineSchema.other import hex_to_rgb
     from SchemaRefinery.utils.file_functions import check_and_delete_file, create_directory
     from SchemaRefinery.utils.sequence_functions import translate_dna
     from SchemaRefinery.utils.blast_functions import run_blast_with_args_only
+    from SchemaRefinery.utils.clustering_functions import cluster_based_on_ids
 
 ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
@@ -759,35 +759,6 @@ def run_blast_representatives_vs_alleles_multiprocessing(locus_alignment_pairs_l
 
     return [alignments_dict_allele, allele_alignments_string_list]
 
-def cluster_based_on_ids(processed_representatives_dict):
-    """
-    Employs networkx to cluster loci based on their connection through ids. e.g x matches with y
-    y matches with z, all three are put inside the same cluster x,y and z.
-
-    Parameters
-    ----------
-    processed_representatives_dict : dict
-        dict that contains all the info necessary to render the graphs.
-
-    Returns
-    -------
-    connected : list
-        list containing lists of the ids of the clustered loci.
-    """
-
-    pairs_list = set()
-
-    for key in processed_representatives_dict.keys():
-
-        pairs_list.add(tuple([locus.split("_")[0] for locus in key.split(";")]))
-
-    G = nx.Graph()
-    G.add_edges_from(pairs_list)
-
-    connected = nx.connected_components(G)
-
-    return connected
-
 def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
     """
     Based on the determined clusters at cluster_based_on_ids function, splits the processed_representatives_dict
@@ -1053,7 +1024,7 @@ def translate_representatives(schema, output_directory, alignment_ratio_threshol
         
 def main(schema, output_directory, alignment_ratio_threshold, pident_threshold, cpu):
 
-    output_directory = os.path.join(output_directory,"paralagous_loci")
+    output_directory = os.path.join(output_directory)
     
     loci, representative_file_dict, all_representatives_file, info_file_path, constants_threshold = translate_representatives(schema, 
                                                                                                                               output_directory, 

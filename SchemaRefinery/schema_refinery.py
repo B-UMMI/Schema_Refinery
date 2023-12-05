@@ -116,6 +116,12 @@ def refine_schema():
                         help='Path to the directory to which '
                              'files will be stored.')
     
+    parser.add_argument('-ac', '--allelecall-directory', type=str,
+                        required=True, dest='allelecall_directory',
+                        help='Path to the directory that contains'
+                             'allele call directory that was run'
+                             'with --no-cleanup.')
+    
     parser.add_argument('-a', '--aligment_ratio_threshold', type=float,
                         required=False, dest='alignment_ratio_threshold',
                         default=0.6, help='Threshold value for aligment (float: 0-1).')
@@ -127,7 +133,7 @@ def refine_schema():
     parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
                     default=1, 
-                    help='Number of threads to run blast instances.')
+                    help='Number of cpus to run blast instances.')
 
     args = parser.parse_args()
 

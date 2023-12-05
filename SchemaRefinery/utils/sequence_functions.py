@@ -254,7 +254,7 @@ def translate_dna(dna_sequence, table_id, min_len, cds=True):
         exception_str = ','.join(exception_collector)
         return exception_str
 
-def read_fasta_file(file):
+def read_fasta_file_iterator(file):
     """
     Reads fasta files and puts it into a dict.
 
@@ -270,6 +270,9 @@ def read_fasta_file(file):
     """
     return SeqIO.parse(file, "fasta")
 
+def read_fasta_file_dict(file):
+    return SeqIO.to_dict(SeqIO.parse(file, "fasta"))
+
 def seq_to_hash(seq):
     """
     Converts a sequence into hash.
@@ -284,5 +287,5 @@ def seq_to_hash(seq):
     return : str
         Returns a hash string.
     """
-    
+
     return hashlib.sha256(seq.encode('utf-8')).hexdigest()
