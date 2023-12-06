@@ -8,7 +8,8 @@ except:
     from SchemaRefinery.utils.kmers_functions import determine_minimizers
     from SchemaRefinery.utils.list_functions import flatten_list
 
-def select_representatives(kmers, reps_groups, clustering_sim):
+def select_representatives(kmers, reps_groups, clustering_sim, prot_len_dict, 
+                           kmers_dict, protid):
     """Determine the clusters a sequence can be added to.
 
     Determines the set of clusters that a sequence can be
@@ -38,21 +39,52 @@ def select_representatives(kmers, reps_groups, clustering_sim):
         and the decimal proportion of shared distinct
         kmers.
     """
-    current_reps = [reps_groups[k] for k in kmers if k in reps_groups]
-    current_reps = flatten_list(current_reps)
-  
+    current_reps = {k[1] : reps_groups[k[0]] for k in kmers if k[0] in reps_groups}
+
     # count number of kmer hits per representative
-    counts = Counter(current_reps)
+    counts = Counter(flatten_list(current_reps.values()))
     selected_reps = [(k, v/len(kmers))
                      for k, v in counts.items()
                      if v/len(kmers) >= clustering_sim]
+            
 
     # sort by identifier and then by similarity to always get same order
     selected_reps = sorted(selected_reps, key=lambda x: x[0])
     selected_reps = sorted(selected_reps, key=lambda x: x[1], reverse=True)
+
+    selected_reps_coverage = [rep[0] for rep in selected_reps]
+    
+    rep_coverage = {}
+    print(protid)
+    for rep in selected_reps_coverage:
+        rep_coverage = sorted([k for k, v in current_reps.items() 
+                                    if rep in v], key=lambda x: x)
+        kmer_coverage_value = kmer_coverage(rep_coverage)
+        print(rep,kmer_coverage(rep_coverage)/prot_len_dict[rep])
             
     return selected_reps
 
+def kmer_coverage(position):
+    
+    length_query = 0
+    size = 0
+    len_positions = len(position)-1
+    for i, pos in enumerate(position):
+        if i == 0:
+            start = pos
+            end = pos+4
+        elif pos <= end:
+            end = pos+4
+        else:
+            size += end-start+1
+            start = pos
+            end = pos+4
+            
+        if i == len_positions:
+            end = pos+4
+            size += end-start+1
+    return size
+    
 def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                          offset, clusters, reps_sequences, reps_groups,
                          seq_num_cluster, clustering_sim, grow):
@@ -129,29 +161,23 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
             as values.
     """
     # several = {}
-    protein_length = {}
+    
+    prot_len_dict = {protid: len(protein) for protid, protein 
+                     in sorted_sequences.items()}
+    
+    kmers_dict = {}
     for protid, protein in sorted_sequences.items():
-        protein_length[protid] = len(protein)
-        
         minimizers = determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
                                              position=position)
-        coverage_kmers = []
-        for i, kmer in enumerate(minimizers):
-            if i == 1:
-                start = kmer[1]
-                shift = kmer[1]
-            elif kmer[1] >= shift and kmer[1] <= shift+5:
-                shift = kmer[1]
-            else:
-                coverage_kmers.append([start, shift])
-                
-                
+        
         distinct_minimizers = set(minimizers)
-
+        
+        kmers_dict[protid] = [kmer[0] for kmer in distinct_minimizers]
         selected_reps = select_representatives(distinct_minimizers,
                                                reps_groups,
-                                               clustering_sim)
+                                               clustering_sim, prot_len_dict,
+                                               kmers_dict, protid)
         
         top = (len(selected_reps)
                if len(selected_reps) < seq_num_cluster
@@ -173,7 +199,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
         else:
             if grow is True:
                 for k in distinct_minimizers:
-                    reps_groups.setdefault(k, []).append(protid)
+                    reps_groups.setdefault(k[0], []).append(protid)
 
                 clusters[protid] = [(protid, 1.0, len(protein),
                                     len(minimizers), len(distinct_minimizers))]

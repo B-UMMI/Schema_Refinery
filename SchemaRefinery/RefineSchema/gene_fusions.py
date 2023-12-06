@@ -76,13 +76,19 @@ def main(schema, output_directory, allelecall_directory, cpu):
             all_schema_hashes.update(res)
 
     not_included_cds = fetch_not_included_cds(all_schema_hashes, file_path_cds)
-
-    print(f"Identified {len(not_included_cds)} CDS not present in the schema")
+    
+    file_invalid_cds = os.path.join(allelecall_directory,"invalid_cds.txt")
+    with open(file_invalid_cds, 'r') as invalid:
+        for invalid_line in invalid.read().splitlines():
+            del not_included_cds[invalid_line.split(":")[0]]
+        print(f"Removing invalid CDS.")
+        
+    print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
 
     cds_not_present_file_path = os.path.join(output_directory, "CDS_not_found.fasta")
     with open(cds_not_present_file_path, 'w') as cds_not_found:
         for id, sequence in not_included_cds.items():
-            cds_not_found.writelines(id+"\n")
+            cds_not_found.writelines(">"+id+"\n")
             cds_not_found.writelines(str(sequence)+"\n")
 
 
@@ -92,12 +98,12 @@ def main(schema, output_directory, allelecall_directory, cpu):
     i = 1
     total = len(not_included_cds)
     with open(cds_not_present_translation_file_path, 'w') as translation:
-        for id, sequence in not_included_cds.items():
+        for id_s, sequence in not_included_cds.items():
             print(f"Translated {i}/{total} CDS")
             i +=1
-            protein_translation = str(translate_dna(str(sequence), "Standard", 0, True)[0][0])
-            cds_translation_dict[id] = protein_translation
-            translation.writelines(id+"\n")
+            protein_translation = str(translate_dna(str(sequence), 11, 0, True)[0][0])
+            cds_translation_dict[id_s] = protein_translation
+            translation.writelines(id_s+"\n")
             translation.writelines(protein_translation+"\n")
 
     schema_short = os.path.join(schema, "short")

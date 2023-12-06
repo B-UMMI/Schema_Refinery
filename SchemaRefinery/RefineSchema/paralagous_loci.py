@@ -617,7 +617,7 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
         lines = alleles_file.readlines()
         with open(translation_file_path, "w") as alleles_protein_file:
             for j in range(0, len(lines), 2):
-                protein_translation = translate_dna(lines[j+1].replace('\n', ''), "Standard", 0, cds=False)
+                protein_translation = translate_dna(lines[j+1].replace('\n', ''), 11, 0, cds=False)
                 # the protein translation was succesful
                 if isinstance(protein_translation, list):
                     alleles_protein_file.writelines([lines[j]])
