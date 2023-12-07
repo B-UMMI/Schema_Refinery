@@ -8,8 +8,8 @@ except:
     from SchemaRefinery.utils.kmers_functions import determine_minimizers
     from SchemaRefinery.utils.list_functions import flatten_list
 
-def select_representatives(kmers, reps_groups, clustering_sim, prot_len_dict, 
-                           kmers_dict, protid):
+def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
+                           prot_len_dict, protid):
     """Determine the clusters a sequence can be added to.
 
     Determines the set of clusters that a sequence can be
@@ -29,6 +29,8 @@ def select_representatives(kmers, reps_groups, clustering_sim, prot_len_dict,
         Sequences are added to clusters if they
         share a minimum decimal proportion of
         distinct k-mers with a cluster representative.
+    prot_len_dict : dict
+        Containins the length of each CDS
 
     Returns
     -------
@@ -39,10 +41,12 @@ def select_representatives(kmers, reps_groups, clustering_sim, prot_len_dict,
         and the decimal proportion of shared distinct
         kmers.
     """
+    # {start_pos: [[rep_cds1], [rep_cds2]]}
     current_reps = {k[1] : reps_groups[k[0]] for k in kmers if k[0] in reps_groups}
-
+    
     # count number of kmer hits per representative
     counts = Counter(flatten_list(current_reps.values()))
+    #selects reps_loci based on number of kmer hits/total number of kmers
     selected_reps = [(k, v/len(kmers))
                      for k, v in counts.items()
                      if v/len(kmers) >= clustering_sim]
@@ -54,13 +58,21 @@ def select_representatives(kmers, reps_groups, clustering_sim, prot_len_dict,
 
     selected_reps_coverage = [rep[0] for rep in selected_reps]
     
-    rep_coverage = {}
+    rep_coverage_all = {}
     print(protid)
+    #Calculates the coverage of query kmers over rep prot sequence
     for rep in selected_reps_coverage:
-        rep_coverage = sorted([k for k, v in current_reps.items() 
+        #get the pos of kmer if that kmer hit against the rep kmers
+        rep_coverage = sorted([k for k, v in current_reps.items()
                                     if rep in v], key=lambda x: x)
-        kmer_coverage_value = kmer_coverage(rep_coverage)
-        print(rep,kmer_coverage(rep_coverage)/prot_len_dict[rep])
+        #calculate coverage
+        rep_coverage_all[rep] = kmer_coverage(rep_coverage)/prot_len_dict[rep]
+        print("\t",rep,kmer_coverage(rep_coverage)/prot_len_dict[rep])
+    
+    selected_reps = [(*rep,rep_coverage_all[rep[0]]) 
+                     for rep in selected_reps 
+                     if rep_coverage_all[rep[0]] >= clustering_cov]
+        
             
     return selected_reps
 
@@ -87,7 +99,7 @@ def kmer_coverage(position):
     
 def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                          offset, clusters, reps_sequences, reps_groups,
-                         seq_num_cluster, clustering_sim, grow):
+                         seq_num_cluster, clustering_sim, clustering_cov, grow):
     """Cluster sequences based on shared distinct minimizers.
 
     Parameters
@@ -165,19 +177,17 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     prot_len_dict = {protid: len(protein) for protid, protein 
                      in sorted_sequences.items()}
     
-    kmers_dict = {}
     for protid, protein in sorted_sequences.items():
         minimizers = determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
                                              position=position)
-        
+        ##remove this because I am using start pos
         distinct_minimizers = set(minimizers)
         
-        kmers_dict[protid] = [kmer[0] for kmer in distinct_minimizers]
         selected_reps = select_representatives(distinct_minimizers,
                                                reps_groups,
-                                               clustering_sim, prot_len_dict,
-                                               kmers_dict, protid)
+                                               clustering_sim, clustering_cov,
+                                               prot_len_dict, protid)
         
         top = (len(selected_reps)
                if len(selected_reps) < seq_num_cluster
