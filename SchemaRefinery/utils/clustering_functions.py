@@ -9,7 +9,7 @@ except:
     from SchemaRefinery.utils.list_functions import flatten_list
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
-                           prot_len_dict, protid):
+                           prot_len_dict, protid, window_size):
     """Determine the clusters a sequence can be added to.
 
     Determines the set of clusters that a sequence can be
@@ -50,8 +50,11 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     selected_reps = [(k, v/len(kmers))
                      for k, v in counts.items()
                      if v/len(kmers) >= clustering_sim]
-            
 
+    for s in selected_reps:
+        if s[1] > 1:
+            print(counts)
+            
     # sort by identifier and then by similarity to always get same order
     selected_reps = sorted(selected_reps, key=lambda x: x[0])
     selected_reps = sorted(selected_reps, key=lambda x: x[1], reverse=True)
@@ -66,8 +69,8 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
         rep_coverage = sorted([k for k, v in current_reps.items()
                                     if rep in v], key=lambda x: x)
         #calculate coverage
-        rep_coverage_all[rep] = kmer_coverage(rep_coverage)/prot_len_dict[rep]
-        print("\t",rep,kmer_coverage(rep_coverage)/prot_len_dict[rep])
+        rep_coverage_all[rep] = kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep]
+        print("\t",rep,kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep])
     
     selected_reps = [(*rep,rep_coverage_all[rep[0]]) 
                      for rep in selected_reps 
@@ -76,7 +79,7 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
             
     return selected_reps
 
-def kmer_coverage(position):
+def kmer_coverage(position, window_size):
     
     length_query = 0
     size = 0
@@ -84,16 +87,16 @@ def kmer_coverage(position):
     for i, pos in enumerate(position):
         if i == 0:
             start = pos
-            end = pos+4
+            end = pos+window_size-1
         elif pos <= end:
-            end = pos+4
+            end = pos+window_size-1
         else:
             size += end-start+1
             start = pos
-            end = pos+4
+            end = pos+window_size-1
             
         if i == len_positions:
-            end = pos+4
+            end = pos+window_size-1
             size += end-start+1
     return size
     
@@ -187,7 +190,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
         selected_reps = select_representatives(distinct_minimizers,
                                                reps_groups,
                                                clustering_sim, clustering_cov,
-                                               prot_len_dict, protid)
+                                               prot_len_dict, protid, window_size)
         
         top = (len(selected_reps)
                if len(selected_reps) < seq_num_cluster
@@ -200,7 +203,8 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                                                       selected_reps[i][1],
                                                       len(protein),
                                                       len(minimizers),
-                                                      len(distinct_minimizers)))
+                                                      len(distinct_minimizers),
+                                                      selected_reps[i][2]))
 ####
             # if len(selected_reps) > 1:
             #     for i in range(0, top):
@@ -209,7 +213,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
         else:
             if grow is True:
                 for k in distinct_minimizers:
-                    reps_groups.setdefault(k[0], []).append(protid)
+                    reps_groups.setdefault(k[0], set()).add(protid)
 
                 clusters[protid] = [(protid, 1.0, len(protein),
                                     len(minimizers), len(distinct_minimizers))]

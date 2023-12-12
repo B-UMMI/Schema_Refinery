@@ -56,13 +56,15 @@ def fetch_not_included_cds(all_schema_hashes, file_path_cds):
 
     for rec in read_fasta_file_iterator(file_path_cds):
         print(f"Processed {i} CDS")
-        i +=1
-        if seq_to_hash(str(rec.seq)) not in all_schema_hashes:
+        i += 1
+        seq_hash = seq_to_hash(str(rec.seq))
+        if seq_hash not in all_schema_hashes:
             not_included_cds[rec.id] = rec.seq
 
     return not_included_cds
 
-def main(schema, output_directory, allelecall_directory, cpu):
+def main(schema, output_directory, allelecall_directory,clustering_sim, 
+         clustering_cov, cpu):
     create_directory(output_directory)
     file_path_cds = os.path.join(allelecall_directory, "temp", "3_cds_preprocess", "cds_deduplication", "distinct_cds_merged.fasta")
     if not os.path.exists(file_path_cds):
@@ -95,16 +97,20 @@ def main(schema, output_directory, allelecall_directory, cpu):
     print("Translate not found CDS...")
     cds_translation_dict = {}
     cds_not_present_translation_file_path = os.path.join(output_directory, "CDS_not_found_translation.fasta")
+    protein_hashes = []
     i = 1
     total = len(not_included_cds)
     with open(cds_not_present_translation_file_path, 'w') as translation:
         for id_s, sequence in not_included_cds.items():
             print(f"Translated {i}/{total} CDS")
-            i +=1
+            i += 1
             protein_translation = str(translate_dna(str(sequence), 11, 0, True)[0][0])
-            cds_translation_dict[id_s] = protein_translation
-            translation.writelines(id_s+"\n")
-            translation.writelines(protein_translation+"\n")
+            prot_hash = seq_to_hash(protein_translation)
+            if prot_hash not in protein_hashes:
+                protein_hashes.append(prot_hash)
+                cds_translation_dict[id_s] = protein_translation
+                translation.writelines(id_s+"\n")
+                translation.writelines(protein_translation+"\n")
 
     schema_short = os.path.join(schema, "short")
     schema_short_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and f.endswith(".fasta")}
@@ -114,6 +120,14 @@ def main(schema, output_directory, allelecall_directory, cpu):
     reps_groups = {}
     clusters = {}
     reps_sequences = {}
-    clusters, reps_sequences, reps_groups  = minimizer_clustering(cds_translation_dict, 5, 5, True, 1, clusters, reps_sequences, reps_groups, 20, 0.9, True)
+    clusters, reps_sequences, reps_groups  = minimizer_clustering(cds_translation_dict, 
+                                                                  5, 5, True, 1, clusters, 
+                                                                  reps_sequences, reps_groups, 
+                                                                  20, clustering_sim, clustering_cov, 
+                                                                  True)
+    print("Filtering clusters...")
+    for cluster in clusters:
+        if cluster
+        
 
 

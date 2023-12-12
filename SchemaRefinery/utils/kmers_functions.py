@@ -32,7 +32,7 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
     return kmers
 
 def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
-                         position=False):
+                         position=False,guarantee_tip=False):
     """Determine minimizers for a input string.
 
     Determines minimizers for a string based on lexicographical
@@ -68,6 +68,17 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
     minimizers = []
     # determine total number of windows
     last_window = (len(kmers)-adjacent_kmers)
+    
+    #Guarantee that first and last kmer are part of the minimizers list
+    if guarantee_tip:
+        #extract fist and last kmer and remove them from kmers list
+        first_kmer = kmers[0].pop()
+        last_kmer = kmers[-1].pop()
+        #add first kmer to minimizers list
+        minimizers.extend(first_kmer)
+        #update the total number of windows
+        last_window = (len(kmers)-adjacent_kmers)
+        
     while i <= last_window:
         # get kmers in current window
         window = kmers[i:i+adjacent_kmers]
@@ -112,4 +123,8 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
                 sell = True
             previous = minimizer[0]
 
+    #add last kmer
+    if guarantee_tip:
+        minimizers.extend(last_kmer)
+        
     return minimizers

@@ -130,6 +130,16 @@ def refine_schema():
                     required=False, dest='pident_threshold',
                     default=70, help='Threshold value for pident values (int 0-100).')
     
+    parser.add_argument('-cs', '--clustering-sim', type=int,
+                    required=False, dest='clustering_sim',
+                    default=0.9, help='Similiriaty value for'
+                    'kmers representatives (float: 0-1).')
+    
+    parser.add_argument('-cc', '--clustering-cov', type=int,
+                    required=False, dest='clustering_cov',
+                    default=0.9, help='Coverage value for'
+                    'kmers representatives (float: 0-1).')
+    
     parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
                     default=1, 
