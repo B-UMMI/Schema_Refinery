@@ -50,10 +50,6 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     selected_reps = [(k, v/len(kmers))
                      for k, v in counts.items()
                      if v/len(kmers) >= clustering_sim]
-
-    for s in selected_reps:
-        if s[1] > 1:
-            print(counts)
             
     # sort by identifier and then by similarity to always get same order
     selected_reps = sorted(selected_reps, key=lambda x: x[0])
@@ -62,7 +58,6 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     selected_reps_coverage = [rep[0] for rep in selected_reps]
     
     rep_coverage_all = {}
-    print(protid)
     #Calculates the coverage of query kmers over rep prot sequence
     for rep in selected_reps_coverage:
         #get the pos of kmer if that kmer hit against the rep kmers
@@ -70,7 +65,6 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
                                     if rep in v], key=lambda x: x)
         #calculate coverage
         rep_coverage_all[rep] = kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep]
-        print("\t",rep,kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep])
     
     selected_reps = [(*rep,rep_coverage_all[rep[0]]) 
                      for rep in selected_reps 
@@ -154,7 +148,12 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     clustering_sim : float
         Similarity threshold to cluster a sequence into
         a cluster.
-
+    clustering_cov : float
+        Coverage threshold to cluster a sequence into
+        a cluster.
+    grow : bool
+        If clusters are fixed or create new clusters.
+        
     Returns
     -------
     A list with the following elements:
@@ -177,6 +176,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     """
     # several = {}
     
+    #get len of all the proteins
     prot_len_dict = {protid: len(protein) for protid, protein 
                      in sorted_sequences.items()}
     
@@ -190,7 +190,8 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
         selected_reps = select_representatives(distinct_minimizers,
                                                reps_groups,
                                                clustering_sim, clustering_cov,
-                                               prot_len_dict, protid, window_size)
+                                               prot_len_dict, protid, 
+                                               window_size)
         
         top = (len(selected_reps)
                if len(selected_reps) < seq_num_cluster
@@ -216,7 +217,12 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                     reps_groups.setdefault(k[0], set()).add(protid)
 
                 clusters[protid] = [(protid, 1.0, len(protein),
-                                    len(minimizers), len(distinct_minimizers))]
+                                    len(minimizers), 
+                                    len(distinct_minimizers),
+                                    kmer_coverage(
+                                        sorted([i[1] for i in distinct_minimizers])
+                                        ,window_size)/len(protein))]
+                
                 reps_sequences[protid] = protein
 
     # print(several)

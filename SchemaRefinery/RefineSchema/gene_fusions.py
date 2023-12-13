@@ -83,7 +83,7 @@ def main(schema, output_directory, allelecall_directory,clustering_sim,
     with open(file_invalid_cds, 'r') as invalid:
         for invalid_line in invalid.read().splitlines():
             del not_included_cds[invalid_line.split(":")[0]]
-        print(f"Removing invalid CDS.")
+        print("Removing invalid CDS.")
         
     print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
 
@@ -120,14 +120,19 @@ def main(schema, output_directory, allelecall_directory,clustering_sim,
     reps_groups = {}
     clusters = {}
     reps_sequences = {}
+    
+    #sort by size of proteins
+    cds_translation_dict = {k: v for k, v in sorted(cds_translation_dict.items(),
+                                                     key=lambda x: len(x[1]),
+                                                     reverse=True)}
+                                                                                                       
     clusters, reps_sequences, reps_groups  = minimizer_clustering(cds_translation_dict, 
                                                                   5, 5, True, 1, clusters, 
                                                                   reps_sequences, reps_groups, 
                                                                   20, clustering_sim, clustering_cov, 
                                                                   True)
     print("Filtering clusters...")
-    for cluster in clusters:
-        if cluster
+
         
 
 
