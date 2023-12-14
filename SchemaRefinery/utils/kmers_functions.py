@@ -32,7 +32,7 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
     return kmers
 
 def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
-                         position=False,guarantee_tip=False):
+                         position=False, guarantee_tip=False):
     """Determine minimizers for a input string.
 
     Determines minimizers for a string based on lexicographical
@@ -72,10 +72,10 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
     #Guarantee that first and last kmer are part of the minimizers list
     if guarantee_tip:
         #extract fist and last kmer and remove them from kmers list
-        first_kmer = kmers[0].pop()
-        last_kmer = kmers[-1].pop()
+        first_kmer = kmers.pop(0)
+        last_kmer = kmers.pop(-1)
         #add first kmer to minimizers list
-        minimizers.extend(first_kmer)
+        minimizers.append(first_kmer)
         #update the total number of windows
         last_window = (len(kmers)-adjacent_kmers)
         
@@ -125,6 +125,41 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
 
     #add last kmer
     if guarantee_tip:
-        minimizers.extend(last_kmer)
+        minimizers.append(last_kmer)
         
     return minimizers
+
+def kmer_coverage(position, window_size):
+    """
+    Determines the sum size of kmers for coverage calculation
+    
+    Parameters
+    ----------
+    position : list
+        List with starting positions sorted from initial to last.
+    window_size : int
+        Size of each minimizers window.
+        
+    Returns
+    -------
+    size : int
+        Total sum of the kmers size based on starting position.
+    """
+    length_query = 0
+    size = 0
+    len_positions = len(position)-1
+    for i, pos in enumerate(position):
+        if i == 0:
+            start = pos
+            end = pos+window_size-1
+        elif pos <= end:
+            end = pos+window_size-1
+        else:
+            size += end-start+1
+            start = pos
+            end = pos+window_size-1
+            
+        if i == len_positions:
+            end = pos+window_size-1
+            size += end-start+1
+    return size

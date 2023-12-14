@@ -65,6 +65,7 @@ def fetch_not_included_cds(all_schema_hashes, file_path_cds):
 
 def main(schema, output_directory, allelecall_directory,clustering_sim, 
          clustering_cov, cpu):
+    
     create_directory(output_directory)
     file_path_cds = os.path.join(allelecall_directory, "temp", "3_cds_preprocess", "cds_deduplication", "distinct_cds_merged.fasta")
     if not os.path.exists(file_path_cds):
@@ -113,7 +114,9 @@ def main(schema, output_directory, allelecall_directory,clustering_sim,
                 translation.writelines(protein_translation+"\n")
 
     schema_short = os.path.join(schema, "short")
-    schema_short_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and f.endswith(".fasta")}
+    schema_short_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) 
+                                for f in os.listdir(schema_short) 
+                                if not os.path.isdir(f) and f.endswith(".fasta")}
 
     print("Extracting minimizers for the translated sequences and clustering...")
 
@@ -132,7 +135,15 @@ def main(schema, output_directory, allelecall_directory,clustering_sim,
                                                                   20, clustering_sim, clustering_cov, 
                                                                   True)
     print("Filtering clusters...")
-
-        
+    singleton_clusters = {}
+    filtered_clusters = {}
+    
+    #Separate singletons and clusters with more than one protein
+    for k, v in clusters.items():
+        if len(v) > 1:
+            filtered_clusters[k] = v
+        else:
+            singleton_clusters[k] = v
+    
 
 

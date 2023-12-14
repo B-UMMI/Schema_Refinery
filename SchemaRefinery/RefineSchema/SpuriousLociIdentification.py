@@ -16,5 +16,5 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
 
     if allelecall_directory:
         print("Identifying genes fusions...")
-        gene_fusions_output = os.path.join(output_directory, "CDS_processing")
+        gene_fusions_output = os.path.join(output_directory, "gene_fusions")
         gene_fusions.main(schema, gene_fusions_output, allelecall_directory, cpu)

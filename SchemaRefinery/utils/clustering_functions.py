@@ -2,10 +2,10 @@ import networkx as nx
 from collections import Counter
 
 try:
-    from utils.kmers_functions import determine_minimizers
+    from utils.kmers_functions import determine_minimizers, kmer_coverage
     from utils.list_functions import flatten_list
 except:
-    from SchemaRefinery.utils.kmers_functions import determine_minimizers
+    from SchemaRefinery.utils.kmers_functions import determine_minimizers, kmer_coverage
     from SchemaRefinery.utils.list_functions import flatten_list
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
@@ -72,27 +72,6 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
         
             
     return selected_reps
-
-def kmer_coverage(position, window_size):
-    
-    length_query = 0
-    size = 0
-    len_positions = len(position)-1
-    for i, pos in enumerate(position):
-        if i == 0:
-            start = pos
-            end = pos+window_size-1
-        elif pos <= end:
-            end = pos+window_size-1
-        else:
-            size += end-start+1
-            start = pos
-            end = pos+window_size-1
-            
-        if i == len_positions:
-            end = pos+window_size-1
-            size += end-start+1
-    return size
     
 def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                          offset, clusters, reps_sequences, reps_groups,
@@ -183,7 +162,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     for protid, protein in sorted_sequences.items():
         minimizers = determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
-                                             position=position)
+                                             position=position,guarantee_tip=True)
         ##remove this because I am using start pos
         distinct_minimizers = set(minimizers)
         
