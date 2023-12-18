@@ -1,5 +1,5 @@
 import subprocess
-
+import os
 
 def make_blast_db(input_fasta, output_path, db_type):
     """
@@ -110,3 +110,34 @@ def run_blast_with_args_only(blast_args):
     stderr = blast_proc.stderr.readlines()
     if len(stderr) > 0:
         print(stderr)
+
+def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results_all_representatives, representative_file_dict, all_representatives_file):
+    """
+    This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
+
+    Parameters
+    ----------
+    id : str
+        id of the locus that will be blasted against all of the representatives sequences.
+    blast_results_all_representatives : str
+        Path to the folder were to store blast results.
+    representative_file_dict : dict
+        Dict that contains the path to representative file for each locus(key).
+    all_representatives_file : str
+        path to the consolidated file of all of the represenatives sequences.
+
+    Returns
+    -------
+    return : list
+        locus : str
+        blast_results_file : str
+        list containing locus id and path to the blast_results_file for that locus.
+    """
+
+    blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{id_}.tsv")
+    blast_args = [blast_type, '-query', representative_file_dict[id_], '-subject', all_representatives_file, 
+                  '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', blast_results_file]
+
+    run_blast_with_args_only(blast_args)
+
+    return [id_, blast_results_file]
