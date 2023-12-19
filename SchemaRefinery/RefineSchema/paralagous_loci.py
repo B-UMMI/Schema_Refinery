@@ -231,8 +231,8 @@ def process_blast_results_for_alleles(blast_results_file, alignment_ratio_thresh
                 subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"], 
                                              entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
 
-                final_query_start_stop_list, alignment_query = af.cluster_based_on_ids(query_start_stops_list)
-                final_subject_start_stop_list, alignment_subject = af.cluster_based_on_ids(subject_start_stops_list)
+                final_query_start_stop_list, alignment_query = af.join_intervals(query_start_stops_list)
+                final_subject_start_stop_list, alignment_subject = af.join_intervals(subject_start_stops_list)
 
                 alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
                 alignment_subject.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
@@ -504,11 +504,12 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                                 repeat(all_representatives_file)):
             
             alignment_strings, filtered_alignments_dict = af.process_blast_results(res[1], constants_threshold)
+            
             representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
 
             print(f"Running BLAST for locus representatives: {res[0]} - {i}/{total_loci}")
             i+=1
-
+    
     with open(report_file_path, 'w') as report_file:
         report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
                             "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
@@ -521,23 +522,25 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
             report_file.writelines(alignment[1][0])
 
     # calculate unique loci that had significant alignments            
-    unique_alignent_ids = set()
+    unique_aligment_ids = set()
     for key in all_representatives_alignments_dict.keys():
         for locus in key.split(";"):
-            unique_alignent_ids.add(locus.split('_')[0])
-            
+            unique_aligment_ids.add(locus.split('_')[0])
+
+    print(f"Total of {len(unique_aligment_ids)} loci had aligments with "
+          "other loci with the chosen thresholds.")
+    
     unique_ids_file_path = os.path.join(output_directory, "unique_loci.tsv")
     with open(unique_ids_file_path, 'w') as unique_ids_file:
         unique_ids_file.writelines(["Locus\n"])
-        unique_ids_file.writelines([f"{id}\n" for id in unique_alignent_ids])
+        unique_ids_file.writelines([f"{id}\n" for id in unique_aligment_ids])
     
-    locus_alignment_pairs_list = [[locus, alignment_pair] for [locus, alignment_pair] in locus_alignment_pairs_list if locus in unique_alignent_ids]
+    locus_alignment_pairs_list = [[locus, alignment_pair] for [locus, alignment_pair] in locus_alignment_pairs_list if locus in unique_aligment_ids]
 
     schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
-    number_of_loci = len(schema_files)
+    number_of_loci = len(unique_aligment_ids)
 
-    for i, alignment_data in enumerate(locus_alignment_pairs_list, 1):
-        locus = alignment_data[0]
+    for i, locus in enumerate(unique_aligment_ids, 1):
 
         # create files for allele protein translation
         query_locus_file_path = os.path.join(schema, schema_files[locus])
@@ -567,7 +570,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                     alleles_report_file.writelines(string)
 
     with open(info_file_path, 'a') as info_file:
-        info_file.writelines([f"There were {len(unique_alignent_ids)} different Loci that aligned with another Locus.\n\n"])
+        info_file.writelines([f"There were {len(unique_aligment_ids)} different Loci that aligned with another Locus.\n\n"])
 
     print("Rendering graphs...")
 
