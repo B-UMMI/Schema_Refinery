@@ -7,23 +7,23 @@ import concurrent.futures
 from itertools import repeat
 
 try:
-    from RefineSchema.constants import OPACITY
-    from RefineSchema.other import hex_to_rgb
-    from utils.file_functions import check_and_delete_file, create_directory
-    from utils.sequence_functions import translate_dna
-    from utils.blast_functions import run_blast_with_args_only, run_all_representative_blasts_multiprocessing
-    from utils.clustering_functions import cluster_based_on_ids
-    from utils.aligment_functions import *
+    from utils import (file_functions as ff, 
+                       sequence_functions as sf, 
+                       clustering_functions as cf, 
+                       blast_functions as bf, 
+                       aligments_functions as af)
+    from RefineSchema import (constants as ct,
+                              other as o)
 except ModuleNotFoundError:
-    from SchemaRefinery.RefineSchema.constants import OPACITY
-    from SchemaRefinery.RefineSchema.other import hex_to_rgb
-    from SchemaRefinery.utils.file_functions import check_and_delete_file, create_directory
-    from SchemaRefinery.utils.sequence_functions import translate_dna
-    from SchemaRefinery.utils.blast_functions import run_blast_with_args_only, run_all_representative_blasts_multiprocessing
-    from SchemaRefinery.utils.clustering_functions import cluster_based_on_ids
-    from SchemaRefinery.utils.aligment_functions import *
+    from SchemaRefinery.utils import (file_functions as ff, 
+                                      sequence_functions as sf, 
+                                      clustering_functions as cf, 
+                                      blast_functions as bf, 
+                                      aligments_functions as af)
+    from SchemaRefinery.RefineSchema import (constants as ct,
+                                             other as o)
 
-ALIGNMENT_COLORS = [f"rgba{(*hex_to_rgb(color), OPACITY)}" for color in graph_colors.qualitative.Alphabet]
+ALIGNMENT_COLORS = [f"rgba{(*o.hex_to_rgb(color), ct.OPACITY)}" for color in graph_colors.qualitative.Alphabet]
 LOCI_COLORS = graph_colors.qualitative.Plotly[:3]
 
 def build_graph(key: str, alignments: list):
@@ -191,7 +191,7 @@ def process_blast_results_for_alleles(blast_results_file, alignment_ratio_thresh
             Used downstream to generate graphs.
     """
 
-    alignments_dict = get_alignments_dict(blast_results_file)
+    alignments_dict = af.get_alignments_dict(blast_results_file)
 
     # filter alignments by pident
     alignments_dict = {key: [alignment for alignment in alignments if alignment["pident"] >= pident_threshold] 
@@ -231,8 +231,8 @@ def process_blast_results_for_alleles(blast_results_file, alignment_ratio_thresh
                 subject_start_stops_list = [[entry["subject_start"], entry["subject_end"], entry["query_length"], entry["subject_length"], 
                                              entry["pident"], entry["gaps"], entry["length"], entry["query"], entry["subject"], entry] for entry in alignments]
 
-                final_query_start_stop_list, alignment_query = join_intervals(query_start_stops_list)
-                final_subject_start_stop_list, alignment_subject = join_intervals(subject_start_stops_list)
+                final_query_start_stop_list, alignment_query = af.cluster_based_on_ids(query_start_stops_list)
+                final_subject_start_stop_list, alignment_subject = af.cluster_based_on_ids(subject_start_stops_list)
 
                 alignment_query.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
                 alignment_subject.sort(key=lambda x : (x["stop"] - x["start"]), reverse=True)
@@ -332,7 +332,7 @@ def locus_alleles_protein_translation(locus_file_path, translation_file_path):
         lines = alleles_file.readlines()
         with open(translation_file_path, "w") as alleles_protein_file:
             for j in range(0, len(lines), 2):
-                protein_translation = translate_dna(lines[j+1].replace('\n', ''), 11, 0, cds=False)
+                protein_translation = sf.translate_dna(lines[j+1].replace('\n', ''), 11, 0, cds=False)
                 # the protein translation was succesful
                 if isinstance(protein_translation, list):
                     alleles_protein_file.writelines([lines[j]])
@@ -394,7 +394,7 @@ def run_blast_representatives_vs_alleles_multiprocessing(locus_alignment_pairs_l
         blast_args = ['blastp', '-query', representative_file_dict[locus], '-subject', allele_protein_translation_dict[alignment_before_underscore], 
                       '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
         
-        run_blast_with_args_only(blast_args)
+        bf.run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, alignment_ratio_threshold, pident_threshold)
         
         allele_alignments_string_list.append(allele_alignments_string)
@@ -405,7 +405,7 @@ def run_blast_representatives_vs_alleles_multiprocessing(locus_alignment_pairs_l
         blast_args = ['blastp', '-query', representative_file_dict[alignment_before_underscore], '-subject', allele_protein_translation_dict[locus], 
                       '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident', '-out', allele_blast_results_file]
 
-        run_blast_with_args_only(blast_args)
+        bf.run_blast_with_args_only(blast_args)
         allele_alignments_string, allele_alignments_dict = process_blast_results_for_alleles(allele_blast_results_file, alignment_ratio_threshold, pident_threshold)
         
         allele_alignments_string_list.append(allele_alignments_string)
@@ -415,7 +415,7 @@ def run_blast_representatives_vs_alleles_multiprocessing(locus_alignment_pairs_l
 
 def split_dict_into_clusters(clustered_loci, processed_representatives_dict):
     """
-    Based on the determined clusters at cluster_based_on_ids function, splits the processed_representatives_dict
+    Based on the determined clusters at cf.cluster_based_on_ids function, splits the processed_representatives_dict
     into various dicts and puts them inside a list.
 
     Parameters
@@ -475,13 +475,13 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     """
     
     blast_results_all_representatives = os.path.join(output_directory, "blast_results_all_representatives")
-    create_directory(blast_results_all_representatives)
+    ff.create_directory(blast_results_all_representatives)
 
     alleles_protein_dir = os.path.join(output_directory, "alleles_protein")
-    create_directory(alleles_protein_dir)
+    ff.create_directory(alleles_protein_dir)
 
     blast_results_alignments_dir = os.path.join(blast_results_all_representatives, "alignments")
-    create_directory(blast_results_alignments_dir)
+    ff.create_directory(blast_results_alignments_dir)
 
     report_file_path = os.path.join(output_directory, "report.tsv")
     alleles_report_file_path = os.path.join(output_directory, "alleles_report.tsv")
@@ -497,13 +497,13 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     i=1
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(run_all_representative_blasts_multiprocessing, 
+        for res in executor.map(bf.run_all_representative_blasts_multiprocessing, 
                                 loci, repeat('blastp'), 
                                 repeat(blast_results_all_representatives), 
                                 repeat(representative_file_dict), 
                                 repeat(all_representatives_file)):
             
-            alignment_strings, filtered_alignments_dict = process_blast_results(res[1], constants_threshold)
+            alignment_strings, filtered_alignments_dict = af.process_blast_results(res[1], constants_threshold)
             representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
 
             print(f"Running BLAST for locus representatives: {res[0]} - {i}/{total_loci}")
@@ -516,7 +516,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         
         locus_alignment_pairs_list = []
         for alignment in representative_blast_results:
-            locus_alignment_pairs_list.append([alignment[0], remove_inverse_alignments(alignment[1][1], all_representatives_alignments_dict)])
+            locus_alignment_pairs_list.append([alignment[0], af.remove_inverse_alignments(alignment[1][1], all_representatives_alignments_dict)])
 
             report_file.writelines(alignment[1][0])
 
@@ -572,11 +572,11 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     print("Rendering graphs...")
 
     graph_dir = os.path.join(output_directory,'graphs')
-    create_directory(graph_dir)
+    ff.create_directory(graph_dir)
 
-    processed_representatives_dict = process_alignments_for_graphs(all_representatives_alignments_dict)
+    processed_representatives_dict = af.process_alignments_for_graphs(all_representatives_alignments_dict)
 
-    clustered_loci = cluster_based_on_ids(processed_representatives_dict)
+    clustered_loci = cf.cluster_based_on_ids(processed_representatives_dict)
     clustered_loci_list = []
     paralagous_path = os.path.join(output_directory,'potential_paralagous_groups.tsv')
 
@@ -624,15 +624,15 @@ def translate_representatives(schema, output_directory, alignment_ratio_threshol
 
     constants_threshold = [alignment_ratio_threshold, pident_threshold]
     # delete the old file for the info if it already exists, since we're appending lines to it
-    check_and_delete_file(info_file_path)
+    ff.check_and_delete_file(info_file_path)
 
     # use short directory fasta files
     schema_short = os.path.join(schema, "short")
 
-    create_directory(output_directory)
+    ff.create_directory(output_directory)
 
     representatives_dir = os.path.join(output_directory, "representatives")
-    create_directory(representatives_dir)
+    ff.create_directory(representatives_dir)
 
     schema_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f) for f in os.listdir(schema_short) if not os.path.isdir(f) and f.endswith(".fasta")}
     loci = set(schema_files_paths.keys())
@@ -654,7 +654,7 @@ def translate_representatives(schema, output_directory, alignment_ratio_threshol
                 locus_file_lines = locus_file.readlines()
                 found_translation = False
                 for j in range(0, len(locus_file_lines), 2):
-                    protein_translation = translate_dna(locus_file_lines[j+1].replace('\n', ''), "Standard", 0, cds=False)
+                    protein_translation = sf.translate_dna(locus_file_lines[j+1].replace('\n', ''), "Standard", 0, cds=False)
                     # the protein translation was succesful
                     if isinstance(protein_translation, list):
                         with open(representative_file, "w") as rep_file:

@@ -289,3 +289,24 @@ def seq_to_hash(seq):
     """
 
     return hashlib.sha256(seq.encode('utf-8')).hexdigest()
+
+def hash_sequences(file_path):
+    """
+    Hashes sequences in fasta file based on input file_path.
+
+    Parameters
+    ----------
+    file_paths : str
+        Contains file path to the fasta files.
+
+    Returns
+    -------
+    hash_list : set
+        Returns a list containing all of the sequences hashes present in the input files.
+    """
+
+    hash_set = set()
+    for rec in read_fasta_file_iterator(file_path):
+        hash_set.add(seq_to_hash(str(rec.seq)))
+
+    return hash_set

@@ -2,11 +2,11 @@ import networkx as nx
 from collections import Counter
 
 try:
-    from utils.kmers_functions import determine_minimizers, kmer_coverage
-    from utils.list_functions import flatten_list
+    from utils import (kmers_functions as kf,
+                       list_functions as lf)
 except:
-    from SchemaRefinery.utils.kmers_functions import determine_minimizers, kmer_coverage
-    from SchemaRefinery.utils.list_functions import flatten_list
+    from SchemaRefinery. utils import (kmers_functions as kf,
+                                       list_functions as lf)
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
                            prot_len_dict, protid, window_size):
@@ -45,7 +45,7 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     current_reps = {k[1] : reps_groups[k[0]] for k in kmers if k[0] in reps_groups}
     
     # count number of kmer hits per representative
-    counts = Counter(flatten_list(current_reps.values()))
+    counts = Counter(lf.flatten_list(current_reps.values()))
     #selects reps_loci based on number of kmer hits/total number of kmers
     selected_reps = [(k, v/len(kmers))
                      for k, v in counts.items()
@@ -64,7 +64,7 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
         rep_coverage = sorted([k for k, v in current_reps.items()
                                     if rep in v], key=lambda x: x)
         #calculate coverage
-        rep_coverage_all[rep] = kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep]
+        rep_coverage_all[rep] = kf.kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep]
     
     selected_reps = [(*rep,rep_coverage_all[rep[0]]) 
                      for rep in selected_reps 
@@ -160,7 +160,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                      in sorted_sequences.items()}
     
     for protid, protein in sorted_sequences.items():
-        minimizers = determine_minimizers(protein, window_size,
+        minimizers = kf.determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
                                              position=position,guarantee_tip=True)
         ##remove this because I am using start pos
@@ -198,7 +198,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                 clusters[protid] = [(protid, 1.0, len(protein),
                                     len(minimizers), 
                                     len(distinct_minimizers),
-                                    kmer_coverage(
+                                    kf.kmer_coverage(
                                         sorted([i[1] for i in distinct_minimizers])
                                         ,window_size)/len(protein))]
                 
