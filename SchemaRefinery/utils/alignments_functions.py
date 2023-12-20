@@ -302,7 +302,7 @@ def remove_inverse_alignments(alignments_dict, all_representatives_alignments_di
     Parameters
     ----------
     alignments_dict : dict
-        Aligment dict containing aligment of the representative loci.
+        alignment dict containing alignment of the representative loci.
     all_representatives_alignments_dict : dict
         Alignment dict containg all of representative loci without the inverse of themselves.
 

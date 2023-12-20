@@ -5,16 +5,16 @@ from itertools import repeat
 
 try:
     from utils import (file_functions as ff, 
-                       sequence_functions as sf, 
+                       sequence_functions as sf,
                        clustering_functions as cf, 
                        blast_functions as bf, 
-                       aligments_functions as af)
+                       alignments_functions as af)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff, 
                                       sequence_functions as sf, 
                                       clustering_functions as cf, 
                                       blast_functions as bf, 
-                                      aligments_functions as af)
+                                      alignments_functions as af)
 
 def fetch_not_included_cds(file_path_cds):
     """
@@ -41,7 +41,10 @@ def fetch_not_included_cds(file_path_cds):
     return not_included_cds
 
 def main(schema, output_directory, allelecall_directory, clustering_sim, 
-         clustering_cov, cpu):
+         clustering_cov, alignment_ratio_threshold_gene_fusions, 
+         pident_threshold_gene_fusions, cpu):
+    
+    constants_threshold = [alignment_ratio_threshold_gene_fusions, pident_threshold_gene_fusions]
     
     ff.create_directory(output_directory)
     file_path_cds = os.path.join(allelecall_directory, "unclassified_sequences.fasta")

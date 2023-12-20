@@ -116,19 +116,31 @@ def refine_schema():
                         help='Path to the directory to which '
                              'files will be stored.')
     
-    parser.add_argument('-ac', '--allelecall-directory', type=str,
+    parser.add_argument('-a', '--allelecall-directory', type=str,
                         required=True, dest='allelecall_directory',
                         help='Path to the directory that contains'
                              'allele call directory that was run'
                              'with --no-cleanup.')
     
-    parser.add_argument('-a', '--aligment_ratio_threshold', type=float,
-                        required=False, dest='alignment_ratio_threshold',
-                        default=0.6, help='Threshold value for aligment (float: 0-1).')
+    parser.add_argument('-ap', '--alignment_ratio_threshold_paralagous', type=float,
+                        required=False, dest='alignment_ratio_threshold_paralagous',
+                        default=0.6, help='Threshold value for alignment used to '
+                        'identify paralagous loci (float: 0-1).')
     
-    parser.add_argument('-p', '--pident_threshold', type=int,
-                    required=False, dest='pident_threshold',
-                    default=70, help='Threshold value for pident values (int 0-100).')
+    parser.add_argument('-pp', '--pident_threshold_paralagous', type=int,
+                    required=False, dest='pident_threshold_paralagous',
+                    default=70, help='Threshold value for pident values used to '
+                    'identify paralagous loci (int 0-100).')
+    
+    parser.add_argument('-ag', '--alignment_ratio_threshold_gene_fusions', type=float,
+                        required=False, dest='alignment_ratio_threshold_gene_fusions',
+                        default=0.9, help='Threshold value for alignment used to '
+                        'indentify gene fusions (float: 0-1).')
+    
+    parser.add_argument('-pg', '--pident_threshold_gene_fusions', type=int,
+                    required=False, dest='pident_threshold_gene_fusions',
+                    default=90, help='Threshold value for pident values used to '
+                    'indentify gene fusions (int 0-100).')
     
     parser.add_argument('-cs', '--clustering-sim', type=int,
                     required=False, dest='clustering_sim',

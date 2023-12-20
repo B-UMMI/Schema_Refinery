@@ -11,7 +11,7 @@ try:
                        sequence_functions as sf, 
                        clustering_functions as cf, 
                        blast_functions as bf, 
-                       aligments_functions as af)
+                       alignments_functions as af)
     from RefineSchema import (constants as ct,
                               other as o)
 except ModuleNotFoundError:
@@ -19,7 +19,7 @@ except ModuleNotFoundError:
                                       sequence_functions as sf, 
                                       clustering_functions as cf, 
                                       blast_functions as bf, 
-                                      aligments_functions as af)
+                                      alignments_functions as af)
     from SchemaRefinery.RefineSchema import (constants as ct,
                                              other as o)
 
@@ -504,12 +504,12 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                                 repeat(all_representatives_file)):
             
             alignment_strings, filtered_alignments_dict = af.process_blast_results(res[1], constants_threshold)
-            
-            representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
+            if len(alignment_strings) > 0:
+                representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
 
             print(f"Running BLAST for locus representatives: {res[0]} - {i}/{total_loci}")
             i+=1
-    
+    #write rep BLASTp matches to file
     with open(report_file_path, 'w') as report_file:
         report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
                             "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
@@ -521,26 +521,26 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
 
             report_file.writelines(alignment[1][0])
 
-    # calculate unique loci that had significant alignments            
-    unique_aligment_ids = set()
+    # calculate unique loci that had significant alignments           
+    unique_alignment_ids = set()
     for key in all_representatives_alignments_dict.keys():
         for locus in key.split(";"):
-            unique_aligment_ids.add(locus.split('_')[0])
+            unique_alignment_ids.add(locus.split('_')[0])
 
-    print(f"Total of {len(unique_aligment_ids)} loci had aligments with "
+    print(f"Total of {len(unique_alignment_ids)} loci had alignments with "
           "other loci with the chosen thresholds.")
     
     unique_ids_file_path = os.path.join(output_directory, "unique_loci.tsv")
     with open(unique_ids_file_path, 'w') as unique_ids_file:
         unique_ids_file.writelines(["Locus\n"])
-        unique_ids_file.writelines([f"{id}\n" for id in unique_aligment_ids])
+        unique_ids_file.writelines([f"{id}\n" for id in unique_alignment_ids])
     
-    locus_alignment_pairs_list = [[locus, alignment_pair] for [locus, alignment_pair] in locus_alignment_pairs_list if locus in unique_aligment_ids]
+    locus_alignment_pairs_list = [[locus, alignment_pair] for [locus, alignment_pair] in locus_alignment_pairs_list if locus in unique_alignment_ids]
 
     schema_files = {f.replace(".fasta", ""): f for f in os.listdir(schema) if f.endswith(".fasta")}
-    number_of_loci = len(unique_aligment_ids)
+    number_of_loci = len(unique_alignment_ids)
 
-    for i, locus in enumerate(unique_aligment_ids, 1):
+    for i, locus in enumerate(unique_alignment_ids, 1):
 
         # create files for allele protein translation
         query_locus_file_path = os.path.join(schema, schema_files[locus])
@@ -557,7 +557,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
         if not locus_translation_successful:
             print(f"\tSkipped alignment: {locus} -> Failure in protein translation.")
             continue
-
+    #Write to file the rep vs Allele BLASTp matches
     with open(alleles_report_file_path, 'w') as alleles_report_file:
         alleles_report_file.writelines(["Query\t", "Subject\t","Start-End\t", "Custom Score\n"])
         with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -570,7 +570,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
                     alleles_report_file.writelines(string)
 
     with open(info_file_path, 'a') as info_file:
-        info_file.writelines([f"There were {len(unique_aligment_ids)} different Loci that aligned with another Locus.\n\n"])
+        info_file.writelines([f"There were {len(unique_alignment_ids)} different Loci that aligned with another Locus.\n\n"])
 
     print("Rendering graphs...")
 
@@ -578,8 +578,10 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     ff.create_directory(graph_dir)
 
     processed_representatives_dict = af.process_alignments_for_graphs(all_representatives_alignments_dict)
-
+    
+    #cluster based on ids presence
     clustered_loci = cf.cluster_based_on_ids(processed_representatives_dict)
+    
     clustered_loci_list = []
     paralagous_path = os.path.join(output_directory,'potential_paralagous_groups.tsv')
 
@@ -593,7 +595,7 @@ def run_blast_for_all_representatives(loci, representative_file_dict, all_repres
     for i, representative_dict in enumerate(split_dict_into_clusters(clustered_loci_list, processed_representatives_dict), 1):
         renderGraphs(representative_dict, all_allele_alignments_dict, f"graphs_{i}", f"Graphs_{i}", graph_dir)
 
-def translate_representatives(schema, output_directory, alignment_ratio_threshold, pident_threshold):
+def translate_representatives(schema, output_directory):
     """
     Translates the representatives and creates the necessary files and dicts for downstream usage.
 
@@ -604,7 +606,7 @@ def translate_representatives(schema, output_directory, alignment_ratio_threshol
     output_directory : str
         Path to the output directory.
     alignment_ratio_threshold : float
-        Aligment ratio threshold for BLAST.
+        alignment ratio threshold for BLAST.
     pident_threshold : int
         Pident threshold for BLAST
 
@@ -624,8 +626,6 @@ def translate_representatives(schema, output_directory, alignment_ratio_threshol
     """
 
     info_file_path = os.path.join(output_directory, "info.txt")
-
-    constants_threshold = [alignment_ratio_threshold, pident_threshold]
     # delete the old file for the info if it already exists, since we're appending lines to it
     ff.check_and_delete_file(info_file_path)
 
@@ -680,16 +680,17 @@ def translate_representatives(schema, output_directory, alignment_ratio_threshol
             f"Found {len(loci)} in schema dir (short).\n"
             ])
         
-    return [filtered_loci, representative_file_dict, all_representatives_file, info_file_path, constants_threshold]
+    return [filtered_loci, representative_file_dict, all_representatives_file, info_file_path]
         
-def main(schema, output_directory, alignment_ratio_threshold, pident_threshold, cpu):
+def main(schema, output_directory, alignment_ratio_threshold_paralagous, 
+         pident_threshold_paralagous, cpu):
 
     output_directory = os.path.join(output_directory)
     
-    loci, representative_file_dict, all_representatives_file, info_file_path, constants_threshold = translate_representatives(schema, 
-                                                                                                                              output_directory, 
-                                                                                                                              alignment_ratio_threshold, 
-                                                                                                                              pident_threshold)
+    constants_threshold = [alignment_ratio_threshold_paralagous, pident_threshold_paralagous]
+    
+    loci, representative_file_dict, all_representatives_file, info_file_path = translate_representatives(schema,
+                                                                                                         output_directory)
 
     run_blast_for_all_representatives(loci, representative_file_dict, all_representatives_file, 
                                       output_directory, schema, info_file_path, constants_threshold, cpu)
