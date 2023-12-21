@@ -44,8 +44,14 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     # {start_pos: [[rep_cds1], [rep_cds2]]}
     current_reps = {k[1] : reps_groups[k[0]] for k in kmers if k[0] in reps_groups}
     
+    all_rep_pos = {}
+    for k, v in current_reps.items():
+        for value in v:
+            all_rep_pos.setdefault(value, []).append(k)
+
     # count number of kmer hits per representative
     counts = Counter(lf.flatten_list(current_reps.values()))
+    
     #selects reps_loci based on number of kmer hits/total number of kmers
     selected_reps = [(k, v/len(kmers))
                      for k, v in counts.items()
@@ -54,21 +60,21 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     # sort by identifier and then by similarity to always get same order
     selected_reps = sorted(selected_reps, key=lambda x: x[0])
     selected_reps = sorted(selected_reps, key=lambda x: x[1], reverse=True)
-
+    
     selected_reps_coverage = [rep[0] for rep in selected_reps]
     
     rep_coverage_all = {}
     #Calculates the coverage of query kmers over rep prot sequence
     for rep in selected_reps_coverage:
+                
         #get the pos of kmer if that kmer hit against the rep kmers
-        rep_coverage = sorted([k for k, v in current_reps.items()
-                                    if rep in v], key=lambda x: x)
+        rep_coverage = sorted(all_rep_pos[rep], key=lambda x: x)
         #calculate coverage
-        rep_coverage_all[rep] = kf.kmer_coverage(rep_coverage, window_size)/prot_len_dict[rep]
+        rep_coverage_all[rep] = kf.kmer_coverage(rep_coverage, window_size)/prot_len_dict[protid]
     
-    selected_reps = [(*rep,rep_coverage_all[rep[0]]) 
-                     for rep in selected_reps 
-                     if rep_coverage_all[rep[0]] >= clustering_cov]
+    selected_reps = [(*representative,rep_coverage_all[representative[0]]) 
+                     for representative in selected_reps 
+                     if rep_coverage_all[representative[0]] >= clustering_cov]
         
             
     return selected_reps
@@ -158,15 +164,15 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     #get len of all the proteins
     prot_len_dict = {protid: len(protein) for protid, protein 
                      in sorted_sequences.items()}
-    
+
     for protid, protein in sorted_sequences.items():
         minimizers = kf.determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
                                              position=position,guarantee_tip=True)
-        ##remove this because I am using start pos
-        distinct_minimizers = set(minimizers)
         
-        selected_reps = select_representatives(distinct_minimizers,
+        distinct_minimizers = set([minimizer[0] for minimizer in minimizers])
+        
+        selected_reps = select_representatives(minimizers,
                                                reps_groups,
                                                clustering_sim, clustering_cov,
                                                prot_len_dict, protid, 
@@ -192,14 +198,14 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
 ####
         else:
             if grow is True:
-                for k in distinct_minimizers:
+                for k in minimizers:
                     reps_groups.setdefault(k[0], set()).add(protid)
 
                 clusters[protid] = [(protid, 1.0, len(protein),
                                     len(minimizers), 
                                     len(distinct_minimizers),
                                     kf.kmer_coverage(
-                                        sorted([i[1] for i in distinct_minimizers])
+                                        sorted([i[1] for i in minimizers])
                                         ,window_size)/len(protein))]
                 
                 reps_sequences[protid] = protein

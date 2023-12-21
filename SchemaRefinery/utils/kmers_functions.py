@@ -145,7 +145,6 @@ def kmer_coverage(position, window_size):
     size : int
         Total sum of the kmers size based on starting position.
     """
-    length_query = 0
     size = 0
     len_positions = len(position)-1
     for i, pos in enumerate(position):

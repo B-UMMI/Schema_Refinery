@@ -152,16 +152,29 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     i=1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing, 
-                                filtered_clusters, repeat('blastn'), 
+                                filtered_clusters.keys(), repeat('blastn'), 
                                 repeat(blastn_results_folder), 
                                 repeat(rep_paths), 
                                 repeat(representatives_all_fasta_file)):
             
             alignment_strings, filtered_alignments_dict = af.process_blast_results(res[1], constants_threshold)
-            representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
+            if len(alignment_strings) > 1:
+                representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
 
             print(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i+=1
 
+    #write rep BLASTn matches to file
+    report_file_path = os.path.join(blastn_output, "blastn_matches.tsv")
+    all_representatives_alignments_dict = {}
+    with open(report_file_path, 'w') as report_file:
+        report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
+                            "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
+                            "Pident - Percentage of identical matches\n"])
+        
+        locus_alignment_pairs_list = []
+        for alignment in representative_blast_results:
+            locus_alignment_pairs_list.append([alignment[0], af.remove_inverse_alignments(alignment[1][1], all_representatives_alignments_dict)])
 
+            report_file.writelines(alignment[1][0])
 
