@@ -212,7 +212,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
 
     # print(several)
 
-    return [clusters, reps_sequences, reps_groups]
+    return [clusters, reps_sequences, reps_groups, prot_len_dict]
 
 def cluster_based_on_ids(processed_representatives_dict):
     """

@@ -68,17 +68,7 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
     minimizers = []
     # determine total number of windows
     last_window = (len(kmers)-adjacent_kmers)
-    
-    #Guarantee that first and last kmer are part of the minimizers list
-    if guarantee_tip:
-        #extract fist and last kmer and remove them from kmers list
-        first_kmer = kmers.pop(0)
-        last_kmer = kmers.pop(-1)
-        #add first kmer to minimizers list
-        minimizers.append(first_kmer)
-        #update the total number of windows
-        last_window = (len(kmers)-adjacent_kmers)
-        
+      
     while i <= last_window:
         # get kmers in current window
         window = kmers[i:i+adjacent_kmers]
@@ -123,9 +113,13 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
                 sell = True
             previous = minimizer[0]
 
-    #add last kmer
+    #Guarantee that first and last kmer are part of the minimizers list
     if guarantee_tip:
-        minimizers.append(last_kmer)
+        #extract fist and last kmer and remove them from kmers list
+        if kmers[0] not in minimizers:
+            minimizers.append(kmers[0])
+        if kmers[-1] not in minimizers:
+            minimizers.append(kmers[-1])
         
     return minimizers
 

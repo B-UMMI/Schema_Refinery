@@ -8,13 +8,15 @@ try:
                        sequence_functions as sf,
                        clustering_functions as cf, 
                        blast_functions as bf, 
-                       alignments_functions as af)
+                       alignments_functions as af,
+                       kmers_functions as kf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff, 
                                       sequence_functions as sf, 
                                       clustering_functions as cf, 
                                       blast_functions as bf, 
-                                      alignments_functions as af)
+                                      alignments_functions as af,
+                                      kmers_functions as kf)
 
 def fetch_not_included_cds(file_path_cds):
     """
@@ -103,11 +105,12 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                      key=lambda x: len(x[1]),
                                                      reverse=True)}
                                                                                                        
-    clusters, reps_sequences, reps_groups  = cf.minimizer_clustering(cds_translation_dict, 
-                                                                  5, 5, True, 1, clusters, 
-                                                                  reps_sequences, reps_groups, 
-                                                                  20, clustering_sim, clustering_cov, 
-                                                                  True)
+    clusters, reps_sequences, reps_groups, prot_len_dict  = cf.minimizer_clustering(cds_translation_dict, 
+                                                                                    5, 5, True, 1, clusters, 
+                                                                                    reps_sequences, reps_groups, 
+                                                                                    20, clustering_sim, clustering_cov, 
+                                                                                    True)
+        
     print("Filtering clusters...")
     singleton_clusters = {}
     filtered_clusters = {}
@@ -119,6 +122,24 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         else:
             singleton_clusters[k] = v
     
+    print("Retrivieng kmers similiarity and coverage between representatives...")
+    reps_kmers_sim = {}
+    reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in cds_translation_dict.items() 
+                             if rep_id in clusters}
+    
+    reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
+                                                     key=lambda x: len(x[1]),
+                                                     reverse=True)}
+    
+    for cluster_id in reps_translation_dict:
+        kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id], 
+                                                5, 5, 1 ,True, True))
+        reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep, 
+                                                               reps_groups, 
+                                                               clustering_sim, 
+                                                               clustering_cov,
+                                                               prot_len_dict, 
+                                                               cluster_id, 5)
     print("Building BLASTn database...")
     blastn_output = os.path.join(output_directory, "BLASTn_processing")
     ff.create_directory(blastn_output)
@@ -132,7 +153,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     
     rep_paths = {}
     with open(representatives_all_fasta_file, 'w') as all_fasta:
-        for cluster_rep_id in filtered_clusters:
+        for cluster_rep_id in clusters:
             
             all_fasta.writelines(">"+cluster_rep_id+"\n")
             all_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
@@ -152,7 +173,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     i=1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing, 
-                                filtered_clusters.keys(), repeat('blastn'), 
+                                clusters.keys(), repeat('blastn'), 
                                 repeat(blastn_results_folder), 
                                 repeat(rep_paths), 
                                 repeat(representatives_all_fasta_file)):
