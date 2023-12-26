@@ -1,6 +1,7 @@
 import os
 import sys
 import concurrent.futures
+import copy
 from itertools import repeat
 
 try:
@@ -140,6 +141,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                                clustering_cov,
                                                                prot_len_dict, 
                                                                cluster_id, 5)
+        
+        reps_kmers_sim[cluster_id] = {match_values[0]:match_values[1:] 
+                                      for match_values in reps_kmers_sim[cluster_id]}
+        
+    
     print("Building BLASTn database...")
     blastn_output = os.path.join(output_directory, "BLASTn_processing")
     ff.create_directory(blastn_output)
@@ -169,7 +175,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     ff.create_directory(blastn_results_folder)
     
     total_reps = len(rep_paths)
-    representative_blast_results = []
+    representative_blast_results = {}
+    representative_aligment_strings = {}
     i=1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing, 
@@ -180,22 +187,56 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             
             alignment_strings, filtered_alignments_dict = af.process_blast_results(res[1], constants_threshold)
             if len(alignment_strings) > 1:
-                representative_blast_results.append([res[0], [alignment_strings, filtered_alignments_dict]])
+                representative_blast_results[res[0]] = filtered_alignments_dict
+                representative_aligment_strings[res[0]] = alignment_strings
 
             print(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i+=1
 
-    #write rep BLASTn matches to file
+    #write all relevant rep BLASTn matches to file
     report_file_path = os.path.join(blastn_output, "blastn_matches.tsv")
     all_representatives_alignments_dict = {}
     with open(report_file_path, 'w') as report_file:
         report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
                             "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
                             "Pident - Percentage of identical matches\n"])
-        
-        locus_alignment_pairs_list = []
-        for alignment in representative_blast_results:
-            locus_alignment_pairs_list.append([alignment[0], af.remove_inverse_alignments(alignment[1][1], all_representatives_alignments_dict)])
 
-            report_file.writelines(alignment[1][0])
+        for res in representative_aligment_strings.values():
+            report_file.writelines(res)
+            
+    print("Filtering BLASTn results into subclusters...")
+    c1 = {}
+    c2 = {}
+    
+    representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
+    for query, rep_b_result in representative_blast_results_filtered.items():
+        c1[query] = {}
+        c2[query] = {}
+        
+        for id_entry, reps in rep_b_result.items():
+            reps = reps[0]
+            length_threshold = 0.05
+            high = reps['subject_length'] * (1+length_threshold)
+            low = reps['subject_length'] * (1-length_threshold)
+            
+            pident = reps['pident']
+            
+            if type(pident) == str:
+                pident_list = pident.split(';')
+                pident = sum(pident_list)/len(pident_list)
+                    
+            if low <= reps['query_length'] <= high and pident >= 90:
+                c1[query][id_entry] = reps
+                
+                del representative_blast_results[query][id_entry]
+                
+            elif (low > reps['query_length'] or reps['query_length'] > high) and reps['subject'] in reps_kmers_sim[query]:
+                c2[query][id_entry] = reps
+                
+                del representative_blast_results[query][id_entry]
+        
+        if len(representative_blast_results[query]) == 0:
+            del representative_blast_results[query]
+    
+
 
