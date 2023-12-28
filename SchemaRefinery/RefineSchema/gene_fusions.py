@@ -47,10 +47,71 @@ def aligment_string_dict_to_file(aligment_string_dict, file_path):
     with open(file_path, 'w') as report_file:
         report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
                             "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
-                            "Pident - Percentage of identical matches\n"])
+                            "Pident - Percentage of identical matches\t", "Kmer sim\t", "Kmer cov\n"])
 
         for res in aligment_string_dict.values():
             report_file.writelines(res.values())
+            
+def separate_blastn_results_into_clusters(representative_blast_results, representative_aligment_strings, path):
+    #Create various dicts and split the results into different classes
+    c1 = {}
+    c2 = {}
+    c1_strings = {}
+    c2_strings = {}
+    
+    representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
+    for query, rep_b_result in representative_blast_results_filtered.items():
+        filter_dict_c1 = {}
+        filter_dict_c2 = {}
+        filter_dict_strings_c1 = {}
+        filter_dict_strings_c2 = {}
+        for id_entry, reps in rep_b_result.items():
+            reps = reps[0]
+            length_threshold = 0.05
+            high = reps['subject_length'] * (1+length_threshold)
+            low = reps['subject_length'] * (1-length_threshold)
+            
+            pident = reps['pident']
+            
+            if type(pident) == str:
+                pident_list = pident.split(';')
+                pident = sum(pident_list)/len(pident_list)
+                    
+            if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
+                filter_dict_c2[id_entry] = reps
+                filter_dict_strings_c1[id_entry] = representative_aligment_strings[query][id_entry]
+                
+                del representative_blast_results[query][id_entry]
+                del representative_aligment_strings[query][id_entry]
+
+            elif low <= reps['query_length'] <= high and reps['kmers_sim'] > 0.9:
+                filter_dict_c2[id_entry] = reps
+                filter_dict_strings_c2[id_entry] = representative_aligment_strings[query][id_entry]
+                
+                del representative_blast_results[query][id_entry]
+                del representative_aligment_strings[query][id_entry]
+        
+        c1[query] = filter_dict_c1
+        c2[query] = filter_dict_c2
+        
+        c1_strings[query] = filter_dict_strings_c1
+        c2_strings[query] = filter_dict_strings_c2
+        
+        #If after separating BLASTn results into different classes the cluster rep
+        #is empty, then delete ir from dict containing all of the results
+        if len(representative_blast_results[query]) == 0:
+            del representative_blast_results[query]
+            del representative_aligment_strings[query]
+    
+    #write individual group to file
+    report_file_path_c1 = os.path.join(path, "blastn_group_c1.tsv")
+    report_file_path_c2 = os.path.join(path, "blastn_group_c2.tsv")
+    
+    aligment_string_dict_to_file(c1_strings, report_file_path_c1)
+    aligment_string_dict_to_file(c2_strings, report_file_path_c2)
+
+    after_filter = os.path.join(path, "blastn_filtered.tsv")
+    aligment_string_dict_to_file(representative_aligment_strings, after_filter)
     
 def main(schema, output_directory, allelecall_directory, clustering_sim, 
          clustering_cov, alignment_ratio_threshold_gene_fusions, 
@@ -146,8 +207,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                 5, 5, 1 ,True, True))
         reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep, 
                                                                reps_groups, 
-                                                               clustering_sim, 
-                                                               clustering_cov,
+                                                               0, 
+                                                               0,
                                                                prot_len_dict, 
                                                                cluster_id, 5)
         
@@ -195,6 +256,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 repeat(representatives_all_fasta_file)):
             
             alignment_strings, filtered_alignments_dict = af.process_blast_results(res[1], constants_threshold)
+            
             if len(alignment_strings) > 1:
                 representative_blast_results[res[0]] = filtered_alignments_dict
                 representative_aligment_strings[res[0]] = alignment_strings
@@ -202,13 +264,26 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             print(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i+=1
             
-    #reformat output of af.process_blast_results
+    #Reformat output of af.process_blast_results[1] and add kmer cov and sim
     for key, aligment_string in representative_aligment_strings.items():
         dict_aligment_string = {}
         for string in aligment_string:
             split_string = string.split('\t')
-            dict_aligment_string[split_string[0]+';'+split_string[1]] = string
+            dict_entry = split_string[0]+';'+split_string[1]
+            dict_aligment_string[dict_entry] = string
             
+            if split_string[1] in reps_kmers_sim[key]:
+                sim, cov = reps_kmers_sim[key][split_string[1]]
+            else:
+                sim = 0
+                cov = 0
+                
+            update_dict = {'kmers_sim' : sim,
+                           'kmers_cov' : cov}
+            #Add kmer cov and sim to strings for so it also writes into a file
+            dict_aligment_string[dict_entry] = string.replace('\n','\t') + '\t'.join([str(sim),str(cov)]) + '\n'
+            representative_blast_results[key][dict_entry][0].update(update_dict)
+                
         representative_aligment_strings[key] = dict_aligment_string
         
     #write all relevant rep BLASTn matches to file
@@ -219,61 +294,6 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             
     
     print("Filtering BLASTn results into subclusters...")
-    c1 = {}
-    c2 = {}
-    c1_strings = {}
-    c2_strings = {}
-    
-    representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
-    for query, rep_b_result in representative_blast_results_filtered.items():
-        filter_dict_c1 = {}
-        filter_dict_c2 = {}
-        filter_dict_strings_c1 = {}
-        filter_dict_strings_c2 = {}
-        for id_entry, reps in rep_b_result.items():
-            reps = reps[0]
-            length_threshold = 0.05
-            high = reps['subject_length'] * (1+length_threshold)
-            low = reps['subject_length'] * (1-length_threshold)
-            
-            pident = reps['pident']
-            
-            if type(pident) == str:
-                pident_list = pident.split(';')
-                pident = sum(pident_list)/len(pident_list)
-                    
-            if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                filter_dict_c2[id_entry] = reps
-                filter_dict_strings_c1[id_entry] = representative_aligment_strings[query][id_entry]
-                
-                del representative_blast_results[query][id_entry]
-                del representative_aligment_strings[query][id_entry]
-
-            elif low <= reps['query_length'] <= high and reps['subject'] in reps_kmers_sim[query]:
-                filter_dict_c2[id_entry] = reps
-                filter_dict_strings_c2[id_entry] = representative_aligment_strings[query][id_entry]
-                
-                del representative_blast_results[query][id_entry]
-                del representative_aligment_strings[query][id_entry]
-        
-        c1[query] = filter_dict_c1
-        c2[query] = filter_dict_c2
-        
-        c1_strings[query] = filter_dict_strings_c1
-        c2_strings[query] = filter_dict_strings_c2
-        
-        if len(representative_blast_results[query]) == 0:
-            del representative_blast_results[query]
-            del representative_aligment_strings[query]
-    
-    #write individual group to file
-    report_file_path_c1 = os.path.join(blastn_processed_results, "blastn_group_c1.tsv")
-    report_file_path_c2 = os.path.join(blastn_processed_results, "blastn_group_c2.tsv")
-    
-    aligment_string_dict_to_file(c1_strings, report_file_path_c1)
-    aligment_string_dict_to_file(c2_strings, report_file_path_c2)
-
-    after_filter = os.path.join(blastn_processed_results, "blastn_filtered.tsv")
-    aligment_string_dict_to_file(representative_aligment_strings, after_filter)
+    separate_blastn_results_into_clusters(representative_blast_results, representative_aligment_strings, blastn_processed_results)
             
             
