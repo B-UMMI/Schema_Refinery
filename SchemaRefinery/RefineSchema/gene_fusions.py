@@ -44,6 +44,17 @@ def fetch_not_included_cds(file_path_cds):
     return not_included_cds
 
 def aligment_string_dict_to_file(aligment_string_dict, file_path):
+    """
+    Compares the hashes list with the hashes obtained from cds.
+
+    Parameters
+    ----------
+    aligment_string_dict : dict
+        dict containing aligments string to write to file
+    file_path : str
+        File path to create to write the file
+    """
+    
     with open(file_path, 'w') as report_file:
         report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t", 
                             "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
@@ -53,6 +64,30 @@ def aligment_string_dict_to_file(aligment_string_dict, file_path):
             report_file.writelines(res.values())
             
 def separate_blastn_results_into_clusters(representative_blast_results, representative_aligment_strings, path):
+    """
+    Compares the hashes list with the hashes obtained from cds.
+
+    Parameters
+    ----------
+    representative_blast_results : dict
+        dict containing blast results to filter
+    representative_aligment_strings : dict
+        dict containing aligments string to filter
+    path : str
+        Dir path to write the files for each class of results
+        
+    Returns
+    -------
+    c1 : dict
+        dict containing filtered blast results to class 1
+    c2 : dict
+        dict containing filtered blast results to class 2
+    c1_strings : dict
+        dict containing aligments string for class 1
+    c2_strings : dict
+        dict containing aligments string for class 1
+    """
+    
     #Create various dicts and split the results into different classes
     c1 = {}
     c2 = {}
@@ -112,6 +147,8 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
 
     after_filter = os.path.join(path, "blastn_filtered.tsv")
     aligment_string_dict_to_file(representative_aligment_strings, after_filter)
+    
+    return c1, c2, c1_strings, c2_strings
     
 def main(schema, output_directory, allelecall_directory, clustering_sim, 
          clustering_cov, alignment_ratio_threshold_gene_fusions, 
@@ -294,6 +331,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             
     
     print("Filtering BLASTn results into subclusters...")
-    separate_blastn_results_into_clusters(representative_blast_results, representative_aligment_strings, blastn_processed_results)
+    c1, c2, c1_strings, c2_strings = separate_blastn_results_into_clusters(representative_blast_results, 
+                                                                           representative_aligment_strings, 
+                                                                           blastn_processed_results)
             
             
