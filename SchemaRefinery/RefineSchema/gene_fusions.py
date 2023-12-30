@@ -43,14 +43,14 @@ def fetch_not_included_cds(file_path_cds):
 
     return not_included_cds
 
-def aligment_string_dict_to_file(aligment_string_dict, file_path):
+def alignment_string_dict_to_file(alignment_string_dict, file_path):
     """
-    Compares the hashes list with the hashes obtained from cds.
+    Writes alignments strings to file.
 
     Parameters
     ----------
-    aligment_string_dict : dict
-        dict containing aligments string to write to file
+    alignment_string_dict : dict
+        dict containing alignments string to write to file
     file_path : str
         File path to create to write the file
     """
@@ -60,19 +60,19 @@ def aligment_string_dict_to_file(aligment_string_dict, file_path):
                             "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t", 
                             "Pident - Percentage of identical matches\t", "Kmer sim\t", "Kmer cov\n"])
 
-        for res in aligment_string_dict.values():
+        for res in alignment_string_dict.values():
             report_file.writelines(res.values())
             
-def separate_blastn_results_into_clusters(representative_blast_results, representative_aligment_strings, path):
+def separate_blastn_results_into_clusters(representative_blast_results, representative_alignment_strings, path):
     """
-    Compares the hashes list with the hashes obtained from cds.
+    Separates one BLASTn dict into various dict depending on the class.
 
     Parameters
     ----------
     representative_blast_results : dict
         dict containing blast results to filter
-    representative_aligment_strings : dict
-        dict containing aligments string to filter
+    representative_alignment_strings : dict
+        dict containing alignments string to filter
     path : str
         Dir path to write the files for each class of results
         
@@ -83,9 +83,9 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
     c2 : dict
         dict containing filtered blast results to class 2
     c1_strings : dict
-        dict containing aligments string for class 1
+        dict containing alignments string for class 1
     c2_strings : dict
-        dict containing aligments string for class 1
+        dict containing alignments string for class 1
     """
     
     #Create various dicts and split the results into different classes
@@ -114,17 +114,17 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
                     
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
                 filter_dict_c2[id_entry] = reps
-                filter_dict_strings_c1[id_entry] = representative_aligment_strings[query][id_entry]
+                filter_dict_strings_c1[id_entry] = representative_alignment_strings[query][id_entry]
                 
                 del representative_blast_results[query][id_entry]
-                del representative_aligment_strings[query][id_entry]
+                del representative_alignment_strings[query][id_entry]
 
             elif low <= reps['query_length'] <= high and reps['kmers_sim'] > 0.9:
                 filter_dict_c2[id_entry] = reps
-                filter_dict_strings_c2[id_entry] = representative_aligment_strings[query][id_entry]
+                filter_dict_strings_c2[id_entry] = representative_alignment_strings[query][id_entry]
                 
                 del representative_blast_results[query][id_entry]
-                del representative_aligment_strings[query][id_entry]
+                del representative_alignment_strings[query][id_entry]
         
         c1[query] = filter_dict_c1
         c2[query] = filter_dict_c2
@@ -136,17 +136,17 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
         #is empty, then delete ir from dict containing all of the results
         if len(representative_blast_results[query]) == 0:
             del representative_blast_results[query]
-            del representative_aligment_strings[query]
+            del representative_alignment_strings[query]
     
     #write individual group to file
     report_file_path_c1 = os.path.join(path, "blastn_group_c1.tsv")
     report_file_path_c2 = os.path.join(path, "blastn_group_c2.tsv")
     
-    aligment_string_dict_to_file(c1_strings, report_file_path_c1)
-    aligment_string_dict_to_file(c2_strings, report_file_path_c2)
+    alignment_string_dict_to_file(c1_strings, report_file_path_c1)
+    alignment_string_dict_to_file(c2_strings, report_file_path_c2)
 
     after_filter = os.path.join(path, "blastn_filtered.tsv")
-    aligment_string_dict_to_file(representative_aligment_strings, after_filter)
+    alignment_string_dict_to_file(representative_alignment_strings, after_filter)
     
     return c1, c2, c1_strings, c2_strings
     
@@ -283,7 +283,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     
     total_reps = len(rep_paths)
     representative_blast_results = {}
-    representative_aligment_strings = {}
+    representative_alignment_strings = {}
     i=1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing, 
@@ -296,18 +296,18 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             
             if len(alignment_strings) > 1:
                 representative_blast_results[res[0]] = filtered_alignments_dict
-                representative_aligment_strings[res[0]] = alignment_strings
+                representative_alignment_strings[res[0]] = alignment_strings
 
             print(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i+=1
             
     #Reformat output of af.process_blast_results[1] and add kmer cov and sim
-    for key, aligment_string in representative_aligment_strings.items():
-        dict_aligment_string = {}
-        for string in aligment_string:
+    for key, alignment_string in representative_alignment_strings.items():
+        dict_alignment_string = {}
+        for string in alignment_string:
             split_string = string.split('\t')
             dict_entry = split_string[0]+';'+split_string[1]
-            dict_aligment_string[dict_entry] = string
+            dict_alignment_string[dict_entry] = string
             
             if split_string[1] in reps_kmers_sim[key]:
                 sim, cov = reps_kmers_sim[key][split_string[1]]
@@ -318,21 +318,21 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             update_dict = {'kmers_sim' : sim,
                            'kmers_cov' : cov}
             #Add kmer cov and sim to strings for so it also writes into a file
-            dict_aligment_string[dict_entry] = string.replace('\n','\t') + '\t'.join([str(sim),str(cov)]) + '\n'
+            dict_alignment_string[dict_entry] = string.replace('\n','\t') + '\t'.join([str(sim),str(cov)]) + '\n'
             representative_blast_results[key][dict_entry][0].update(update_dict)
                 
-        representative_aligment_strings[key] = dict_aligment_string
+        representative_alignment_strings[key] = dict_alignment_string
         
     #write all relevant rep BLASTn matches to file
     blastn_processed_results = os.path.join(blastn_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
-    aligment_string_dict_to_file(representative_aligment_strings, report_file_path)
+    alignment_string_dict_to_file(representative_alignment_strings, report_file_path)
             
     
     print("Filtering BLASTn results into subclusters...")
     c1, c2, c1_strings, c2_strings = separate_blastn_results_into_clusters(representative_blast_results, 
-                                                                           representative_aligment_strings, 
+                                                                           representative_alignment_strings, 
                                                                            blastn_processed_results)
             
             
