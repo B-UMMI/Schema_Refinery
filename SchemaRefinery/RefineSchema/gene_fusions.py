@@ -238,7 +238,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
                                                      key=lambda x: len(x[1]),
                                                      reverse=True)}
-    
+    #recalculate the sim and cov between reps
     for cluster_id in reps_translation_dict:
         kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id], 
                                                 5, 5, 1 ,True, True))
@@ -308,7 +308,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             split_string = string.split('\t')
             dict_entry = split_string[0]+';'+split_string[1]
             dict_alignment_string[dict_entry] = string
-            
+            #get sim and cov
             if split_string[1] in reps_kmers_sim[key]:
                 sim, cov = reps_kmers_sim[key][split_string[1]]
             else:
