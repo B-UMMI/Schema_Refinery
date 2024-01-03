@@ -22,6 +22,7 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
         stored and tuples of k-mer and start position
         if the position is stored.
     """
+
     if position is False:
         kmers = [input_string[i:i+k_value]
                  for i in range(0, len(input_string)-k_value+1, offset)]
@@ -59,6 +60,7 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
         A list with the set of minimizers determined
         for the input string.
     """
+
     # break string into k-mers
     kmers = string_kmerizer(input_string, k_value, offset, position)
 
@@ -139,6 +141,7 @@ def kmer_coverage(position, window_size):
     size : int
         Total sum of the kmers size based on starting position.
     """
+    
     size = 0
     len_positions = len(position)-1
     for i, pos in enumerate(position):

@@ -41,6 +41,7 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
         and the decimal proportion of shared distinct
         kmers.
     """
+
     # {start_pos: [[rep_cds1], [rep_cds2]]}
     current_reps = {k[1] : reps_groups[k[0]] for k in kmers if k[0] in reps_groups}
     
@@ -159,8 +160,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
             identifiers of sequences that contain that kmer
             as values.
     """
-    # several = {}
-    
+
     #get len of all the proteins
     prot_len_dict = {protid: len(protein) for protid, protein 
                      in sorted_sequences.items()}

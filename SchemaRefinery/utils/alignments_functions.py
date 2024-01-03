@@ -23,6 +23,7 @@ def join_intervals(alignments):
         Tuple containing final_start_stop_list and start_stop_list_for_processing
 
     """
+    
     start_stop_list_for_processing = [{"start": alignment[0], "stop": alignment[1], 
                                        "joined_intervals": set(), "pident": alignment[4]/100, 
                                        "gaps": alignment[5], "length": alignment[6],

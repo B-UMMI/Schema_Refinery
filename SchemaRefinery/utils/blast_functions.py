@@ -20,6 +20,7 @@ def make_blast_db(input_fasta, output_path, db_type):
         returns : No return
             Creates blast database
     """
+
     blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
                    '-parse_seqids', '-dbtype', db_type]
 
@@ -69,6 +70,7 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     stderr : list
         List with the warnings/errors reported by BLAST.
     """
+
     blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
                   '-out', blast_output, '-outfmt', '6 qseqid sseqid score',
                   '-max_hsps', str(max_hsps), '-num_threads', str(threads),
@@ -103,6 +105,7 @@ def run_blast_with_args_only(blast_args):
     returns : No return
         Generates BLAST files at output directory
     """
+    
     blast_proc = subprocess.Popen(blast_args,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE)
