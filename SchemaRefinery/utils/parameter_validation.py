@@ -38,6 +38,7 @@ def tryeval(val):
 
 def check_minimum(value, minimum):
     """Check if a value is below a threshold value."""
+
     if value < minimum:
         return False
     else:
@@ -46,6 +47,7 @@ def check_minimum(value, minimum):
 
 def check_maximum(value, maximum):
     """Check if a value is above a threshold value."""
+
     if value > maximum:
         return False
     else:
@@ -54,6 +56,7 @@ def check_maximum(value, maximum):
 
 def check_value_interval(value, minimum, maximum):
     """Check if parameter value is contained in interval."""
+
     if check_minimum(value) and check_maximum(value):
         return True
     else:
@@ -62,6 +65,7 @@ def check_value_interval(value, minimum, maximum):
 
 def check_value_type(value, expected_type):
     """Check if parameter is of expected type."""
+
     try:
         if expected_type is bool:
             converted = tryeval(value)
@@ -77,6 +81,7 @@ def check_value_type(value, expected_type):
 
 def check_path(value):
     """Check if a path exists."""
+
     if os.path.exists(value):
         return True
     else:
@@ -95,6 +100,7 @@ def check_in_list(values, expected_values):
 def check_parameter(value, validate_type, validate_minimum, validate_maximum,
                     validate_path, validate_list):
     """Validate a value passed to a parameter."""
+    
     valid = True
     if validate_type and valid:
         value = check_value_type(value, validate_type)

@@ -16,6 +16,7 @@ def join_list(lst, delimiter):
         A single string with all elements in the input
         list joined by the character chosen as link.
     """
+
     joined_list = delimiter.join(lst)
 
     return joined_list
@@ -34,6 +35,7 @@ def flatten_list(list_to_flatten):
     flattened_list : str
         Input list flattened by one level.
     """
+
     flattened_list = list(itertools.chain(*list_to_flatten))
 
     return flattened_list
@@ -61,6 +63,7 @@ def divide_list_into_n_chunks(list_to_divide, n):
         List with the sublists created by dividing
         the input list.
     """
+    
     sublists = []
     d, r = divmod(len(list_to_divide), n)
     for i in range(n):
