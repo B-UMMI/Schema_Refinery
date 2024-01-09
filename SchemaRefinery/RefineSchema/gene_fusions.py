@@ -119,7 +119,7 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
 
-            elif low <= reps['query_length'] <= high and reps['kmers_sim'] > 0.9:
+            elif low <= reps['query_length'] <= high and pident >= 90:
                 filter_dict_c2[id_entry] = reps
                 filter_dict_strings_c2[id_entry] = representative_alignment_strings[query][id_entry]
                 
