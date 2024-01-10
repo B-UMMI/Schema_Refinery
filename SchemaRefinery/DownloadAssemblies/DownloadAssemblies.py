@@ -36,6 +36,7 @@ def find_local_conda_env():
         env, may not exist if this module was not used to download
         assemblies from ENA661K.´
     """
+    
     conda_path = subprocess.Popen(['conda', 'info'], stdout=subprocess.PIPE)
 
     stdout, stderr = conda_path.communicate()
