@@ -201,11 +201,12 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                 for k in minimizers:
                     reps_groups.setdefault(k[0], set()).add(protid)
 
-                clusters[protid] = [(protid, 1.0, len(protein),
-                                    len(minimizers), 
-                                    len(distinct_minimizers),
-                                    kf.kmer_coverage(
-                                        sorted([i[1] for i in minimizers])
+                clusters[protid] = [(protid, 1.0, 
+                                     len(protein),
+                                     len(minimizers), 
+                                     len(distinct_minimizers),
+                                     kf.kmer_coverage(
+                                         sorted([i[1] for i in minimizers])
                                         ,window_size)/len(protein))]
                 
                 reps_sequences[protid] = protein

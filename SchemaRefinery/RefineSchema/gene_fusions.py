@@ -96,12 +96,12 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
     c1_strings = {}
     c2_strings = {}
     
+    cluster_classes = {}
     representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
     for query, rep_b_result in representative_blast_results_filtered.items():
-        filter_dict_c1 = {}
-        filter_dict_c2 = {}
-        filter_dict_strings_c1 = {}
-        filter_dict_strings_c2 = {}
+        filtered_dict = {}
+        pre_filtered_dict = {}
+        pre_filtered_dict_string = {}
         for id_entry, reps in rep_b_result.items():
             reps = reps[0]
             length_threshold = 0.05
@@ -115,24 +115,20 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
                 pident = sum(pident_list)/len(pident_list)
                     
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                filter_dict_c2[id_entry] = reps
-                filter_dict_strings_c1[id_entry] = representative_alignment_strings[query][id_entry]
+                pre_filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
+                filtered_dict["c2"].update(pre_filtered_dict) 
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
 
             elif low <= reps['query_length'] <= high and pident >= 90:
-                filter_dict_c2[id_entry] = reps
-                filter_dict_strings_c2[id_entry] = representative_alignment_strings[query][id_entry]
+                pre_filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
+                filtered_dict["c1"].update(pre_filtered_dict) 
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
         
-        c1[query] = filter_dict_c1
-        c2[query] = filter_dict_c2
-        
-        c1_strings[query] = filter_dict_strings_c1
-        c2_strings[query] = filter_dict_strings_c2
+
         
         #If after separating BLASTn results into different classes the cluster rep
         #is empty, then delete ir from dict containing all of the results
@@ -140,12 +136,13 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
             del representative_blast_results[query]
             del representative_alignment_strings[query]
     
-    #write individual group to file
-    report_file_path_c1 = os.path.join(path, "blastn_group_c1.tsv")
-    report_file_path_c2 = os.path.join(path, "blastn_group_c2.tsv")
-    
-    alignment_string_dict_to_file(c1_strings, report_file_path_c1)
-    alignment_string_dict_to_file(c2_strings, report_file_path_c2)
+    for k, v in filtered_dict.items():
+        report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
+        alignment_strings_to_write = {}
+
+        #write individual group to file
+        alignment_string_dict_to_file([alignment_strings_to_write.update(string_dict[1]) for string_dict in v], 
+                                      report_file_path)
 
     after_filter = os.path.join(path, "blastn_filtered.tsv")
     alignment_string_dict_to_file(representative_alignment_strings, after_filter)
@@ -225,10 +222,10 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     singleton_clusters = {}
     filtered_clusters = {}
     
-    #Separate singletons and clusters with more than one protein adn get size
+    #Separate singletons and clusters with more than one protein and get size
     cluster_size = {}
     for k, v in clusters.items():
-        sizes = lf.get_max_min_values([prot_len_dict(sequence[0]) for sequence in v])
+        sizes = lf.get_max_min_values([entry_data[2] for entry_data in v])
         cluster_size[k] = sizes[1]/sizes[0]
         if len(v) > 1:
             filtered_clusters[k] = v
