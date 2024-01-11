@@ -74,3 +74,7 @@ def divide_list_into_n_chunks(list_to_divide, n):
     sublists = [line for line in sublists if len(line) > 0]
 
     return sublists
+
+def get_max_min_values(input_list):
+    
+    return max(input_list), min(input_list)

@@ -10,14 +10,16 @@ try:
                        clustering_functions as cf, 
                        blast_functions as bf, 
                        alignments_functions as af,
-                       kmers_functions as kf)
+                       kmers_functions as kf,
+                       list_functions as lf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff, 
                                       sequence_functions as sf, 
                                       clustering_functions as cf, 
                                       blast_functions as bf, 
                                       alignments_functions as af,
-                                      kmers_functions as kf)
+                                      kmers_functions as kf,
+                                      list_functions as lf)
 
 def fetch_not_included_cds(file_path_cds):
     """
@@ -223,8 +225,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     singleton_clusters = {}
     filtered_clusters = {}
     
-    #Separate singletons and clusters with more than one protein
+    #Separate singletons and clusters with more than one protein adn get size
+    cluster_size = {}
     for k, v in clusters.items():
+        sizes = lf.get_max_min_values([prot_len_dict(sequence[0]) for sequence in v])
+        cluster_size[k] = sizes[1]/sizes[0]
         if len(v) > 1:
             filtered_clusters[k] = v
         else:
@@ -251,8 +256,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         
         reps_kmers_sim[cluster_id] = {match_values[0]:match_values[1:] 
                                       for match_values in reps_kmers_sim[cluster_id]}
-        
-    
+            
     print("Building BLASTn database...")
     blastn_output = os.path.join(output_directory, "BLASTn_processing")
     ff.create_directory(blastn_output)
