@@ -65,7 +65,7 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
         for res in alignment_string_dict.values():
             report_file.writelines(res.values())
             
-def separate_blastn_results_into_clusters(representative_blast_results, representative_alignment_strings, path):
+def separate_blastn_results_into_classes(representative_blast_results, representative_alignment_strings, path):
     """
     Separates one BLASTn dict into various dict depending on the class.
 
@@ -91,17 +91,10 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
     """
     
     #Create various dicts and split the results into different classes
-    c1 = {}
-    c2 = {}
-    c1_strings = {}
-    c2_strings = {}
-    
     cluster_classes = {}
     representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
     for query, rep_b_result in representative_blast_results_filtered.items():
         filtered_dict = {}
-        pre_filtered_dict = {}
-        pre_filtered_dict_string = {}
         for id_entry, reps in rep_b_result.items():
             reps = reps[0]
             length_threshold = 0.05
@@ -115,15 +108,15 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
                 pident = sum(pident_list)/len(pident_list)
                     
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                pre_filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
-                filtered_dict["c2"].update(pre_filtered_dict) 
+                filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
+                cluster_classes["c2"].update(filtered_dict[id_entry]) 
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
 
             elif low <= reps['query_length'] <= high and pident >= 90:
-                pre_filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
-                filtered_dict["c1"].update(pre_filtered_dict) 
+                filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
+                cluster_classes["c1"].update(filtered_dict[id_entry]) 
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
@@ -147,7 +140,7 @@ def separate_blastn_results_into_clusters(representative_blast_results, represen
     after_filter = os.path.join(path, "blastn_filtered.tsv")
     alignment_string_dict_to_file(representative_alignment_strings, after_filter)
     
-    return c1, c2, c1_strings, c2_strings
+    return cluster_classes
     
 def main(schema, output_directory, allelecall_directory, clustering_sim, 
          clustering_cov, alignment_ratio_threshold_gene_fusions, 
@@ -332,8 +325,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             
     
     print("Filtering BLASTn results into subclusters...")
-    c1, c2, c1_strings, c2_strings = separate_blastn_results_into_clusters(representative_blast_results, 
-                                                                           representative_alignment_strings, 
-                                                                           blastn_processed_results)
+    cluster_classes = separate_blastn_results_into_classes(representative_blast_results, 
+                                                            representative_alignment_strings, 
+                                                            blastn_processed_results)
             
             
