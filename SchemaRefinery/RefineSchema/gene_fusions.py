@@ -92,9 +92,14 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     
     #Create various dicts and split the results into different classes
     cluster_classes = {}
+    cluster_classes_strings = {}
+    
+    for class_ in ["c1","c2"]:
+        cluster_classes[class_] = {}
+        cluster_classes_strings[class_] = {}
+        
     representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
     for query, rep_b_result in representative_blast_results_filtered.items():
-        filtered_dict = {}
         for id_entry, reps in rep_b_result.items():
             reps = reps[0]
             length_threshold = 0.05
@@ -108,15 +113,14 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                 pident = sum(pident_list)/len(pident_list)
                     
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
-                cluster_classes["c2"].update(filtered_dict[id_entry]) 
-                
+                cluster_classes["c2"][query] = {id_entry : reps}
+                cluster_classes_strings["c2"][query] = {id_entry : representative_alignment_strings[query][id_entry]}
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
 
             elif low <= reps['query_length'] <= high and pident >= 90:
-                filtered_dict[id_entry] : [reps, representative_alignment_strings[query][id_entry]]
-                cluster_classes["c1"].update(filtered_dict[id_entry]) 
+                cluster_classes["c2"][query] = {id_entry : reps}
+                cluster_classes_strings["c1"][query] = {id_entry : representative_alignment_strings[query][id_entry]}
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
@@ -129,13 +133,10 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
             del representative_blast_results[query]
             del representative_alignment_strings[query]
     
-    for k, v in filtered_dict.items():
+    for k, v in cluster_classes_strings.items():
         report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
-        alignment_strings_to_write = {}
-
         #write individual group to file
-        alignment_string_dict_to_file([alignment_strings_to_write.update(string_dict[1]) for string_dict in v], 
-                                      report_file_path)
+        alignment_string_dict_to_file(v, report_file_path)
 
     after_filter = os.path.join(path, "blastn_filtered.tsv")
     alignment_string_dict_to_file(representative_alignment_strings, after_filter)
