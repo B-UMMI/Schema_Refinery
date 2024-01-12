@@ -117,7 +117,6 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
 
     #Guarantee that first and last kmer are part of the minimizers list
     if guarantee_tip:
-        #extract fist and last kmer and remove them from kmers list
         if kmers[0] not in minimizers:
             minimizers.append(kmers[0])
         if kmers[-1] not in minimizers:
