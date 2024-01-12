@@ -90,15 +90,20 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
         dict containing alignments string for class 1
     """
     
+    representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
+    
     #Create various dicts and split the results into different classes
     cluster_classes = {}
     cluster_classes_strings = {}
     
-    for class_ in ["c1","c2"]:
+    for class_ in ["c1","c2","None_assigned"]:
         cluster_classes[class_] = {}
         cluster_classes_strings[class_] = {}
-        
-    representative_blast_results_filtered = copy.deepcopy(representative_blast_results)
+        #create dict for each rep inside cluster_classes
+        for query in representative_blast_results_filtered.keys():
+            cluster_classes[class_][query] = {}
+            cluster_classes_strings[class_][query] = {}
+    
     for query, rep_b_result in representative_blast_results_filtered.items():
         for id_entry, reps in rep_b_result.items():
             reps = reps[0]
@@ -107,32 +112,43 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
             low = reps['subject_length'] * (1-length_threshold)
             
             pident = reps['pident']
-            
+
             if type(pident) == str:
                 pident_list = pident.split(';')
                 pident = sum(pident_list)/len(pident_list)
                     
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                cluster_classes["c2"][query] = {id_entry : reps}
-                cluster_classes_strings["c2"][query] = {id_entry : representative_alignment_strings[query][id_entry]}
+                cluster_classes["c2"][query].update({id_entry : reps})
+                cluster_classes_strings["c2"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
 
             elif low <= reps['query_length'] <= high and pident >= 90:
-                cluster_classes["c2"][query] = {id_entry : reps}
-                cluster_classes_strings["c1"][query] = {id_entry : representative_alignment_strings[query][id_entry]}
+                cluster_classes["c1"][query].update({id_entry : reps})
+                cluster_classes_strings["c1"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
+            
+            else:
+                cluster_classes["None_assigned"][query].update({id_entry : reps})
+                cluster_classes_strings["None_assigned"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
+                
+                del representative_blast_results[query][id_entry]
+                del representative_alignment_strings[query][id_entry]        
         
-
-        
+        for class_ in cluster_classes.keys():
+            if len(cluster_classes[class_][query]) == 0:
+                del cluster_classes[class_][query]
+                del cluster_classes_strings[class_][query]
+                
         #If after separating BLASTn results into different classes the cluster rep
         #is empty, then delete ir from dict containing all of the results
         if len(representative_blast_results[query]) == 0:
             del representative_blast_results[query]
             del representative_alignment_strings[query]
-    
+
+                
     for k, v in cluster_classes_strings.items():
         report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
         #write individual group to file
