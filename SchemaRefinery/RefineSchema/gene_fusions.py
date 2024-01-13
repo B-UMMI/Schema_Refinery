@@ -96,7 +96,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     cluster_classes = {}
     cluster_classes_strings = {}
     
-    for class_ in ["c1","c2","None_assigned"]:
+    for class_ in ["similar_size","different_size","None_assigned"]:
         cluster_classes[class_] = {}
         cluster_classes_strings[class_] = {}
         #create dict for each rep inside cluster_classes
@@ -118,14 +118,14 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                 pident = sum(pident_list)/len(pident_list)
                     
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                cluster_classes["c2"][query].update({id_entry : reps})
-                cluster_classes_strings["c2"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
+                cluster_classes["different_size"][query].update({id_entry : reps})
+                cluster_classes_strings["different_size"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
 
             elif low <= reps['query_length'] <= high and pident >= 90:
-                cluster_classes["c1"][query].update({id_entry : reps})
-                cluster_classes_strings["c1"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
+                cluster_classes["similar_size"][query].update({id_entry : reps})
+                cluster_classes_strings["similar_size"][query].update({id_entry : representative_alignment_strings[query][id_entry]})
                 
                 del representative_blast_results[query][id_entry]
                 del representative_alignment_strings[query][id_entry]
