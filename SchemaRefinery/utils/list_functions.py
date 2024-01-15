@@ -76,5 +76,17 @@ def divide_list_into_n_chunks(list_to_divide, n):
     return sublists
 
 def get_max_min_values(input_list):
+    """
+    From an input list return the max and min int/float present
+
+    Parameters
+    ----------
+    input_list: int
+        List containing values
     
+    Returns
+    -------
+    Returns largest value and smallest value
+
+    """
     return max(input_list), min(input_list)
