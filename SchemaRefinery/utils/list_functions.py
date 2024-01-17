@@ -87,6 +87,6 @@ def get_max_min_values(input_list):
     Returns
     -------
     Returns largest value and smallest value
-
     """
+
     return max(input_list), min(input_list)
