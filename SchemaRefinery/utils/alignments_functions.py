@@ -205,7 +205,7 @@ def get_alignments_dict(blast_results_file):
                     "gaps": int(gaps),
                     "pident": float(pident)
                     }
-            
+
             if not key in alignments_dict.keys():
                 alignments_dict[key] = [value]
             else:
