@@ -1,10 +1,11 @@
 import os
 try:
-    from RefineSchema import paralagous_loci
-    from RefineSchema import gene_fusions
+    from RefineSchema import (paralagous_loci, 
+                              gene_fusions)
+
 except ModuleNotFoundError:
-    from SchemaRefinery.RefineSchema import paralagous_loci
-    from SchemaRefinery.RefineSchema import gene_fusions
+    from SchemaRefinery.RefineSchema import (paralagous_loci, 
+                                             gene_fusions)
 
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_paralagous, 
