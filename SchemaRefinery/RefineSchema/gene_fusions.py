@@ -139,10 +139,6 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
         # write individual group to file
         alignment_string_dict_to_file(v, report_file_path)
 
-    after_filter = os.path.join(path, "blastn_filtered.tsv")
-    alignment_string_dict_to_file(
-        representative_alignment_strings, after_filter)
-
     return cluster_classes
 
 
@@ -333,10 +329,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     # write all relevant rep BLASTn matches to file
     blastn_processed_results = os.path.join(blastn_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
-    report_file_path = os.path.join(
-        blastn_processed_results, "blastn_all_matches.tsv")
-    alignment_string_dict_to_file(
-        representative_alignment_strings, report_file_path)
+    report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
+    alignment_string_dict_to_file(representative_alignment_strings, report_file_path)
 
     print("Filtering BLASTn results into subclusters...")
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
