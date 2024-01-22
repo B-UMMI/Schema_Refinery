@@ -57,6 +57,10 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
         dict containing alignments string to write to file
     file_path : str
         File path to create to write the file
+
+    Returns
+    -------
+    No return
     """
 
     with open(file_path, 'w') as report_file:
@@ -113,8 +117,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                 pident = sum(pident_list)/len(pident_list)
 
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                cluster_classes["different_size"][query].update(
-                    {id_entry: reps})
+                cluster_classes["different_size"][query].update({id_entry: reps})
                 cluster_classes_strings["different_size"][query].update(
                     {id_entry: representative_alignment_strings[query][id_entry]})
 
@@ -124,8 +127,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                     {id_entry: representative_alignment_strings[query][id_entry]})
 
             else:
-                cluster_classes["None_assigned"][query].update(
-                    {id_entry: reps})
+                cluster_classes["None_assigned"][query].update({id_entry: reps})
                 cluster_classes_strings["None_assigned"][query].update(
                     {id_entry: representative_alignment_strings[query][id_entry]})
 
@@ -150,8 +152,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         alignment_ratio_threshold_gene_fusions, pident_threshold_gene_fusions]
 
     ff.create_directory(output_directory)
-    file_path_cds = os.path.join(
-        allelecall_directory, "unclassified_sequences.fasta")
+    file_path_cds = os.path.join(allelecall_directory, "unclassified_sequences.fasta")
     if not os.path.exists(file_path_cds):
         sys.exit(f"Error: {file_path_cds} must exist, make sure that AlleleCall "
                  "was run using --no-cleanup and --output-unclassified flag.")
@@ -160,8 +161,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     not_included_cds = fetch_not_included_cds(file_path_cds)
 
-    print(
-        f"Identified {len(not_included_cds)} valid CDS not present in the schema")
+    print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
 
     cds_output = os.path.join(output_directory, "CDS_processing")
     ff.create_directory(cds_output)
@@ -173,8 +173,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     print("Translate unclassified CDS...")
     cds_translation_dict = {}
-    cds_not_present_translation_file_path = os.path.join(
-        cds_output, "CDS_not_found_translation.fasta")
+    cds_not_present_translation_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
     protein_hashes = {}
     i = 1
     total = len(not_included_cds)
@@ -182,8 +181,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         for id_s, sequence in not_included_cds.items():
             print(f"Translated {i}/{total} CDS")
             i += 1
-            protein_translation = str(sf.translate_dna(
-                str(sequence), 11, 0, True)[0][0])
+            protein_translation = str(sf.translate_dna(str(sequence), 11, 0, True)[0][0])
             prot_hash = sf.seq_to_hash(protein_translation)
             if prot_hash not in protein_hashes:
                 protein_hashes[prot_hash] = [id_s]
@@ -237,7 +235,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
                                                      key=lambda x: len(x[1]),
                                                      reverse=True)}
-    # recalculate the sim and cov between reps
+    # recalculate the sim and cov between reps, get all of the values, so threshold
+    # is set to 0.
     for cluster_id in reps_translation_dict:
         kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id],
                                                 5, 5, 1, True, True))
