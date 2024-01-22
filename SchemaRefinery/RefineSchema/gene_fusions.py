@@ -143,7 +143,6 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
 
     return cluster_classes
 
-
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
          pident_threshold_gene_fusions, cpu):
