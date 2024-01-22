@@ -1,7 +1,6 @@
 import os
 import sys
 import concurrent.futures
-import copy
 from itertools import repeat
 
 try:
@@ -36,6 +35,7 @@ def fetch_not_included_cds(file_path_cds):
     not_included_cds : dict
         Returns dict with key as fasta header and value as fasta sequence.
     """
+    
     not_included_cds = {}
     i = 1
 
@@ -130,7 +130,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                 cluster_classes["None_assigned"][query].update({id_entry: reps})
                 cluster_classes_strings["None_assigned"][query].update(
                     {id_entry: representative_alignment_strings[query][id_entry]})
-
+        # Remove blastn results that are present in another class
         for class_ in cluster_classes.keys():
             if len(cluster_classes[class_][query]) == 0:
                 del cluster_classes[class_][query]
@@ -138,7 +138,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
 
     for k, v in cluster_classes_strings.items():
         report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
-        # write individual group to file
+        # write individual class to file
         alignment_string_dict_to_file(v, report_file_path)
 
     return cluster_classes
@@ -190,11 +190,6 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 translation.writelines(protein_translation+"\n")
             else:
                 protein_hashes[prot_hash].append(id_s)
-
-    schema_short = os.path.join(schema, "short")
-    schema_short_files_paths = {f.replace("_short.fasta", ""): os.path.join(schema_short, f)
-                                for f in os.listdir(schema_short)
-                                if not os.path.isdir(f) and f.endswith(".fasta")}
 
     print("Extracting minimizers for the translated sequences and clustering...")
 
@@ -273,8 +268,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             rep_paths[cluster_rep_id] = rep_fasta_file
             with open(rep_fasta_file, 'w') as rep_fasta:
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
-                rep_fasta.writelines(
-                    str(not_included_cds[cluster_rep_id])+"\n")
+                rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
 
     blastn_results_folder = os.path.join(blastn_output, "blast_results")
     ff.create_directory(blastn_results_folder)
@@ -318,6 +312,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             update_dict = {'kmers_sim': sim,
                            'kmers_cov': cov}
             # Add kmer cov and sim to strings for so it also writes into a file
+            # Add kmer cov and sim to dict with the BLASTn results
             dict_alignment_string[dict_entry] = string.replace(
                 '\n', '\t') + '\t'.join([str(sim), str(cov)]) + '\n'
             representative_blast_results[key][dict_entry][0].update(
@@ -325,13 +320,13 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
         representative_alignment_strings[key] = dict_alignment_string
 
-    # write all relevant rep BLASTn matches to file
+    print("Filtering BLASTn results into subclusters...")
     blastn_processed_results = os.path.join(blastn_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
+    # Write all of the BLASTn results to a file
     alignment_string_dict_to_file(representative_alignment_strings, report_file_path)
-
-    print("Filtering BLASTn results into subclusters...")
+    
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            representative_alignment_strings,
                                                            blastn_processed_results)
