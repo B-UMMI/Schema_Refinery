@@ -1,5 +1,6 @@
 import os
 import sys
+import pickle
 import concurrent.futures
 from itertools import repeat
 
@@ -143,6 +144,16 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
 
     return cluster_classes
 
+def decode_CDS_sequences_ids(path_to_file):
+    with open(path_to_file, "rb") as infile:
+        hast_table = pickle.load(infile)
+    
+    decoded_dict = {}
+    for key, value in hast_table.items():
+        decoded_dict[key] = lf.polyline_decoding(path_to_file)
+        
+    return decoded_dict
+        
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
          pident_threshold_gene_fusions, cpu):
@@ -150,18 +161,25 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     constants_threshold = [
         alignment_ratio_threshold_gene_fusions, pident_threshold_gene_fusions]
 
-    ff.create_directory(output_directory)
+    temp_folder = os.path.join(allelecall_directory,"temp")
     file_path_cds = os.path.join(allelecall_directory, "unclassified_sequences.fasta")
-    if not os.path.exists(file_path_cds):
-        sys.exit(f"Error: {file_path_cds} must exist, make sure that AlleleCall "
+    
+    if not os.path.exists(temp_folder) or not os.path.exists(file_path_cds):
+        sys.exit(f"Error: {temp_folder} must exist, make sure that AlleleCall "
                  "was run using --no-cleanup and --output-unclassified flag.")
+        
+    print("Identifying CDS present in the schema...")
+    cds_present = os.path.join(temp_folder,"3_cds_preprocess/cds_deduplication/distinct_cds_merged.hashtable")
+    
+    decoded_sequences_ids = decode_CDS_sequences_ids(cds_present)
 
     print("Identifying CDS not present in the schema...")
-
+        
     not_included_cds = fetch_not_included_cds(file_path_cds)
 
     print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
-
+    
+    ff.create_directory(output_directory)
     cds_output = os.path.join(output_directory, "CDS_processing")
     ff.create_directory(cds_output)
     cds_not_present_file_path = os.path.join(cds_output, "CDS_not_found.fasta")

@@ -91,35 +91,6 @@ def get_max_min_values(input_list):
 
     return max(input_list), min(input_list)
 
-def polyline_decoding(text):
-    """Decode a list of integers compressed with polyline encoding.
-
-    Parameters
-    ----------
-    text : str
-        String representing a compressed list of numbers.
-
-    Returns
-    -------
-    number_list : list
-        List with the decoded numbers.
-    """
-    number_list = []
-    index = last_num = 0
-    # decode precision value
-    precision = ord(text[index]) - 63
-    index += 1
-    while index < len(text):
-        # decode a number and get index to start decoding next number
-        index, difference = decompress_number(text, index)
-        # add decoded difference to get next number in original list
-        last_num += difference
-        number_list.append(last_num)
-
-    number_list = [round(item * (10 ** (-precision)), precision) for item in number_list]
-
-    return number_list
-
 def decompress_number(text, index):
     """Decode a single number from a string created with polyline encoding.
 
@@ -163,3 +134,33 @@ def decompress_number(text, index):
     # invert bits to get negative number if sign bit is 1
     # remove sign bit and keep only bits for decoded value
     return index, (~number >> 1) if (number & 1) != 0 else (number >> 1)
+
+def polyline_decoding(text):
+    """Decode a list of integers compressed with polyline encoding.
+
+    Parameters
+    ----------
+    text : str
+        String representing a compressed list of numbers.
+
+    Returns
+    -------
+    number_list : list
+        List with the decoded numbers.
+    """
+    number_list = []
+    index = last_num = 0
+    # decode precision value
+    precision = ord(text[index]) - 63
+    index += 1
+    while index < len(text):
+        # decode a number and get index to start decoding next number
+        index, difference = decompress_number(text, index)
+        # add decoded difference to get next number in original list
+        last_num += difference
+        number_list.append(last_num)
+
+    number_list = [round(item * (10 ** (-precision)), precision) for item in number_list]
+
+    return number_list
+
