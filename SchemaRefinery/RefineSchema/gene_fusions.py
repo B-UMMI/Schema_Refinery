@@ -150,7 +150,7 @@ def decode_CDS_sequences_ids(path_to_file):
     
     decoded_dict = {}
     for key, value in hast_table.items():
-        decoded_dict[key] = lf.polyline_decoding(path_to_file)
+        decoded_dict[key] = lf.polyline_decoding(value)
         
     return decoded_dict
         
@@ -183,10 +183,19 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     cds_output = os.path.join(output_directory, "CDS_processing")
     ff.create_directory(cds_output)
     cds_not_present_file_path = os.path.join(cds_output, "CDS_not_found.fasta")
+    
+    frequency_cds = {}
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
-        for id, sequence in not_included_cds.items():
-            cds_not_found.writelines(">"+id+"\n")
+        for id_, sequence in not_included_cds.items():
+            cds_not_found.writelines(">"+id_+"\n")
             cds_not_found.writelines(str(sequence)+"\n")
+            
+            hashed_seq = sf.seq_to_hash(sequence) 
+            if hashed_seq in decoded_sequences_ids:
+                frequency_cds[id_] = decoded_sequences_ids[hashed_seq] - 1
+            else:
+                frequency_cds[id_] = 0
+                
 
     print("Translate unclassified CDS...")
     cds_translation_dict = {}
