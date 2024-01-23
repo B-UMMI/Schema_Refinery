@@ -90,3 +90,76 @@ def get_max_min_values(input_list):
     """
 
     return max(input_list), min(input_list)
+
+def polyline_decoding(text):
+    """Decode a list of integers compressed with polyline encoding.
+
+    Parameters
+    ----------
+    text : str
+        String representing a compressed list of numbers.
+
+    Returns
+    -------
+    number_list : list
+        List with the decoded numbers.
+    """
+    number_list = []
+    index = last_num = 0
+    # decode precision value
+    precision = ord(text[index]) - 63
+    index += 1
+    while index < len(text):
+        # decode a number and get index to start decoding next number
+        index, difference = decompress_number(text, index)
+        # add decoded difference to get next number in original list
+        last_num += difference
+        number_list.append(last_num)
+
+    number_list = [round(item * (10 ** (-precision)), precision) for item in number_list]
+
+    return number_list
+
+def decompress_number(text, index):
+    """Decode a single number from a string created with polyline encoding.
+
+    Parameters
+    ----------
+    text : str
+        String representing a compressed list of numbers.
+    index : int
+        Index of the first character to start decoding a number.
+
+    Returns
+    -------
+    Index to start decoding the next number and the number decoded
+    in the current function call.
+    """
+    number = 0
+    bitwise_shift = 0
+
+    while True:
+        # subtract 63 and remove bit from OR with 0x20 if 5-bit chunk
+        # is not the last to decode a number that was in the original list
+        n = (ord(text[index]) - 63)
+        index += 1
+        # only continue if there is a continuation bit (0b100000)
+        # e.g.: 0b11111 only has 5 bits, meaning it is the last chunk
+        # that is necessary to decode the number
+        if n >= 0x20:
+            # subtract 0x20 (0b100000) to get the 5-bit chunk
+            n -= 0x20
+            # contruct the binary number with biwise shift to add each
+            # 5-bit chunk to original position
+            number = number | (n << bitwise_shift)
+            # increment bitwise shift value for next 5-bit chunk
+            bitwise_shift += 5
+        else:
+            break
+
+    # add the last chunk, without continuation bit, to the leftmost position
+    number = number | (n << bitwise_shift)
+
+    # invert bits to get negative number if sign bit is 1
+    # remove sign bit and keep only bits for decoded value
+    return index, (~number >> 1) if (number & 1) != 0 else (number >> 1)
