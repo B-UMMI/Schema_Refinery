@@ -153,7 +153,7 @@ def decode_CDS_sequences_ids(path_to_file):
         decoded_dict[key] = lf.polyline_decoding(value)
         
     return decoded_dict
-        
+
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
          pident_threshold_gene_fusions, cpu):
@@ -190,9 +190,9 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             cds_not_found.writelines(">"+id_+"\n")
             cds_not_found.writelines(str(sequence)+"\n")
             
-            hashed_seq = sf.seq_to_hash(sequence) 
+            hashed_seq = sf.seq_to_hash(str(sequence)) 
             if hashed_seq in decoded_sequences_ids:
-                frequency_cds[id_] = decoded_sequences_ids[hashed_seq] - 1
+                frequency_cds[id_] = len(decoded_sequences_ids[hashed_seq]) - 1
             else:
                 frequency_cds[id_] = 0
                 

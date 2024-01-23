@@ -139,17 +139,10 @@ def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results
 
     blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{id_}.tsv")
     
-    if blast_type == "blastn":
-        # Run blast only on query plus sequence since we are working with CDS/loci
-        extra_args = "-strand plus"
-    else:
-        extra_args = ""
-    
     blast_args = [blast_type, '-query', representative_file_dict[id_],
                   '-subject',
                   all_representatives_file,
                   '-outfmt',
-                  extra_args,
                   '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
                   '-out', 
                   blast_results_file]
