@@ -156,11 +156,28 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     return cluster_classes
 
 def decode_CDS_sequences_ids(path_to_file):
+    """
+    Function to read a dict contained in pickle file and decode its values based
+    on polyline.
+    
+    Parameters
+    ----------
+    path_to_file : str
+        Path to the pickle file.
+        
+    Returns
+    -------
+    decoded_dict : dict
+        Contains hashed CDS as keys, and number id of the genome which
+        that CDS is present
+    
+    """
+    
     with open(path_to_file, "rb") as infile:
-        hast_table = pickle.load(infile)
+        hash_table = pickle.load(infile)
     
     decoded_dict = {}
-    for key, value in hast_table.items():
+    for key, value in hash_table.items():
         decoded_dict[key] = lf.polyline_decoding(value)
         
     return decoded_dict
