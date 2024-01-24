@@ -65,9 +65,20 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
     """
 
     with open(file_path, 'w') as report_file:
-        report_file.writelines(["Query\t", "Subject\t", "Query Start-End\t", "Subject Start-End\t", "Query Biggest Alignment Ratio\t",
-                                "Subject Biggest Alignment Ratio\t", "Query Length\t", "Subject Length\t", "Number of Gaps\t",
-                                "Pident - Percentage of identical matches\t", "Kmer sim\t", "Kmer cov\n"])
+        report_file.writelines(["Query\t",
+                                "Subject\t",
+                                "Query Start-End\t",
+                                "Subject Start-End\t",
+                                "Query Biggest Alignment Ratio\t",
+                                "Subject Biggest Alignment Ratio\t",
+                                "Query Length\t",
+                                "Subject Length\t",
+                                "Number of Gaps\t",
+                                "Pident - Percentage of identical matches\t",
+                                "Kmer sim\t",
+                                "Kmer cov\t",
+                                "frequency_in_genomes_query_cds\t",
+                                "frequency_in_genomes_subject_cds\n"])
 
         for res in alignment_string_dict.values():
             report_file.writelines(res.values())
@@ -248,7 +259,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         else:
             singleton_clusters[k] = v
 
-    print("Retrivieng kmers similiarity and coverage between representatives...")
+    print("Retrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
     reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in cds_translation_dict.items()
                              if rep_id in clusters}
@@ -312,37 +323,50 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
             alignment_strings, filtered_alignments_dict = af.process_blast_results(
                 res[1], constants_threshold)
-
+            
+            update_dict = {}
             if len(alignment_strings) > 1:
-                representative_blast_results[res[0]] = filtered_alignments_dict
+                # Change key from x;y to y
+                for alignment_key in filtered_alignments_dict:
+                    update_dict[alignment_key.split(";")[1]] = filtered_alignments_dict[alignment_key]
+                
+                representative_blast_results[res[0]] = update_dict
                 representative_alignment_strings[res[0]] = alignment_strings
 
             print(
                 f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i += 1
 
-    # Reformat output of af.process_blast_results[1] and add kmer cov and sim
+    # Reformat output of af.process_blast_results[1] and add kmer cov, kmer sim
+    # and frequency of the cds in the genomes
     for key, alignment_string in representative_alignment_strings.items():
         dict_alignment_string = {}
         for string in alignment_string:
             split_string = string.split('\t')
-            dict_entry = split_string[0]+';'+split_string[1]
-            dict_alignment_string[dict_entry] = string
+            subject = split_string[1]
+            query = split_string[0]
+            dict_alignment_string[subject] = string
             # get sim and cov
             if split_string[1] in reps_kmers_sim[key]:
-                sim, cov = reps_kmers_sim[key][split_string[1]]
+                sim, cov = reps_kmers_sim[key][subject]
             else:
                 sim = 0
                 cov = 0
 
             update_dict = {'kmers_sim': sim,
-                           'kmers_cov': cov}
-            # Add kmer cov and sim to strings for so it also writes into a file
-            # Add kmer cov and sim to dict with the BLASTn results
-            dict_alignment_string[dict_entry] = string.replace(
-                '\n', '\t') + '\t'.join([str(sim), str(cov)]) + '\n'
-            representative_blast_results[key][dict_entry][0].update(
-                update_dict)
+                           'kmers_cov': cov,
+                           'frequency_in_genomes_query_cds' : frequency_cds[query],
+                           'frequency_in_genomes_subject_cds' : frequency_cds[subject]}
+                                                                          
+            # Add kmer cov, kmer sim and frequency in genomes to strings for so it also writes into a file
+            # Add kmer cov, kmer sim and frequency in genomes to dict with the BLASTn results
+            dict_alignment_string[subject] = string.replace(
+                '\n', '\t') + '\t'.join([str(sim), 
+                                         str(cov),
+                                         str(frequency_cds[query]),
+                                         str(frequency_cds[subject])]) + '\n'
+                                         
+            representative_blast_results[key][subject][0].update(update_dict)
 
         representative_alignment_strings[key] = dict_alignment_string
 
