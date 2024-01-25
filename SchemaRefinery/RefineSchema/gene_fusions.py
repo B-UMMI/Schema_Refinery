@@ -104,6 +104,19 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     """
 
     def add_to_class_dict(class_name):
+        """
+        Function that adds entries to the cluster_classes dict based on class.
+        
+        Parameters
+        ----------
+        class_name : str
+            Class name, which is a key in cluster_classes to where to add entries.
+            
+        Returns
+        -------
+        Modifies the dict created in the parent function.
+        """
+        
         cluster_classes[class_name][query].update({id_entry: reps})
         
         cluster_classes_strings[class_name][query].update(
