@@ -114,6 +114,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     cluster_classes_strings = {}
     
     classes = ['similar_size',
+               'similar_size_diff_prot',
                'different_size',
                'different_size_and_prot',
                'None_assigned']
@@ -139,18 +140,26 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
             if type(pident) == str:
                 pident_list = pident.split(';')
                 pident = sum(pident_list)/len(pident_list)
-
-            if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
                 
+            # Find entries with size difference more than 5%
+            if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
+                # Find entries with kmers cov and sim less than 0.9
                 if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
                     add_to_class_dict('different_size_and_prot')
-                    
+                # Find entries with kmers cov and sim more than 0.9
                 else:
                     add_to_class_dict('different_size')
-
+                    
+            # Find entries with size difference more less 5%
             elif low <= reps['query_length'] <= high and pident >= 90:
-                add_to_class_dict('similar_size')
-
+                # Find entries with kmers cov and sim less than 0.9
+                if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
+                    add_to_class_dict('similar_size_diff_prot')
+                # Find entries with kmers cov and sim more than 0.9
+                else:
+                    add_to_class_dict('similar_size_and_prot')
+            
+            # If for some reason a entry didn´t get added to other classes
             else:
                 add_to_class_dict('None_assigned')
 
