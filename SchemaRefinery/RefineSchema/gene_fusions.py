@@ -103,11 +103,22 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
         dict containing cluster separated by classes
     """
 
+    def add_to_class_dict(class_name):
+        cluster_classes[class_name][query].update({id_entry: reps})
+        
+        cluster_classes_strings[class_name][query].update(
+            {id_entry: representative_alignment_strings[query][id_entry]})
+        
     # Create various dicts and split the results into different classes
     cluster_classes = {}
     cluster_classes_strings = {}
-
-    for class_ in ["similar_size", "different_size", "None_assigned"]:
+    
+    classes = ['similar_size',
+               'different_size',
+               'different_size_and_prot',
+               'None_assigned']
+    
+    for class_ in classes:
         cluster_classes[class_] = {}
         cluster_classes_strings[class_] = {}
         # create dict for each rep inside cluster_classes
@@ -123,25 +134,26 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
             low = reps['subject_length'] * (1-length_threshold)
 
             pident = reps['pident']
-
+            
+            # When multiple pident values were found between two reps
             if type(pident) == str:
                 pident_list = pident.split(';')
                 pident = sum(pident_list)/len(pident_list)
 
             if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
-                cluster_classes["different_size"][query].update({id_entry: reps})
-                cluster_classes_strings["different_size"][query].update(
-                    {id_entry: representative_alignment_strings[query][id_entry]})
+                
+                if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
+                    add_to_class_dict('different_size_and_prot')
+                    
+                else:
+                    add_to_class_dict('different_size')
 
             elif low <= reps['query_length'] <= high and pident >= 90:
-                cluster_classes["similar_size"][query].update({id_entry: reps})
-                cluster_classes_strings["similar_size"][query].update(
-                    {id_entry: representative_alignment_strings[query][id_entry]})
+                add_to_class_dict('similar_size')
 
             else:
-                cluster_classes["None_assigned"][query].update({id_entry: reps})
-                cluster_classes_strings["None_assigned"][query].update(
-                    {id_entry: representative_alignment_strings[query][id_entry]})
+                add_to_class_dict('None_assigned')
+
         # Remove blastn results that are present in another class
         for class_ in cluster_classes.keys():
             if len(cluster_classes[class_][query]) == 0:
