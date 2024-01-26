@@ -269,7 +269,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         for id_s, sequence in not_included_cds.items():
             print(f"Translated {i}/{total} CDS")
             i += 1
-            protein_translation = str(sf.translate_dna(str(sequence), 11, 0, True)[0][0])
+            protein_translation = str(sf.translate_dna(str(sequence),
+                                                       11,
+                                                       0,
+                                                       True)[0][0])
+            
             prot_hash = sf.seq_to_hash(protein_translation)
             if prot_hash not in protein_hashes:
                 protein_hashes[prot_hash] = [id_s]
@@ -290,11 +294,15 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                     key=lambda x: len(x[1]),
                                                     reverse=True)}
 
-    clusters, reps_sequences, reps_groups, prot_len_dict = cf.minimizer_clustering(cds_translation_dict,
-                                                                                   5, 5, True, 1, clusters,
-                                                                                   reps_sequences, reps_groups,
-                                                                                   20, clustering_sim, clustering_cov,
-                                                                                   True)
+    [clusters, reps_sequences, 
+     reps_groups, prot_len_dict] = cf.minimizer_clustering(cds_translation_dict,
+                                                           5, 5, True, 1, 
+                                                           clusters,
+                                                           reps_sequences, 
+                                                           reps_groups,
+                                                           20, clustering_sim, 
+                                                           clustering_cov,
+                                                           True)
 
     print("Filtering clusters...")
     singleton_clusters = {}
