@@ -126,7 +126,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     cluster_classes = {}
     cluster_classes_strings = {}
     
-    classes = ['similar_size',
+    classes = ['similar_size_and_prot',
                'similar_size_diff_prot',
                'different_size',
                'different_size_and_prot',
@@ -216,6 +216,43 @@ def decode_CDS_sequences_ids(path_to_file):
         
     return decoded_dict
 
+def find_gene_fusions(class_dict):
+    """
+    Based on identified class that has different sizes representatives this function
+    identifies probable gene fusion by identifing if the larger CDS contains 
+    two or more smaller CDS that are different from each other.
+    
+    Parameters
+    ----------
+    class_dict : dict
+        Dict that contains the results from BLASTn, kmers clustering and frequency 
+        of CDS in the genome.
+        
+    Returns
+    -------
+    
+    """
+  
+    gene_fusions = {}
+    for query_id, subject_dicts in class_dict.items():
+        gene_fusions[query_id] = {}
+        #Filter out all subjects that are larger than query
+        subject_dict = {subject_id : result for subject_id, result 
+                        in subject_dicts.items() if result['query_length'] > result['subject_length']}
+        
+        if len(subject_dict) == 0:
+            continue
+        
+        for subject_id, result in subject_dict.items():
+            for subjects_ids in subject_dicts.keys():
+                try:
+                    if subjects_ids not in class_dict[subject_id]:
+                        gene_fusions[query_id].update({subject_id : result})
+                except:
+                    continue
+                
+                
+    
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
          pident_threshold_gene_fusions, cpu):
@@ -439,3 +476,6 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            representative_alignment_strings,
                                                            blastn_processed_results)
+    
+    class_dict = merge_dicts(cluster_classes)
+    

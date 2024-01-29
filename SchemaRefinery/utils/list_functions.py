@@ -1,4 +1,5 @@
 import itertools
+from collections import defaultdict
 
 def join_list(lst, delimiter):
     """Join all elements in a list into a single string.
@@ -164,3 +165,11 @@ def polyline_decoding(text):
 
     return number_list
 
+def merge_dicts(dicts_list):
+    
+    out_dict = defaultdict(list)
+    for dict_ in dicts_list: # you can list as many input dicts as you want here
+        for key, value in dicts_list[dict_].items():
+            out_dict[key].append(value)
+            
+    return out_dict
