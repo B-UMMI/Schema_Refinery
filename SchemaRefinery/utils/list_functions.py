@@ -166,10 +166,12 @@ def polyline_decoding(text):
     return number_list
 
 def merge_dicts(dicts_list):
-    
-    out_dict = defaultdict(list)
+    """
+    Remove
+    """
+    out_dict = defaultdict(dict)
     for dict_ in dicts_list: # you can list as many input dicts as you want here
         for key, value in dicts_list[dict_].items():
-            out_dict[key].append(value)
+            out_dict[key].update(value)
             
     return out_dict

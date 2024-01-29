@@ -159,7 +159,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                 # Find entries with kmers cov and sim less than 0.9
                 if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
                     add_to_class_dict('different_size_and_prot')
-                # Find entries with kmers cov and sim more than 0.9
+                # Find entries with kmers cov or sim more than 0.9
                 else:
                     add_to_class_dict('different_size')
                     
@@ -168,7 +168,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                 # Find entries with kmers cov and sim less than 0.9
                 if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
                     add_to_class_dict('similar_size_diff_prot')
-                # Find entries with kmers cov and sim more than 0.9
+                # Find entries with kmers cov or sim more than 0.9
                 else:
                     add_to_class_dict('similar_size_and_prot')
             
@@ -216,6 +216,16 @@ def decode_CDS_sequences_ids(path_to_file):
         
     return decoded_dict
 
+def compare_coordinates(first_dict, second_dict):
+    
+    first_start = first_dict['subject_start']
+    first_end = first_dict['subject_end']
+    
+    second_start = second_dict['subject_start']
+    second_end = second_dict['subject_end']
+    
+    return set(range(first_start,first_end)).intersection(set(range(second_start,second_end)))
+    
 def find_gene_fusions(class_dict):
     """
     Based on identified class that has different sizes representatives this function
@@ -231,23 +241,25 @@ def find_gene_fusions(class_dict):
     Returns
     -------
     
+    
+    REMOVE
     """
   
     gene_fusions = {}
     for query_id, subject_dicts in class_dict.items():
         gene_fusions[query_id] = {}
         #Filter out all subjects that are larger than query
-        subject_dict = {subject_id : result for subject_id, result 
-                        in subject_dicts.items() if result['query_length'] > result['subject_length']}
+        filtered_subject_dict = {subject_id : result for subject_id, result 
+                                 in subject_dicts.items() if result['query_length'] > result['subject_length']}
         
-        if len(subject_dict) == 0:
+        if len(filtered_subject_dict) == 0:
             continue
         
-        for subject_id, result in subject_dict.items():
+        for filtered_subject_id, result in filtered_subject_dict.items():
             for subjects_ids in subject_dicts.keys():
                 try:
-                    if subjects_ids not in class_dict[subject_id]:
-                        gene_fusions[query_id].update({subject_id : result})
+                    if subjects_ids not in class_dict[filtered_subject_id]:
+                        gene_fusions[query_id].update({filtered_subject_id : result})
                 except:
                     continue
                 
@@ -477,5 +489,5 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            representative_alignment_strings,
                                                            blastn_processed_results)
     
-    class_dict = merge_dicts(cluster_classes)
+    class_dict = dict(merge_dicts(cluster_classes))
     
