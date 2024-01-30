@@ -234,9 +234,8 @@ def compare_coordinates(first_dict, second_dict):
     
 def find_gene_fusions(class_dict):
     """
-    Based on identified class that has different sizes representatives this function
-    identifies probable gene fusion by identifing if the larger CDS contains 
-    two or more smaller CDS that are different from each other.
+    This function identifies probable gene fusion by identifing if the larger 
+    CDS contains two or more smaller CDS that are present in different coordinates.
     
     Parameters
     ----------
