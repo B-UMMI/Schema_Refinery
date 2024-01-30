@@ -218,13 +218,19 @@ def decode_CDS_sequences_ids(path_to_file):
 
 def compare_coordinates(first_dict, second_dict):
     
-    first_start = first_dict['subject_start']
-    first_end = first_dict['subject_end']
+    first_start = first_dict['query_start']
+    first_end = first_dict['query_end']
     
-    second_start = second_dict['subject_start']
-    second_end = second_dict['subject_end']
+    range_first = set(range(first_start,first_end))
     
-    return set(range(first_start,first_end)).intersection(set(range(second_start,second_end)))
+    second_start = second_dict['query_start']
+    second_end = second_dict['query_end']
+    
+    range_second = set(range(second_start,second_end))
+    
+    query_length = first_dict['query_length']
+    
+    return range_first.intersection(range_second)
     
 def find_gene_fusions(class_dict):
     """
@@ -240,9 +246,7 @@ def find_gene_fusions(class_dict):
         
     Returns
     -------
-    
-    
-    REMOVE
+   
     """
   
     gene_fusions = {}
@@ -256,14 +260,13 @@ def find_gene_fusions(class_dict):
             continue
         
         for filtered_subject_id, result in filtered_subject_dict.items():
-            for subjects_ids in subject_dicts.keys():
-                try:
-                    if subjects_ids not in class_dict[filtered_subject_id]:
-                        gene_fusions[query_id].update({filtered_subject_id : result})
-                except:
-                    continue
-                
-                
+            for filtered_subject_id_2, result_2 in filtered_subject_dict.items():
+                if len(compare_coordinates(result,result_2)) == 0:
+                    gene_fusions[query_id].update({filtered_subject_id : result})
+    # Remove empty entries        
+    for key, fusions in list(gene_fusions.items()):
+        if len(fusions) <= 1:
+            del gene_fusions[key]
     
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
