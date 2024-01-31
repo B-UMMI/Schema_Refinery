@@ -10,7 +10,8 @@ except:
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
                            prot_len_dict, protid, window_size):
-    """Determine the clusters a sequence can be added to.
+    """
+    Determine the clusters a sequence can be added to.
 
     Determines the set of clusters that a sequence can be
     added to based on the decimal proportion of shared
@@ -83,7 +84,8 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
 def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                          offset, clusters, reps_sequences, reps_groups,
                          seq_num_cluster, clustering_sim, clustering_cov, grow):
-    """Cluster sequences based on shared distinct minimizers.
+    """
+    Cluster sequences based on shared distinct minimizers.
 
     Parameters
     ----------

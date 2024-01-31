@@ -2,7 +2,8 @@ import itertools
 from collections import defaultdict
 
 def join_list(lst, delimiter):
-    """Join all elements in a list into a single string.
+    """
+    Join all elements in a list into a single string.
 
     Parameters
     ----------
@@ -24,7 +25,8 @@ def join_list(lst, delimiter):
 
 
 def flatten_list(list_to_flatten):
-    """Flatten one level of a nested list.
+    """
+    Flatten one level of a nested list.
 
     Parameters
     ----------
@@ -43,13 +45,17 @@ def flatten_list(list_to_flatten):
 
 
 def isListEmpty(input_list):
-    """Check if a nested list is empty."""
+    """
+    Check if a nested list is empty.
+    """
+    
     if isinstance(input_list, list):
         return all(map(isListEmpty, input_list)) if isinstance(input_list, list) else False
 
 
 def divide_list_into_n_chunks(list_to_divide, n):
-    """Divides a list into a defined number of sublists.
+    """
+    Divides a list into a defined number of sublists.
 
     Parameters
     ----------
@@ -93,7 +99,8 @@ def get_max_min_values(input_list):
     return max(input_list), min(input_list)
 
 def decompress_number(text, index):
-    """Decode a single number from a string created with polyline encoding.
+    """
+    Decode a single number from a string created with polyline encoding.
 
     Parameters
     ----------
@@ -137,7 +144,8 @@ def decompress_number(text, index):
     return index, (~number >> 1) if (number & 1) != 0 else (number >> 1)
 
 def polyline_decoding(text):
-    """Decode a list of integers compressed with polyline encoding.
+    """
+    Decode a list of integers compressed with polyline encoding.
 
     Parameters
     ----------
@@ -149,6 +157,7 @@ def polyline_decoding(text):
     number_list : list
         List with the decoded numbers.
     """
+    
     number_list = []
     index = last_num = 0
     # decode precision value
@@ -167,8 +176,20 @@ def polyline_decoding(text):
 
 def merge_dicts(dicts_list):
     """
-    Remove
+    Function that merges a dict of dicts into one single dict with only the first
+    level.
+    
+    Parameters
+    ----------
+    dicts_list : dict
+        Dict of dicts.
+        
+    Returns
+    -------
+    out_dict : dict
+        Dict with merged entries from input dict at the first level of the dict.
     """
+    
     out_dict = defaultdict(dict)
     for dict_ in dicts_list: # you can list as many input dicts as you want here
         for key, value in dicts_list[dict_].items():

@@ -39,7 +39,7 @@ def fetch_not_included_cds(file_path_cds):
     
     not_included_cds = {}
     i = 1
-
+    # Read FASTA files
     for rec in sf.read_fasta_file_iterator(file_path_cds):
         print(f"Processed {i} CDS")
         i += 1
@@ -63,7 +63,7 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
     -------
     No return
     """
-
+    # Write first column into TSV file
     with open(file_path, 'w') as report_file:
         report_file.writelines(["Query\t",
                                 "Subject\t",
@@ -79,7 +79,7 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
                                 "Kmer cov\t",
                                 "frequency_in_genomes_query_cds\t",
                                 "frequency_in_genomes_subject_cds\n"])
-
+        # Write all of the strings into TSV file
         for res in alignment_string_dict.values():
             report_file.writelines(res.values())
 
@@ -131,7 +131,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
                'different_size',
                'different_size_and_prot',
                'None_assigned']
-    
+    # Add all of the classes keys and their query keys into the dict
     for class_ in classes:
         cluster_classes[class_] = {}
         cluster_classes_strings[class_] = {}
@@ -139,7 +139,7 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
         for query in representative_blast_results.keys():
             cluster_classes[class_][query] = {}
             cluster_classes_strings[class_][query] = {}
-
+    # Process results into classes
     for query, rep_b_result in representative_blast_results.items():
         for id_entry, reps in rep_b_result.items():
             reps = reps[0]
@@ -176,12 +176,13 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
             else:
                 add_to_class_dict('None_assigned')
 
-        # Remove blastn results that are present in another class
+        # Remove blastn results that are present in another classes thus removing
+        # empty query entries
         for class_ in cluster_classes.keys():
             if len(cluster_classes[class_][query]) == 0:
                 del cluster_classes[class_][query]
                 del cluster_classes_strings[class_][query]
-
+    # Write all of the classes into TSV files
     for k, v in cluster_classes_strings.items():
         report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
         # write individual class to file
@@ -404,6 +405,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                   "all_cluster_representatives.fasta")
 
     rep_paths = {}
+    # Write FASTA files
     with open(representatives_all_fasta_file, 'w') as all_fasta:
         for cluster_rep_id in clusters:
 
@@ -424,6 +426,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     representative_blast_results = {}
     representative_alignment_strings = {}
     i = 1
+    # Run BLASTn for all representatives
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
                                 clusters.keys(), repeat('blastn'),
@@ -487,6 +490,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     # Write all of the BLASTn results to a file
     alignment_string_dict_to_file(representative_alignment_strings, report_file_path)
     
+    # Separate results into different classes
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            representative_alignment_strings,
                                                            blastn_processed_results)
