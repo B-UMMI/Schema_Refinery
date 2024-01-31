@@ -195,4 +195,4 @@ def merge_dicts(dicts_list):
         for key, value in dicts_list[dict_].items():
             out_dict[key].update(value)
             
-    return out_dict
+    return dict(out_dict)

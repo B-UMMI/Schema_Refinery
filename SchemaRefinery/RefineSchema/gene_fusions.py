@@ -21,7 +21,6 @@ except ModuleNotFoundError:
                                       kmers_functions as kf,
                                       list_functions as lf)
 
-
 def fetch_not_included_cds(file_path_cds):
     """
     Compares the hashes list with the hashes obtained from cds.
@@ -142,7 +141,6 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     # Process results into classes
     for query, rep_b_result in representative_blast_results.items():
         for id_entry, reps in rep_b_result.items():
-            reps = reps[0]
             length_threshold = 0.05
             high = reps['subject_length'] * (1+length_threshold)
             low = reps['subject_length'] * (1-length_threshold)
@@ -267,6 +265,8 @@ def find_gene_fusions(class_dict):
     for key, fusions in list(gene_fusions.items()):
         if len(fusions) <= 1:
             del gene_fusions[key]
+    
+    return gene_fusions
     
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
@@ -441,7 +441,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             if len(alignment_strings) > 1:
                 # Change key from x;y to y
                 for alignment_key in filtered_alignments_dict:
-                    update_dict[alignment_key.split(";")[1]] = filtered_alignments_dict[alignment_key]
+                    update_dict[alignment_key.split(";")[1]] = filtered_alignments_dict[alignment_key][0]
                 
                 representative_blast_results[res[0]] = update_dict
                 representative_alignment_strings[res[0]] = alignment_strings
@@ -479,7 +479,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                          str(frequency_cds[query]),
                                          str(frequency_cds[subject])]) + '\n'
                                          
-            representative_blast_results[key][subject][0].update(update_dict)
+            representative_blast_results[key][subject].update(update_dict)
 
         representative_alignment_strings[key] = dict_alignment_string
 
@@ -494,6 +494,5 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            representative_alignment_strings,
                                                            blastn_processed_results)
-    
-    class_dict = dict(merge_dicts(cluster_classes))
-    
+    # Get probable gene fusions entries from the results
+    gene_fusions = find_gene_fusions(representative_blast_results)
