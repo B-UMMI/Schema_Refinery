@@ -47,7 +47,7 @@ def fetch_not_included_cds(file_path_cds):
     return not_included_cds
 
 
-def alignment_string_dict_to_file(alignment_string_dict, file_path):
+def alignment_dict_to_file(blast_results_dict, file_path):
     """
     Writes alignments strings to file.
 
@@ -66,12 +66,14 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
     with open(file_path, 'w') as report_file:
         report_file.writelines(["Query\t",
                                 "Subject\t",
-                                "Query Start-End\t",
-                                "Subject Start-End\t",
-                                "Query Biggest Alignment Ratio\t",
-                                "Subject Biggest Alignment Ratio\t",
-                                "Query Length\t",
-                                "Subject Length\t",
+                                "Query length\t",
+                                "Subject length\t",
+                                "Query start\t",
+                                "Query end\t",
+                                "Subject start\t",
+                                "Subject end\t",
+                                "Length\t",
+                                "Score\t",
                                 "Number of Gaps\t",
                                 "Pident - Percentage of identical matches\t",
                                 "Kmer sim\t",
@@ -79,8 +81,10 @@ def alignment_string_dict_to_file(alignment_string_dict, file_path):
                                 "frequency_in_genomes_query_cds\t",
                                 "frequency_in_genomes_subject_cds\n"])
         # Write all of the strings into TSV file
-        for res in alignment_string_dict.values():
-            report_file.writelines(res.values())
+        for results in blast_results_dict.values():
+            for result in results.values():
+                for r in result.values():
+                    report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
 
 
 def separate_blastn_results_into_classes(representative_blast_results, representative_alignment_strings, path):
@@ -116,55 +120,55 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
         Modifies the dict created in the parent function.
         """
         
-        cluster_classes[class_name][query].update({id_entry: reps})
-        
-        cluster_classes_strings[class_name][query].update(
-            {id_entry: representative_alignment_strings[query][id_entry]})
-        
+        cluster_classes[class_name][query].update({id_entry: matches})
+
     # Create various dicts and split the results into different classes
     cluster_classes = {}
-    cluster_classes_strings = {}
     
     classes = ['similar_size_and_prot',
                'similar_size_diff_prot',
                'different_size',
                'different_size_and_prot',
+               'fragmented_blastn_match',
                'None_assigned']
     # Add all of the classes keys and their query keys into the dict
     for class_ in classes:
         cluster_classes[class_] = {}
-        cluster_classes_strings[class_] = {}
         # create dict for each rep inside cluster_classes
         for query in representative_blast_results.keys():
             cluster_classes[class_][query] = {}
-            cluster_classes_strings[class_][query] = {}
     # Process results into classes
     for query, rep_b_result in representative_blast_results.items():
-        for id_entry, reps in rep_b_result.items():
-            length_threshold = 0.05
-            high = reps['subject_length'] * (1+length_threshold)
-            low = reps['subject_length'] * (1-length_threshold)
+        for id_entry, matches in rep_b_result.items():
 
-            pident = reps['pident']
-            
-            # When multiple pident values were found between two reps
-            if type(pident) == str:
-                pident_list = pident.split(';')
-                pident = sum(pident_list)/len(pident_list)
+            # Since multiple values can be found between two reps, we add them
+            # into the a separate class in toder to process further
+            if len(matches) > 1:
+                add_to_class_dict('fragmented_blastn_match')
+                continue
                 
+                
+            # Calculate upper and lower limit [1] is to get the first rep since
+            # more than one can be present
+            length_threshold = 0.05
+            high = matches[1]['subject_length'] * (1 + length_threshold)
+            low = matches[1]['subject_length'] * (1 - length_threshold)
+            
+            pident = matches[1]['pident']
+            
             # Find entries with size difference more than 5%
-            if (low > reps['query_length'] or reps['query_length'] > high) and pident >= 90:
+            if (low > matches[1]['query_length'] or matches[1]['query_length'] > high) and pident >= 90:
                 # Find entries with kmers cov and sim less than 0.9
-                if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
+                if matches[1]['kmers_cov'] <= 0.9 and matches[1]['kmers_sim'] <= 0.9:
                     add_to_class_dict('different_size_and_prot')
                 # Find entries with kmers cov or sim more than 0.9
                 else:
                     add_to_class_dict('different_size')
                     
             # Find entries with size difference more less 5%
-            elif low <= reps['query_length'] <= high and pident >= 90:
+            elif low <= matches[1]['query_length'] <= high and pident >= 90:
                 # Find entries with kmers cov and sim less than 0.9
-                if reps['kmers_cov'] <= 0.9 and reps['kmers_sim'] <= 0.9:
+                if matches[1]['kmers_cov'] <= 0.9 and matches[1]['kmers_sim'] <= 0.9:
                     add_to_class_dict('similar_size_diff_prot')
                 # Find entries with kmers cov or sim more than 0.9
                 else:
@@ -174,17 +178,18 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
             else:
                 add_to_class_dict('None_assigned')
 
-        # Remove blastn results that are present in another classes thus removing
-        # empty query entries
-        for class_ in cluster_classes.keys():
-            if len(cluster_classes[class_][query]) == 0:
-                del cluster_classes[class_][query]
-                del cluster_classes_strings[class_][query]
+    # Remove blastn results that are present in another classes thus removing
+    # empty query entries
+    for class_id, entries in list(cluster_classes.items()):
+        for query_id in list(entries.keys()):
+            if len(cluster_classes[class_id][query_id]) == 0:
+                del cluster_classes[class_id][query_id]
+                
     # Write all of the classes into TSV files
-    for k, v in cluster_classes_strings.items():
+    for k, v in cluster_classes.items():
         report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
         # write individual class to file
-        alignment_string_dict_to_file(v, report_file_path)
+        alignment_dict_to_file(v, report_file_path)
 
     return cluster_classes
 
@@ -434,61 +439,36 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 repeat(rep_paths),
                                 repeat(representatives_all_fasta_file)):
 
-            alignment_strings, filtered_alignments_dict = af.process_blast_results(
-                res[1], constants_threshold)
-            
-            update_dict = {}
-            if len(alignment_strings) > 1:
-                # Change key from x;y to y
-                for alignment_key in filtered_alignments_dict:
-                    update_dict[alignment_key.split(";")[1]] = filtered_alignments_dict[alignment_key][0]
+            filtered_alignments_dict = af.get_alignments_dict_from_blast_results(
+                res[1], constants_threshold[1])
                 
-                representative_blast_results[res[0]] = update_dict
-                representative_alignment_strings[res[0]] = alignment_strings
+            representative_blast_results.update(filtered_alignments_dict)
 
             print(
                 f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i += 1
 
-    # Reformat output of af.process_blast_results[1] and add kmer cov, kmer sim
-    # and frequency of the cds in the genomes
-    for key, alignment_string in representative_alignment_strings.items():
-        dict_alignment_string = {}
-        for string in alignment_string:
-            split_string = string.split('\t')
-            subject = split_string[1]
-            query = split_string[0]
-            dict_alignment_string[subject] = string
-            # get sim and cov
-            if split_string[1] in reps_kmers_sim[key]:
-                sim, cov = reps_kmers_sim[key][subject]
-            else:
-                sim = 0
-                cov = 0
-
+    # Add kmer cov, kmer sim and frequency of the cds in the genomes
+    for query, subjects_dict in list(representative_blast_results.items()):
+        for subject, blastn_results in subjects_dict.items():
+            
+            if subject in reps_kmers_sim[query]:
+                sim, cov = reps_kmers_sim[query][subject]
+                
             update_dict = {'kmers_sim': sim,
                            'kmers_cov': cov,
                            'frequency_in_genomes_query_cds' : frequency_cds[query],
                            'frequency_in_genomes_subject_cds' : frequency_cds[subject]}
-                                                                          
-            # Add kmer cov, kmer sim and frequency in genomes to strings for so it also writes into a file
-            # Add kmer cov, kmer sim and frequency in genomes to dict with the BLASTn results
-            dict_alignment_string[subject] = string.replace(
-                '\n', '\t') + '\t'.join([str(sim), 
-                                         str(cov),
-                                         str(frequency_cds[query]),
-                                         str(frequency_cds[subject])]) + '\n'
-                                         
-            representative_blast_results[key][subject].update(update_dict)
-
-        representative_alignment_strings[key] = dict_alignment_string
+            
+            for entry_id in blastn_results.keys():
+                representative_blast_results[query][subject][entry_id].update(update_dict)
 
     print("Filtering BLASTn results into subclusters...")
     blastn_processed_results = os.path.join(blastn_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
     # Write all of the BLASTn results to a file
-    alignment_string_dict_to_file(representative_alignment_strings, report_file_path)
+    alignment_dict_to_file(representative_blast_results, report_file_path)
     
     # Separate results into different classes
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
@@ -496,3 +476,4 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            blastn_processed_results)
     # Get probable gene fusions entries from the results
     gene_fusions = find_gene_fusions(representative_blast_results)
+

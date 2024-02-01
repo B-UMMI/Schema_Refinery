@@ -256,12 +256,12 @@ def process_blast_results(blast_results_file, constants_threshold):
         if len(alignments) > 0:
             query = alignments[0]['query']
             subject = alignments[0]['subject']
-            query_before_underscore = query.split("_")[0]
-            subject_before_underscore = subject.split("_")[0]
-
-            if query_before_underscore == subject_before_underscore:
+            
+            # Review this, used to compare things the wrong way, quick fix
+            if query == subject:
                 del filtered_alignments_dict[key]
                 continue
+            
             else:
                 query_length = alignments[0]["query_length"]
                 subject_length = alignments[0]["subject_length"]
@@ -294,6 +294,70 @@ def process_blast_results(blast_results_file, constants_threshold):
                     del filtered_alignments_dict[key]
         
     return (alignment_strings, filtered_alignments_dict)
+
+def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold):
+    """
+    organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
+    and value = a list of all alignments for that key correspondence.
+
+    Parameters
+    ----------
+    blast_results_file : str
+        Path to the blast result file.
+
+    Returns
+    -------
+    alignments_dict : dict
+        Dictionary containing the necessary information for graph building and representatives vs alleles blast.
+    """
+
+    alignments_dict = {}
+    with open(blast_results_file, "r") as f:
+        lines = f.readlines()
+        i = 1
+        for line in lines:
+            
+            cols = line.replace('\n', '').split("\t")
+            query = cols[0]
+            subject = cols[1]
+            query_length = cols[2]
+            subject_length = cols[3]
+            query_start = cols[4]
+            query_end = cols[5]
+            subject_start = cols[6]
+            subject_end = cols[7]
+            length = cols[8]
+            score = cols[9]
+            gaps = cols[10]
+            pident = cols[11]
+
+            value = {
+                    "query": query,
+                    "subject": subject,
+                    "query_length": int(query_length),
+                    "subject_length": int(subject_length),
+                    "query_start": int(query_start),
+                    "query_end": int(query_end),
+                    "subject_start": int(subject_start),
+                    "subject_end": int(subject_end),
+                    "length": int(length),
+                    "score": int(score),
+                    "gaps": int(gaps),
+                    "pident": float(pident)
+                    }
+            
+            if float(pident) < pident_threshold or query == subject:
+                continue
+            
+            if not query in alignments_dict.keys():
+                alignments_dict[query] = {}
+            if not subject in alignments_dict[query].keys():
+                alignments_dict[query][subject] = {i: value}
+            else:
+                k = max(alignments_dict[query][subject].keys()) + 1
+                alignments_dict[query][subject].update({k: value})
+            
+    return alignments_dict
 
 def remove_inverse_alignments(alignments_dict, all_representatives_alignments_dict):
     """
