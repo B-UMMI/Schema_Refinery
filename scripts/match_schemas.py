@@ -24,7 +24,8 @@ from Bio.Seq import Seq
 
 
 def reverse_str(string):
-    """ Reverse character order in input string.
+    """
+    Reverse character order in input string.
 
     Parameters
     ----------
@@ -43,7 +44,8 @@ def reverse_str(string):
 
 
 def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of a DNA sequence.
+    """
+    Determines the reverse complement of a DNA sequence.
 
     Parameters
     ----------
@@ -76,7 +78,8 @@ def reverse_complement(dna_sequence):
 
 
 def translate_sequence(dna_str, table_id):
-    """ Translate a DNA sequence using the BioPython package.
+    """
+    Translate a DNA sequence using the BioPython package.
 
     Parameters
     ----------
@@ -100,7 +103,8 @@ def translate_sequence(dna_str, table_id):
 
 
 def make_blast_db(input_fasta, output_path, db_type):
-    """ Creates a BLAST database.
+    """
+    Creates a BLAST database.
 
     Parameters
     ----------
@@ -129,7 +133,8 @@ def make_blast_db(input_fasta, output_path, db_type):
 def run_blast(blast_path, blast_db, fasta_file, blast_output,
               max_hsps=1, threads=1, ids_file=None, blast_task=None,
               max_targets=None):
-    """ Executes BLAST.
+    """
+    Executes BLAST.
 
     Parameters
     ----------
@@ -184,7 +189,8 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
 
 
 def read_tabular(input_file, delimiter='\t'):
-    """ Read a TSV file.
+    """
+    Read a TSV file.
 
     Parameters
     ----------
@@ -209,7 +215,8 @@ def read_tabular(input_file, delimiter='\t'):
 
 
 def flatten_list(list_to_flatten):
-    """ Flattens one level of a nested list.
+    """
+    Flattens one level of a nested list.
 
     Parameters
     ----------
