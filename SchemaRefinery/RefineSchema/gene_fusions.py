@@ -257,14 +257,15 @@ def find_gene_fusions(class_dict):
         gene_fusions[query_id] = {}
         #Filter out all subjects that are larger than query
         filtered_subject_dict = {subject_id : result for subject_id, result 
-                                 in subject_dicts.items() if result['query_length'] > result['subject_length']}
+                                 in subject_dicts.items() if result[1]['query_length'] > result[1]['subject_length']}
         
         if len(filtered_subject_dict) == 0:
             continue
-        
+        # Compare the coordinated between two results of the same representative
+        # use of [1] is to select the first and only BLASTn results
         for filtered_subject_id, result in filtered_subject_dict.items():
             for filtered_subject_id_2, result_2 in filtered_subject_dict.items():
-                if len(compare_coordinates(result,result_2)) == 0:
+                if len(compare_coordinates(result[1],result_2[1])) == 0:
                     gene_fusions[query_id].update({filtered_subject_id : result})
     # Remove empty entries        
     for key, fusions in list(gene_fusions.items()):
@@ -474,6 +475,12 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            representative_alignment_strings,
                                                            blastn_processed_results)
+    
+    #Merge dicts to process with the exception of fragmented BLASTn results.
+    chosen_dicts = {k: v for k, v in cluster_classes.items() if k != 'fragmented_blastn_match'}
     # Get probable gene fusions entries from the results
-    gene_fusions = find_gene_fusions(representative_blast_results)
-
+    gene_fusions = find_gene_fusions(lf.merge_dicts(chosen_dicts))
+    # Write to file the found gene fusions
+    report_file_path = os.path.join(blastn_processed_results, "gene_fusions.tsv")
+    alignment_dict_to_file(gene_fusions, report_file_path)
+    
