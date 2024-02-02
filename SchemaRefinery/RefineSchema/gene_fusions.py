@@ -221,6 +221,26 @@ def decode_CDS_sequences_ids(path_to_file):
     return decoded_dict
 
 def compare_coordinates(first_dict, second_dict):
+    """
+    Compares two BLASTn results dicts in order to verify if those don´t intercept
+    in the query coordinates, if they don´t then they are probably two different
+    CDS inside the same query thus probably the query is the results of gene
+    fusion.
+    
+    Parameters
+    ----------
+    first_dict : dict
+        Dict containing the BLASTN results, kmer cov, kmer sim and frequency in the
+        genomes.
+    second_dict : dict
+        Dict containing the BLASTN results, kmer cov, kmer sim and frequency in the
+        genomes.
+    
+    Returns
+    -------
+    Returns the total number of positions of intersection between the two matches
+    in reference to the query.
+    """
     
     first_start = first_dict['query_start']
     first_end = first_dict['query_end']
