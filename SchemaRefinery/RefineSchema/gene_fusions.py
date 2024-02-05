@@ -79,7 +79,8 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "Kmer sim\t",
                                 "Kmer cov\t",
                                 "frequency_in_genomes_query_cds\t",
-                                "frequency_in_genomes_subject_cds\n"])
+                                "frequency_in_genomes_subject_cds\t",
+                                "palign\n"])
         # Write all of the strings into TSV file
         for results in blast_results_dict.values():
             for result in results.values():
@@ -381,6 +382,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            20, clustering_sim, 
                                                            clustering_cov,
                                                            True)
+    # Get frequency of each rep cluster
+    frequency_cds_cluster = {rep: sum([frequency_cds[entry[0]] for entry in value]) for rep, value in clusters.items()}
 
     print("Filtering clusters...")
     singleton_clusters = {}
@@ -478,10 +481,15 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 
             update_dict = {'kmers_sim': sim,
                            'kmers_cov': cov,
-                           'frequency_in_genomes_query_cds' : frequency_cds[query],
-                           'frequency_in_genomes_subject_cds' : frequency_cds[subject]}
+                           'frequency_in_genomes_query_cds' : frequency_cds_cluster[query],
+                           'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject]}
             
-            for entry_id in blastn_results.keys():
+            for entry_id, result in blastn_results.items():
+                # Calculate Palign
+                palign = min([(result['query_end'] - result['query_start']) / result['query_length'],
+                              (result['subject_end'] - result['subject_start']) / result['subject_length']])
+                update_dict.update({'palign' : palign})
+                # Add everything to the dict
                 representative_blast_results[query][subject][entry_id].update(update_dict)
 
     print("Filtering BLASTn results into subclusters...")

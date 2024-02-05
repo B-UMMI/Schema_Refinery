@@ -257,11 +257,14 @@ def process_blast_results(blast_results_file, constants_threshold):
             query = alignments[0]['query']
             subject = alignments[0]['subject']
             
-            # Review this, used to compare things the wrong way, quick fix
-            if query == subject:
+            # Review this code in pralagous finder, in gene fusions it cuts all
+            # GCF_ named isolate from analysis!
+            query_before_underscore = query.split("_")[0]
+            subject_before_underscore = subject.split("_")[0]
+
+            if query_before_underscore == subject_before_underscore:
                 del filtered_alignments_dict[key]
                 continue
-            
             else:
                 query_length = alignments[0]["query_length"]
                 subject_length = alignments[0]["subject_length"]
