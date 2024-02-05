@@ -231,10 +231,10 @@ def compare_coordinates(first_dict, second_dict):
     Parameters
     ----------
     first_dict : dict
-        Dict containing the BLASTN results, kmer cov, kmer sim and frequency in the
+        Dict containing the BLASTn results, kmer cov, kmer sim and frequency in the
         genomes.
     second_dict : dict
-        Dict containing the BLASTN results, kmer cov, kmer sim and frequency in the
+        Dict containing the BLASTn results, kmer cov, kmer sim and frequency in the
         genomes.
     
     Returns
