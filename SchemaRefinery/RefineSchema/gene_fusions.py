@@ -88,7 +88,7 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                     report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
 
 
-def separate_blastn_results_into_classes(representative_blast_results, representative_alignment_strings, path):
+def separate_blastn_results_into_classes(representative_blast_results, path):
     """
     Separates one BLASTn dict into various classes and adds them into one dict
 
@@ -96,8 +96,6 @@ def separate_blastn_results_into_classes(representative_blast_results, represent
     ----------
     representative_blast_results : dict
         dict containing blast results to filter
-    representative_alignment_strings : dict
-        dict containing alignments string to filter
     path : str
         Dir path to write the files for each class of results
 
@@ -453,7 +451,6 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     total_reps = len(rep_paths)
     representative_blast_results = {}
-    representative_alignment_strings = {}
     i = 1
     # Run BLASTn for all representatives
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -501,7 +498,6 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     
     # Separate results into different classes
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
-                                                           representative_alignment_strings,
                                                            blastn_processed_results)
     
     #Merge dicts to process with the exception of fragmented BLASTn results.
