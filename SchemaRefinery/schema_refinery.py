@@ -152,6 +152,11 @@ def refine_schema():
                     default=0.9, help='Coverage value for'
                     'kmers representatives (float: 0-1).')
     
+    parser.add_argument('-gp', '--genome_presence', type=int,
+                    required=False, dest='genome_presence',
+                    help='The minimum number of genomes specific cluster'
+                    'cluster of CDS must be present in order to be considered')
+    
     parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
                     default=1, 

@@ -295,10 +295,7 @@ def find_gene_fusions(class_dict):
     
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
-         pident_threshold_gene_fusions, cpu):
-
-    constants_threshold = [
-        alignment_ratio_threshold_gene_fusions, pident_threshold_gene_fusions]
+         pident_threshold_gene_fusions, genome_presence, cpu):
 
     temp_folder = os.path.join(allelecall_directory,"temp")
     file_path_cds = os.path.join(allelecall_directory, "unclassified_sequences.fasta")
@@ -306,6 +303,22 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     if not os.path.exists(temp_folder) or not os.path.exists(file_path_cds):
         sys.exit(f"Error: {temp_folder} must exist, make sure that AlleleCall "
                  "was run using --no-cleanup and --output-unclassified flag.")
+
+    # Verify if the dataset is small, if it is, keep minimum genomes in which
+    # specific CDS cluster is present to 5 if not to 1% of the dataset size.
+    if not genome_presence:
+        count_genomes_path = os.path.join(temp_folder, "1_cds_prediction")
+        number_of_genomes = len(os.listdir(count_genomes_path))
+        if number_of_genomes <= 20:
+            genome_presence = 5
+        else:
+            genome_presence = round(number_of_genomes * 0.01)
+            
+    # Put all constants in one dict in order to decrease number of variables
+    # used around.
+    constants_threshold = [alignment_ratio_threshold_gene_fusions, 
+                           pident_threshold_gene_fusions,
+                           genome_presence]
         
     print("Identifying CDS present in the schema...")
     cds_present = os.path.join(temp_folder,"3_cds_preprocess/cds_deduplication/distinct_cds_merged.hashtable")
@@ -380,8 +393,10 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            20, clustering_sim, 
                                                            clustering_cov,
                                                            True)
-    # Get frequency of each rep cluster
+    # Get frequency of cluster
     frequency_cds_cluster = {rep: sum([frequency_cds[entry[0]] for entry in value]) for rep, value in clusters.items()}
+    
+    clusters = {rep: cluster_member for rep, cluster_member in clusters.items() if frequency_cds_cluster[rep] >= constants_threshold[2]}
 
     print("Filtering clusters...")
     singleton_clusters = {}

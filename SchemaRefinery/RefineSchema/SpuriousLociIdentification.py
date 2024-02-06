@@ -10,7 +10,7 @@ except ModuleNotFoundError:
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_paralagous, 
          pident_threshold_paralagous, alignment_ratio_threshold_gene_fusions, 
-         pident_threshold_gene_fusions, clustering_sim, clustering_cov, cpu):
+         pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence, cpu):
 
     if True:
         print("Identifying paralagous loci...")
@@ -23,4 +23,4 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
         gene_fusions_output = os.path.join(output_directory, "gene_fusions")
         gene_fusions.main(schema, gene_fusions_output, allelecall_directory, 
                           clustering_sim, clustering_cov, alignment_ratio_threshold_gene_fusions, 
-                          pident_threshold_gene_fusions, cpu)
+                          pident_threshold_gene_fusions, genome_presence, genome_presence, cpu)
