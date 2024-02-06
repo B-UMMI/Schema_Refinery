@@ -119,68 +119,46 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
         Modifies the dict created in the parent function.
         """
         
-        cluster_classes[class_name][query].update({id_entry: matches})
-
+        cluster_classes[class_name][query][id_subject].update({id_: blastn_entry})
+        
+    def add_class_to_dict(class_name):
+        representative_blast_results[query][id_subject][id_].update({'class': class_name})
+        
     # Create various dicts and split the results into different classes
     cluster_classes = {}
     
-    classes = ['similar_size_and_prot',
-               'similar_size_diff_prot',
-               'different_size',
-               'different_size_and_prot',
-               'fragmented_blastn_match',
-               'None_assigned']
+    classes = ['1',
+               '2',
+               '3',
+               '4']
     # Add all of the classes keys and their query keys into the dict
     for class_ in classes:
         cluster_classes[class_] = {}
         # create dict for each rep inside cluster_classes
         for query in representative_blast_results.keys():
             cluster_classes[class_][query] = {}
+            for subjects in representative_blast_results.keys():
+                cluster_classes[class_][query][subjects] = {}
+
     # Process results into classes
     for query, rep_b_result in representative_blast_results.items():
-        for id_entry, matches in rep_b_result.items():
-
-            # Since multiple values can be found between two reps, we add them
-            # into the a separate class in toder to process further
-            if len(matches) > 1:
-                add_to_class_dict('fragmented_blastn_match')
-                continue
-                
-                
-            # Calculate upper and lower limit [1] is to get the first rep since
-            # more than one can be present
-            length_threshold = 0.05
-            high = matches[1]['subject_length'] * (1 + length_threshold)
-            low = matches[1]['subject_length'] * (1 - length_threshold)
-            
-            pident = matches[1]['pident']
-            
-            # Find entries with size difference more than 5%
-            if (low > matches[1]['query_length'] or matches[1]['query_length'] > high) and pident >= 90:
-                # Find entries with kmers cov and sim less than 0.9
-                if matches[1]['kmers_cov'] <= 0.9 and matches[1]['kmers_sim'] <= 0.9:
-                    add_to_class_dict('different_size_and_prot')
-                # Find entries with kmers cov or sim more than 0.9
+        for id_subject, matches in rep_b_result.items():
+            for id_, blastn_entry in matches.items():
+                if blastn_entry['palign'] >= 0.8:
+                    add_class_to_dict('1')
+                    add_to_class_dict('1')
                 else:
-                    add_to_class_dict('different_size')
+                    add_class_to_dict('2')
+                    add_to_class_dict('2')
                     
-            # Find entries with size difference more less 5%
-            elif low <= matches[1]['query_length'] <= high and pident >= 90:
-                # Find entries with kmers cov and sim less than 0.9
-                if matches[1]['kmers_cov'] <= 0.9 and matches[1]['kmers_sim'] <= 0.9:
-                    add_to_class_dict('similar_size_diff_prot')
-                # Find entries with kmers cov or sim more than 0.9
-                else:
-                    add_to_class_dict('similar_size_and_prot')
-            
-            # If for some reason a entry didn´t get added to other classes
-            else:
-                add_to_class_dict('None_assigned')
-
     # Remove blastn results that are present in another classes thus removing
     # empty query entries
     for class_id, entries in list(cluster_classes.items()):
-        for query_id in list(entries.keys()):
+        for query_id, results in list(entries.items()):
+            for subjects in list(results):
+                if len(cluster_classes[class_id][query_id][subjects]) == 0:
+                    del cluster_classes[class_id][query_id][subjects]
+                    
             if len(cluster_classes[class_id][query_id]) == 0:
                 del cluster_classes[class_id][query_id]
                 
@@ -218,80 +196,6 @@ def decode_CDS_sequences_ids(path_to_file):
         decoded_dict[key] = lf.polyline_decoding(value)
         
     return decoded_dict
-
-def compare_coordinates(first_dict, second_dict):
-    """
-    Compares two BLASTn results dicts in order to verify if those don´t intercept
-    in the query coordinates, if they don´t then they are probably two different
-    CDS inside the same query thus probably the query is the results of gene
-    fusion.
-    
-    Parameters
-    ----------
-    first_dict : dict
-        Dict containing the BLASTn results, kmer cov, kmer sim and frequency in the
-        genomes.
-    second_dict : dict
-        Dict containing the BLASTn results, kmer cov, kmer sim and frequency in the
-        genomes.
-    
-    Returns
-    -------
-    Returns the total number of positions of intersection between the two matches
-    in reference to the query.
-    """
-    
-    first_start = first_dict['query_start']
-    first_end = first_dict['query_end']
-    
-    range_first = set(range(first_start,first_end))
-    
-    second_start = second_dict['query_start']
-    second_end = second_dict['query_end']
-    
-    range_second = set(range(second_start,second_end))
-    
-    query_length = first_dict['query_length']
-    
-    return range_first.intersection(range_second)
-    
-def find_gene_fusions(class_dict):
-    """
-    This function identifies probable gene fusion by identifing if the larger 
-    CDS contains two or more smaller CDS that are present in different coordinates.
-    
-    Parameters
-    ----------
-    class_dict : dict
-        Dict that contains the results from BLASTn, kmers clustering and frequency 
-        of CDS in the genome.
-        
-    Returns
-    -------
-   
-    """
-  
-    gene_fusions = {}
-    for query_id, subject_dicts in class_dict.items():
-        gene_fusions[query_id] = {}
-        #Filter out all subjects that are larger than query
-        filtered_subject_dict = {subject_id : result for subject_id, result 
-                                 in subject_dicts.items() if result[1]['query_length'] > result[1]['subject_length']}
-        
-        if len(filtered_subject_dict) == 0:
-            continue
-        # Compare the coordinated between two results of the same representative
-        # use of [1] is to select the first and only BLASTn results
-        for filtered_subject_id, result in filtered_subject_dict.items():
-            for filtered_subject_id_2, result_2 in filtered_subject_dict.items():
-                if len(compare_coordinates(result[1],result_2[1])) == 0:
-                    gene_fusions[query_id].update({filtered_subject_id : result})
-    # Remove empty entries        
-    for key, fusions in list(gene_fusions.items()):
-        if len(fusions) <= 1:
-            del gene_fusions[key]
-    
-    return gene_fusions
     
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
@@ -515,11 +419,4 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            blastn_processed_results)
     
-    #Merge dicts to process with the exception of fragmented BLASTn results.
-    chosen_dicts = {k: v for k, v in cluster_classes.items() if k != 'fragmented_blastn_match'}
-    # Get probable gene fusions entries from the results
-    gene_fusions = find_gene_fusions(lf.merge_dicts(chosen_dicts))
-    # Write to file the found gene fusions
-    report_file_path = os.path.join(blastn_processed_results, "gene_fusions.tsv")
-    alignment_dict_to_file(gene_fusions, report_file_path)
     

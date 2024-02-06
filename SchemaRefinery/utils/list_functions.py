@@ -173,26 +173,3 @@ def polyline_decoding(text):
     number_list = [round(item * (10 ** (-precision)), precision) for item in number_list]
 
     return number_list
-
-def merge_dicts(dicts_list):
-    """
-    Function that merges a dict of dicts into one single dict with only the first
-    level.
-    
-    Parameters
-    ----------
-    dicts_list : dict
-        Dict of dicts.
-        
-    Returns
-    -------
-    out_dict : dict
-        Dict with merged entries from input dict at the first level of the dict.
-    """
-    
-    out_dict = defaultdict(dict)
-    for dict_ in dicts_list: # you can list as many input dicts as you want here
-        for key, value in dicts_list[dict_].items():
-            out_dict[key].update(value)
-            
-    return dict(out_dict)
