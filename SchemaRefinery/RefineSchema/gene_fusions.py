@@ -76,11 +76,12 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "Score\t",
                                 "Number of Gaps\t",
                                 "Pident - Percentage of identical matches\t",
-                                "Kmer sim\t",
-                                "Kmer cov\t",
-                                "frequency_in_genomes_query_cds\t",
-                                "frequency_in_genomes_subject_cds\t",
-                                "palign\n"])
+                                "prot_seq_Kmer_sim\t",
+                                "prot_seq_Kmer_cov\t",
+                                "cluster_frequency_in_genomes_query_cds\t",
+                                "cluster_frequency_in_genomes_subject_cds\t",
+                                "palign\t",
+                                "reps_BSR\n"])
         # Write all of the strings into TSV file
         for results in blast_results_dict.values():
             for result in results.values():
@@ -123,10 +124,9 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
         
     def add_class_to_dict(class_name):
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
-        
     # Create various dicts and split the results into different classes
     cluster_classes = {}
-    
+    results_outcome = {}
     classes = ['1',
                '2',
                '3',
@@ -140,6 +140,8 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
             for subjects in representative_blast_results.keys():
                 cluster_classes[class_][query][subjects] = {}
 
+    results_outcome['Join'] = []
+    results_outcome['Retain'] = set()    
     # Process results into classes
     for query, rep_b_result in representative_blast_results.items():
         for id_subject, matches in rep_b_result.items():
@@ -148,10 +150,29 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
                 if blastn_entry['palign'] >= 0.8:
                     add_class_to_dict('1')
                     add_to_class_dict('1')
+                    # Based on BSR
+                    if blastn_entry['bsr'] >= 0.6:
+                        results_outcome['Join'].append([query, id_subject])
+                    # If BSR <0.6 verify if query cluster is the most prevalent
+                    elif blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
+                        if query in lf.flatten_list(results_outcome['Join']):
+                            results_outcome['Retain'].add(query)
+                    # Add two as separate
+                    else:
+                        if query in lf.flatten_list(results_outcome['Join']):
+                            results_outcome['Retain'].add(query)
+                            results_outcome['Retain'].add(id_subject)
+                # Palign < 0.8        
                 else:
                     add_class_to_dict('2')
                     add_to_class_dict('2')
-                    
+                    # verify if query cluster is the most prevalent
+                    if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
+                        if query in lf.flatten_list(results_outcome['Join']):
+                            results_outcome['Retain'].add(query)
+    # Join the various CDS groups into single group based on ids matches    
+    results_outcome['Join'] = [join for join in cf.cluster_by_ids(results_outcome['Join'])]
+    
     # Remove blastn results that are present in another classes thus removing
     # empty query entries
     for class_id, entries in list(cluster_classes.items()):
@@ -169,7 +190,7 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
         # write individual class to file
         alignment_dict_to_file(v, report_file_path)
 
-    return cluster_classes
+    return cluster_classes, results_outcome
 
 def decode_CDS_sequences_ids(path_to_file):
     """
@@ -301,7 +322,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     print("Filtering clusters...")
     # Get frequency of cluster
     frequency_cds_cluster = {rep: sum([frequency_cds[entry[0]] for entry in value]) for rep, value in clusters.items()}
-    
+    # Filter cluster by the total sum of CDS that are present in the genomes, based on input value
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() if frequency_cds_cluster[rep] >= constants_threshold[2]}
 
     print("Retrieving kmers similiarity and coverage between representatives...")
@@ -358,6 +379,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     total_reps = len(rep_paths)
     representative_blast_results = {}
+    self_scores = {}
     i = 1
     # Run BLASTn for all representatives
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -367,9 +389,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 repeat(rep_paths),
                                 repeat(representatives_all_fasta_file)):
 
-            filtered_alignments_dict = af.get_alignments_dict_from_blast_results(
+            filtered_alignments_dict, self_score = af.get_alignments_dict_from_blast_results(
                 res[1], constants_threshold[1])
-                
+            # Save self score in a dict
+            self_scores.setdefault(res[0], self_score)
+            # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
 
             print(
@@ -378,6 +402,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     # Add kmer cov, kmer sim and frequency of the cds in the genomes
     for query, subjects_dict in list(representative_blast_results.items()):
+        query_self_score = self_scores[query]
         for subject, blastn_results in subjects_dict.items():
             
             if subject in reps_kmers_sim[query]:
@@ -389,10 +414,14 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                            'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject]}
             
             for entry_id, result in blastn_results.items():
+                # Calculate BSR
+                bsr = result['score']/query_self_score
                 # Calculate Palign
                 palign = min([(result['query_end'] - result['query_start']) / result['query_length'],
                               (result['subject_end'] - result['subject_start']) / result['subject_length']])
-                update_dict.update({'palign' : palign})
+                # update the update dict
+                update_dict.update({'palign' : palign,
+                                    'bsr' : bsr})
                 # Add everything to the dict
                 representative_blast_results[query][subject][entry_id].update(update_dict)
 
@@ -404,7 +433,6 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     alignment_dict_to_file(representative_blast_results, report_file_path)
     
     # Separate results into different classes
-    cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
+    cluster_classes, results_outcome = separate_blastn_results_into_classes(representative_blast_results,
                                                            blastn_processed_results)
-    
     # Calculate BSR for class 1 results

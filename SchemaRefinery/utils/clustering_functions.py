@@ -245,3 +245,11 @@ def cluster_based_on_ids(processed_representatives_dict):
     connected = nx.connected_components(G)
 
     return connected
+
+def cluster_by_ids(list_of_ids):
+    G = nx.Graph()
+    G.add_edges_from(list_of_ids)
+
+    connected = nx.connected_components(G)
+
+    return connected

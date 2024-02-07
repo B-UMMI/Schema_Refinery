@@ -348,8 +348,12 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold)
                     "gaps": int(gaps),
                     "pident": float(pident)
                     }
-            
-            if float(pident) < pident_threshold or query == subject:
+            # Filter by pident
+            if float(pident) < pident_threshold:
+                continue
+            # Get self-score
+            if query == subject and float(pident) == 100:
+                self_score = int(score)
                 continue
             
             if not query in alignments_dict.keys():
@@ -360,7 +364,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold)
                 k = max(alignments_dict[query][subject].keys()) + 1
                 alignments_dict[query][subject].update({k: value})
             
-    return alignments_dict
+    return alignments_dict, self_score
 
 def remove_inverse_alignments(alignments_dict, all_representatives_alignments_dict):
     """
