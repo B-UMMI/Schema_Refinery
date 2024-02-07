@@ -144,6 +144,7 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
     for query, rep_b_result in representative_blast_results.items():
         for id_subject, matches in rep_b_result.items():
             for id_, blastn_entry in matches.items():
+                
                 if blastn_entry['palign'] >= 0.8:
                     add_class_to_dict('1')
                     add_to_class_dict('1')
@@ -294,27 +295,14 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            clusters,
                                                            reps_sequences, 
                                                            reps_groups,
-                                                           20, clustering_sim, 
+                                                           1, clustering_sim, 
                                                            clustering_cov,
                                                            True)
+    print("Filtering clusters...")
     # Get frequency of cluster
     frequency_cds_cluster = {rep: sum([frequency_cds[entry[0]] for entry in value]) for rep, value in clusters.items()}
     
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() if frequency_cds_cluster[rep] >= constants_threshold[2]}
-
-    print("Filtering clusters...")
-    singleton_clusters = {}
-    filtered_clusters = {}
-
-    # Separate singletons and clusters with more than one protein and get size
-    cluster_size = {}
-    for k, v in clusters.items():
-        sizes = lf.get_max_min_values([entry_data[2] for entry_data in v])
-        cluster_size[k] = sizes[1]/sizes[0]
-        if len(v) > 1:
-            filtered_clusters[k] = v
-        else:
-            singleton_clusters[k] = v
 
     print("Retrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
@@ -419,4 +407,4 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            blastn_processed_results)
     
-    
+    # Calculate BSR for class 1 results
