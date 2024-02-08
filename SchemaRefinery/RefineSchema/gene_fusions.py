@@ -338,6 +338,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     for cluster_id in reps_translation_dict:
         kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id],
                                                 5, 5, 1, True, True))
+        
         reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep,
                                                                reps_groups,
                                                                0,
@@ -479,7 +480,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     # Add kmer cov, kmer sim and frequency of the cds in the genomes
     for query, subjects_dict in list(representative_blast_results.items()):
         for subject, blastn_results in subjects_dict.items():
-            
+            # Some results may not have kmers matches or BSR values so put them
+            # as 0
             if subject in reps_kmers_sim[query]:
                 sim, cov = reps_kmers_sim[query][subject]
             else:
@@ -487,6 +489,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 cov = 0
             if subject in bsr_values[query]:
                 bsr = bsr_values[query][subject]
+                if bsr > 1.0:
+                    bsr = round(bsr)
             else:
                 bsr = 0
                 
