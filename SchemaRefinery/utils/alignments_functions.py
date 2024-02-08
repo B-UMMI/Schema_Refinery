@@ -352,8 +352,9 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold)
             if float(pident) < pident_threshold:
                 continue
             # Get self-score
-            if query == subject and float(pident) == 100:
-                self_score = int(score)
+            if query == subject:
+                if float(pident) == 100:
+                    self_score = int(score)
                 continue
             
             if not query in alignments_dict.keys():

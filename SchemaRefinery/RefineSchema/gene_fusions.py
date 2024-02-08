@@ -76,12 +76,12 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "Score\t",
                                 "Number of Gaps\t",
                                 "Pident - Percentage of identical matches\t",
+                                "prot_BSR\t",
                                 "prot_seq_Kmer_sim\t",
                                 "prot_seq_Kmer_cov\t",
                                 "cluster_frequency_in_genomes_query_cds\t",
                                 "cluster_frequency_in_genomes_subject_cds\t",
-                                "palign\t",
-                                "reps_BSR\n"])
+                                "palign\n"])
         # Write all of the strings into TSV file
         for results in blast_results_dict.values():
             for result in results.values():
@@ -187,7 +187,7 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
     # Write all of the classes into TSV files
     for k, v in cluster_classes.items():
         report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
-        # write individual class to file
+        # Write individual class to file
         alignment_dict_to_file(v, report_file_path)
 
     return cluster_classes, results_outcome
@@ -258,7 +258,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
     
     ff.create_directory(output_directory)
-    cds_output = os.path.join(output_directory, "CDS_processing")
+    cds_output = os.path.join(output_directory, "1_CDS_processing")
     ff.create_directory(cds_output)
     cds_not_present_file_path = os.path.join(cds_output, "CDS_not_found.fasta")
     
@@ -348,18 +348,21 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
                                       for match_values in reps_kmers_sim[cluster_id]}
 
-    print("Building BLASTn database...")
-    blastn_output = os.path.join(output_directory, "BLASTn_processing")
+    print("Running BLASTn between cluster representatives...")
+    blast_output = os.path.join(output_directory, "2_BLAST_processing")
+    ff.create_directory(blast_output)
+    
+    blastn_output = os.path.join(blast_output, "BLASTn_processing")
     ff.create_directory(blastn_output)
     # write fasta file with all of the representatives sequences
-    representatives_blast_folder = os.path.join(blastn_output,
+    representatives_blastn_folder = os.path.join(blastn_output,
                                                 "cluster_representatives_fastas")
-    ff.create_directory(representatives_blast_folder)
+    ff.create_directory(representatives_blastn_folder)
 
-    representatives_all_fasta_file = os.path.join(representatives_blast_folder,
+    representatives_all_fasta_file = os.path.join(representatives_blastn_folder,
                                                   "all_cluster_representatives.fasta")
 
-    rep_paths = {}
+    rep_paths_nuc = {}
     # Write FASTA files
     with open(representatives_all_fasta_file, 'w') as all_fasta:
         for cluster_rep_id in clusters:
@@ -367,9 +370,9 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             all_fasta.writelines(">"+cluster_rep_id+"\n")
             all_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
 
-            rep_fasta_file = os.path.join(representatives_blast_folder,
+            rep_fasta_file = os.path.join(representatives_blastn_folder,
                                           f"cluster_rep_{cluster_rep_id}.fasta")
-            rep_paths[cluster_rep_id] = rep_fasta_file
+            rep_paths_nuc[cluster_rep_id] = rep_fasta_file
             with open(rep_fasta_file, 'w') as rep_fasta:
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
                 rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
@@ -377,22 +380,20 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     blastn_results_folder = os.path.join(blastn_output, "blast_results")
     ff.create_directory(blastn_results_folder)
 
-    total_reps = len(rep_paths)
+    total_reps = len(rep_paths_nuc)
     representative_blast_results = {}
-    self_scores = {}
     i = 1
     # Run BLASTn for all representatives
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                clusters.keys(), repeat('blastn'),
+                                clusters.keys(),
+                                repeat('blastn'),
                                 repeat(blastn_results_folder),
-                                repeat(rep_paths),
+                                repeat(rep_paths_nuc),
                                 repeat(representatives_all_fasta_file)):
 
-            filtered_alignments_dict, self_score = af.get_alignments_dict_from_blast_results(
+            filtered_alignments_dict, _ = af.get_alignments_dict_from_blast_results(
                 res[1], constants_threshold[1])
-            # Save self score in a dict
-            self_scores.setdefault(res[0], self_score)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
 
@@ -400,39 +401,122 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
             i += 1
 
+    print("Running BLASTp based on BLASTn results matches...")
+    # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously
+    blastp_runs_to_do = {query: lf.flatten_list([[query],[subject[1]['subject']
+                                            for subject in subjects.values()]]) 
+                         for query, subjects in representative_blast_results.items()}
+    
+    # Create all of the folders
+    blastp_results = os.path.join(blast_output,
+                                  "BLASTp_processing")
+    ff.create_directory(blastp_results)
+    
+    blastn_results_matches_translations = os.path.join(blastp_results,
+                                                       "blastn_results_matches_translations")
+    ff.create_directory(blastn_results_matches_translations)
+
+    representatives_blastp_folder = os.path.join(blastn_results_matches_translations,
+                                                "cluster_rep_translation")
+    ff.create_directory(representatives_blastp_folder)
+    
+
+    
+    blastp_results_folder = os.path.join(blastp_results,
+                                         "BLASTp_results")
+    ff.create_directory(blastp_results_folder)
+    
+    rep_paths_prot = {}
+    rep_matches_prot = {}    
+    # Write the protein FASTA files
+    for query_id, subjects_ids in blastp_runs_to_do.items():
+        rep_translation_file = os.path.join(representatives_blastp_folder,
+                                            f"cluster_rep_translation_{query_id}.fasta")
+        rep_paths_prot[query_id] = rep_translation_file
+        with open(rep_translation_file, 'w') as trans_fasta:
+            trans_fasta.writelines(">"+query_id+"\n")
+            trans_fasta.writelines(str(reps_translation_dict[query_id])+"\n")
+            
+        rep_matches_translation_file = os.path.join(blastn_results_matches_translations,
+                                                    f"cluster_matches_translation_{query_id}.fasta")
+        
+        rep_matches_prot[query_id] = rep_matches_translation_file
+        with open(rep_matches_translation_file, 'w') as trans_fasta:            
+            for subject_id in subjects_ids:
+                trans_fasta.writelines(">"+subject_id+"\n")
+                trans_fasta.writelines(str(reps_translation_dict[subject_id])+"\n")
+
+
+    # Calculate BSR based on BLASTp.
+    total_blasts = len(blastp_runs_to_do)
+    bsr_values = {}
+    # Create query entries
+    for query in blastp_runs_to_do.keys():
+        bsr_values[query] = {}
+        
+    i = 1
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
+                                blastp_runs_to_do.keys(), 
+                                repeat('blastp'),
+                                repeat(blastp_results_folder),
+                                repeat(rep_paths_prot),
+                                rep_matches_prot.values()):
+            
+            filtered_alignments_dict, self_score = af.get_alignments_dict_from_blast_results(res[1], 0)
+            
+            for query, subjects_dict in filtered_alignments_dict.items():
+                for subject_id, results in subjects_dict.items():
+                    largest_alignment = 0
+                    for entry_id, result in results.items():
+                        if result['query_length'] > largest_alignment:
+                            largest_alignment = result['query_length']
+                            bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score)})
+
+            print(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts}")
+            i += 1
+
     # Add kmer cov, kmer sim and frequency of the cds in the genomes
     for query, subjects_dict in list(representative_blast_results.items()):
-        query_self_score = self_scores[query]
         for subject, blastn_results in subjects_dict.items():
             
             if subject in reps_kmers_sim[query]:
                 sim, cov = reps_kmers_sim[query][subject]
+            else:
+                sim = 0
+                cov = 0
+            if subject in bsr_values[query]:
+                bsr = bsr_values[query][subject]
+            else:
+                bsr = 0
                 
-            update_dict = {'kmers_sim': sim,
+            update_dict = {'bsr' : bsr,
+                           'kmers_sim': sim,
                            'kmers_cov': cov,
                            'frequency_in_genomes_query_cds' : frequency_cds_cluster[query],
                            'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject]}
             
-            for entry_id, result in blastn_results.items():
-                # Calculate BSR
-                bsr = result['score']/query_self_score
+            for entry_id, result in list(blastn_results.items()):
                 # Calculate Palign
                 palign = min([(result['query_end'] - result['query_start']) / result['query_length'],
                               (result['subject_end'] - result['subject_start']) / result['subject_length']])
-                # update the update dict
-                update_dict.update({'palign' : palign,
-                                    'bsr' : bsr})
-                # Add everything to the dict
-                representative_blast_results[query][subject][entry_id].update(update_dict)
+                
+                if palign >= 0:
+                    # update the update dict
+                    update_dict.update({'palign' : palign})
+                    # Add everything to the dict
+                    representative_blast_results[query][subject][entry_id].update(update_dict)
+                # Remove palign that is negative, meaning tha reverse blast match was made
+                else:
+                    del representative_blast_results[query][subject][entry_id]
 
     print("Filtering BLASTn results into subclusters...")
-    blastn_processed_results = os.path.join(blastn_output, "Processed_Blastn")
+    blastn_processed_results = os.path.join(blast_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path)
     
     # Separate results into different classes
-    cluster_classes, results_outcome = separate_blastn_results_into_classes(representative_blast_results,
+    cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            blastn_processed_results)
-    # Calculate BSR for class 1 results

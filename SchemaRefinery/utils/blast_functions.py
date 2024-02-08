@@ -137,7 +137,7 @@ def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results
         list containing locus id and path to the blast_results_file for that locus.
     """
 
-    blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_all_representatives_{id_}.tsv")
+    blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_{id_}.tsv")
     
     blast_args = [blast_type, '-query', representative_file_dict[id_],
                   '-subject',
@@ -150,3 +150,23 @@ def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results
     run_blast_with_args_only(blast_args)
 
     return [id_, blast_results_file]
+
+def compute_bsr(subject_score, query_score):
+    """Compute the BLAST Score Ratio for an alignment between two sequences.
+
+    Parameters
+    ----------
+    subject_score : float
+        Alignment raw score computed by BLAST.
+    query_score : float
+        Raw score computed by BLAST for the
+        self-alignment of the query sequence.
+
+    Returns
+    -------
+    bsr : float
+        BLAST Score Ratio for the alignment.
+    """
+    bsr = subject_score / query_score
+
+    return bsr
