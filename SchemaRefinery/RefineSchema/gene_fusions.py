@@ -81,7 +81,8 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "prot_seq_Kmer_cov\t",
                                 "cluster_frequency_in_genomes_query_cds\t",
                                 "cluster_frequency_in_genomes_subject_cds\t",
-                                "palign\n"])
+                                "palign\t",
+                                "class\n"])
         # Write all of the strings into TSV file
         for results in blast_results_dict.values():
             for result in results.values():
@@ -123,11 +124,28 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
         cluster_classes[class_name][query][id_subject].update({id_: blastn_entry})
         
     def add_class_to_dict(class_name):
+        """
+        Adds class as last item in representative_blast_results dict
+        
+        Parameters
+        ----------
+        class_name : str
+            Class name, which is a key in cluster_classes to where to add entries.
+            
+        Returns
+        -------
+        Modifies the representative_blast_results dict in the parent function.
+        """
+        
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
+        
+        
     # Create various dicts and split the results into different classes
     cluster_classes = {}
     results_outcome = {}
-    classes = ['1',
+    classes = ['1a',
+               '1b',
+               '1c',
                '2',
                '3',
                '4']
@@ -143,33 +161,38 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
     results_outcome['Join'] = []
     results_outcome['Retain'] = set()    
     # Process results into classes
-    for query, rep_b_result in representative_blast_results.items():
-        for id_subject, matches in rep_b_result.items():
+    for query, rep_blast_result in representative_blast_results.items():
+        for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
                 
                 if blastn_entry['palign'] >= 0.8:
-                    add_class_to_dict('1')
-                    add_to_class_dict('1')
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
+                        add_class_to_dict('1a')
+                        add_to_class_dict('1a')
                         results_outcome['Join'].append([query, id_subject])
                     # If BSR <0.6 verify if query cluster is the most prevalent
                     elif blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
-                        if query in lf.flatten_list(results_outcome['Join']):
-                            results_outcome['Retain'].add(query)
+                        add_class_to_dict('1b')
+                        add_to_class_dict('1b')
+                        results_outcome['Retain'].add(query)
                     # Add two as separate
                     else:
-                        if query in lf.flatten_list(results_outcome['Join']):
-                            results_outcome['Retain'].add(query)
-                            results_outcome['Retain'].add(id_subject)
+                        add_class_to_dict('1c')
+                        add_to_class_dict('1c')
+                        results_outcome['Retain'].add(query)
+                        results_outcome['Retain'].add(id_subject)
                 # Palign < 0.8        
                 else:
-                    add_class_to_dict('2')
-                    add_to_class_dict('2')
                     # verify if query cluster is the most prevalent
                     if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
-                        if query in lf.flatten_list(results_outcome['Join']):
-                            results_outcome['Retain'].add(query)
+                        add_class_to_dict('3')
+                        add_to_class_dict('3')
+                        results_outcome['Retain'].add(query)
+                    else:
+                        add_class_to_dict('2')
+                        add_to_class_dict('2')
+    
     # Join the various CDS groups into single group based on ids matches    
     results_outcome['Join'] = [join for join in cf.cluster_by_ids(results_outcome['Join'])]
     
@@ -465,7 +488,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 rep_matches_prot.values()):
             
             filtered_alignments_dict, self_score = af.get_alignments_dict_from_blast_results(res[1], 0)
-            
+            # Since BLAST may find several local aligments choose the largest one to calculate BSR
             for query, subjects_dict in filtered_alignments_dict.items():
                 for subject_id, results in subjects_dict.items():
                     largest_alignment = 0
@@ -489,6 +512,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 cov = 0
             if subject in bsr_values[query]:
                 bsr = bsr_values[query][subject]
+                # For some reason some isolates have bsr slighty higher than 1
+                # related to blast database and sequences used.
                 if bsr > 1.0:
                     bsr = round(bsr)
             else:
@@ -518,9 +543,9 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     blastn_processed_results = os.path.join(blast_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
-    # Write all of the BLASTn results to a file
-    alignment_dict_to_file(representative_blast_results, report_file_path)
     
     # Separate results into different classes
-    cluster_classes = separate_blastn_results_into_classes(representative_blast_results,
-                                                           blastn_processed_results)
+    cluster_classes, results_outcome = separate_blastn_results_into_classes(representative_blast_results,
+                                                                            blastn_processed_results)
+    # Write all of the BLASTn results to a file
+    alignment_dict_to_file(representative_blast_results, report_file_path)
