@@ -81,7 +81,8 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "prot_seq_Kmer_cov\t",
                                 "cluster_frequency_in_genomes_query_cds\t",
                                 "cluster_frequency_in_genomes_subject_cds\t",
-                                "palign\t",
+                                "palign_global\t",
+                                "palign_local\t",
                                 "class\n"])
         # Write all of the strings into TSV file
         for results in blast_results_dict.values():
@@ -97,7 +98,7 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
     Parameters
     ----------
     representative_blast_results : dict
-        dict containing blast results to filter
+        dict containing BLAST results
     path : str
         Dir path to write the files for each class of results
 
@@ -165,7 +166,7 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
                 
-                if blastn_entry['palign'] >= 0.8:
+                if blastn_entry['global_palign'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
@@ -406,6 +407,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     total_reps = len(rep_paths_nuc)
     representative_blast_results = {}
+    representative_blast_results_coords = {}
     i = 1
     # Run BLASTn for all representatives
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -416,10 +418,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 repeat(rep_paths_nuc),
                                 repeat(representatives_all_fasta_file)):
 
-            filtered_alignments_dict, _ = af.get_alignments_dict_from_blast_results(
-                res[1], constants_threshold[1])
+            filtered_alignments_dict, _, alignment_coords = af.get_alignments_dict_from_blast_results(
+                res[1], constants_threshold[1], True)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
+            representative_blast_results_coords.update(alignment_coords)
 
             print(
                 f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
@@ -487,7 +490,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
             
-            filtered_alignments_dict, self_score = af.get_alignments_dict_from_blast_results(res[1], 0)
+            filtered_alignments_dict, self_score, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False)
             # Since BLAST may find several local aligments choose the largest one to calculate BSR
             for query, subjects_dict in filtered_alignments_dict.items():
                 for subject_id, results in subjects_dict.items():
@@ -518,21 +521,36 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                     bsr = round(bsr)
             else:
                 bsr = 0
-                
+            # Calculate total alignment for all of the fragments of BLASTn
+            # For query and subject
+            total_length = {}
+            gaps = representative_blast_results_coords[query][subject].pop('gaps')
+            for ref, intervals in representative_blast_results_coords[query][subject].items():
+                # Sort by start position
+                sorted_intervals = [interval for interval in sorted(intervals,
+                                                                    key=lambda x: x[0])]
+                # Merge alignments and calculate the total length of BLASTn alignments.
+                length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                total_length[ref] = length
+            # Calculate global palign
+            global_palign = min([(total_length['query'] + gaps + 1) / blastn_results[1]['query_length'],
+                                 (total_length['subject'] + 1) / blastn_results[1]['subject_length']])
+            
             update_dict = {'bsr' : bsr,
                            'kmers_sim': sim,
                            'kmers_cov': cov,
                            'frequency_in_genomes_query_cds' : frequency_cds_cluster[query],
-                           'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject]}
+                           'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject],
+                           'global_palign': global_palign}
             
             for entry_id, result in list(blastn_results.items()):
                 # Calculate Palign
-                palign = min([(result['query_end'] - result['query_start']) / result['query_length'],
-                              (result['subject_end'] - result['subject_start']) / result['subject_length']])
+                local_palign = min([(result['query_end'] - result['query_start'] + 1) / result['query_length'],
+                                    (result['subject_end'] - result['subject_start'] + 1 + result['gaps']) / result['subject_length']])
                 
-                if palign >= 0:
+                if local_palign >= 0:
                     # update the update dict
-                    update_dict.update({'palign' : palign})
+                    update_dict.update({'local_palign' : local_palign})
                     # Add everything to the dict
                     representative_blast_results[query][subject][entry_id].update(update_dict)
                 # Remove palign that is negative, meaning tha reverse blast match was made

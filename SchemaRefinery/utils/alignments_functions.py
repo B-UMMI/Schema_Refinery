@@ -1,5 +1,4 @@
-import copy
-
+from copy import deepcopy
 try:
     from RefineSchema.constants import MAX_GAP_UNITS
 except ModuleNotFoundError:
@@ -101,7 +100,7 @@ def filter_out_equal_alignments(original:list, inverted:list):
         new original alignment.
     """
 
-    new_original = copy.deepcopy(original)
+    new_original = deepcopy(original)
 
     for i in inverted:
         has_alignment = False
@@ -250,7 +249,7 @@ def process_blast_results(blast_results_file, constants_threshold):
     alignments_dict = {key: alignments
                        for key, alignments in alignments_dict.items() if len(alignments) != 0}
 
-    filtered_alignments_dict = copy.deepcopy(alignments_dict)
+    filtered_alignments_dict = deepcopy(alignments_dict)
     for key, alignments in alignments_dict.items():
     
         if len(alignments) > 0:
@@ -298,7 +297,7 @@ def process_blast_results(blast_results_file, constants_threshold):
         
     return (alignment_strings, filtered_alignments_dict)
 
-def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold):
+def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold, get_coords):
     """
     organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
     and value = a list of all alignments for that key correspondence.
@@ -311,10 +310,11 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold)
     Returns
     -------
     alignments_dict : dict
-        Dictionary containing the necessary information for graph building and representatives vs alleles blast.
+        Dictionary containing the results of the BLAST.
     """
 
     alignments_dict = {}
+    alignment_coords = {}
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
         i = 1
@@ -359,13 +359,23 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold)
             
             if not query in alignments_dict.keys():
                 alignments_dict[query] = {}
+                if get_coords:
+                    alignment_coords[query] = {}
             if not subject in alignments_dict[query].keys():
                 alignments_dict[query][subject] = {i: value}
+                if get_coords:
+                    alignment_coords[query][subject] = {'query': [[int(query_start),int(query_end)]]}
+                    alignment_coords[query][subject].update({'subject': [[int(subject_start),int(subject_end)]]})
+                    alignment_coords[query][subject].update({'gaps': int(gaps)})
             else:
                 k = max(alignments_dict[query][subject].keys()) + 1
                 alignments_dict[query][subject].update({k: value})
+                if get_coords:
+                    alignment_coords[query][subject]['query'].append([int(query_start),int(query_end)])
+                    alignment_coords[query][subject]['subject'].append([int(subject_start),int(subject_end)])
+                    alignment_coords[query][subject]['gaps'] += int(gaps)
             
-    return alignments_dict, self_score
+    return alignments_dict, self_score, alignment_coords
 
 def remove_inverse_alignments(alignments_dict, all_representatives_alignments_dict):
     """
@@ -385,7 +395,7 @@ def remove_inverse_alignments(alignments_dict, all_representatives_alignments_di
         list of list containing for each sublist the loci alignment pair ids.
     """
 
-    filtered_alignments_dict = copy.deepcopy(alignments_dict)
+    filtered_alignments_dict = deepcopy(alignments_dict)
     for key in alignments_dict.keys():
         query, subject = key.split(";")
         inverse_key = f"{subject};{query}"
@@ -397,3 +407,36 @@ def remove_inverse_alignments(alignments_dict, all_representatives_alignments_di
     alignments_pair_list = [key.split(";") for key in filtered_alignments_dict.keys()]
 
     return alignments_pair_list
+
+def merge_intervals(intervals):
+    """ Merges intersecting intervals.
+
+        Parameters
+        ----------
+        intervals : dict
+            Dictionary with sequence identifiers as keys
+            and a list of lists as values. Each sublist has
+            a start and stop position in the sequence and
+            a dictionary with the coverage for every position
+            in the sequence interval.
+
+        Returns
+        -------
+        merged : list
+            Dictionary with the result of merging intervals
+            that overlapped (coverage data is updated and
+            incremented for positions in common).
+    """
+
+    merged = [deepcopy(intervals[0])]
+    for current in intervals[1:]:
+        previous = merged[-1]
+        # current and previous intervals intersect
+        if current[0] <= previous[1]:
+            # determine top position
+            previous[1] = max(previous[1], current[1])
+        # current and previous intervals do not intersect
+        else:
+            merged.append(deepcopy(current))
+
+    return merged
