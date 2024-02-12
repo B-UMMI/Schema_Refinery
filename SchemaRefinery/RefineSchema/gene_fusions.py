@@ -402,7 +402,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
                 rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
 
-    blastn_results_folder = os.path.join(blastn_output, "blast_results")
+    blastn_results_folder = os.path.join(blastn_output, "blastn_results")
     ff.create_directory(blastn_results_folder)
 
     total_reps = len(rep_paths_nuc)
