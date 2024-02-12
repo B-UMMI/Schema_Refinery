@@ -247,6 +247,20 @@ def cluster_based_on_ids(processed_representatives_dict):
     return connected
 
 def cluster_by_ids(list_of_ids):
+    """
+    Based on list of list containing pairs or more ids, merges them into larger
+    lists if there are ids common between these sublists.
+    
+    Parameters
+    ----------
+    list_of_ids : list
+        List containing lists with ids.
+    
+    Returns
+    -------
+    connected : list
+        List that contains sublists of ids merged from the initial list.
+    """
     G = nx.Graph()
     G.add_edges_from(list_of_ids)
 

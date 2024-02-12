@@ -409,23 +409,19 @@ def remove_inverse_alignments(alignments_dict, all_representatives_alignments_di
     return alignments_pair_list
 
 def merge_intervals(intervals):
-    """ Merges intersecting intervals.
+    """
+    Merges intersecting intervals.
 
         Parameters
         ----------
-        intervals : dict
-            Dictionary with sequence identifiers as keys
-            and a list of lists as values. Each sublist has
-            a start and stop position in the sequence and
-            a dictionary with the coverage for every position
-            in the sequence interval.
+        intervals : list
+            List that contains list with coordinates of various BLASTn matches
 
         Returns
         -------
         merged : list
             Dictionary with the result of merging intervals
-            that overlapped (coverage data is updated and
-            incremented for positions in common).
+            that overlapped.
     """
 
     merged = [deepcopy(intervals[0])]

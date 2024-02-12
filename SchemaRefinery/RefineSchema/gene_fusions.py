@@ -519,11 +519,14 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 # related to blast database and sequences used.
                 if bsr > 1.0:
                     bsr = round(bsr)
+            # If subject not in inside queries alignments. This means that even
+            # though there was an BLASTn align, they didn´t align when BLASTp
+            # was employed.
             else:
                 bsr = 0
                 
             # Calculate total alignment for all of the fragments of BLASTn
-            # if there more than one BLASTn matches
+            # if there more than one BLASTn alignments
             # For query and subject
             if len(blastn_results) > 1:
                 total_length = {}
@@ -560,7 +563,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                     update_dict.update({'local_palign' : local_palign})
                     # Add everything to the dict
                     representative_blast_results[query][subject][entry_id].update(update_dict)
-                # Remove palign that is negative, meaning tha reverse blast match was made
+                # Remove palign that is negative, meaning tha reverse blast alignment was made
                 else:
                     del representative_blast_results[query][subject][entry_id]
 
