@@ -521,21 +521,28 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                     bsr = round(bsr)
             else:
                 bsr = 0
+                
             # Calculate total alignment for all of the fragments of BLASTn
+            # if there more than one BLASTn matches
             # For query and subject
-            total_length = {}
-            gaps = representative_blast_results_coords[query][subject].pop('gaps')
-            for ref, intervals in representative_blast_results_coords[query][subject].items():
-                # Sort by start position
-                sorted_intervals = [interval for interval in sorted(intervals,
-                                                                    key=lambda x: x[0])]
-                # Merge alignments and calculate the total length of BLASTn alignments.
-                length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
-                total_length[ref] = length
-            # Calculate global palign
-            global_palign = min([(total_length['query'] + gaps + 1) / blastn_results[1]['query_length'],
-                                 (total_length['subject'] + 1) / blastn_results[1]['subject_length']])
-            
+            if len(blastn_results) > 1:
+                total_length = {}
+                gaps = representative_blast_results_coords[query][subject].pop('gaps')
+                for ref, intervals in representative_blast_results_coords[query][subject].items():
+                    # Sort by start position
+                    sorted_intervals = [interval for interval in sorted(intervals,
+                                                                        key=lambda x: x[0])]
+                    # Merge alignments and calculate the total length of BLASTn alignments.
+                    length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                    total_length[ref] = length
+                # Calculate global palign
+                global_palign = min([(total_length['query'] + gaps) / blastn_results[1]['query_length'],
+                                     (total_length['subject']) / blastn_results[1]['subject_length']])
+            # If there is only on results
+            else:
+                global_palign = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
+                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])                
+            # Create update dict with the values to add
             update_dict = {'bsr' : bsr,
                            'kmers_sim': sim,
                            'kmers_cov': cov,
@@ -545,8 +552,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             
             for entry_id, result in list(blastn_results.items()):
                 # Calculate Palign
-                local_palign = min([(result['query_end'] - result['query_start'] + 1) / result['query_length'],
-                                    (result['subject_end'] - result['subject_start'] + 1 + result['gaps']) / result['subject_length']])
+                local_palign = min([(result['query_end'] - result['query_start'] + 1 + result['gaps']) / result['query_length'],
+                                    (result['subject_end'] - result['subject_start'] + 1) / result['subject_length']])
                 
                 if local_palign >= 0:
                     # update the update dict
