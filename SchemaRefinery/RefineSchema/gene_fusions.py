@@ -518,7 +518,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 # For some reason some isolates have bsr slighty higher than 1
                 # related to blast database and sequences used.
                 if bsr > 1.0:
-                    bsr = round(bsr)
+                    bsr = float(round(bsr))
             # If subject not in inside queries alignments. This means that even
             # though there was an BLASTn align, they didn´t align when BLASTp
             # was employed.
