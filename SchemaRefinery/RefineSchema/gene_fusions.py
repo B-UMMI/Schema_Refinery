@@ -197,8 +197,9 @@ def process_classes(representative_blast_results, results_outcome, path):
     results_outcome['Join'] = [join for join in cf.cluster_by_ids(results_outcome['Join'])]
     
     # Remove from retain the entries that are present in Join
-    results_outcome['Retain'] = [retain for retain in results_outcome['Retain']
-                                 if retain in lf.flatten_list(results_outcome['Join'])]
+    # Keep inside list inside a list so that further processing is simpler
+    results_outcome['Retain'] = [[retain] for retain in results_outcome['Retain']
+                                 if retain not in lf.flatten_list(results_outcome['Join'])]
     
     # Write classes to file
     for class_ in classes:
@@ -210,7 +211,25 @@ def process_classes(representative_blast_results, results_outcome, path):
         report_file_path = os.path.join(path, f"blastn_group_{class_}.tsv")
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path)
+        
+def wrap_up_results(results_outcome, not_included_cds, clusters, path):
+    cds_outcome_results = os.path.join(path, "results_outcomes")
+    ff.create_directory(cds_outcome_results)
+    cds_outcome_results_fastas_folder = os.path.join(path, "results_outcomes_fastas")
+    ff.create_directory(cds_outcome_results_fastas_folder)
     
+    for outcome in results_outcome:
+        i = 1
+        for group in results_outcome[outcome]:
+            cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"{outcome}_{i}.fasta")
+            i += 1
+            with open(cds_outcome_results_fastas_file, 'w+') as fasta_file:
+                for rep_id in group:
+                    ids = [id_[0] for id_ in clusters[rep_id]]
+                    for id_ in ids:
+                        fasta_file.writelines(f">{id_}\n")
+                        fasta_file.writelines(str(not_included_cds[id_])+"\n")
+
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
          pident_threshold_gene_fusions, genome_presence, cpu):
@@ -535,7 +554,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 else:
                     del representative_blast_results[query][subject][entry_id]
 
-    print("Filtering BLASTn results into subclusters...")
+    print("Filtering BLASTn results into classes...")
     blastn_processed_results = os.path.join(blast_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results)
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
@@ -544,5 +563,12 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     results_outcome = separate_blastn_results_into_classes(representative_blast_results)
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path)
+    
+    print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file
     process_classes(representative_blast_results, results_outcome, blastn_processed_results)
+    
+    print("Wrapping up results...")
+    results_output = os.path.join(output_directory, "3_Results_files")
+    ff.create_directory(results_output)
+    wrap_up_results(results_outcome, not_included_cds, clusters, results_output)
