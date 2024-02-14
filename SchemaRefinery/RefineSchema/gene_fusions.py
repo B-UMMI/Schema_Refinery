@@ -46,6 +46,32 @@ def fetch_not_included_cds(file_path_cds):
 
     return not_included_cds
 
+def decode_CDS_sequences_ids(path_to_file):
+    """
+    Function to read a dict contained in pickle file and decode its values based
+    on polyline.
+    
+    Parameters
+    ----------
+    path_to_file : str
+        Path to the pickle file.
+        
+    Returns
+    -------
+    decoded_dict : dict
+        Contains hashed CDS as keys, and number id of the genome which
+        that CDS is present
+    
+    """
+    
+    with open(path_to_file, "rb") as infile:
+        hash_table = pickle.load(infile)
+    
+    decoded_dict = {}
+    for key, value in hash_table.items():
+        decoded_dict[key] = lf.polyline_decoding(value)
+        
+    return decoded_dict
 
 def alignment_dict_to_file(blast_results_dict, file_path):
     """
@@ -91,7 +117,7 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                     report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
 
 
-def separate_blastn_results_into_classes(representative_blast_results, path):
+def separate_blastn_results_into_classes(representative_blast_results):
     """
     Separates one BLASTn dict into various classes and adds them into one dict
 
@@ -104,25 +130,9 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
 
     Returns
     -------
-    cluster_classes : dict
-        dict containing cluster separated by classes
+    results_outcome : dict
+        Dict that contains list with the results outcome
     """
-
-    def add_to_class_dict(class_name):
-        """
-        Function that adds entries to the cluster_classes dict based on class.
-        
-        Parameters
-        ----------
-        class_name : str
-            Class name, which is a key in cluster_classes to where to add entries.
-            
-        Returns
-        -------
-        Modifies the dict created in the parent function.
-        """
-        
-        cluster_classes[class_name][query][id_subject].update({id_: blastn_entry})
         
     def add_class_to_dict(class_name):
         """
@@ -140,24 +150,7 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
         
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
         
-        
-    # Create various dicts and split the results into different classes
-    cluster_classes = {}
     results_outcome = {}
-    classes = ['1a',
-               '1b',
-               '1c',
-               '2',
-               '3',
-               '4']
-    # Add all of the classes keys and their query keys into the dict
-    for class_ in classes:
-        cluster_classes[class_] = {}
-        # create dict for each rep inside cluster_classes
-        for query in representative_blast_results.keys():
-            cluster_classes[class_][query] = {}
-            for subjects in representative_blast_results.keys():
-                cluster_classes[class_][query][subjects] = {}
 
     results_outcome['Join'] = []
     results_outcome['Retain'] = set()    
@@ -170,17 +163,14 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
-                        add_to_class_dict('1a')
                         results_outcome['Join'].append([query, id_subject])
                     # If BSR <0.6 verify if query cluster is the most prevalent
                     elif blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
                         add_class_to_dict('1b')
-                        add_to_class_dict('1b')
                         results_outcome['Retain'].add(query)
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
-                        add_to_class_dict('1c')
                         results_outcome['Retain'].add(query)
                         results_outcome['Retain'].add(id_subject)
                 # Palign < 0.8        
@@ -188,60 +178,38 @@ def separate_blastn_results_into_classes(representative_blast_results, path):
                     # verify if query cluster is the most prevalent
                     if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
                         add_class_to_dict('3')
-                        add_to_class_dict('3')
                         results_outcome['Retain'].add(query)
                     else:
                         add_class_to_dict('2')
-                        add_to_class_dict('2')
+
+    return results_outcome
+
+def process_classes(representative_blast_results, results_outcome, path):
     
+    classes = ['1a',
+               '1b',
+               '1c',
+               '2',
+               '3',
+               '4']
+                
     # Join the various CDS groups into single group based on ids matches    
     results_outcome['Join'] = [join for join in cf.cluster_by_ids(results_outcome['Join'])]
     
-    # Remove blastn results that are present in another classes thus removing
-    # empty query entries
-    for class_id, entries in list(cluster_classes.items()):
-        for query_id, results in list(entries.items()):
-            for subjects in list(results):
-                if len(cluster_classes[class_id][query_id][subjects]) == 0:
-                    del cluster_classes[class_id][query_id][subjects]
-                    
-            if len(cluster_classes[class_id][query_id]) == 0:
-                del cluster_classes[class_id][query_id]
-                
-    # Write all of the classes into TSV files
-    for k, v in cluster_classes.items():
-        report_file_path = os.path.join(path, f"blastn_group_{k}.tsv")
+    # Remove from retain the entries that are present in Join
+    results_outcome['Retain'] = [retain for retain in results_outcome['Retain']
+                                 if retain in lf.flatten_list(results_outcome['Join'])]
+    
+    # Write classes to file
+    for class_ in classes:
+        # Fetch all entries with the desired class
+        write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
+                               for subject, entries in subjects.items()}
+                      for query, subjects in representative_blast_results.items()}
+        
+        report_file_path = os.path.join(path, f"blastn_group_{class_}.tsv")
         # Write individual class to file
-        alignment_dict_to_file(v, report_file_path)
-
-    return cluster_classes, results_outcome
-
-def decode_CDS_sequences_ids(path_to_file):
-    """
-    Function to read a dict contained in pickle file and decode its values based
-    on polyline.
-    
-    Parameters
-    ----------
-    path_to_file : str
-        Path to the pickle file.
-        
-    Returns
-    -------
-    decoded_dict : dict
-        Contains hashed CDS as keys, and number id of the genome which
-        that CDS is present
-    
-    """
-    
-    with open(path_to_file, "rb") as infile:
-        hash_table = pickle.load(infile)
-    
-    decoded_dict = {}
-    for key, value in hash_table.items():
-        decoded_dict[key] = lf.polyline_decoding(value)
-        
-    return decoded_dict
+        alignment_dict_to_file(write_dict, report_file_path)
     
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
@@ -573,7 +541,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
     
     # Separate results into different classes
-    cluster_classes, results_outcome = separate_blastn_results_into_classes(representative_blast_results,
-                                                                            blastn_processed_results)
+    results_outcome = separate_blastn_results_into_classes(representative_blast_results)
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path)
+    # Process the results_outcome dict and write individual classes to TSV file
+    process_classes(representative_blast_results, results_outcome, blastn_processed_results)
