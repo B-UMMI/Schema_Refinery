@@ -11,7 +11,8 @@ try:
                        blast_functions as bf,
                        alignments_functions as af,
                        kmers_functions as kf,
-                       list_functions as lf)
+                       list_functions as lf,
+                       graphical_functions as gf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       sequence_functions as sf,
@@ -19,7 +20,8 @@ except ModuleNotFoundError:
                                       blast_functions as bf,
                                       alignments_functions as af,
                                       kmers_functions as kf,
-                                      list_functions as lf)
+                                      list_functions as lf,
+                                      graphical_functions as gf)
 
 def fetch_not_included_cds(file_path_cds):
     """
@@ -212,8 +214,8 @@ def process_classes(representative_blast_results, results_outcome, path):
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path)
         
-def wrap_up_results(results_outcome, not_included_cds, clusters, path):
-    cds_outcome_results = os.path.join(path, "results_outcomes")
+def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processed_results_path, path):
+    cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
     cds_outcome_results_fastas_folder = os.path.join(path, "results_outcomes_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
@@ -229,6 +231,25 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, path):
                     for id_ in ids:
                         fasta_file.writelines(f">{id_}\n")
                         fasta_file.writelines(str(not_included_cds[id_])+"\n")
+    
+    # Create graphs for all results and for each class
+    
+    for tsv_file_path in os.listdir(blastn_processed_results_path):
+        abs_path = os.path.join(blastn_processed_results_path, tsv_file_path)
+        file_name = os.path.basename(tsv_file_path)
+        
+        graphs_path = os.path.join(cds_outcome_results, f"{file_name.replace('tsv','')}")
+        ff.create_directory(graphs_path)
+        
+        gf.render_histogram(abs_path, graphs_path, ['Query_length',
+                                                    'Subject_length'],
+                            ['Length', 'Count'])
+        
+        gf.render_line_chart(abs_path, graphs_path, ['Pident',
+                                                     'Prot_BSR',
+                                                     'Prot_seq_Kmer_sim',
+                                                     'Prot_seq_Kmer_cov'],
+                             ['Entries', 'Values'], False)
 
 def main(schema, output_directory, allelecall_directory, clustering_sim,
          clustering_cov, alignment_ratio_threshold_gene_fusions,
@@ -555,9 +576,9 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                     del representative_blast_results[query][subject][entry_id]
 
     print("Filtering BLASTn results into classes...")
-    blastn_processed_results = os.path.join(blast_output, "Processed_Blastn")
-    ff.create_directory(blastn_processed_results)
-    report_file_path = os.path.join(blastn_processed_results, "blastn_all_matches.tsv")
+    blastn_processed_results_path = os.path.join(blast_output, "Processed_Blastn")
+    ff.create_directory(blastn_processed_results_path)
+    report_file_path = os.path.join(blastn_processed_results_path, "blastn_all_matches.tsv")
     
     # Separate results into different classes
     results_outcome = separate_blastn_results_into_classes(representative_blast_results)
@@ -566,9 +587,9 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file
-    process_classes(representative_blast_results, results_outcome, blastn_processed_results)
+    process_classes(representative_blast_results, results_outcome, blastn_processed_results_path)
     
     print("Wrapping up results...")
     results_output = os.path.join(output_directory, "3_Results_files")
     ff.create_directory(results_output)
-    wrap_up_results(results_outcome, not_included_cds, clusters, results_output)
+    wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processed_results_path, results_output)
