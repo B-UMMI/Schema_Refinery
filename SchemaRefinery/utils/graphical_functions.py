@@ -14,6 +14,8 @@ def render_line_chart(file_path, output_path, columns, labels, ascending):
         Where to write HTML file.
     columns : list
         List that contains the columns ids to create line chart.
+    labels : list
+        Contains x and y lables to add to the chart.
     ascending : bool
         Bool to choose order to sort (False for highest to smallest).
     
@@ -46,6 +48,8 @@ def render_histogram(file_path, output_path, columns, labels):
         Where to write HTML file.
     columns : list
         List that contains the columns ids to create histogram plot.
+    labels : list
+        Contains x and y lables to add to the chart.
     
     Returns
     -------

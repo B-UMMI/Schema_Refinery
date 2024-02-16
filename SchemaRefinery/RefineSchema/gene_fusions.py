@@ -220,6 +220,7 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
     cds_outcome_results_fastas_folder = os.path.join(path, "results_outcomes_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
     
+    # Write FASTA files for each CDS group to join or retain
     for outcome in results_outcome:
         i = 1
         for group in results_outcome[outcome]:
@@ -233,7 +234,6 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
                         fasta_file.writelines(str(not_included_cds[id_])+"\n")
     
     # Create graphs for all results and for each class
-    
     for tsv_file_path in os.listdir(blastn_processed_results_path):
         abs_path = os.path.join(blastn_processed_results_path, tsv_file_path)
         file_name = os.path.basename(tsv_file_path)
@@ -241,14 +241,15 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
         graphs_path = os.path.join(cds_outcome_results, f"{file_name.replace('tsv','')}")
         ff.create_directory(graphs_path)
         
-        gf.render_histogram(abs_path, graphs_path, ['Query_length',
-                                                    'Subject_length'],
+        gf.render_histogram(abs_path,
+                            graphs_path,
+                            ['Query_length', 'Subject_length'],
                             ['Length', 'Count'])
         
-        gf.render_line_chart(abs_path, graphs_path, ['Pident',
-                                                     'Prot_BSR',
-                                                     'Prot_seq_Kmer_sim',
-                                                     'Prot_seq_Kmer_cov'],
+        gf.render_line_chart(abs_path,
+                             graphs_path,
+                             ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
+                              'Prot_seq_Kmer_cov','Palign_global'],
                              ['Entries', 'Values'], False)
 
 def main(schema, output_directory, allelecall_directory, clustering_sim,
