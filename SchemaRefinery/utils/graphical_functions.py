@@ -55,6 +55,7 @@ def render_histogram(file_path, output_path, columns, labels):
     -------
     Writes HTML files inside the output path.
     """
+    
     df = pd.read_csv(file_path, sep="\t")
     
     for column_id in columns:

@@ -187,6 +187,16 @@ def separate_blastn_results_into_classes(representative_blast_results):
     return results_outcome
 
 def process_classes(representative_blast_results, results_outcome, path):
+    """
+    Parameters
+    ----------
+    representative_blast_results : dict
+    results_outcome : dict
+    path : str
+    
+    Returns
+    -------
+    """
     
     classes = ['1a',
                '1b',
