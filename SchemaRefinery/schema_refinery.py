@@ -16,11 +16,11 @@ import argparse
 try:
     from DownloadAssemblies import DownloadAssemblies
     from utils import parameter_validation as pv
-    from RefineSchema import SpuriousLociIdentification
+    from RefineSchema import run_refine_schema
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.utils import parameter_validation as pv
-    from SchemaRefinery.RefineSchema import SpuriousLociIdentification
+    from SchemaRefinery.RefineSchema import run_refine_schema
 
 
 def download_assemblies():
@@ -166,7 +166,7 @@ def refine_schema():
 
     del args.RefineSchema
 
-    SpuriousLociIdentification.main(**vars(args))
+    run_refine_schema.main(**vars(args))
 
 def main():
 
