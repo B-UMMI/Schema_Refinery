@@ -323,7 +323,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         
     print("Identifying CDS present in the schema...")
     cds_present = os.path.join(temp_folder,"3_cds_preprocess/cds_deduplication/distinct_cds_merged.hashtable")
-    
+    # Get dict of CDS and their sequence hashes
     decoded_sequences_ids = decode_CDS_sequences_ids(cds_present)
 
     print("Identifying CDS not present in the schema...")
@@ -335,15 +335,20 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     ff.create_directory(output_directory)
     cds_output = os.path.join(output_directory, "1_CDS_processing")
     ff.create_directory(cds_output)
+    # This file contains unique CDS
     cds_not_present_file_path = os.path.join(cds_output, "CDS_not_found.fasta")
     
     frequency_cds = {}
+    # Count the number of CDS present in the schema and write CDS sequence
+    # into a FASTA file
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
         for id_, sequence in not_included_cds.items():
             cds_not_found.writelines(">"+id_+"\n")
             cds_not_found.writelines(str(sequence)+"\n")
             
-            hashed_seq = sf.seq_to_hash(str(sequence)) 
+            hashed_seq = sf.seq_to_hash(str(sequence))
+            # if CDS sequence is present in the schema count the number of
+            # genomes that it is found minus 1 (subtract the first CDS genome)
             if hashed_seq in decoded_sequences_ids:
                 frequency_cds[id_] = len(decoded_sequences_ids[hashed_seq]) - 1
             else:
@@ -356,21 +361,26 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     protein_hashes = {}
     i = 1
     total = len(not_included_cds)
+    # Translate the CDS and find unique proteins using hashes, the CDS with
+    # the same hash will be added under that hash in protein_hashes
     with open(cds_not_present_translation_file_path, 'w+') as translation:
         for id_s, sequence in not_included_cds.items():
             print(f"Translated {i}/{total} CDS")
             i += 1
+            # Translate
             protein_translation = str(sf.translate_dna(str(sequence),
                                                        11,
                                                        0,
                                                        True)[0][0])
-            
+            # Hash the sequence
             prot_hash = sf.seq_to_hash(protein_translation)
+            # Find unique proteins
             if prot_hash not in protein_hashes:
                 protein_hashes[prot_hash] = [id_s]
                 cds_translation_dict[id_s] = protein_translation
                 translation.writelines(id_s+"\n")
                 translation.writelines(protein_translation+"\n")
+            # Remember CDS with that protein hash for future (Not used)
             else:
                 protein_hashes[prot_hash].append(id_s)
 
@@ -380,11 +390,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     clusters = {}
     reps_sequences = {}
 
-    # sort by size of proteins
+    # Sort by size of proteins
     cds_translation_dict = {k: v for k, v in sorted(cds_translation_dict.items(),
                                                     key=lambda x: len(x[1]),
                                                     reverse=True)}
-
+    # Cluster by minimizers
     [clusters, reps_sequences, 
      reps_groups, prot_len_dict] = cf.minimizer_clustering(cds_translation_dict,
                                                            5, 5, True, 1, 
@@ -402,9 +412,10 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     print("Retrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
+    # Get the representatives protein sequence
     reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in cds_translation_dict.items()
                              if rep_id in clusters}
-
+    # Sort the representative translation dict from largest to smallest
     reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
                                                      key=lambda x: len(x[1]),
                                                      reverse=True)}
@@ -439,7 +450,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                   "all_cluster_representatives.fasta")
 
     rep_paths_nuc = {}
-    # Write FASTA files
+    # Write FASTA files for BLASTn
     with open(representatives_all_fasta_file, 'w') as all_fasta:
         for cluster_rep_id in clusters:
 
@@ -460,7 +471,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     representative_blast_results = {}
     representative_blast_results_coords = {}
     i = 1
-    # Run BLASTn for all representatives
+    # Run BLASTn for all representatives (rep vs all)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
                                 clusters.keys(),
@@ -508,13 +519,15 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     rep_matches_prot = {}    
     # Write the protein FASTA files
     for query_id, subjects_ids in blastp_runs_to_do.items():
+        # First write the representative protein sequence
         rep_translation_file = os.path.join(representatives_blastp_folder,
                                             f"cluster_rep_translation_{query_id}.fasta")
         rep_paths_prot[query_id] = rep_translation_file
         with open(rep_translation_file, 'w') as trans_fasta:
             trans_fasta.writelines(">"+query_id+"\n")
             trans_fasta.writelines(str(reps_translation_dict[query_id])+"\n")
-            
+        # Then write in another file all of the matches for that protein sequence
+        # including the representative itself
         rep_matches_translation_file = os.path.join(blastn_results_matches_translations,
                                                     f"cluster_matches_translation_{query_id}.fasta")
         
@@ -533,6 +546,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
         bsr_values[query] = {}
         
     i = 1
+    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
                                 blastp_runs_to_do.keys(), 
