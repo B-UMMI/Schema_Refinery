@@ -65,10 +65,10 @@ def decode_CDS_sequences_ids(path_to_file):
         that CDS is present
     
     """
-    
+    # Load pickle file
     with open(path_to_file, "rb") as infile:
         hash_table = pickle.load(infile)
-    
+    # Decode the file
     decoded_dict = {}
     for key, value in hash_table.items():
         decoded_dict[key] = lf.polyline_decoding(value)
@@ -112,7 +112,7 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "Palign_global\t",
                                 "Palign_local\t",
                                 "Class\n"])
-        # Write all of the strings into TSV file
+        # Write all of the matches into TSV file
         for results in blast_results_dict.values():
             for result in results.values():
                 for r in result.values():
@@ -257,8 +257,10 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
     -------
     Writes TSV and HTML files
     """
+    # Create directories
     cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
+    
     cds_outcome_results_fastas_folder = os.path.join(path, "results_outcomes_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
     
@@ -279,15 +281,15 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
     for tsv_file_path in os.listdir(blastn_processed_results_path):
         abs_path = os.path.join(blastn_processed_results_path, tsv_file_path)
         file_name = os.path.basename(tsv_file_path)
-        
+        # Create directories
         graphs_path = os.path.join(cds_outcome_results, f"{file_name.replace('tsv','')}")
         ff.create_directory(graphs_path)
-        
+        # Render histograms
         gf.render_histogram(abs_path,
                             graphs_path,
                             ['Query_length', 'Subject_length'],
                             ['Length', 'Count'])
-        
+        # Render line charts
         gf.render_line_chart(abs_path,
                              graphs_path,
                              ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
@@ -327,20 +329,21 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     decoded_sequences_ids = decode_CDS_sequences_ids(cds_present)
 
     print("Identifying CDS not present in the schema...")
-        
+    # Get dict with CDS ids as key and sequence as values
     not_included_cds = fetch_not_included_cds(file_path_cds)
 
     print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
-    
+    # Create directories
     ff.create_directory(output_directory)
+
     cds_output = os.path.join(output_directory, "1_CDS_processing")
     ff.create_directory(cds_output)
     # This file contains unique CDS
     cds_not_present_file_path = os.path.join(cds_output, "CDS_not_found.fasta")
     
-    frequency_cds = {}
     # Count the number of CDS present in the schema and write CDS sequence
     # into a FASTA file
+    frequency_cds = {}
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
         for id_, sequence in not_included_cds.items():
             cds_not_found.writelines(">"+id_+"\n")
@@ -356,13 +359,13 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 
 
     print("Translate unclassified CDS...")
+    # Translate the CDS and find unique proteins using hashes, the CDS with
+    # the same hash will be added under that hash in protein_hashes
     cds_translation_dict = {}
     cds_not_present_translation_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
     protein_hashes = {}
     i = 1
     total = len(not_included_cds)
-    # Translate the CDS and find unique proteins using hashes, the CDS with
-    # the same hash will be added under that hash in protein_hashes
     with open(cds_not_present_translation_file_path, 'w+') as translation:
         for id_s, sequence in not_included_cds.items():
             print(f"Translated {i}/{total} CDS")
@@ -385,7 +388,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                 protein_hashes[prot_hash].append(id_s)
 
     print("Extracting minimizers for the translated sequences and clustering...")
-
+    # Create variables to store clustering info
     reps_groups = {}
     clusters = {}
     reps_sequences = {}
@@ -436,21 +439,22 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                       for match_values in reps_kmers_sim[cluster_id]}
 
     print("Running BLASTn between cluster representatives...")
+    # Create directories
     blast_output = os.path.join(output_directory, "2_BLAST_processing")
     ff.create_directory(blast_output)
     
     blastn_output = os.path.join(blast_output, "BLASTn_processing")
     ff.create_directory(blastn_output)
-    # write fasta file with all of the representatives sequences
+    # Create directory and files path where to write FASTAs
     representatives_blastn_folder = os.path.join(blastn_output,
                                                 "cluster_representatives_fastas")
     ff.create_directory(representatives_blastn_folder)
 
     representatives_all_fasta_file = os.path.join(representatives_blastn_folder,
                                                   "all_cluster_representatives.fasta")
-
+    # Write files for BLASTn
     rep_paths_nuc = {}
-    # Write FASTA files for BLASTn
+    # Master file
     with open(representatives_all_fasta_file, 'w') as all_fasta:
         for cluster_rep_id in clusters:
 
@@ -460,18 +464,18 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
             rep_fasta_file = os.path.join(representatives_blastn_folder,
                                           f"cluster_rep_{cluster_rep_id}.fasta")
             rep_paths_nuc[cluster_rep_id] = rep_fasta_file
+            # Representative file
             with open(rep_fasta_file, 'w') as rep_fasta:
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
                 rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
-
+    # Create directory
     blastn_results_folder = os.path.join(blastn_output, "blastn_results")
     ff.create_directory(blastn_results_folder)
-
+    # Run BLASTn for all representatives (rep vs all)
     total_reps = len(rep_paths_nuc)
     representative_blast_results = {}
     representative_blast_results_coords = {}
     i = 1
-    # Run BLASTn for all representatives (rep vs all)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
                                 clusters.keys(),
@@ -496,7 +500,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                             for subject in subjects.values()]]) 
                          for query, subjects in representative_blast_results.items()}
     
-    # Create all of the folders
+    # Create directories
     blastp_results = os.path.join(blast_output,
                                   "BLASTp_processing")
     ff.create_directory(blastp_results)
@@ -509,15 +513,12 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                 "cluster_rep_translation")
     ff.create_directory(representatives_blastp_folder)
     
-
-    
     blastp_results_folder = os.path.join(blastp_results,
                                          "BLASTp_results")
     ff.create_directory(blastp_results_folder)
-    
+    # Write the protein FASTA files
     rep_paths_prot = {}
     rep_matches_prot = {}    
-    # Write the protein FASTA files
     for query_id, subjects_ids in blastp_runs_to_do.items():
         # First write the representative protein sequence
         rep_translation_file = os.path.join(representatives_blastp_folder,
@@ -544,9 +545,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     # Create query entries
     for query in blastp_runs_to_do.keys():
         bsr_values[query] = {}
-        
+    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)        
     i = 1
-    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
                                 blastp_runs_to_do.keys(), 
