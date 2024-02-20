@@ -188,11 +188,19 @@ def separate_blastn_results_into_classes(representative_blast_results):
 
 def process_classes(representative_blast_results, results_outcome, path):
     """
+    Verifies the entries inside results_outcome dict and removes entries that 
+    are in Retain and Join at the same time, leaving only inside Join dict.
+    
     Parameters
     ----------
     representative_blast_results : dict
+        Dict containg representatibes BLAST results with all of the additional
+        info.
     results_outcome : dict
+        Dict that contains the outcomes for the results when they were filtered
+        by classes.
     path : str
+        path to write the various BLAST results for each class.
     
     Returns
     -------
@@ -225,6 +233,30 @@ def process_classes(representative_blast_results, results_outcome, path):
         alignment_dict_to_file(write_dict, report_file_path)
         
 def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processed_results_path, path):
+    """
+    This function wraps up the results for this module by writing FASTAs files
+    for the possible new loci to include into the schema and creates graphs for
+    each results group.
+    
+    Parameters
+    ----------
+    results_outcome : dict
+        Dict that contains the outcomes for the results when they were filtered
+        by classes.
+    not_included_cds : dict
+        Dict that contains all of the DNA sequences for all of the CDS.
+    clusters : dict
+        Dict that contains the cluster representatives as keys and similar CDS
+        as values.
+    blastn_processed_results_path : str
+        Path to the folder where classes TSV files were saved.
+    path : str
+        Path to were write the FASTA files.
+        
+    Returns
+    -------
+    Writes TSV and HTML files
+    """
     cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
     cds_outcome_results_fastas_folder = os.path.join(path, "results_outcomes_fastas")
