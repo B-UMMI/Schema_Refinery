@@ -272,10 +272,10 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
             i += 1
             with open(cds_outcome_results_fastas_file, 'w+') as fasta_file:
                 for rep_id in group:
-                    ids = [id_[0] for id_ in clusters[rep_id]]
-                    for id_ in ids:
-                        fasta_file.writelines(f">{id_}\n")
-                        fasta_file.writelines(str(not_included_cds[id_])+"\n")
+                    cds_ids = [cds_id for cds_id in clusters[rep_id]]
+                    for cds_id in cds_ids:
+                        fasta_file.writelines(f">{cds_id}\n")
+                        fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
     
     # Create graphs for all results and for each class
     for tsv_file_path in os.listdir(blastn_processed_results_path):
@@ -407,11 +407,26 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            1, clustering_sim, 
                                                            clustering_cov,
                                                            True)
+    # Reformat the clusters output, we are interested only in  the ID of cluster members
+    clusters = {cluster_rep: [value[0] for value in values]
+                for cluster_rep, values in clusters.items()}
+    # For protein hashes get only those that have more than one CDS
+    protein_hashes = {hash_prot: cds_ids for hash_prot, cds_ids in protein_hashes.items()
+                      if len(cds_ids) > 1}
+    
+    # Add also the unique CDS ID that have the same protein as representative
+    for cluster_rep, values in clusters.items():
+        for cds_ids in protein_hashes.values():
+            if cluster_rep in cds_ids:
+                clusters[cluster_rep] + cds_ids[1:]
+                break
     print("Filtering clusters...")
     # Get frequency of cluster
-    frequency_cds_cluster = {rep: sum([frequency_cds[entry[0]] for entry in value]) for rep, value in clusters.items()}
+    frequency_cds_cluster = {rep: sum([frequency_cds[entry] for entry in value]) 
+                             for rep, value in clusters.items()}
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value
-    clusters = {rep: cluster_member for rep, cluster_member in clusters.items() if frequency_cds_cluster[rep] >= constants_threshold[2]}
+    clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
+                if frequency_cds_cluster[rep] >= constants_threshold[2]}
 
     print("Retrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
