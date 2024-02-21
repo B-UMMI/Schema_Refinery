@@ -109,7 +109,7 @@ def refine_schema():
 
     parser.add_argument('-s', '--schema', type=str,
                         required=True, dest='schema',
-                        help='')
+                        help='Path to the schema seed.')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',

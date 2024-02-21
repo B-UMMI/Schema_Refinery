@@ -1,5 +1,4 @@
 import os
-import sys
 import pickle
 import concurrent.futures
 from itertools import repeat
@@ -23,7 +22,7 @@ except ModuleNotFoundError:
                                       list_functions as lf,
                                       graphical_functions as gf)
 
-def fetch_not_included_cds(file_path_cds):
+def fetch_fasta_dict(file_path_cds, count_seq):
     """
     Compares the hashes list with the hashes obtained from cds.
 
@@ -31,6 +30,8 @@ def fetch_not_included_cds(file_path_cds):
     ----------
     hash_list : list
         List containing all of the sequences hashes present in the input files.
+    count_seq : bool
+        If count the number of processed sequences inside the file
 
     Returns
     -------
@@ -38,15 +39,16 @@ def fetch_not_included_cds(file_path_cds):
         Returns dict with key as fasta header and value as fasta sequence.
     """
     
-    not_included_cds = {}
+    fasta_dict = {}
     i = 1
     # Read FASTA files
     for rec in sf.read_fasta_file_iterator(file_path_cds):
-        print(f"Processed {i} CDS")
-        i += 1
-        not_included_cds[rec.id] = rec.seq
+        if count_seq:
+            print(f"Processed {i} CDS")
+            i += 1
+        fasta_dict[rec.id] = rec.seq
 
-    return not_included_cds
+    return fasta_dict
 
 def decode_CDS_sequences_ids(path_to_file):
     """
@@ -232,7 +234,39 @@ def process_classes(representative_blast_results, results_outcome, path):
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path)
         
-def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processed_results_path, path):
+def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
+    translation_dict = {}
+    protein_hashes = {}
+    if count_seq:
+        i = 1
+        total = len(seq_dict)
+    with open(path_to_write, 'w+') as translation:
+        for id_s, sequence in seq_dict.items():
+            if count_seq:
+                print(f"Translated {i}/{total} CDS")
+                i += 1
+            # Translate
+            protein_translation = str(sf.translate_dna(str(sequence),
+                                                       11,
+                                                       0,
+                                                       True)[0][0])
+            # Hash the sequence
+            prot_hash = sf.seq_to_hash(protein_translation)
+            # Find unique proteins
+            if prot_hash not in protein_hashes:
+                protein_hashes[prot_hash] = [id_s]
+                translation_dict[id_s] = protein_translation
+                translation.writelines(id_s+"\n")
+                translation.writelines(protein_translation+"\n")
+            # Remember CDS with that protein hash for future
+            else:
+                protein_hashes[prot_hash].append(id_s)
+                
+    return translation_dict, protein_hashes
+
+def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
+                    blastn_processed_results_path, representative_blast_results,
+                    path, cpu):
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
@@ -257,6 +291,8 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
     -------
     Writes TSV and HTML files
     """
+    # Process the results_outcome dict and write individual classes to TSV file
+    process_classes(representative_blast_results, results_outcome, blastn_processed_results_path)
     # Create directories
     cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
@@ -265,6 +301,7 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
     ff.create_directory(cds_outcome_results_fastas_folder)
     
     # Write FASTA files for each CDS group to join or retain
+    print("Writting FASTA file for possible new loci...")
     for outcome in results_outcome:
         i = 1
         for group in results_outcome[outcome]:
@@ -277,6 +314,47 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
                         fasta_file.writelines(f">{cds_id}\n")
                         fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
     
+    print("Reading schema loci short FASTA files...")
+    # Get all of the schema loci short FASTA files path
+    schema_short_path = os.path.join(schema, 'short')
+    schema_loci_short = {loci_path.replace(".fasta", ""): os.path.join(schema_short_path, loci_path) 
+                         for loci_path in os.listdir(schema_short_path) 
+                         if loci_path.endswith('.fasta')}
+    
+    short_translation_folder = os.path.join(path, "short_translation_folder")
+    ff.create_directory(short_translation_folder)
+    schema_short_translation = {}
+    i = 1
+    len_short_folder = len(schema_loci_short)
+    for loci, loci_short_path in schema_loci_short.items():
+        print(f"Translated {i}/{len_short_folder} CDS")
+        loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
+        i += 1
+        fasta_dict = fetch_fasta_dict(loci_short_path, False)
+        translate_seq_deduplicate(fasta_dict, loci_short_translation_path, False)
+        
+    
+    # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA)        
+    # i = 1
+    # with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+    #     for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
+    #                             blastp_runs_to_do.keys(), 
+    #                             repeat('blastp'),
+    #                             repeat(blastp_results_folder),
+    #                             repeat(rep_paths_prot),
+    #                             rep_matches_prot.values()):
+            
+    #         filtered_alignments_dict, self_score, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False)
+    #         # Since BLAST may find several local aligments choose the largest one to calculate BSR
+    #         for query, subjects_dict in filtered_alignments_dict.items():
+    #             for subject_id, results in subjects_dict.items():
+    #                 largest_alignment = 0
+    #                 for entry_id, result in results.items():
+    #                     if result['query_length'] > largest_alignment:
+    #                         largest_alignment = result['query_length']
+    #                         bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score)})
+                            
+                            
     # Create graphs for all results and for each class
     for tsv_file_path in os.listdir(blastn_processed_results_path):
         abs_path = os.path.join(blastn_processed_results_path, tsv_file_path)
@@ -296,32 +374,20 @@ def wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processe
                               'Prot_seq_Kmer_cov','Palign_global'],
                              ['Entries', 'Values'], False)
 
-def main(schema, output_directory, allelecall_directory, clustering_sim,
-         clustering_cov, alignment_ratio_threshold_gene_fusions,
-         pident_threshold_gene_fusions, genome_presence, cpu):
+def main(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
-    temp_folder = os.path.join(allelecall_directory,"temp")
-    file_path_cds = os.path.join(allelecall_directory, "unclassified_sequences.fasta")
-    
-    if not os.path.exists(temp_folder) or not os.path.exists(file_path_cds):
-        sys.exit(f"Error: {temp_folder} must exist, make sure that AlleleCall "
-                 "was run using --no-cleanup and --output-unclassified flag.")
+    temp_folder = temp_paths[0]
+    file_path_cds = temp_paths[1]
 
     # Verify if the dataset is small, if it is, keep minimum genomes in which
     # specific CDS cluster is present to 5 if not to 1% of the dataset size.
-    if not genome_presence:
+    if not constants[2]:
         count_genomes_path = os.path.join(temp_folder, "1_cds_prediction")
         number_of_genomes = len(os.listdir(count_genomes_path))
         if number_of_genomes <= 20:
-            genome_presence = 5
+            constants[2] = 5
         else:
-            genome_presence = round(number_of_genomes * 0.01)
-            
-    # Put all constants in one dict in order to decrease number of variables
-    # used around.
-    constants_threshold = [alignment_ratio_threshold_gene_fusions, 
-                           pident_threshold_gene_fusions,
-                           genome_presence]
+            constants[2] = round(number_of_genomes * 0.01)
         
     print("Identifying CDS present in the schema...")
     cds_present = os.path.join(temp_folder,"3_cds_preprocess/cds_deduplication/distinct_cds_merged.hashtable")
@@ -330,7 +396,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
 
     print("Identifying CDS not present in the schema...")
     # Get dict with CDS ids as key and sequence as values
-    not_included_cds = fetch_not_included_cds(file_path_cds)
+    not_included_cds = fetch_fasta_dict(file_path_cds, True)
 
     print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
     # Create directories
@@ -361,31 +427,11 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     print("Translate unclassified CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
     # the same hash will be added under that hash in protein_hashes
-    cds_translation_dict = {}
     cds_not_present_translation_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
-    protein_hashes = {}
-    i = 1
-    total = len(not_included_cds)
-    with open(cds_not_present_translation_file_path, 'w+') as translation:
-        for id_s, sequence in not_included_cds.items():
-            print(f"Translated {i}/{total} CDS")
-            i += 1
-            # Translate
-            protein_translation = str(sf.translate_dna(str(sequence),
-                                                       11,
-                                                       0,
-                                                       True)[0][0])
-            # Hash the sequence
-            prot_hash = sf.seq_to_hash(protein_translation)
-            # Find unique proteins
-            if prot_hash not in protein_hashes:
-                protein_hashes[prot_hash] = [id_s]
-                cds_translation_dict[id_s] = protein_translation
-                translation.writelines(id_s+"\n")
-                translation.writelines(protein_translation+"\n")
-            # Remember CDS with that protein hash for future (Not used)
-            else:
-                protein_hashes[prot_hash].append(id_s)
+    # Translate and deduplicate protein sequences
+    cds_translation_dict, protein_hashes = translate_seq_deduplicate(not_included_cds,
+                                                                     cds_not_present_translation_file_path,
+                                                                     True)
 
     print("Extracting minimizers for the translated sequences and clustering...")
     # Create variables to store clustering info
@@ -404,8 +450,8 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                                            clusters,
                                                            reps_sequences, 
                                                            reps_groups,
-                                                           1, clustering_sim, 
-                                                           clustering_cov,
+                                                           1, constants[3], 
+                                                           constants[4],
                                                            True)
     # Reformat the clusters output, we are interested only in  the ID of cluster members
     clusters = {cluster_rep: [value[0] for value in values]
@@ -417,16 +463,18 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     # Add also the unique CDS ID that have the same protein as representative
     for cluster_rep, values in clusters.items():
         for cds_ids in protein_hashes.values():
+            # Break since there is only one possible match in protein_hashes
             if cluster_rep in cds_ids:
                 clusters[cluster_rep] + cds_ids[1:]
                 break
+
     print("Filtering clusters...")
     # Get frequency of cluster
     frequency_cds_cluster = {rep: sum([frequency_cds[entry] for entry in value]) 
                              for rep, value in clusters.items()}
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
-                if frequency_cds_cluster[rep] >= constants_threshold[2]}
+                if frequency_cds_cluster[rep] >= constants[2]}
 
     print("Retrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
@@ -500,7 +548,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                                 repeat(representatives_all_fasta_file)):
 
             filtered_alignments_dict, _, alignment_coords = af.get_alignments_dict_from_blast_results(
-                res[1], constants_threshold[1], True)
+                res[1], constants[1], True)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
             representative_blast_results_coords.update(alignment_coords)
@@ -648,7 +696,9 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
                     del representative_blast_results[query][subject][entry_id]
 
     print("Filtering BLASTn results into classes...")
-    blastn_processed_results_path = os.path.join(blast_output, "Processed_Blastn")
+    results_output = os.path.join(output_directory, "3_Results_files")
+    ff.create_directory(results_output)
+    blastn_processed_results_path = os.path.join(results_output, "Processed_Blastn")
     ff.create_directory(blastn_processed_results_path)
     report_file_path = os.path.join(blastn_processed_results_path, "blastn_all_matches.tsv")
     
@@ -657,11 +707,7 @@ def main(schema, output_directory, allelecall_directory, clustering_sim,
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path)
     
-    print("Processing classes...")
-    # Process the results_outcome dict and write individual classes to TSV file
-    process_classes(representative_blast_results, results_outcome, blastn_processed_results_path)
-    
     print("Wrapping up results...")
-    results_output = os.path.join(output_directory, "3_Results_files")
-    ff.create_directory(results_output)
-    wrap_up_results(results_outcome, not_included_cds, clusters, blastn_processed_results_path, results_output)
+    wrap_up_results(schema, results_outcome, not_included_cds, clusters, 
+                    blastn_processed_results_path, representative_blast_results,
+                    results_output, cpu)
