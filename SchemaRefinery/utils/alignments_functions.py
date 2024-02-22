@@ -297,20 +297,35 @@ def process_blast_results(blast_results_file, constants_threshold):
         
     return (alignment_strings, filtered_alignments_dict)
 
-def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold, get_coords):
+def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold, get_coords, get_self_score):
     """
-    organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
-    and value = a list of all alignments for that key correspondence.
+    Reads BLAST results file and extracts the necessary items, based on input
+    also fetches the coordinates based on query sequences and self-score contained
+    inside the BLAST results file.
 
     Parameters
     ----------
     blast_results_file : str
         Path to the blast result file.
+    pident_threshold : int
+        Pident threshold to exclude BLAST results.
+    get_coords : bool
+        If to fetch coordinates for the BLAST match.
+    get_self_score : bool
+        If to get self-score from BLAST results (Note: extracts only one from
+        BLAST results, so if you did multiple vs multiple it may get the last one
+        in the file. Also to note, for self-score to be fecth the query must be also
+        in the subjects database).
 
     Returns
     -------
     alignments_dict : dict
         Dictionary containing the results of the BLAST.
+    self_score : int
+        Value of self-score inside the BLAST results file.
+    alignment_coords : dict
+        Contains the coordinates for the query/subject pair, the coordinates are
+        in reference to the query.
     """
 
     alignments_dict = {}
@@ -352,7 +367,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
             if float(pident) < pident_threshold:
                 continue
             # Get self-score
-            if query == subject:
+            if query == subject and get_self_score:
                 if float(pident) == 100:
                     self_score = int(score)
                 continue

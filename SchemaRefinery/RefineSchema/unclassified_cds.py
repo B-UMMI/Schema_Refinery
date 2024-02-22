@@ -129,8 +129,6 @@ def separate_blastn_results_into_classes(representative_blast_results):
     ----------
     representative_blast_results : dict
         dict containing BLAST results
-    path : str
-        Dir path to write the files for each class of results
 
     Returns
     -------
@@ -206,6 +204,7 @@ def process_classes(representative_blast_results, results_outcome, path):
     
     Returns
     -------
+    No return
     """
     
     classes = ['1a',
@@ -235,6 +234,27 @@ def process_classes(representative_blast_results, results_outcome, path):
         alignment_dict_to_file(write_dict, report_file_path)
         
 def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
+    """
+    Translates the DNA sequence to protein and verifies if that protein is alredy
+    present in the dict, thus ensuring that the dict contains deduplicated sequences,
+    it writes the sequences to a FASTA files and return the dict.
+    
+    Parameters
+    ----------
+    seq_dict : dict
+        Dict that contains sequence ID as key and the sequence as value.
+    path_to_write : str
+        Path to the file to create and write.
+    count_seq : bool
+        If there is need to print into stdout the number of processed sequences.
+        
+    Returns
+    -------
+    translation_dict : dict
+        Dict that contais sequence ID as key and translated sequence as value.
+    protein_hashes : dict
+        Dict that contais sequence hash as key and sequences IDs as values.
+    """
     translation_dict = {}
     protein_hashes = {}
     if count_seq:
@@ -256,7 +276,7 @@ def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
             if prot_hash not in protein_hashes:
                 protein_hashes[prot_hash] = [id_s]
                 translation_dict[id_s] = protein_translation
-                translation.writelines(id_s+"\n")
+                translation.writelines('>'+id_s+"\n")
                 translation.writelines(protein_translation+"\n")
             # Remember CDS with that protein hash for future
             else:
@@ -270,7 +290,9 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
-    each results group.
+    each results group. It also translates schema short FASTAs into proteins
+    and the possible new loci, to calculate the BSR values to see if those
+    possible new loci are already present in the schema.
     
     Parameters
     ----------
@@ -284,8 +306,12 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
         as values.
     blastn_processed_results_path : str
         Path to the folder where classes TSV files were saved.
+    representative_blast_results : dict
+        Contains the representative BLAST results.
     path : str
         Path to were write the FASTA files.
+    cpu : int
+        Number of cores to use in BLAST multiprocessing
         
     Returns
     -------
@@ -302,10 +328,12 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     
     # Write FASTA files for each CDS group to join or retain
     print("Writting FASTA file for possible new loci...")
+    outcome_paths = {}
     for outcome in results_outcome:
         i = 1
         for group in results_outcome[outcome]:
             cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"{outcome}_{i}.fasta")
+            outcome_paths[f"{outcome}_{i}"] = cds_outcome_results_fastas_file
             i += 1
             with open(cds_outcome_results_fastas_file, 'w+') as fasta_file:
                 for rep_id in group:
@@ -313,7 +341,17 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
                     for cds_id in cds_ids:
                         fasta_file.writelines(f">{cds_id}\n")
                         fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
-    
+    # Create directories
+    cds_outcome_translation = os.path.join(path, "cds_outcome_translation")
+    ff.create_directory(cds_outcome_translation)
+    # Translate possible new loci
+    outcomes_translations = {}
+    for key, o_path in outcome_paths.items():
+        translation_path = os.path.join(cds_outcome_translation, key + ".fasta")
+        outcomes_translations[key] = translation_path
+        fasta_dict = fetch_fasta_dict(o_path, False)
+        translation_dict, _ = translate_seq_deduplicate(fasta_dict, translation_path, False)
+        
     print("Reading schema loci short FASTA files...")
     # Get all of the schema loci short FASTA files path
     schema_short_path = os.path.join(schema, 'short')
@@ -323,38 +361,52 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     
     short_translation_folder = os.path.join(path, "short_translation_folder")
     ff.create_directory(short_translation_folder)
-    schema_short_translation = {}
+    master_loci_short_translation_path = os.path.join(short_translation_folder, "master_short_loci.fasta")
     i = 1
     len_short_folder = len(schema_loci_short)
-    for loci, loci_short_path in schema_loci_short.items():
-        print(f"Translated {i}/{len_short_folder} CDS")
-        loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
-        i += 1
-        fasta_dict = fetch_fasta_dict(loci_short_path, False)
-        translate_seq_deduplicate(fasta_dict, loci_short_translation_path, False)
+    with open(master_loci_short_translation_path, 'w') as master_fasta:
         
-    
-    # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA)        
-    # i = 1
-    # with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-    #     for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-    #                             blastp_runs_to_do.keys(), 
-    #                             repeat('blastp'),
-    #                             repeat(blastp_results_folder),
-    #                             repeat(rep_paths_prot),
-    #                             rep_matches_prot.values()):
+        for loci, loci_short_path in schema_loci_short.items():
+            print(f"Translated {i}/{len_short_folder} CDS")
+            loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
+            i += 1
+            fasta_dict = fetch_fasta_dict(loci_short_path, False)
+            translation_dict, _ = translate_seq_deduplicate(fasta_dict, loci_short_translation_path, False)
             
-    #         filtered_alignments_dict, self_score, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False)
-    #         # Since BLAST may find several local aligments choose the largest one to calculate BSR
-    #         for query, subjects_dict in filtered_alignments_dict.items():
-    #             for subject_id, results in subjects_dict.items():
-    #                 largest_alignment = 0
-    #                 for entry_id, result in results.items():
-    #                     if result['query_length'] > largest_alignment:
-    #                         largest_alignment = result['query_length']
-    #                         bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score)})
+            for loci_id, sequence in translation_dict.items():
+                master_fasta.writelines(">"+loci_id+"\n")
+                master_fasta.writelines(str(sequence)+"\n")
+    
+    # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA)
+    blastp_results_vs_loci_results = os.path.join(path, "blastp_results_vs_loci_results")
+    ff.create_directory(blastp_results_vs_loci_results)
+    bsr_values = {}
+    # Create query entries
+    for query in outcomes_translations:
+        bsr_values[query] = {}
+    i = 1
+    total = len(outcomes_translations)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
+                                outcomes_translations, 
+                                repeat('blastp'),
+                                repeat(blastp_results_vs_loci_results),
+                                repeat(outcomes_translations),
+                                repeat(master_loci_short_translation_path)):
+            
+            filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False)
+            # Since BLAST may find several local aligments choose the largest one to calculate BSR
+            for query, subjects_dict in filtered_alignments_dict.items():
+                for subject_id, results in subjects_dict.items():
+                    largest_alignment = 0
+                    for entry_id, result in results.items():
+                        if result['query_length'] > largest_alignment:
+                            largest_alignment = result['query_length']
+                            bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score)})
                             
-                            
+            print(
+                f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total}")
+            i += 1             
     # Create graphs for all results and for each class
     for tsv_file_path in os.listdir(blastn_processed_results_path):
         abs_path = os.path.join(blastn_processed_results_path, tsv_file_path)
@@ -541,14 +593,14 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                clusters.keys(),
+                                clusters,
                                 repeat('blastn'),
                                 repeat(blastn_results_folder),
                                 repeat(rep_paths_nuc),
                                 repeat(representatives_all_fasta_file)):
 
             filtered_alignments_dict, _, alignment_coords = af.get_alignments_dict_from_blast_results(
-                res[1], constants[1], True)
+                res[1], constants[1], True, False)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
             representative_blast_results_coords.update(alignment_coords)
@@ -606,19 +658,19 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     total_blasts = len(blastp_runs_to_do)
     bsr_values = {}
     # Create query entries
-    for query in blastp_runs_to_do.keys():
+    for query in blastp_runs_to_do:
         bsr_values[query] = {}
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)        
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                blastp_runs_to_do.keys(), 
+                                blastp_runs_to_do, 
                                 repeat('blastp'),
                                 repeat(blastp_results_folder),
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
             
-            filtered_alignments_dict, self_score, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False)
+            filtered_alignments_dict, self_score, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True)
             # Since BLAST may find several local aligments choose the largest one to calculate BSR
             for query, subjects_dict in filtered_alignments_dict.items():
                 for subject_id, results in subjects_dict.items():
