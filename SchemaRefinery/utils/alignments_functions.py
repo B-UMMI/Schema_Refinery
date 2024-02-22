@@ -329,10 +329,12 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
     """
 
     alignments_dict = {}
-    alignment_coords = {}
+    alignment_coords_pident = {}
+    alignment_coords_all = {}
+    self_score = 0
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
-        i = 1
+        k = 1
         for line in lines:
             
             cols = line.replace('\n', '').split("\t")
@@ -363,9 +365,6 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     "gaps": int(gaps),
                     "pident": float(pident)
                     }
-            # Filter by pident
-            if float(pident) < pident_threshold:
-                continue
             # Get self-score
             if query == subject and get_self_score:
                 if float(pident) == 100:
@@ -375,22 +374,35 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
             if not query in alignments_dict.keys():
                 alignments_dict[query] = {}
                 if get_coords:
-                    alignment_coords[query] = {}
+                    alignment_coords_all[query] = {}
+                    alignment_coords_pident[query] = {}
             if not subject in alignments_dict[query].keys():
-                alignments_dict[query][subject] = {i: value}
+                alignments_dict[query][subject] = {k: value}
+                alignment_coords_all[query][subject] = {k: value}
+                alignment_coords_pident[query][subject] = {k: value}
                 if get_coords:
-                    alignment_coords[query][subject] = {'query': [[int(query_start),int(query_end)]]}
-                    alignment_coords[query][subject].update({'subject': [[int(subject_start),int(subject_end)]]})
-                    alignment_coords[query][subject].update({'gaps': int(gaps)})
+                    alignment_coords_all[query][subject] = {'query': [[int(query_start),int(query_end)]]}
+                    alignment_coords_all[query][subject].update({'subject': [[int(subject_start),int(subject_end)]]})
+                    alignment_coords_all[query][subject].update({'gaps': int(gaps)})
+                    # palign by pident
+                    if float(pident) < pident_threshold:
+                        alignment_coords_pident[query][subject] = {'query': [[int(query_start),int(query_end)]]}
+                        alignment_coords_pident[query][subject].update({'subject': [[int(subject_start),int(subject_end)]]})
+                        alignment_coords_pident[query][subject].update({'gaps': int(gaps)})
             else:
                 k = max(alignments_dict[query][subject].keys()) + 1
                 alignments_dict[query][subject].update({k: value})
                 if get_coords:
-                    alignment_coords[query][subject]['query'].append([int(query_start),int(query_end)])
-                    alignment_coords[query][subject]['subject'].append([int(subject_start),int(subject_end)])
-                    alignment_coords[query][subject]['gaps'] += int(gaps)
+                    alignment_coords_all[query][subject]['query'].append([int(query_start),int(query_end)])
+                    alignment_coords_all[query][subject]['subject'].append([int(subject_start),int(subject_end)])
+                    alignment_coords_all[query][subject]['gaps'] += int(gaps)
+                    # palign by pident
+                    if float(pident) < pident_threshold:
+                        alignment_coords_pident[query][subject]['query'].append([int(query_start),int(query_end)])
+                        alignment_coords_pident[query][subject]['subject'].append([int(subject_start),int(subject_end)])
+                        alignment_coords_pident[query][subject]['gaps'] += int(gaps)
             
-    return alignments_dict, self_score, alignment_coords
+    return alignments_dict, self_score, alignment_coords_all, alignment_coords_pident
 
 def remove_inverse_alignments(alignments_dict, all_representatives_alignments_dict):
     """
