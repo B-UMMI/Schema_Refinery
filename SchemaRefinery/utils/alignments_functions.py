@@ -334,7 +334,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
     self_score = 0
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
-        k = 1
+        i = 1
         for line in lines:
             
             cols = line.replace('\n', '').split("\t")
@@ -365,9 +365,9 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     "gaps": int(gaps),
                     "pident": float(pident)
                     }
-            # Get self-score
-            if query == subject and get_self_score:
-                if float(pident) == 100:
+            # Skip if entry matched itself and get self-score if needed
+            if query == subject:
+                if float(pident) == 100 and get_self_score:
                     self_score = int(score)
                 continue
             
@@ -377,19 +377,28 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     alignment_coords_all[query] = {}
                     alignment_coords_pident[query] = {}
             if not subject in alignments_dict[query].keys():
-                alignments_dict[query][subject] = {k: value}
-                alignment_coords_all[query][subject] = {k: value}
-                alignment_coords_pident[query][subject] = {k: value}
+                # Create and save the first entry of BLAST
+                alignments_dict[query][subject] = {i: value}
                 if get_coords:
-                    alignment_coords_all[query][subject] = {'query': [[int(query_start),int(query_end)]]}
-                    alignment_coords_all[query][subject].update({'subject': [[int(subject_start),int(subject_end)]]})
-                    alignment_coords_all[query][subject].update({'gaps': int(gaps)})
+                    alignment_coords_all[query][subject] = {}
+                    alignment_coords_pident[query][subject] = {}
+                    
+                    alignment_coords_all[query][subject] = {'query': [[int(query_start),int(query_end)]], 
+                                                            'subject': [[int(subject_start),int(subject_end)]],
+                                                            'gaps': int(gaps)}
                     # palign by pident
-                    if float(pident) < pident_threshold:
-                        alignment_coords_pident[query][subject] = {'query': [[int(query_start),int(query_end)]]}
-                        alignment_coords_pident[query][subject].update({'subject': [[int(subject_start),int(subject_end)]]})
-                        alignment_coords_pident[query][subject].update({'gaps': int(gaps)})
+                    if float(pident) >= pident_threshold:
+                        alignment_coords_pident[query][subject] = {'query': [[int(query_start),int(query_end)]],
+                                                                   'subject': [[int(subject_start),int(subject_end)]],
+                                                                   'gaps': int(gaps)}
+                    # To still create the dict entries for further values
+                    else:
+                        alignment_coords_pident[query][subject] = {'query': [],
+                                                                   'subject': [],
+                                                                   'gaps': 0}
             else:
+                # Save the other entries based on total number of entries present
+                # to get the ID
                 k = max(alignments_dict[query][subject].keys()) + 1
                 alignments_dict[query][subject].update({k: value})
                 if get_coords:
@@ -397,7 +406,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     alignment_coords_all[query][subject]['subject'].append([int(subject_start),int(subject_end)])
                     alignment_coords_all[query][subject]['gaps'] += int(gaps)
                     # palign by pident
-                    if float(pident) < pident_threshold:
+                    if float(pident) >= pident_threshold:
                         alignment_coords_pident[query][subject]['query'].append([int(query_start),int(query_end)])
                         alignment_coords_pident[query][subject]['subject'].append([int(subject_start),int(subject_end)])
                         alignment_coords_pident[query][subject]['gaps'] += int(gaps)
@@ -442,7 +451,7 @@ def merge_intervals(intervals):
         Parameters
         ----------
         intervals : list
-            List that contains list with coordinates of various BLASTn matches
+            List that contains list with coordinates of various BLAST matches
 
         Returns
         -------

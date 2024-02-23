@@ -111,7 +111,7 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "Prot_seq_Kmer_cov\t",
                                 "Cluster_frequency_in_genomes_query_cds\t",
                                 "Cluster_frequency_in_genomes_subject_cds\t",
-                                "Palign_global_all\t",
+                                "global_palign_all\t",
                                 "global_palign_pident_min\t",
                                 "global_palign_pident_max\t",
                                 "Palign_local\t",
@@ -123,7 +123,7 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                     report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
 
 
-def separate_blastn_results_into_classes(representative_blast_results):
+def separate_blastn_results_into_classes(representative_blast_results, constants):
     """
     Separates one BLASTn dict into various classes and adds them into one dict
 
@@ -157,13 +157,15 @@ def separate_blastn_results_into_classes(representative_blast_results):
     results_outcome = {}
 
     results_outcome['Join'] = []
-    results_outcome['Retain'] = set()    
+    results_outcome['Join_u'] = []
+    results_outcome['Retain'] = set()
+    results_outcome['Drop'] = set()
     # Process results into classes
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
                 
-                if blastn_entry['global_palign'] >= 0.8:
+                if blastn_entry['global_palign_all'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
@@ -179,12 +181,25 @@ def separate_blastn_results_into_classes(representative_blast_results):
                         results_outcome['Retain'].add(id_subject)
                 # Palign < 0.8        
                 else:
-                    # verify if query cluster is the most prevalent
-                    if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
-                        add_class_to_dict('3')
-                        results_outcome['Retain'].add(query)
+                    if blastn_entry['pident'] >= constants[1]:
+                        # verify if query cluster is the most prevalent
+                        if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
+                            add_class_to_dict('2a')
+                            results_outcome['Retain'].add(query)
+                        else:
+                            add_class_to_dict('2b')
+                            results_outcome['Retain'].add(query)
+                            results_outcome['Retain'].add(id_subject)
+                            
                     else:
-                        add_class_to_dict('2')
+                        if blastn_entry['global_palign_pident_max'] >= 0.8:
+                            add_class_to_dict('3b')
+                            results_outcome['Join_u'].append([query, id_subject])
+                        else:
+                            add_class_to_dict('3b')
+                            results_outcome['Retain'].add(query)
+                            results_outcome['Retain'].add(id_subject)
+                
 
     return results_outcome
 
@@ -212,9 +227,10 @@ def process_classes(representative_blast_results, results_outcome, path):
     classes = ['1a',
                '1b',
                '1c',
-               '2',
-               '3',
-               '4']
+               '2a',
+               '2b',
+               '3a',
+               '3b']
                 
     # Join the various CDS groups into single group based on ids matches    
     results_outcome['Join'] = [join for join in cf.cluster_by_ids(results_outcome['Join'])]
@@ -396,7 +412,7 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
                                 repeat(outcomes_translations),
                                 repeat(master_loci_short_translation_path)):
             
-            filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False)
             # Since BLAST may find several local aligments choose the largest one to calculate BSR
             for query, subjects_dict in filtered_alignments_dict.items():
                 for subject_id, results in subjects_dict.items():
@@ -615,6 +631,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
 
     print("Running BLASTp based on BLASTn results matches...")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously
+    # Based on BLASTn results
     blastp_runs_to_do = {query: lf.flatten_list([[query],[subject[1]['subject']
                                             for subject in subjects.values()]]) 
                          for query, subjects in representative_blast_results.items()}
@@ -689,7 +706,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
 
     # Add kmer cov, kmer sim and frequency of the cds in the genomes
     for query, subjects_dict in list(representative_blast_results.items()):
-        for subject, blastn_results in subjects_dict.items():
+        for subject, blastn_results in list(subjects_dict.items()):
             # Some results may not have kmers matches or BSR values so put them
             # as 0
             if subject in reps_kmers_sim[query]:
@@ -714,7 +731,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
             # For query and subject
             if len(blastn_results) > 1:
                 total_length = {}
-                gaps = representative_blast_results_coords_all[query][subject].pop('gaps')
+                gaps_all = representative_blast_results_coords_all[query][subject].pop('gaps')
+                gaps_pident = representative_blast_results_coords_pident[query][subject].pop('gaps')
                 for ref, intervals in representative_blast_results_coords_all[query][subject].items():
                     # Sort by start position
                     sorted_intervals = [interval for interval in sorted(intervals,
@@ -723,22 +741,27 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                     length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
                     total_length[ref] = length
                 # Calculate global palign
-                global_palign_all = min([(total_length['query'] + gaps) / blastn_results[1]['query_length'],
+                global_palign_all = min([(total_length['query'] + gaps_all) / blastn_results[1]['query_length'],
                                      (total_length['subject']) / blastn_results[1]['subject_length']])
                 
                 for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
-                    # Sort by start position
-                    sorted_intervals = [interval for interval in sorted(intervals,
-                                                                        key=lambda x: x[0])]
-                    # Merge alignments and calculate the total length of BLASTn alignments.
-                    length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
-                    total_length[ref] = length
+                    if len(intervals) != 0:
+                        # Sort by start position
+                        sorted_intervals = [interval for interval in sorted(intervals,
+                                                                            key=lambda x: x[0])]
+                        # Merge alignments and calculate the total length of BLASTn alignments.
+                        length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                        total_length[ref] = length
+                    else:
+                        # Since we are considering soem values that may not pass pident threshold
+                        # it means some may not have any interval based on pident
+                        total_length[ref] = 0
                 # Calculate global palign
-                global_palign_pident_min = min([(total_length['query'] + gaps) / blastn_results[1]['query_length'],
-                                     (total_length['subject']) / blastn_results[1]['subject_length']])
+                global_palign_pident_min = min([(total_length['query'] + gaps_pident) / blastn_results[1]['query_length'],
+                                                (total_length['subject']) / blastn_results[1]['subject_length']])
                 
-                global_palign_pident_max = min([(total_length['query'] + gaps) / blastn_results[1]['query_length'],
-                                     (total_length['subject']) / blastn_results[1]['subject_length']])
+                global_palign_pident_max = max([(total_length['query'] + gaps_pident) / blastn_results[1]['query_length'],
+                                                (total_length['subject']) / blastn_results[1]['subject_length']])
             # If there is only one results
             else:
                 global_palign_all = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
@@ -747,7 +770,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 global_palign_pident_min = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
                                     (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
                 
-                global_palign_pident_max = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
+                global_palign_pident_max = max([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
                                     (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])   
             # Create update dict with the values to add
             update_dict = {'bsr' : bsr,
@@ -760,10 +783,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                            'global_palign_pident_max': global_palign_pident_max}
             
             for entry_id, result in list(blastn_results.items()):
-                # Calculate Palign
+                # Calculate local Palign particular to that BLASTn match
                 local_palign = min([(result['query_end'] - result['query_start'] + 1 + result['gaps']) / result['query_length'],
                                     (result['subject_end'] - result['subject_start'] + 1) / result['subject_length']])
-                
+                # Verify if inverse alignment was made
                 if local_palign >= 0:
                     # update the update dict
                     update_dict.update({'local_palign' : local_palign})
@@ -772,6 +795,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 # Remove palign that is negative, meaning tha reverse blast alignment was made
                 else:
                     del representative_blast_results[query][subject][entry_id]
+            # Remove empty subjects dicts
+            if len(representative_blast_results[query][subject]) == 0:
+                del representative_blast_results[query][subject]
+        # Remove empty query dicts
+        if len(representative_blast_results[query]) == 0:
+            del representative_blast_results[query]
 
     print("Filtering BLASTn results into classes...")
     results_output = os.path.join(output_directory, "3_Results_files")
@@ -781,7 +810,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     report_file_path = os.path.join(blastn_processed_results_path, "blastn_all_matches.tsv")
     
     # Separate results into different classes
-    results_outcome = separate_blastn_results_into_classes(representative_blast_results)
+    results_outcome = separate_blastn_results_into_classes(representative_blast_results,
+                                                           constants)
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path)
     
