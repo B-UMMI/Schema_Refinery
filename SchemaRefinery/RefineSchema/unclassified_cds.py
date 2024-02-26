@@ -111,9 +111,9 @@ def alignment_dict_to_file(blast_results_dict, file_path):
                                 "Prot_seq_Kmer_cov\t",
                                 "Cluster_frequency_in_genomes_query_cds\t",
                                 "Cluster_frequency_in_genomes_subject_cds\t",
-                                "global_palign_all\t",
-                                "global_palign_pident_min\t",
-                                "global_palign_pident_max\t",
+                                "Global_palign_all\t",
+                                "Global_palign_pident_min\t",
+                                "Global_palign_pident_max\t",
                                 "Palign_local\t",
                                 "Class\n"])
         # Write all of the matches into TSV file
@@ -165,7 +165,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
                 
-                if blastn_entry['global_palign_all'] >= 0.8:
+                if blastn_entry['Global_palign_all'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
@@ -192,14 +192,13 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                             results_outcome['Retain'].add(id_subject)
                             
                     else:
-                        if blastn_entry['global_palign_pident_max'] >= 0.8:
+                        if blastn_entry['Global_palign_pident_max'] >= 0.8:
                             add_class_to_dict('3b')
                             results_outcome['Join_u'].append([query, id_subject])
                         else:
                             add_class_to_dict('3b')
                             results_outcome['Retain'].add(query)
                             results_outcome['Retain'].add(id_subject)
-                
 
     return results_outcome
 
