@@ -264,32 +264,36 @@ def process_classes(representative_blast_results, results_outcome, classes, path
     # Join the various CDS groups into single group based on ids matches    
     cluster_dict = {i: join for i, join in enumerate(cf.cluster_by_ids(results_outcome['Join_1a']))}
     relationships = {}
+    freq_sim = {}
     for id_cluster, cluster in cluster_dict.items():
-        relationships[id_cluster] = {}
+        freq_sim[id_cluster] = {}
         
         relevant_blast_results = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == '2a'}
                                                for subject, entries in subjects.items() if subject in cluster}
                                           for query, subjects in representative_blast_results.items()}
         
-        relevant_blast_results = {query : {subject : entries for subject, entries in subjects.items() if len(subject) > 1}
-                                  for query, subjects in relevant_blast_results.items() if len(subjects) > 1}
+        relevant_blast_results = {query : {subject : entries for subject, entries in subjects.items() if entries}
+                                  for query, subjects in relevant_blast_results.items() if subjects}
+        
         if len(relevant_blast_results) == 0:
             continue
-        
-        freq_sim = {}
+
         for results in relevant_blast_results.values():
             for result in results.values():
+                freq_sim[id_cluster].update({result[1]['query'] : {}})
                 for r in result.values():
-                    freq_sim[r['query']] = {}
                     # If subject is inside cluster skip since we know the outcome
                     if r['query'] in cluster:
                         break
                     elif r['subject'] in cluster:
-                        freq_sim[r['query']]['2a'] = []
-                        if r['class'] == '2a':
-                            freq_sim[r['query']]['2a'].append(r['subject'])
+                        if '2a' not in freq_sim[id_cluster][r['query']] and r['class'] == '2a':
+                            freq_sim[id_cluster][r['query']].update({'2a': [r['subject']]})
+                        elif r['class'] == '2a':
+                            freq_sim[id_cluster][r['query']]['2a'].append(r['subject'])
+                            
     for id_query, entry in freq_sim.items():
-        relationships[id_cluster].update({id_query : ['High frequency and similiarity when compared to the following cluster members', freq_sim]})
+        if entry:
+            relationships.update({id_query : ['High frequency and similiarity when compared to the following cluster members', entry]})
     
     # Write classes to file
     for class_ in classes[1]:
