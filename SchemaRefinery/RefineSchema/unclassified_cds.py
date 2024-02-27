@@ -136,6 +136,8 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     -------
     results_outcome : dict
         Dict that contains list with the results outcome
+    classes : list
+        List of list that contains class IDS used in the next function
     """
         
     def add_class_to_dict(class_name):
@@ -155,54 +157,68 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
         
     results_outcome = {}
-
-    results_outcome['Join'] = []
-    results_outcome['Join_u'] = []
-    results_outcome['Retain'] = set()
-    results_outcome['Drop'] = set()
+    
+    # Create all of the classes
+    classes_outcome = ['Join_1a',
+                       'Join_3a',
+                       'Retain_1b',
+                       'Retain_1c',
+                       'Retain_2a',
+                       'Retain_2b',
+                       'Retain_3b']
+    
+    blast_classes = ['1a',
+                     '1b',
+                     '1c',
+                     '2a',
+                     '2b',
+                     '3a',
+                     '3b']
+    
+    for class_ in classes_outcome:
+        results_outcome[class_] = []
+    
+    classes = [classes_outcome, blast_classes]
     # Process results into classes
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
                 
-                if blastn_entry['Global_palign_all'] >= 0.8:
+                if blastn_entry['global_palign_all'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
-                        results_outcome['Join'].append([query, id_subject])
+                        results_outcome['Join_1a'].append([query, id_subject])
                     # If BSR <0.6 verify if query cluster is the most prevalent
                     elif blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
                         add_class_to_dict('1b')
-                        results_outcome['Retain'].add(query)
+                        results_outcome['Retain_1b'].append([query, id_subject])
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
-                        results_outcome['Retain'].add(query)
-                        results_outcome['Retain'].add(id_subject)
+                        results_outcome['Retain_1c'].append([query, id_subject])
                 # Palign < 0.8        
                 else:
                     if blastn_entry['pident'] >= constants[1]:
                         # verify if query cluster is the most prevalent
                         if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
                             add_class_to_dict('2a')
-                            results_outcome['Retain'].add(query)
+                            results_outcome['Retain_2a'].append([query, id_subject])
                         else:
                             add_class_to_dict('2b')
-                            results_outcome['Retain'].add(query)
-                            results_outcome['Retain'].add(id_subject)
+                            results_outcome['Retain_2b'].append([query, id_subject])
                             
                     else:
-                        if blastn_entry['Global_palign_pident_max'] >= 0.8:
-                            add_class_to_dict('3b')
-                            results_outcome['Join_u'].append([query, id_subject])
+                        if blastn_entry['global_palign_pident_max'] >= 0.8:
+                            add_class_to_dict('3a')
+                            results_outcome['Join_3a'].append([query, id_subject])
                         else:
                             add_class_to_dict('3b')
-                            results_outcome['Retain'].add(query)
-                            results_outcome['Retain'].add(id_subject)
+                            results_outcome['Retain_3b'].append([query, id_subject])
 
-    return results_outcome
+    return results_outcome, classes
 
-def process_classes(representative_blast_results, results_outcome, path):
+def process_classes(representative_blast_results, results_outcome, classes, path):
     """
     Verifies the entries inside results_outcome dict and removes entries that 
     are in Retain and Join at the same time, leaving only inside Join dict.
@@ -215,6 +231,8 @@ def process_classes(representative_blast_results, results_outcome, path):
     results_outcome : dict
         Dict that contains the outcomes for the results when they were filtered
         by classes.
+    classes : list
+        List of list that contains class IDS used in the previous function
     path : str
         path to write the various BLAST results for each class.
     
@@ -222,25 +240,59 @@ def process_classes(representative_blast_results, results_outcome, path):
     -------
     No return
     """
-    
-    classes = ['1a',
-               '1b',
-               '1c',
-               '2a',
-               '2b',
-               '3a',
-               '3b']
-                
+    # # Get BLAST results that hae more than one entry between reps
+    # representative_blast_results_to_process = {query : {subject: {id_: entry 
+    #                                                               for id_, entry in entries.items()}
+    #                                                     for subject, entries in subjects.items() 
+    #                                                         if len(entries) > 1}
+    #                                            for query, subjects in representative_blast_results.items()}
+    # # Remove empty entries
+    # representative_blast_results_to_process = {query : subjects
+    #                                            for query, subjects in representative_blast_results_to_process.items()
+    #                                            if len(subjects) >= 1}
+    # # Filter out entries that have different classifications between the same reps
+    # # from results_outcome
+    # for query, subjects in representative_blast_results_to_process.items():
+    #     for subject, entries in subjects.items():
+    #         chosen_class = set()
+    #         for entry in entries.values():
+    #             chosen_class.add(entry['class'])
+    #         # If there are more than one classification between the same reps
+    #         if chosen_class > 1:
+    #             break
+
     # Join the various CDS groups into single group based on ids matches    
-    results_outcome['Join'] = [join for join in cf.cluster_by_ids(results_outcome['Join'])]
-    
-    # Remove from retain the entries that are present in Join
-    # Keep inside list inside a list so that further processing is simpler
-    results_outcome['Retain'] = [[retain] for retain in results_outcome['Retain']
-                                 if retain not in lf.flatten_list(results_outcome['Join'])]
+    cluster_dict = {i: join for i, join in enumerate(cf.cluster_by_ids(results_outcome['Join_1a']))}
+    relationships = {}
+    for id_cluster, cluster in cluster_dict.items():
+        relationships[id_cluster] = {}
+        
+        relevant_blast_results = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == '2a'}
+                                               for subject, entries in subjects.items() if subject in cluster}
+                                          for query, subjects in representative_blast_results.items()}
+        
+        relevant_blast_results = {query : {subject : entries for subject, entries in subjects.items() if len(subject) > 1}
+                                  for query, subjects in relevant_blast_results.items() if len(subjects) > 1}
+        if len(relevant_blast_results) == 0:
+            continue
+        
+        freq_sim = {}
+        for results in relevant_blast_results.values():
+            for result in results.values():
+                for r in result.values():
+                    freq_sim[r['query']] = {}
+                    # If subject is inside cluster skip since we know the outcome
+                    if r['query'] in cluster:
+                        break
+                    elif r['subject'] in cluster:
+                        freq_sim[r['query']]['2a'] = []
+                        if r['class'] == '2a':
+                            freq_sim[r['query']]['2a'].append(r['subject'])
+    for id_query, entry in freq_sim.items():
+        relationships[id_cluster].update({id_query : ['High frequency and similiarity when compared to the following cluster members', freq_sim]})
     
     # Write classes to file
-    for class_ in classes:
+    for class_ in classes[1]:
         # Fetch all entries with the desired class
         write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
                                for subject, entries in subjects.items()}
@@ -301,7 +353,7 @@ def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
                 
     return translation_dict, protein_hashes
 
-def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
+def wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters,
                     blastn_processed_results_path, representative_blast_results,
                     path, cpu):
     """
@@ -316,6 +368,8 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     results_outcome : dict
         Dict that contains the outcomes for the results when they were filtered
         by classes.
+    classes : list
+        List of list that contains class IDS used in the previous function
     not_included_cds : dict
         Dict that contains all of the DNA sequences for all of the CDS.
     clusters : dict
@@ -335,7 +389,8 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     Writes TSV and HTML files
     """
     # Process the results_outcome dict and write individual classes to TSV file
-    process_classes(representative_blast_results, results_outcome, blastn_processed_results_path)
+    process_classes(representative_blast_results, results_outcome, classes,
+                    blastn_processed_results_path)
     # Create directories
     cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
@@ -756,21 +811,22 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                         # it means some may not have any interval based on pident
                         total_length[ref] = 0
                 # Calculate global palign
-                global_palign_pident_min = min([(total_length['query'] + gaps_pident) / blastn_results[1]['query_length'],
+                global_palign_pident_min = min([(total_length['query'] - gaps_pident) / blastn_results[1]['query_length'],
                                                 (total_length['subject']) / blastn_results[1]['subject_length']])
                 
-                global_palign_pident_max = max([(total_length['query'] + gaps_pident) / blastn_results[1]['query_length'],
+                global_palign_pident_max = max([(total_length['query'] - gaps_pident) / blastn_results[1]['query_length'],
                                                 (total_length['subject']) / blastn_results[1]['subject_length']])
             # If there is only one results
             else:
-                global_palign_all = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
+                global_palign_all = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 - result['gaps']) / blastn_results[1]['query_length'],
                                     (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
                 
-                global_palign_pident_min = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
+                global_palign_pident_min = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 - result['gaps']) / blastn_results[1]['query_length'],
                                     (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
                 
-                global_palign_pident_max = max([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 + result['gaps']) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])   
+                global_palign_pident_max = max([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 - result['gaps']) / blastn_results[1]['query_length'],
+                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
+
             # Create update dict with the values to add
             update_dict = {'bsr' : bsr,
                            'kmers_sim': sim,
@@ -809,12 +865,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     report_file_path = os.path.join(blastn_processed_results_path, "blastn_all_matches.tsv")
     
     # Separate results into different classes
-    results_outcome = separate_blastn_results_into_classes(representative_blast_results,
+    results_outcome, classes = separate_blastn_results_into_classes(representative_blast_results,
                                                            constants)
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path)
     
     print("Wrapping up results...")
-    wrap_up_results(schema, results_outcome, not_included_cds, clusters, 
+    wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters, 
                     blastn_processed_results_path, representative_blast_results,
                     results_output, cpu)
