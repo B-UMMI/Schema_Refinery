@@ -173,3 +173,19 @@ def polyline_decoding(text):
     number_list = [round(item * (10 ** (-precision)), precision) for item in number_list]
 
     return number_list
+
+def get_unique_sublists(list_of_lists):
+    seen = set()
+    unique_sublists = []
+    for sublist in list_of_lists:
+        sublist_str = str(sublist)
+        if sublist_str not in seen:
+            seen.add(sublist_str)
+            unique_sublists.append(sublist)
+    return unique_sublists
+
+def all_match_lists(list1, list2):
+    return all(elem in list2 for elem in list1)
+
+def any_match_lists(list1, list2):
+    return any(elem in list2 for elem in list1)

@@ -77,7 +77,7 @@ def decode_CDS_sequences_ids(path_to_file):
         
     return decoded_dict
 
-def alignment_dict_to_file(blast_results_dict, file_path):
+def alignment_dict_to_file(blast_results_dict, file_path, write_type):
     """
     Writes alignments strings to file.
 
@@ -87,41 +87,43 @@ def alignment_dict_to_file(blast_results_dict, file_path):
         dict containing alignments string to write to file
     file_path : str
         File path to create to write the file
+    write_type : str
+        If to create new file and write or to append to existing file
 
     Returns
     -------
     No return
     """
     # Write first column into TSV file
-    with open(file_path, 'w') as report_file:
-        report_file.writelines(["Query\t",
-                                "Subject\t",
-                                "Query_length\t",
-                                "Subject_length\t",
-                                "Query_start\t",
-                                "Query_end\t",
-                                "Subject_start\t",
-                                "Subject_end\t",
-                                "Length\t",
-                                "Score\t",
-                                "Number_of_gaps\t",
-                                "Pident\t",
-                                "Prot_BSR\t",
-                                "Prot_seq_Kmer_sim\t",
-                                "Prot_seq_Kmer_cov\t",
-                                "Cluster_frequency_in_genomes_query_cds\t",
-                                "Cluster_frequency_in_genomes_subject_cds\t",
-                                "Global_palign_all\t",
-                                "Global_palign_pident_min\t",
-                                "Global_palign_pident_max\t",
-                                "Palign_local\t",
-                                "Class\n"])
+    with open(file_path, write_type) as report_file:
+        if write_type == 'w':
+            report_file.writelines(["Query\t",
+                                    "Subject\t",
+                                    "Query_length\t",
+                                    "Subject_length\t",
+                                    "Query_start\t",
+                                    "Query_end\t",
+                                    "Subject_start\t",
+                                    "Subject_end\t",
+                                    "Length\t",
+                                    "Score\t",
+                                    "Number_of_gaps\t",
+                                    "Pident\t",
+                                    "Prot_BSR\t",
+                                    "Prot_seq_Kmer_sim\t",
+                                    "Prot_seq_Kmer_cov\t",
+                                    "Cluster_frequency_in_genomes_query_cds\t",
+                                    "Cluster_frequency_in_genomes_subject_cds\t",
+                                    "Global_palign_all\t",
+                                    "Global_palign_pident_min\t",
+                                    "Global_palign_pident_max\t",
+                                    "Palign_local\t",
+                                    "Class\n"])
         # Write all of the matches into TSV file
         for results in blast_results_dict.values():
             for result in results.values():
                 for r in result.values():
                     report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
-
 
 def separate_blastn_results_into_classes(representative_blast_results, constants):
     """
@@ -159,26 +161,16 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     results_outcome = {}
     
     # Create all of the classes
-    classes_outcome = ['Join_1a',
-                       'Join_3a',
-                       'Retain_1b',
-                       'Retain_1c',
-                       'Retain_2a',
-                       'Retain_2b',
-                       'Retain_3b']
-    
-    blast_classes = ['1a',
-                     '1b',
-                     '1c',
-                     '2a',
-                     '2b',
-                     '3a',
-                     '3b']
+    classes_outcome = ['1a',
+                       '3a',
+                       '1b',
+                       '1c',
+                       '2a',
+                       '2b',
+                       '3b']
     
     for class_ in classes_outcome:
         results_outcome[class_] = []
-    
-    classes = [classes_outcome, blast_classes]
     # Process results into classes
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
@@ -188,37 +180,37 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
-                        results_outcome['Join_1a'].append([query, id_subject])
+                        results_outcome['1a'].append([query, id_subject])
                     # If BSR <0.6 verify if query cluster is the most prevalent
                     elif blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
                         add_class_to_dict('1b')
-                        results_outcome['Retain_1b'].append([query, id_subject])
+                        results_outcome['1b'].append([query, id_subject])
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
-                        results_outcome['Retain_1c'].append([query, id_subject])
+                        results_outcome['1c'].append([query, id_subject])
                 # Palign < 0.8        
                 else:
                     if blastn_entry['pident'] >= constants[1]:
                         # verify if query cluster is the most prevalent
                         if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
                             add_class_to_dict('2a')
-                            results_outcome['Retain_2a'].append([query, id_subject])
+                            results_outcome['2a'].append([query, id_subject])
                         else:
                             add_class_to_dict('2b')
-                            results_outcome['Retain_2b'].append([query, id_subject])
+                            results_outcome['2b'].append([query, id_subject])
                             
                     else:
                         if blastn_entry['global_palign_pident_max'] >= 0.8:
                             add_class_to_dict('3a')
-                            results_outcome['Join_3a'].append([query, id_subject])
+                            results_outcome['3a'].append([query, id_subject])
                         else:
                             add_class_to_dict('3b')
-                            results_outcome['Retain_3b'].append([query, id_subject])
+                            results_outcome['3b'].append([query, id_subject])
 
-    return results_outcome, classes
+    return results_outcome, classes_outcome
 
-def process_classes(representative_blast_results, results_outcome, classes, path):
+def process_classes(representative_blast_results, results_outcome, classes_outcome, path):
     """
     Verifies the entries inside results_outcome dict and removes entries that 
     are in Retain and Join at the same time, leaving only inside Join dict.
@@ -240,63 +232,95 @@ def process_classes(representative_blast_results, results_outcome, classes, path
     -------
     No return
     """
-    # # Get BLAST results that hae more than one entry between reps
-    # representative_blast_results_to_process = {query : {subject: {id_: entry 
-    #                                                               for id_, entry in entries.items()}
-    #                                                     for subject, entries in subjects.items() 
-    #                                                         if len(entries) > 1}
-    #                                            for query, subjects in representative_blast_results.items()}
-    # # Remove empty entries
-    # representative_blast_results_to_process = {query : subjects
-    #                                            for query, subjects in representative_blast_results_to_process.items()
-    #                                            if len(subjects) >= 1}
-    # # Filter out entries that have different classifications between the same reps
-    # # from results_outcome
-    # for query, subjects in representative_blast_results_to_process.items():
-    #     for subject, entries in subjects.items():
-    #         chosen_class = set()
-    #         for entry in entries.values():
-    #             chosen_class.add(entry['class'])
-    #         # If there are more than one classification between the same reps
-    #         if chosen_class > 1:
-    #             break
 
-    # Join the various CDS groups into single group based on ids matches    
-    cluster_dict = {i: join for i, join in enumerate(cf.cluster_by_ids(results_outcome['Join_1a']))}
+    # Join the various CDS groups into single group based on ids matches and remove Join from results_outcome
+    cluster_dict_1a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_outcome.pop('1a')))}
+    results_3a = results_outcome.pop('3a')
+    cluster_dict_3a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_3a))}
+    # Process the class 1a against class 3a
     relationships = {}
-    freq_sim = {}
-    for id_cluster, cluster in cluster_dict.items():
-        freq_sim[id_cluster] = {}
-        
-        relevant_blast_results = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == '2a'}
-                                               for subject, entries in subjects.items() if subject in cluster}
-                                          for query, subjects in representative_blast_results.items()}
-        
-        relevant_blast_results = {query : {subject : entries for subject, entries in subjects.items() if entries}
-                                  for query, subjects in relevant_blast_results.items() if subjects}
-        
-        if len(relevant_blast_results) == 0:
-            continue
-
-        for results in relevant_blast_results.values():
-            for result in results.values():
-                freq_sim[id_cluster].update({result[1]['query'] : {}})
-                for r in result.values():
-                    # If subject is inside cluster skip since we know the outcome
-                    if r['query'] in cluster:
-                        break
-                    elif r['subject'] in cluster:
-                        if '2a' not in freq_sim[id_cluster][r['query']] and r['class'] == '2a':
-                            freq_sim[id_cluster][r['query']].update({'2a': [r['subject']]})
-                        elif r['class'] == '2a':
-                            freq_sim[id_cluster][r['query']]['2a'].append(r['subject'])
-                            
-    for id_query, entry in freq_sim.items():
-        if entry:
-            relationships.update({id_query : ['High frequency and similiarity when compared to the following cluster members', entry]})
+    relationships['3a'] = {}
+    for id_1a, cluster_1a in cluster_dict_1a.items():
+        for id_3a, cluster_3a in list(cluster_dict_3a.items()):
+            # If members of class 3a are completly contained in a list of 1a
+            if lf.all_match_lists(cluster_3a, cluster_1a):
+                del cluster_dict_3a[id_3a]
+            # If they are partialy contained
+            elif lf.any_match_lists(cluster_3a, cluster_1a):
+                # Create entry
+                if id_1a not in relationships['3a']:
+                    relationships['3a'].update({id_1a: [[id_3a, set(cluster_3a).intersection(cluster_1a)]]})
+                # Add to entry
+                else:
+                    relationships['3a'][id_1a].append([id_3a, set(cluster_3a).intersection(cluster_1a)])
+                
+    # Get unique values for each classification list
+    for class_, results in results_outcome.items():
+        results_outcome[class_] = lf.get_unique_sublists(results)
+    # Process the class 1a against all the other classes
+    for results_class_id, results in results_outcome.items():
+        # Create class dict
+        relationships[results_class_id] = {}
+        # Itereate over clusters
+        for cluster_id, cluster in cluster_dict_1a.items():
+            # Iterate over results
+            for result in results:
+                # If members of class 1a are completly contained in a list of current class
+                if lf.all_match_lists(result, cluster):
+                    results.remove(result)
+                # If members of class 1a are partialy contained in a list of current class    
+                elif lf.any_match_lists(result, cluster):
+                    if cluster_id not in relationships[results_class_id]:
+                        relationships[results_class_id].update({cluster_id: set([result[0]])})
+                    # Add to entry
+                    else:
+                        relationships[results_class_id][cluster_id].add(result[0])
     
+    # Create directory
+    blast_by_joined_cluster_output = os.path.join(path, "blast_results_by_joined_cluster")
+    ff.create_directory(blast_by_joined_cluster_output)
+    
+    for cluster_id, cluster in cluster_dict_1a.items():
+        write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in cluster}
+                               for subject, entries in subjects.items()}
+                      for query, subjects in representative_blast_results.items()}
+    
+        report_file_path = os.path.join(blast_by_joined_cluster_output, f"blastn_joined_cluster_{cluster_id}.tsv")
+        alignment_dict_to_file(write_dict, report_file_path, 'w')
+    # Create directory 
+    joined_cluster_relationships_output = os.path.join(blast_by_joined_cluster_output, "blast_results_by_joined_cluster_relationships")
+    ff.create_directory(joined_cluster_relationships_output)
+    
+    for class_, relationship in relationships.items():
+        if len(relationship) == 0:
+            continue
+        for cluster_id, relationship_ids in relationship.items():
+            if class_ == '3a':
+                relationship_ids = lf.flatten_list([r[1] for r in relationship_ids])
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in relationship_ids and entry['class'] == class_}
+                                   for subject, entries in subjects.items()}
+                          for query, subjects in representative_blast_results.items()}
+
+            report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_joined_cluster_relationship_{cluster_id}.tsv")
+            if not os.path.exists(report_file_path):
+                alignment_dict_to_file(write_dict, report_file_path, 'w')
+            else:
+                alignment_dict_to_file(write_dict, report_file_path, 'a')
+                
+            relationships_report_file_path = os.path.join(joined_cluster_relationships_output, f"relationships_report_{cluster_id}.txt")
+            if os.path.exists(relationships_report_file_path):
+                write_type = 'a'
+            else:
+                write_type = 'w'
+                
+            with open(relationships_report_file_path, write_type) as relationships_report_file:
+                if class_ == '3a':
+                    relationships_report_file.writelines("The following CDS have high similiarity but low coverage of the subject sequence:\n")
+                    for i in relationship_ids:
+                        relationships_report_file.writelines(f"{','.join(i)}\n")
+                
     # Write classes to file
-    for class_ in classes[1]:
+    for class_ in classes_outcome:
         # Fetch all entries with the desired class
         write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
                                for subject, entries in subjects.items()}
@@ -304,7 +328,7 @@ def process_classes(representative_blast_results, results_outcome, classes, path
         
         report_file_path = os.path.join(path, f"blastn_group_{class_}.tsv")
         # Write individual class to file
-        alignment_dict_to_file(write_dict, report_file_path)
+        alignment_dict_to_file(write_dict, report_file_path, 'w')
         
 def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
     """
@@ -861,20 +885,20 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
         if len(representative_blast_results[query]) == 0:
             del representative_blast_results[query]
 
-    print("Filtering BLASTn results into classes...")
+    print("Filtering BLAST results into classes...")
     results_output = os.path.join(output_directory, "3_Results_files")
     ff.create_directory(results_output)
-    blastn_processed_results_path = os.path.join(results_output, "Processed_Blastn")
+    blastn_processed_results_path = os.path.join(results_output, "Processed_Blast")
     ff.create_directory(blastn_processed_results_path)
-    report_file_path = os.path.join(blastn_processed_results_path, "blastn_all_matches.tsv")
+    report_file_path = os.path.join(blastn_processed_results_path, "blast_all_matches.tsv")
     
     # Separate results into different classes
-    results_outcome, classes = separate_blastn_results_into_classes(representative_blast_results,
+    results_outcome, classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
                                                            constants)
     # Write all of the BLASTn results to a file
-    alignment_dict_to_file(representative_blast_results, report_file_path)
+    alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
     print("Wrapping up results...")
-    wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters, 
+    wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters, 
                     blastn_processed_results_path, representative_blast_results,
                     results_output, cpu)
