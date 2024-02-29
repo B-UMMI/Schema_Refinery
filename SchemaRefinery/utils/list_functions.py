@@ -189,3 +189,9 @@ def all_match_lists(list1, list2):
 
 def any_match_lists(list1, list2):
     return any(elem in list2 for elem in list1)
+
+def contains_sublist(main_list, list_of_lists):
+    for sublist in list_of_lists:
+        if all_match_lists(main_list, sublist):
+            return True
+    return False

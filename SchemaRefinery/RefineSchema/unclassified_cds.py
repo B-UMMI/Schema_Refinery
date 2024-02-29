@@ -235,8 +235,15 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
 
     # Join the various CDS groups into single group based on ids matches and remove Join from results_outcome
     cluster_dict_1a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_outcome.pop('1a')))}
-    results_3a = results_outcome.pop('3a')
-    cluster_dict_3a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_3a))}
+    # Create dict for class 3a and filter out all entries that contain entire clusters are already present in 1a
+    i = 1
+    cluster_dict_3a = {}
+    for cluster in cf.cluster_by_ids(results_outcome.pop('3a')):
+        # if all elements are present inside one of the class 1a sublists
+        if not lf.contains_sublist(cluster, cluster_dict_1a.values()):
+            cluster_dict_3a.setdefault(i, cluster)
+            i += 1
+
     # Process the class 1a against class 3a
     relationships = {}
     relationships['3a'] = {}
@@ -257,6 +264,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     # Get unique values for each classification list
     for class_, results in results_outcome.items():
         results_outcome[class_] = lf.get_unique_sublists(results)
+
     # Process the class 1a against all the other classes
     for results_class_id, results in results_outcome.items():
         # Create class dict
@@ -266,20 +274,33 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             # Iterate over results
             for result in results:
                 # If members of class 1a are completly contained in a list of current class
+                # Meaning that there was another classification apart from 1a between members of that clusters
                 if lf.all_match_lists(result, cluster):
                     results.remove(result)
-                # If members of class 1a are partialy contained in a list of current class    
+                # If members of class 1a are partialy contained in a list of current class
+                # Meaning that query matched with one of the member with the clusters however had
+                # another classification with that member 
                 elif lf.any_match_lists(result, cluster):
                     if cluster_id not in relationships[results_class_id]:
                         relationships[results_class_id].update({cluster_id: set([result[0]])})
                     # Add to entry
                     else:
                         relationships[results_class_id][cluster_id].add(result[0])
-    
+
+    # Remove all entries that will already were added to a joined cluster of representatives
+    # and remove duplicates
+    for class_, results in results_outcome.items():
+        results_outcome[class_] = set([result[0] for result in results
+                                   if result[0] not in lf.flatten_list(list(cluster_dict_1a.values()))
+                                   or result[0] not in list(cluster_dict_3a.values())])
+    # Add the joined cluster again to the dict
+    results_outcome['1a'] = list(cluster_dict_1a.values())
+    results_outcome['3a'] = list(cluster_dict_3a.values())
+
     # Create directory
     blast_by_joined_cluster_output = os.path.join(path, "blast_results_by_joined_cluster")
     ff.create_directory(blast_by_joined_cluster_output)
-    
+    # Get all of the BLAST entries for that cluster
     for cluster_id, cluster in cluster_dict_1a.items():
         write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in cluster}
                                for subject, entries in subjects.items()}
@@ -290,6 +311,8 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     # Create directory 
     joined_cluster_relationships_output = os.path.join(blast_by_joined_cluster_output, "blast_results_by_joined_cluster_relationships")
     ff.create_directory(joined_cluster_relationships_output)
+    report_relationships_output = os.path.join(blast_by_joined_cluster_output, "relationships_to_joined_clusters")
+    ff.create_directory(report_relationships_output)
     
     for class_, relationship in relationships.items():
         if len(relationship) == 0:
@@ -303,22 +326,24 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
 
             report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_joined_cluster_relationship_{cluster_id}.tsv")
             if not os.path.exists(report_file_path):
-                alignment_dict_to_file(write_dict, report_file_path, 'w')
-            else:
-                alignment_dict_to_file(write_dict, report_file_path, 'a')
-                
-            relationships_report_file_path = os.path.join(joined_cluster_relationships_output, f"relationships_report_{cluster_id}.txt")
-            if os.path.exists(relationships_report_file_path):
                 write_type = 'a'
             else:
                 write_type = 'w'
+            # Write BLAST results to file
+            alignment_dict_to_file(write_dict, report_file_path, write_type)
+                
+            relationships_report_file_path = os.path.join(report_relationships_output, f"relationships_report_{cluster_id}.txt")
                 
             with open(relationships_report_file_path, write_type) as relationships_report_file:
                 if class_ == '3a':
-                    relationships_report_file.writelines("The following CDS have high similiarity but low coverage of the subject sequence:\n")
+                    relationships_report_file.writelines("The following CDS have high similiarity but low coverage of the subject sequence that inside the cluster:\n")
                     for i in relationship_ids:
-                        relationships_report_file.writelines(f"{','.join(i)}\n")
-                
+                        relationships_report_file.writelines(f"{i}\n")
+                else:
+                    relationships_report_file.writelines("The following CDS matched with BLASTn to this cluster however they are probably different loci:\n")
+                    for i in relationship_ids:
+                        relationships_report_file.writelines(f"{i}\n")
+                        
     # Write classes to file
     for class_ in classes_outcome:
         # Fetch all entries with the desired class
@@ -430,10 +455,17 @@ def wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters
     print("Writting FASTA file for possible new loci...")
     outcome_paths = {}
     for outcome in results_outcome:
+        if outcome == '3b':
+            continue
         i = 1
         for group in results_outcome[outcome]:
-            cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"{outcome}_{i}.fasta")
-            outcome_paths[f"{outcome}_{i}"] = cds_outcome_results_fastas_file
+            if outcome in ['1a', '3a']:
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_{outcome}_{i}.fasta")
+                outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
+            else:
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_{outcome}_{group}.fasta")
+                outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
+                group = [group]
             i += 1
             with open(cds_outcome_results_fastas_file, 'w+') as fasta_file:
                 for rep_id in group:
