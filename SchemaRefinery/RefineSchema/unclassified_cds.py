@@ -273,9 +273,12 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         for cluster_id, cluster in cluster_dict_1a.items():
             # Iterate over results
             for result in results:
+                # Skip entries that have cluster element as query
+                if result[0] in cluster:
+                    continue
                 # If members of class 1a are completly contained in a list of current class
                 # Meaning that there was another classification apart from 1a between members of that clusters
-                if lf.all_match_lists(result, cluster):
+                elif lf.all_match_lists(result, cluster):
                     results.remove(result)
                 # If members of class 1a are partialy contained in a list of current class
                 # Meaning that query matched with one of the member with the clusters however had
@@ -320,7 +323,14 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         for cluster_id, relationship_ids in relationship.items():
             if class_ == '3a':
                 relationship_ids = lf.flatten_list([r[1] for r in relationship_ids])
-            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in relationship_ids and entry['class'] == class_}
+            # Search the entries if query is in relationship_ids set and if the
+            # subject is member of the joined representatives cluster (we want
+            # only relevant BLAST matches) (substract -1) to adjust for cluster
+            # number id and to fetch from list and lastly get the right class,
+            # so it is ordered by class.
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in relationship_ids
+                                             and entry['subject'] in results_outcome['1a'][cluster_id - 1]
+                                             and entry['class'] == class_}
                                    for subject, entries in subjects.items()}
                           for query, subjects in representative_blast_results.items()}
 
