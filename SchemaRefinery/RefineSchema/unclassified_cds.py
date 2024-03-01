@@ -35,7 +35,7 @@ def fetch_fasta_dict(file_path_cds, count_seq):
 
     Returns
     -------
-    not_included_cds : dict
+    fasta_dict : dict
         Returns dict with key as fasta header and value as fasta sequence.
     """
     
@@ -92,7 +92,7 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
 
     Returns
     -------
-    No return
+    No return, writes or appends a file at the file_path
     """
     # Write first column into TSV file
     with open(file_path, write_type) as report_file:
@@ -358,9 +358,10 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     ff.create_directory(blast_by_joined_cluster_output)
     # Get all of the BLAST entries for that cluster
     for cluster_id, cluster in cluster_dict_1a.items():
-        write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in cluster}
+        write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
                                for subject, entries in subjects.items()}
-                      for query, subjects in representative_blast_results.items()}
+                      for query, subjects in representative_blast_results.items()
+                      if query in cluster}
     
         report_file_path = os.path.join(blast_by_joined_cluster_output, f"blastn_joined_cluster_{cluster_id}.tsv")
         alignment_dict_to_file(write_dict, report_file_path, 'w')
@@ -381,14 +382,13 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             # only relevant BLAST matches) (substract -1) to adjust for cluster
             # number id and to fetch from list and lastly get the right class,
             # so it is ordered by class.
-            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['query'] in relationship_ids
-                                             and entry['subject'] in results_outcome['1a'][cluster_id - 1]
-                                             and entry['class'] == class_}
-                                   for subject, entries in subjects.items()}
-                          for query, subjects in representative_blast_results.items()}
-
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
+                                             if entry['class'] == class_}
+                                   for subject, entries in subjects.items() if subject in results_outcome['1a'][cluster_id - 1]}
+                          for query, subjects in representative_blast_results.items() if query in relationship_ids}
+            
             report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_joined_cluster_relationship_{cluster_id}.tsv")
-            if not os.path.exists(report_file_path):
+            if os.path.exists(report_file_path):
                 write_type = 'a'
             else:
                 write_type = 'w'
@@ -399,11 +399,13 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                 
             with open(relationships_report_file_path, write_type) as relationships_report_file:
                 if class_ == '3a':
-                    relationships_report_file.writelines("The following CDS have high similiarity but low coverage of the subject sequence that inside the cluster:\n")
+                    relationships_report_file.writelines("The following CDS have high similiarity but low coverage of the"
+                                                         " subject sequence that inside the cluster:\n")
                     for i in relationship_ids:
                         relationships_report_file.writelines(f"{i}\n")
                 else:
-                    relationships_report_file.writelines("The following CDS matched with BLASTn to this cluster however they are probably different loci:\n")
+                    relationships_report_file.writelines(f"The following CDS matched with BLASTn and have the classification '{class_}'"
+                                                         " to this cluster however they are probably different loci:\n")
                     for i in relationship_ids:
                         relationships_report_file.writelines(f"{i}\n")
                         
@@ -479,7 +481,7 @@ def wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters
                 outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
                 group = [group]
             i += 1
-            with open(cds_outcome_results_fastas_file, 'w+') as fasta_file:
+            with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
                 for rep_id in group:
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
                     for cds_id in cds_ids:
