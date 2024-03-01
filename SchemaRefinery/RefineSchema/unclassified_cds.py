@@ -125,6 +125,57 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
                 for r in result.values():
                     report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
 
+def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
+    """
+    Translates the DNA sequence to protein and verifies if that protein is alredy
+    present in the dict, thus ensuring that the dict contains deduplicated sequences,
+    it writes the sequences to a FASTA files and return the dict.
+    
+    Parameters
+    ----------
+    seq_dict : dict
+        Dict that contains sequence ID as key and the sequence as value.
+    path_to_write : str
+        Path to the file to create and write.
+    count_seq : bool
+        If there is need to print into stdout the number of processed sequences.
+        
+    Returns
+    -------
+    translation_dict : dict
+        Dict that contais sequence ID as key and translated sequence as value.
+    protein_hashes : dict
+        Dict that contais sequence hash as key and sequences IDs as values.
+    """
+    translation_dict = {}
+    protein_hashes = {}
+    if count_seq:
+        i = 1
+        total = len(seq_dict)
+    with open(path_to_write, 'w+') as translation:
+        for id_s, sequence in seq_dict.items():
+            if count_seq:
+                print(f"Translated {i}/{total} CDS")
+                i += 1
+            # Translate
+            protein_translation = str(sf.translate_dna(str(sequence),
+                                                       11,
+                                                       0,
+                                                       True)[0][0])
+            # Hash the sequence
+            prot_hash = sf.seq_to_hash(protein_translation)
+            # Find unique proteins
+            if prot_hash not in protein_hashes:
+                protein_hashes[prot_hash] = [id_s]
+                translation_dict[id_s] = protein_translation
+                translation.writelines('>'+id_s+"\n")
+                translation.writelines(protein_translation+"\n")
+            # Remember CDS with that protein hash for future
+            else:
+                protein_hashes[prot_hash].append(id_s)
+                
+    return translation_dict, protein_hashes
+
 def separate_blastn_results_into_classes(representative_blast_results, constants):
     """
     Separates one BLASTn dict into various classes and adds them into one dict
@@ -138,7 +189,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     -------
     results_outcome : dict
         Dict that contains list with the results outcome
-    classes : list
+    classes_outcome : list
         List of list that contains class IDS used in the next function
     """
         
@@ -212,8 +263,10 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
 
 def process_classes(representative_blast_results, results_outcome, classes_outcome, path):
     """
-    Verifies the entries inside results_outcome dict and removes entries that 
-    are in Retain and Join at the same time, leaving only inside Join dict.
+    Identifies the relationships between representatives classified as other classes
+    that matched by BLASTn with members join member of the same cluster classified
+    as 1a, those relationships are written to a file for the end user to see if
+    they are relevant.
     
     Parameters
     ----------
@@ -223,8 +276,8 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     results_outcome : dict
         Dict that contains the outcomes for the results when they were filtered
         by classes.
-    classes : list
-        List of list that contains class IDS used in the previous function
+    classes_outcome : list
+        List of list that contains class IDS used in the next function
     path : str
         path to write the various BLAST results for each class.
     
@@ -365,57 +418,6 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path, 'w')
         
-def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
-    """
-    Translates the DNA sequence to protein and verifies if that protein is alredy
-    present in the dict, thus ensuring that the dict contains deduplicated sequences,
-    it writes the sequences to a FASTA files and return the dict.
-    
-    Parameters
-    ----------
-    seq_dict : dict
-        Dict that contains sequence ID as key and the sequence as value.
-    path_to_write : str
-        Path to the file to create and write.
-    count_seq : bool
-        If there is need to print into stdout the number of processed sequences.
-        
-    Returns
-    -------
-    translation_dict : dict
-        Dict that contais sequence ID as key and translated sequence as value.
-    protein_hashes : dict
-        Dict that contais sequence hash as key and sequences IDs as values.
-    """
-    translation_dict = {}
-    protein_hashes = {}
-    if count_seq:
-        i = 1
-        total = len(seq_dict)
-    with open(path_to_write, 'w+') as translation:
-        for id_s, sequence in seq_dict.items():
-            if count_seq:
-                print(f"Translated {i}/{total} CDS")
-                i += 1
-            # Translate
-            protein_translation = str(sf.translate_dna(str(sequence),
-                                                       11,
-                                                       0,
-                                                       True)[0][0])
-            # Hash the sequence
-            prot_hash = sf.seq_to_hash(protein_translation)
-            # Find unique proteins
-            if prot_hash not in protein_hashes:
-                protein_hashes[prot_hash] = [id_s]
-                translation_dict[id_s] = protein_translation
-                translation.writelines('>'+id_s+"\n")
-                translation.writelines(protein_translation+"\n")
-            # Remember CDS with that protein hash for future
-            else:
-                protein_hashes[prot_hash].append(id_s)
-                
-    return translation_dict, protein_hashes
-
 def wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters,
                     blastn_processed_results_path, representative_blast_results,
                     path, cpu):
