@@ -288,32 +288,8 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
 
     # Join the various CDS groups into single group based on ids matches and remove Join from results_outcome
     cluster_dict_1a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_outcome.pop('1a')))}
-    # Create dict for class 3a and filter out all entries that contain entire clusters are already present in 1a
-    i = 1
-    cluster_dict_3a = {}
-    for cluster in cf.cluster_by_ids(results_outcome.pop('3a')):
-        # if all elements are present inside one of the class 1a sublists
-        if not lf.contains_sublist(cluster, cluster_dict_1a.values()):
-            cluster_dict_3a.setdefault(i, cluster)
-            i += 1
 
-    # Process the class 1a against class 3a
     relationships = {}
-    relationships['3a'] = {}
-    for id_1a, cluster_1a in cluster_dict_1a.items():
-        for id_3a, cluster_3a in list(cluster_dict_3a.items()):
-            # If members of class 3a are completly contained in a list of 1a
-            if lf.all_match_lists(cluster_3a, cluster_1a):
-                del cluster_dict_3a[id_3a]
-            # If they are partialy contained
-            elif lf.any_match_lists(cluster_3a, cluster_1a):
-                # Create entry
-                if id_1a not in relationships['3a']:
-                    relationships['3a'].update({id_1a: [[id_3a, set(cluster_3a).intersection(cluster_1a)]]})
-                # Add to entry
-                else:
-                    relationships['3a'][id_1a].append([id_3a, set(cluster_3a).intersection(cluster_1a)])
-                
     # Get unique values for each classification list
     for class_, results in results_outcome.items():
         results_outcome[class_] = lf.get_unique_sublists(results)
@@ -347,11 +323,9 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     # and remove duplicates
     for class_, results in results_outcome.items():
         results_outcome[class_] = set([result[0] for result in results
-                                   if result[0] not in lf.flatten_list(list(cluster_dict_1a.values()))
-                                   or result[0] not in list(cluster_dict_3a.values())])
+                                   if result[0] not in lf.flatten_list(list(cluster_dict_1a.values()))])
     # Add the joined cluster again to the dict
     results_outcome['1a'] = list(cluster_dict_1a.values())
-    results_outcome['3a'] = list(cluster_dict_3a.values())
 
     # Create directory
     blast_by_joined_cluster_output = os.path.join(path, "blast_results_by_joined_cluster")
@@ -375,8 +349,6 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         if len(relationship) == 0:
             continue
         for cluster_id, relationship_ids in relationship.items():
-            if class_ == '3a':
-                relationship_ids = lf.flatten_list([r[1] for r in relationship_ids])
             # Search the entries if query is in relationship_ids set and if the
             # subject is member of the joined representatives cluster (we want
             # only relevant BLAST matches) (substract -1) to adjust for cluster
@@ -399,8 +371,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                 
             with open(relationships_report_file_path, write_type) as relationships_report_file:
                 if class_ == '3a':
-                    relationships_report_file.writelines("The following CDS have high similiarity but low coverage of the"
-                                                         " subject sequence that inside the cluster:\n")
+                    relationships_report_file.writelines("The following CDS may partially contain CDS from this cluster:\n")
                     for i in relationship_ids:
                         relationships_report_file.writelines(f"{i}\n")
                 else:
@@ -473,7 +444,7 @@ def wrap_up_results(schema, results_outcome, classes, not_included_cds, clusters
             continue
         i = 1
         for group in results_outcome[outcome]:
-            if outcome in ['1a', '3a']:
+            if outcome == '1a':
                 cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_{outcome}_{i}.fasta")
                 outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
             else:
