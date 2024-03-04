@@ -219,7 +219,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                        '2a',
                        '2b',
                        '3b']
-    
+    drop_dict = {}
     for class_ in classes_outcome:
         results_outcome[class_] = []
     # Process results into classes
@@ -240,6 +240,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     # Ignore cases were 1b was already assigned or will be assigned
                     elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
                         add_class_to_dict('drop')
+                        drop_dict.update({query: id_subject})
                         continue
                     # Add two as separate
                     else:
@@ -255,6 +256,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         # Ignore cases were 2a was already assigned or will be assigned
                         elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
                             add_class_to_dict('drop')
+                            drop_dict.update({query: id_subject})
                             continue
                         else:
                             add_class_to_dict('2b')
@@ -268,9 +270,10 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                             add_class_to_dict('3b')
                             results_outcome['3b'].append([query, id_subject])
 
-    return results_outcome, classes_outcome
+    return results_outcome, classes_outcome, drop_dict
 
-def process_classes(representative_blast_results, results_outcome, classes_outcome, path):
+def process_classes(representative_blast_results, results_outcome, classes_outcome,
+                    drop_dict,path):
     """
     Identifies the relationships between representatives classified as other classes
     that matched by BLASTn with members join member of the same cluster classified
@@ -300,12 +303,21 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         
     relationships = {}
     relationships['Joined_1a'] = {}
+    
     # Remove all entries that already were added to a joined cluster of representatives
     # and remove duplicates
     for class_, results in results_outcome.items():
-        results_outcome[class_] = [result for result in results
-                                   if result[0] not in lf.flatten_list(list(cluster_dict_1a.values()))]
+        if class_ in ['2b','1c']:
+            results_outcome[class_] = [result for result in results
+                                       if result[0] not in lf.flatten_list(list(cluster_dict_1a.values()))
+                                       and result[0] not in drop_dict
+                                       and result[1] not in drop_dict]
+        else:
+            results_outcome[class_] = [result for result in results
+                                       if result[0] not in lf.flatten_list(list(cluster_dict_1a.values()))]
+            
         results_outcome[class_] = lf.get_unique_sublists(results_outcome[class_])
+        
 
     # Process the class 1a against all the other classes
     for results_class_id, results in results_outcome.items():
@@ -380,7 +392,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                           for query, subjects in representative_blast_results.items()
                           if query in cluster}
         
-            report_file_path = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{id_}.tsv")
+            report_file_path = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{class_}_{id_}.tsv")
             alignment_dict_to_file(write_dict, report_file_path, 'w')
     
     # Create directory 
@@ -444,7 +456,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         
 def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters,
                     blastn_processed_results_path, representative_blast_results,
-                    path, cpu):
+                    drop_dict, path, cpu):
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
@@ -479,7 +491,7 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
     """
     # Process the results_outcome dict and write individual classes to TSV file
     process_classes(representative_blast_results, results_outcome, classes_outcome,
-                    blastn_processed_results_path)
+                    drop_dict, blastn_processed_results_path)
     # Create directories
     cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
@@ -499,7 +511,7 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
                 cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_{outcome}_{i}.fasta")
                 outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
             else:
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_{group}.fasta")
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_{outcome}_{group}.fasta")
                 outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
                 group = [group]
             i += 1
@@ -961,12 +973,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     report_file_path = os.path.join(blastn_processed_results_path, "blast_all_matches.tsv")
     
     # Separate results into different classes
-    results_outcome, classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
-                                                           constants)
+    results_outcome, classes_outcome, drop_dict = separate_blastn_results_into_classes(representative_blast_results,
+                                                                                       constants)
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
     print("Wrapping up results...")
     wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters, 
-                    blastn_processed_results_path, representative_blast_results,
+                    blastn_processed_results_path, representative_blast_results, drop_dict,
                     results_output, cpu)
