@@ -11,7 +11,7 @@ try:
                        blast_functions as bf,
                        alignments_functions as af,
                        kmers_functions as kf,
-                       list_functions as lf,
+                       iterable_functions as itf,
                        graphical_functions as gf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
@@ -20,7 +20,7 @@ except ModuleNotFoundError:
                                       blast_functions as bf,
                                       alignments_functions as af,
                                       kmers_functions as kf,
-                                      list_functions as lf,
+                                      iterable_functions as itf,
                                       graphical_functions as gf)
 
 def main(schema_path_folder, output_directory, allelecall_directory, temp_paths, cpu):

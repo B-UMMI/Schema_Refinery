@@ -256,3 +256,15 @@ def contains_sublist(main_list, list_of_lists):
         if all_match_lists(main_list, sublist):
             return True
     return False
+
+def identify_string_in_dict(input_str, dictionary):
+    for key, value in dictionary.items():
+        if input_str in value:
+            return key
+    return None
+
+def has_element_of_type(input_list, target_type):
+    for element in input_list:
+        if isinstance(element, target_type):
+            return True
+    return False

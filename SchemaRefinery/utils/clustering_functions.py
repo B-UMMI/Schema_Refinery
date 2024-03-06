@@ -3,10 +3,10 @@ from collections import Counter
 
 try:
     from utils import (kmers_functions as kf,
-                       list_functions as lf)
+                       iterable_functions as itf)
 except:
     from SchemaRefinery. utils import (kmers_functions as kf,
-                                       list_functions as lf)
+                                       iterable_functions as itf)
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
                            prot_len_dict, protid, window_size):
@@ -52,7 +52,7 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
             all_rep_pos.setdefault(value, []).append(k)
 
     # count number of kmer hits per representative
-    counts = Counter(lf.flatten_list(current_reps.values()))
+    counts = Counter(itf.flatten_list(current_reps.values()))
     
     #selects reps_loci based on number of kmer hits/total number of kmers
     selected_reps = [(k, v/len(kmers))

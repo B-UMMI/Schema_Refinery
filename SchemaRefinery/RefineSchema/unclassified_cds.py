@@ -10,7 +10,7 @@ try:
                        blast_functions as bf,
                        alignments_functions as af,
                        kmers_functions as kf,
-                       list_functions as lf,
+                       iterable_functions as itf,
                        graphical_functions as gf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
@@ -19,7 +19,7 @@ except ModuleNotFoundError:
                                       blast_functions as bf,
                                       alignments_functions as af,
                                       kmers_functions as kf,
-                                      list_functions as lf,
+                                      iterable_functions as itf,
                                       graphical_functions as gf)
 
 def fetch_fasta_dict(file_path_cds, count_seq):
@@ -73,7 +73,7 @@ def decode_CDS_sequences_ids(path_to_file):
     # Decode the file
     decoded_dict = {}
     for key, value in hash_table.items():
-        decoded_dict[key] = lf.polyline_decoding(value)
+        decoded_dict[key] = itf.polyline_decoding(value)
         
     return decoded_dict
 
@@ -303,7 +303,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     
     # and remove duplicates
     for class_, results in results_outcome.items():
-        results_outcome[class_] = lf.get_unique_sublists(results_outcome[class_])
+        results_outcome[class_] = itf.get_unique_sublists(results_outcome[class_])
         
     relationships = {}
     remember_ids = {}
@@ -320,27 +320,43 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             for result in results:
                 # If members of class 1a are completly contained in a list of current class
                 # Meaning that there was another classification between members of that clusters
-                if lf.all_match_lists(result, cluster):
+                if itf.all_match_lists(result, cluster):
                     results.remove(result)
                 # If entry from the cluster is query
                 elif result[0] in cluster:
+                    continue
+                    cluster_key = itf.identify_string_in_dict(result[1], cluster_dict_1a)
+                    original_id = result[0]
+                    if cluster_key:
+                        result = [cluster_id, result[1]]
+                    else:
+                        cluster_key = result[1]
+                        
+                    if cluster_key not in remember_ids[results_class_id]:
+                        remember_ids[results_class_id].update({cluster_key: {str(cluster_id) + '_' + result[1] : original_id}})
+                    else:
+                        remember_ids[results_class_id][cluster_key].update({str(cluster_id) + '_' + result[1] : original_id})
+                        
                     # Add that this cluster matched with another CDS not part
                     # of the cluster
-                    if result[1] not in relationships[results_class_id]:
-                        relationships[results_class_id].update({result[1]: [[result[1], cluster_id]]})
-                        remember_ids[results_class_id].update({result[1]: {result[1] + str(cluster_id) : result[0]}})
+                    if cluster_key not in relationships[results_class_id]:
+                        relationships[results_class_id].update({cluster_key: [[cluster_id, result[1]]]})
                     # Add to entry
                     else:
-                        relationships[results_class_id][result[1]].append(result[1], cluster_id)
-                        remember_ids[results_class_id][result[1]].update({result[1] + '_' + str(cluster_id) : result[0]})
+                        relationships[results_class_id][cluster_key].append([cluster_id, result[1]])
                 # If members of class 1a are partialy contained in a list of current class
                 # Meaning that query matched with one of the member with the clusters however had
                 # another classification with that member 
                 elif result[1] in cluster:
-                    joined_cluster_key = lf.identify_string_in_dict(result[0], cluster_dict_1a)
-                    if joined_cluster_key:
-                        remember_ids[results_class_id].update({cluster_id: {str(joined_cluster_key) + '_' + result[1] : result[0]}})
-                        result = [joined_cluster_key, result[1]]
+                    cluster_key = itf.identify_string_in_dict(result[0], cluster_dict_1a)
+                    if cluster_key:
+                        if cluster_id not in remember_ids[results_class_id]:
+                            remember_ids[results_class_id].update({cluster_id: {str(cluster_key) + '_' + result[1] : result[0]}})
+                        else:
+                            remember_ids[results_class_id][cluster_id].update({str(cluster_key) + '_' + result[1] : result[0]})
+                            
+                        result = [cluster_key, result[1]]
+
                     if cluster_id not in relationships[results_class_id]:
                         relationships[results_class_id].update({cluster_id: [result]})
                     # Add to entry
@@ -368,10 +384,15 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                     else:
                         relationships[class_2][result_2[1]].append(result_2)
 
-    # Remove duplicates
+    # Remove duplicates entries
     for class_, results in results_outcome.items():
         results_outcome[class_] = set([result[0] for result in results])
 
+    # Get unique relationships
+    for class_, relationship in list(relationships.items()):
+        for id_, r in list(relationship.items()):
+            relationships[class_][id_] = itf.get_unique_sublists(r)
+            
     # Add the joined cluster again to the dict
     results_outcome['1a'] = list(cluster_dict_1a.values())
     
@@ -415,16 +436,29 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             # so it is ordered by class.
             
             query_ids = [query_id[0] for query_id in r_ids]
+            subject_ids = [subject_id[1] for subject_id in r_ids]
+            
+            transformed_query_ids = []
+            if itf.has_element_of_type(query_ids, int):
+                for i, id_ in enumerate(query_ids):
+                    if type(id_) == int:
+                        cds_id = remember_ids[class_][cluster_id][str(id_) + '_' + subject_ids[i]]
+                        transformed_query_ids.append(cds_id)
+                    else:
+                        transformed_query_ids.append(id_)
+            else:
+                transformed_query_ids = query_ids
+
             if type(cluster_id) == int:
                 write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
                                                  if entry['class'] == class_}
                                        for subject, entries in subjects.items() if subject in cluster_dict_1a[cluster_id]}
-                              for query, subjects in representative_blast_results.items() if query in query_ids}
+                              for query, subjects in representative_blast_results.items() if query in transformed_query_ids}
             else:
                 write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
                                                  if entry['class'] == class_}
                                        for subject, entries in subjects.items() if subject == cluster_id}
-                              for query, subjects in representative_blast_results.items() if query == query_ids}
+                              for query, subjects in representative_blast_results.items() if query == transformed_query_ids}
                 
             report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_relationships_to_{cluster_id}.tsv")
             if os.path.exists(report_file_path):
@@ -446,12 +480,17 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                     relationships_report_file.writelines("The following CDS matched with BLASTn to the following"
                                                          f" elements of this cluster and have the classification '{class_}'"
                                                          " to this elements however they are probably different loci:\n")
+
                 relationships_report_file.writelines(f"{cluster_id}:\n")
-                for query_id in query_ids:
+                for i, query_id in enumerate(query_ids):
                     if type(query_id) == str:
                         relationships_report_file.writelines(f"\t{query_id}\n")
+                    elif type(subject_ids[i]) == int:
+                        cds_id = remember_ids[class_][cluster_id][str(subject_ids[i]) + '_' + cluster_id]
+                        relationships_report_file.writelines(f"\tcluster {subject_ids[i]} entries: {cds_id}\n")      
                     else:
-                        relationships_report_file.writelines(f"\tcluster query_id entries: {remember_ids[class_][cluster_id + str(query_id)]}\n")
+                        cds_id = remember_ids[class_][cluster_id][str(query_id) + '_' + subject_ids[i]]
+                        relationships_report_file.writelines(f"\tcluster {query_id} entries: {cds_id}\n")
     # Write classes to file
     for class_ in classes_outcome:
         # Fetch all entries with the desired class
@@ -464,7 +503,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         alignment_dict_to_file(write_dict, report_file_path, 'w')
         
     return results_outcome
-        
+
 def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters,
                     blastn_processed_results_path, representative_blast_results,
                     drop_dict, path, cpu):
@@ -803,7 +842,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Running BLASTp based on BLASTn results matches...")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously
     # Based on BLASTn results
-    blastp_runs_to_do = {query: lf.flatten_list([[query],[subject[1]['subject']
+    blastp_runs_to_do = {query: itf.flatten_list([[query],[subject[1]['subject']
                                             for subject in subjects.values()]]) 
                          for query, subjects in representative_blast_results.items()}
     
