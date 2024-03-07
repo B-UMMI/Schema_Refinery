@@ -268,3 +268,7 @@ def has_element_of_type(input_list, target_type):
         if isinstance(element, target_type):
             return True
     return False
+
+def create_whitespace_string(input_string):
+    whitespace_string = " " * len(input_string)
+    return whitespace_string

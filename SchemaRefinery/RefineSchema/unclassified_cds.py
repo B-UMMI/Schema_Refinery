@@ -306,10 +306,8 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
         results_outcome[class_] = itf.get_unique_sublists(results_outcome[class_])
         
     relationships = {}
-    remember_ids = {}
     for class_ in results_outcome:
         relationships[class_] = {}
-        remember_ids[class_] = {}
     # Process all other classes against elements in joined elements 
     for results_class_id, results in results_outcome.items():
         if results_class_id == '1a':
@@ -320,43 +318,40 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             for result in results:
                 # If members of class 1a are completly contained in a list of current class
                 # Meaning that there was another classification between members of that clusters
+                # remove it since we consider 1a the priority between these CDS
                 if itf.all_match_lists(result, cluster):
                     results.remove(result)
-                # If entry from the cluster is query
+                # If entry from the cluster is query, verifies if some member
+                # of the cluster had another classification outside the cluster
+                # we add it to know the relationships between cluster and other CDS
                 elif result[0] in cluster:
                     continue
-                    cluster_key = itf.identify_string_in_dict(result[1], cluster_dict_1a)
-                    original_id = result[0]
-                    if cluster_key:
-                        result = [cluster_id, result[1]]
-                    else:
-                        cluster_key = result[1]
+                    # cluster_key = itf.identify_string_in_dict(result[1], cluster_dict_1a)
+                    # original_id = result[0]
+                    # if cluster_key:
+                    #     result = [cluster_id, result[1]]
+                    # else:
+                    #     cluster_key = result[1]
                         
-                    if cluster_key not in remember_ids[results_class_id]:
-                        remember_ids[results_class_id].update({cluster_key: {str(cluster_id) + '_' + result[1] : original_id}})
-                    else:
-                        remember_ids[results_class_id][cluster_key].update({str(cluster_id) + '_' + result[1] : original_id})
+                    # if cluster_key not in remember_ids[results_class_id]:
+                    #     remember_ids[results_class_id].update({cluster_key: {str(cluster_id) + '_' + result[1] : original_id}})
+                    # else:
+                    #     remember_ids[results_class_id][cluster_key].update({str(cluster_id) + '_' + result[1] : original_id})
                         
-                    # Add that this cluster matched with another CDS not part
-                    # of the cluster
-                    if cluster_key not in relationships[results_class_id]:
-                        relationships[results_class_id].update({cluster_key: [[cluster_id, result[1]]]})
-                    # Add to entry
-                    else:
-                        relationships[results_class_id][cluster_key].append([cluster_id, result[1]])
-                # If members of class 1a are partialy contained in a list of current class
-                # Meaning that query matched with one of the member with the clusters however had
-                # another classification with that member 
+                    # # Add that this cluster matched with another CDS not part
+                    # # of the cluster
+                    # if cluster_key not in relationships[results_class_id]:
+                    #     relationships[results_class_id].update({cluster_key: [[cluster_id, result[1]]]})
+                    # # Add to entry
+                    # else:
+                    #     relationships[results_class_id][cluster_key].append([cluster_id, result[1]])
+                    
+                # If subject is member of the cluster, if it is then we add the relationship
+                # while also remembering the id that matched, for example
+                # in remember ids the dict works like this:
+                # {class_id: {cluster_id: { query_subject: query_real_id}}}
+                # where cluster_id is int to the cluster and query_real_id
                 elif result[1] in cluster:
-                    cluster_key = itf.identify_string_in_dict(result[0], cluster_dict_1a)
-                    if cluster_key:
-                        if cluster_id not in remember_ids[results_class_id]:
-                            remember_ids[results_class_id].update({cluster_id: {str(cluster_key) + '_' + result[1] : result[0]}})
-                        else:
-                            remember_ids[results_class_id][cluster_id].update({str(cluster_key) + '_' + result[1] : result[0]})
-                            
-                        result = [cluster_key, result[1]]
-
                     if cluster_id not in relationships[results_class_id]:
                         relationships[results_class_id].update({cluster_id: [result]})
                     # Add to entry
@@ -438,27 +433,30 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             query_ids = [query_id[0] for query_id in r_ids]
             subject_ids = [subject_id[1] for subject_id in r_ids]
             
+            # create the lists
             transformed_query_ids = []
-            if itf.has_element_of_type(query_ids, int):
-                for i, id_ in enumerate(query_ids):
-                    if type(id_) == int:
-                        cds_id = remember_ids[class_][cluster_id][str(id_) + '_' + subject_ids[i]]
-                        transformed_query_ids.append(cds_id)
+            # Verify if the ids are present inside joined clusters
+            # if they are then add the joined cluster id to the transformed_query_ids list
+            if itf.any_match_lists(query_ids, itf.flatten_list(list(cluster_dict_1a.values()))):
+                # Iterate over current ids
+                for id_ in query_ids:
+                    # If id_ is present in some joined cluster this function returns
+                    # the key otherwise it returns None
+                    value = itf.identify_string_in_dict(id_, cluster_dict_1a)
+                    if value:
+                        transformed_query_ids.append(value)
+                    # If it is None then just add the original id
                     else:
                         transformed_query_ids.append(id_)
+            # If no elements of query_ids matched with any of the joined clusters
             else:
                 transformed_query_ids = query_ids
-
-            if type(cluster_id) == int:
-                write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
-                                                 if entry['class'] == class_}
-                                       for subject, entries in subjects.items() if subject in cluster_dict_1a[cluster_id]}
-                              for query, subjects in representative_blast_results.items() if query in transformed_query_ids}
-            else:
-                write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
-                                                 if entry['class'] == class_}
-                                       for subject, entries in subjects.items() if subject == cluster_id}
-                              for query, subjects in representative_blast_results.items() if query == transformed_query_ids}
+            
+            # Get entries based on BLAST
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
+                                             if entry['class'] == class_}
+                                   for subject, entries in subjects.items() if subject in subject_ids}
+                          for query, subjects in representative_blast_results.items() if query in query_ids}
                 
             report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_relationships_to_{cluster_id}.tsv")
             if os.path.exists(report_file_path):
@@ -470,6 +468,7 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                 
             relationships_report_file_path = os.path.join(report_relationships_output, f"relationships_to_cluster_{cluster_id}_report.txt")
             
+            # Write all of the report files
             with open(relationships_report_file_path, write_type) as relationships_report_file:
                 # Class that has CDS that are partially contained or cantains other CDS
                 if class_ == '3a':
@@ -480,17 +479,32 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                     relationships_report_file.writelines("The following CDS matched with BLASTn to the following"
                                                          f" elements of this cluster and have the classification '{class_}'"
                                                          " to this elements however they are probably different loci:\n")
-
+                # Write the cluster id
                 relationships_report_file.writelines(f"{cluster_id}:\n")
-                for i, query_id in enumerate(query_ids):
+                seen = ""
+                for i, query_id in enumerate(transformed_query_ids):
+                    # If query_id is a string value
                     if type(query_id) == str:
-                        relationships_report_file.writelines(f"\t{query_id}\n")
-                    elif type(subject_ids[i]) == int:
-                        cds_id = remember_ids[class_][cluster_id][str(subject_ids[i]) + '_' + cluster_id]
-                        relationships_report_file.writelines(f"\tcluster {subject_ids[i]} entries: {cds_id}\n")      
+                        # If cluster has a string value, meaning that it only contains one CDS
+                        # it doesn´t matter to add subjects since they will all be the same
+                        if type(cluster_id) == str:
+                            relationships_report_file.writelines(f"\t{query_id}\n")
+                        # If query was already seen, add white spaces to add another subject under it to facilitate readibility
+                        elif query_ids[i] == seen:
+                            white_spaces = itf.create_whitespace_string(f"CDS {query_ids[i]} against ")
+                            relationships_report_file.writelines("\t" + white_spaces + f"{subject_ids[i]}\n")
+                        # Add subjects to the report to know to what CDS in the cluster did the query match
+                        else:
+                            relationships_report_file.writelines(f"\tCDS {query_ids[i]} against {subject_ids[i]}\n")
+                    # If query was already seen, add white spaces to add another subject under it to facilitate readibility
+                    elif query_ids[i] == seen:
+                        white_spaces = itf.create_whitespace_string(f"Cluster {query_id} entry: {query_ids[i]} against ")
+                        relationships_report_file.writelines("\t" + white_spaces + f"{subject_ids[i]}\n")
+                    # Add subjects to the report to know to what CDS in the cluster did the query match
                     else:
-                        cds_id = remember_ids[class_][cluster_id][str(query_id) + '_' + subject_ids[i]]
-                        relationships_report_file.writelines(f"\tcluster {query_id} entries: {cds_id}\n")
+                        relationships_report_file.writelines(f"\tCluster {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
+                    seen = query_ids[i]
+                    
     # Write classes to file
     for class_ in classes_outcome:
         # Fetch all entries with the desired class
