@@ -47,6 +47,15 @@ def flatten_list(list_to_flatten):
 def isListEmpty(input_list):
     """
     Check if a nested list is empty.
+    
+    Parameters
+    ----------
+    input_list : list
+        Input list to verify
+    Returns
+    -------
+    return : bool
+        If list is empty or not.
     """
     
     if isinstance(input_list, list):
@@ -93,7 +102,8 @@ def get_max_min_values(input_list):
     
     Returns
     -------
-    Returns largest value and smallest value
+    return : list
+        Returns largest value and smallest value.
     """
 
     return max(input_list), min(input_list)
@@ -111,8 +121,9 @@ def decompress_number(text, index):
 
     Returns
     -------
-    Index to start decoding the next number and the number decoded
-    in the current function call.
+    return : int
+        Index to start decoding the next number and the number decoded
+        in the current function call.
     """
     number = 0
     bitwise_shift = 0
@@ -213,7 +224,8 @@ def all_match_lists(list1, list2):
         
     Returns
     -------
-    Returns a bool value if above mentioned condition is met or not.
+    return : bool
+        Returns a bool value if above mentioned condition is met or not.
     """
     return all(elem in list2 for elem in list1)
 
@@ -231,7 +243,8 @@ def any_match_lists(list1, list2):
         
     Returns
     -------
-    Returns a bool value if above mentioned condition is met or not.
+    return : bool
+        Returns a bool value if above mentioned condition is met or not.
     """
     return any(elem in list2 for elem in list1)
 
@@ -250,7 +263,8 @@ def contains_sublist(main_list, list_of_lists):
         
     Returns
     -------
-    Returns a bool value if above mentioned condition is met or not.
+    return : bool
+        Returns a bool value if above mentioned condition is met or not.
     """
     for sublist in list_of_lists:
         if all_match_lists(main_list, sublist):
@@ -258,17 +272,65 @@ def contains_sublist(main_list, list_of_lists):
     return False
 
 def identify_string_in_dict(input_str, dictionary):
+    """
+    Based on input string and dictionary this function identifies in what
+    entry of the dictionary that string is present and returns the key.
+    
+    Parameters
+    ----------
+    input_str : str
+        String to find.
+    dictionary : dict
+        Dictionary where to find the string.
+    
+    Returns
+    -------
+    key : string/int
+        Returns the key to the entry where that string is present.
+    return : None
+        If not found in the dict returns None.
+    """
     for key, value in dictionary.items():
         if input_str in value:
             return key
     return None
 
 def has_element_of_type(input_list, target_type):
+    """
+    Based on input list and a type this function identifies if that type is
+    present in the input list.
+    
+    Parameters
+    ----------
+    input_list : list
+        Input list to verify the type of the elements.
+    target_type : type
+        What type to verify if it is contained in the list.
+        
+    Returns
+    -------
+    returns : bool
+        Returns a bool value if above mentioned condition is met or not.        
+    """
     for element in input_list:
         if isinstance(element, target_type):
             return True
     return False
 
 def create_whitespace_string(input_string):
+    """
+    Function that based on input string returns another string with equivalent
+    blank spaces as the size of input string.
+    
+    Parameters
+    ----------
+    input_string : str
+        Input string to get the size from.
+        
+    Returns
+    -------
+    whitespace_string : str
+        returns a string that contains a set number of white spaces in it.
+    """
     whitespace_string = " " * len(input_string)
     return whitespace_string
