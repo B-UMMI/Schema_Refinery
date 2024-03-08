@@ -259,7 +259,7 @@ def contains_sublist(main_list, list_of_lists):
         Query list to see if its elements are partially contained inside subject .
     list_of_lists : list
         Subject list that contains lists with which query is compared to see 
-        if it is fully contained inside one of theose sublists.
+        if it is fully contained inside one of those sublists.
         
     Returns
     -------

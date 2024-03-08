@@ -188,7 +188,8 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     Returns
     -------
     results_outcome : dict
-        Dict that contains list with the results outcome
+        Dict that contains the outcomes for the results when they were filtered
+        by classes.
     classes_outcome : list
         List of list that contains class IDS used in the next function
     """
@@ -272,8 +273,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
 
     return results_outcome, classes_outcome, drop_dict
 
-def process_classes(representative_blast_results, results_outcome, classes_outcome,
-                    drop_dict,path):
+def process_classes(results_outcome, drop_dict):
     """
     Identifies the relationships between representatives classified as other classes
     that matched by BLASTn with members join member of the same cluster classified
@@ -282,22 +282,28 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
     
     Parameters
     ----------
-    representative_blast_results : dict
-        Dict containg representatibes BLAST results with all of the additional
-        info.
     results_outcome : dict
         Dict that contains the outcomes for the results when they were filtered
         by classes.
-    classes_outcome : list
-        List of list that contains class IDS used in the next function
-    path : str
-        path to write the various BLAST results for each class.
-    
+    drop_dict : dict
+        Contains the entries that were dropped during the previous phase
+        
     Returns
     -------
-    No return
+    results_outcome : dict
+        Dict that contains the outcomes for the results when they were filtered
+        by classes.
+    relationships : dict
+        Dict that contains relationships between various clusters.
+    cluster_dict_1a : dict
+        Joined clusters dict, these clusters contain various CDS representatives.
     """
-
+    # Remove entries that were dropped
+    for class_, results in results_outcome.items():
+        if class_ in ['2b','1c']:
+            results_outcome[class_] = [result for result in results
+                                       if result[0] not in drop_dict
+                                       and result[1] not in drop_dict]
     # Join the various CDS groups into single group based on ids matches and remove Join from results_outcome
     cluster_dict_1a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_outcome.pop('1a')))}
     
@@ -321,31 +327,10 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                 # remove it since we consider 1a the priority between these CDS
                 if itf.all_match_lists(result, cluster):
                     results.remove(result)
-                # If entry from the cluster is query, verifies if some member
-                # of the cluster had another classification outside the cluster
-                # we add it to know the relationships between cluster and other CDS
+                # If entry from the cluster is query, skips these cases since
+                # they will still be considered so we dont have duplicates
                 elif result[0] in cluster:
                     continue
-                    # cluster_key = itf.identify_string_in_dict(result[1], cluster_dict_1a)
-                    # original_id = result[0]
-                    # if cluster_key:
-                    #     result = [cluster_id, result[1]]
-                    # else:
-                    #     cluster_key = result[1]
-                        
-                    # if cluster_key not in remember_ids[results_class_id]:
-                    #     remember_ids[results_class_id].update({cluster_key: {str(cluster_id) + '_' + result[1] : original_id}})
-                    # else:
-                    #     remember_ids[results_class_id][cluster_key].update({str(cluster_id) + '_' + result[1] : original_id})
-                        
-                    # # Add that this cluster matched with another CDS not part
-                    # # of the cluster
-                    # if cluster_key not in relationships[results_class_id]:
-                    #     relationships[results_class_id].update({cluster_key: [[cluster_id, result[1]]]})
-                    # # Add to entry
-                    # else:
-                    #     relationships[results_class_id][cluster_key].append([cluster_id, result[1]])
-                    
                 # If subject is member of the cluster, if it is then we add the relationship
                 # while also remembering the id that matched, for example
                 # in remember ids the dict works like this:
@@ -390,9 +375,38 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
             
     # Add the joined cluster again to the dict
     results_outcome['1a'] = list(cluster_dict_1a.values())
+        
+    return results_outcome, relationships, cluster_dict_1a
+
+def write_processed_results_to_file(results_outcome, relationships, representative_blast_results,
+                                    cluster_dict_1a, classes_outcome, output_path):
+    """
+    Write the results from processed_classes into various files.
+    
+    Parameters
+    ----------
+    results_outcome : dict
+        Dict that contains the outcomes for the results when they were filtered
+        by classes.
+    relationships : dict
+        Dict that contains relationships between various clusters
+    representative_blast_results : dict
+        Dict containg representatibes BLAST results with all of the additional
+        info.
+    cluster_dict_1a : dict
+        Joined clusters dict, these clusters contain various CDS representatives.
+    classes_outcome : list
+        List of list that contains class IDS used in the next function   
+    output_path : str
+        Path were to write files.
+        
+    Returns
+    -------
+    No returns, writes files in output path.
+    """
     
     # Create directory
-    blast_by_cluster_output = os.path.join(path, "blast_results_by_cluster")
+    blast_by_cluster_output = os.path.join(output_path, "blast_results_by_cluster")
     ff.create_directory(blast_by_cluster_output)
     # Get all of the BLAST entries for that cluster
     for class_, cluster in results_outcome.items():
@@ -504,7 +518,10 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                     else:
                         relationships_report_file.writelines(f"\tCluster {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
                     seen = query_ids[i]
-                    
+
+    # Create directory 
+    joined_cluster_relationships_output = os.path.join(output_path, "blast_results_by_class")
+    ff.create_directory(joined_cluster_relationships_output)
     # Write classes to file
     for class_ in classes_outcome:
         # Fetch all entries with the desired class
@@ -512,15 +529,13 @@ def process_classes(representative_blast_results, results_outcome, classes_outco
                                for subject, entries in subjects.items()}
                       for query, subjects in representative_blast_results.items()}
 
-        report_file_path = os.path.join(path, f"blastn_group_{class_}.tsv")
+        report_file_path = os.path.join(joined_cluster_relationships_output, f"blastn_group_{class_}.tsv")
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path, 'w')
-        
-    return results_outcome
 
 def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters,
                     blastn_processed_results_path, representative_blast_results,
-                    drop_dict, path, cpu):
+                    drop_dict, output_path, cpu):
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
@@ -544,7 +559,7 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
         Path to the folder where classes TSV files were saved.
     representative_blast_results : dict
         Contains the representative BLAST results.
-    path : str
+    output_path : str
         Path to were write the FASTA files.
     cpu : int
         Number of cores to use in BLAST multiprocessing
@@ -554,13 +569,18 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
     Writes TSV and HTML files
     """
     # Process the results_outcome dict and write individual classes to TSV file
-    results_outcome = process_classes(representative_blast_results, results_outcome, classes_outcome,
-                                      drop_dict, blastn_processed_results_path)
+    [results_outcome,
+     relationships,
+     cluster_dict_1a] = process_classes(results_outcome, drop_dict)
+    
+    write_processed_results_to_file(results_outcome, relationships,
+                                    representative_blast_results, cluster_dict_1a,
+                                    classes_outcome, output_path)
     # Create directories
-    cds_outcome_results = os.path.join(path, "Blast_results_outcomes_graphs")
+    cds_outcome_results = os.path.join(output_path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
     
-    cds_outcome_results_fastas_folder = os.path.join(path, "results_outcomes_fastas")
+    cds_outcome_results_fastas_folder = os.path.join(output_path, "results_outcomes_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
     
     # Write FASTA files for each CDS group to join or retain
@@ -584,7 +604,7 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
                         fasta_file.writelines(f">{cds_id}\n")
                         fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
     # Create directories
-    cds_outcome_translation = os.path.join(path, "cds_outcome_translation")
+    cds_outcome_translation = os.path.join(output_path, "cds_outcome_translation")
     ff.create_directory(cds_outcome_translation)
     # Translate possible new loci
     outcomes_translations = {}
@@ -601,7 +621,7 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
                          for loci_path in os.listdir(schema_short_path) 
                          if loci_path.endswith('.fasta')}
     
-    short_translation_folder = os.path.join(path, "short_translation_folder")
+    short_translation_folder = os.path.join(output_path, "short_translation_folder")
     ff.create_directory(short_translation_folder)
     master_loci_short_translation_path = os.path.join(short_translation_folder, "master_short_loci.fasta")
     i = 1
@@ -620,7 +640,7 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
                 master_fasta.writelines(str(sequence)+"\n")
     
     # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA)
-    blastp_results_vs_loci_results = os.path.join(path, "blastp_results_vs_loci_results")
+    blastp_results_vs_loci_results = os.path.join(output_path, "blastp_results_vs_loci_results")
     ff.create_directory(blastp_results_vs_loci_results)
     bsr_values = {}
     # Create query entries
