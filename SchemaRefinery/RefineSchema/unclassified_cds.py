@@ -1055,8 +1055,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Writting classes results to files...")
     write_processed_results_to_file(results_outcome, relationships,
                                     representative_blast_results, cluster_dict_1a,
-                                    classes_outcome, results_output)
+                                    classes_outcome, blastn_processed_results_path)
     
     print("Wrapping up results...")
     wrap_up_results(schema, results_outcome, not_included_cds, clusters, 
-                    blastn_processed_results_path, results_output, cpu)
+                    blastn_processed_results_path, blastn_processed_results_path, cpu)
