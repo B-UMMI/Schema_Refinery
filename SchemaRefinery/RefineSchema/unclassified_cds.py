@@ -242,7 +242,6 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
                         add_class_to_dict('drop')
                         drop_dict.update({query: id_subject})
-                        continue
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
@@ -258,7 +257,6 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
                             add_class_to_dict('drop')
                             drop_dict.update({query: id_subject})
-                            continue
                         else:
                             add_class_to_dict('2b')
                             results_outcome['2b'].append([query, id_subject])
@@ -298,15 +296,16 @@ def process_classes(results_outcome, drop_dict):
     cluster_dict_1a : dict
         Joined clusters dict, these clusters contain various CDS representatives.
     """
-    # Remove entries that were dropped
-    for class_, results in results_outcome.items():
-        if class_ in ['2b','1c']:
-            results_outcome[class_] = [result for result in results
-                                       if result[0] not in drop_dict
-                                       and result[1] not in drop_dict]
+
     # Join the various CDS groups into single group based on ids matches and remove Join from results_outcome
     cluster_dict_1a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_outcome.pop('1a')))}
     
+    # Remove those that were assigned as drop
+    for class_, results in results_outcome.items():
+        if class_ in ['2b','1c']:
+            results_outcome[class_] = [result for result in results
+                                       if result[0] not in drop_dict.keys()]
+            
     # and remove duplicates
     for class_, results in results_outcome.items():
         results_outcome[class_] = itf.get_unique_sublists(results_outcome[class_])
@@ -364,6 +363,12 @@ def process_classes(results_outcome, drop_dict):
                     else:
                         relationships[class_2][result_2[1]].append(result_2)
 
+    # Remove entries that were added to Joined cluster
+    drop = itf.flatten_list(list(cluster_dict_1a.values()))
+    for class_, results in results_outcome.items():
+        if class_ in ['2a','2b','1c','3a','3b']:
+            results_outcome[class_] = [result for result in results
+                                       if result[0] not in drop]
     # Remove duplicates entries
     for class_, results in results_outcome.items():
         results_outcome[class_] = set([result[0] for result in results])
@@ -375,7 +380,9 @@ def process_classes(results_outcome, drop_dict):
             
     # Add the joined cluster again to the dict
     results_outcome['1a'] = list(cluster_dict_1a.values())
-        
+    
+    # Add dropped values to write fastas
+    results_outcome['drop'] =list(drop_dict)
     return results_outcome, relationships, cluster_dict_1a
 
 def write_processed_results_to_file(results_outcome, relationships, representative_blast_results,
@@ -577,10 +584,10 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
         i = 1
         for group in results_outcome[outcome]:
             if outcome == '1a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_{i}.fasta")
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_outcome_{i}.fasta")
                 outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
             else:
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_{group}.fasta")
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_outcome_{group}.fasta")
                 outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
                 group = [group]
             i += 1
