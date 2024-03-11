@@ -533,9 +533,8 @@ def write_processed_results_to_file(results_outcome, relationships, representati
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path, 'w')
 
-def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters,
-                    blastn_processed_results_path, representative_blast_results,
-                    drop_dict, output_path, cpu):
+def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
+                    blastn_processed_results_path, output_path, cpu):
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
@@ -548,8 +547,6 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
     results_outcome : dict
         Dict that contains the outcomes for the results when they were filtered
         by classes.
-    classes_outcome : list
-        List of list that contains class IDS used in the previous function
     not_included_cds : dict
         Dict that contains all of the DNA sequences for all of the CDS.
     clusters : dict
@@ -557,8 +554,6 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
         as values.
     blastn_processed_results_path : str
         Path to the folder where classes TSV files were saved.
-    representative_blast_results : dict
-        Contains the representative BLAST results.
     output_path : str
         Path to were write the FASTA files.
     cpu : int
@@ -568,14 +563,6 @@ def wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, 
     -------
     Writes TSV and HTML files
     """
-    # Process the results_outcome dict and write individual classes to TSV file
-    [results_outcome,
-     relationships,
-     cluster_dict_1a] = process_classes(results_outcome, drop_dict)
-    
-    write_processed_results_to_file(results_outcome, relationships,
-                                    representative_blast_results, cluster_dict_1a,
-                                    classes_outcome, output_path)
     # Create directories
     cds_outcome_results = os.path.join(output_path, "Blast_results_outcomes_graphs")
     ff.create_directory(cds_outcome_results)
@@ -1060,7 +1047,16 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
+    print("Processing classes...")
+    # Process the results_outcome dict and write individual classes to TSV file
+    [results_outcome,
+     relationships,
+     cluster_dict_1a] = process_classes(results_outcome, drop_dict)
+    print("Writting classes results to files...")
+    write_processed_results_to_file(results_outcome, relationships,
+                                    representative_blast_results, cluster_dict_1a,
+                                    classes_outcome, results_output)
+    
     print("Wrapping up results...")
-    wrap_up_results(schema, results_outcome, classes_outcome, not_included_cds, clusters, 
-                    blastn_processed_results_path, representative_blast_results, drop_dict,
-                    results_output, cpu)
+    wrap_up_results(schema, results_outcome, not_included_cds, clusters, 
+                    blastn_processed_results_path, results_output, cpu)
