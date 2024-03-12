@@ -219,8 +219,9 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                        '1c',
                        '2a',
                        '2b',
-                       '3b']
-    drop_dict = {}
+                       '3b',
+                       'drop']
+
     for class_ in classes_outcome:
         results_outcome[class_] = []
     # Process results into classes
@@ -241,7 +242,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     # Ignore cases were 1b was already assigned or will be assigned
                     elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
                         add_class_to_dict('drop')
-                        drop_dict.update({query: id_subject})
+                        results_outcome['drop'].append([query, id_subject])
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
@@ -256,7 +257,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         # Ignore cases were 2a was already assigned or will be assigned
                         elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
                             add_class_to_dict('drop')
-                            drop_dict.update({query: id_subject})
+                            results_outcome['drop'].append([query, id_subject])
                         else:
                             add_class_to_dict('2b')
                             results_outcome['2b'].append([query, id_subject])
@@ -269,9 +270,9 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                             add_class_to_dict('3b')
                             results_outcome['3b'].append([query, id_subject])
 
-    return results_outcome, classes_outcome, drop_dict
+    return results_outcome, classes_outcome
 
-def process_classes(results_outcome, drop_dict):
+def process_classes(results_outcome):
     """
     Identifies the relationships between representatives classified as other classes
     that matched by BLASTn with members join member of the same cluster classified
@@ -283,8 +284,6 @@ def process_classes(results_outcome, drop_dict):
     results_outcome : dict
         Dict that contains the outcomes for the results when they were filtered
         by classes.
-    drop_dict : dict
-        Contains the entries that were dropped during the previous phase
         
     Returns
     -------
@@ -299,12 +298,6 @@ def process_classes(results_outcome, drop_dict):
 
     # Join the various CDS groups into single group based on ids matches and remove Join from results_outcome
     cluster_dict_1a = {i+1: join for i, join in enumerate(cf.cluster_by_ids(results_outcome.pop('1a')))}
-    
-    # Remove those that were assigned as drop
-    for class_, results in results_outcome.items():
-        if class_ in ['2b','1c']:
-            results_outcome[class_] = [result for result in results
-                                       if result[0] not in drop_dict.keys()]
             
     # and remove duplicates
     for class_, results in results_outcome.items():
@@ -313,55 +306,23 @@ def process_classes(results_outcome, drop_dict):
     relationships = {}
     for class_ in results_outcome:
         relationships[class_] = {}
-    # Process all other classes against elements in joined elements 
-    for results_class_id, results in results_outcome.items():
-        if results_class_id == '1a':
-            continue
-        # Itereate over clusters
-        for cluster_id, cluster in cluster_dict_1a.items():
-            # Iterate over results
-            for result in results:
-                # If members of class 1a are completly contained in a list of current class
-                # Meaning that there was another classification between members of that clusters
-                # remove it since we consider 1a the priority between these CDS
-                if itf.all_match_lists(result, cluster):
-                    results.remove(result)
-                # If entry from the cluster is query, skips these cases since
-                # they will still be considered so we dont have duplicates
-                elif result[0] in cluster:
-                    continue
-                # If subject is member of the cluster, if it is then we add the relationship
-                # while also remembering the id that matched, for example
-                # in remember ids the dict works like this:
-                # {class_id: {cluster_id: { query_subject: query_real_id}}}
-                # where cluster_id is int to the cluster and query_real_id
-                elif result[1] in cluster:
-                    if cluster_id not in relationships[results_class_id]:
-                        relationships[results_class_id].update({cluster_id: [result]})
-                    # Add to entry
-                    else:
-                        relationships[results_class_id][cluster_id].append(result)
-        
+    
     # Process all elements in other classes against each other
-    for class_1, results_1 in results_outcome.items():
-        if class_1 == '1a':
+    for class_, results in results_outcome.items():
+        if class_ == '1a':
             continue
-        all_entries = [entry[0] for entry in results_1]
-        # Itereate over all other classes
-        for class_2, results_2 in results_outcome.items():
-            # Iterate over results
-            for result_2 in results_2:
-                # if we are iterating over a query that is inside that class_1
-                # we want all outside queries with subjects ids from class_1
-                if result_2[0] in all_entries:
-                    continue
-                # if subject is inside the the class_1
-                elif result_2[1] in all_entries:
-                    if result_2[1] not in relationships[class_2]:
-                        relationships[class_2].update({result_2[1]: [result_2]})
-                    # Add to entry
-                    else:
-                        relationships[class_2][result_2[1]].append(result_2)
+        # Iterate over results
+        for result in results:
+            # If cluster is classified as 1a add the id of the cluster
+            cluster_id = itf.identify_string_in_dict(result[1], cluster_dict_1a)
+            if not cluster_id:
+                cluster_id = result[1]
+            # If entry exists
+            if cluster_id not in relationships[class_]:
+                relationships[class_].update({cluster_id: [result]})
+            # Add to entry
+            else:
+                relationships[class_][cluster_id].append(result)
 
     # Remove entries that were added to Joined cluster
     drop = itf.flatten_list(list(cluster_dict_1a.values()))
@@ -380,9 +341,6 @@ def process_classes(results_outcome, drop_dict):
             
     # Add the joined cluster again to the dict
     results_outcome['1a'] = list(cluster_dict_1a.values())
-    
-    # Add dropped values to write fastas
-    results_outcome['drop'] =list(drop_dict)
     return results_outcome, relationships, cluster_dict_1a
 
 def write_processed_results_to_file(results_outcome, relationships, representative_blast_results,
@@ -441,8 +399,6 @@ def write_processed_results_to_file(results_outcome, relationships, representati
     
     for class_, relationship in relationships.items():
         if len(relationship) == 0:
-            continue
-        if class_ == '1a':
             continue
         for cluster_id, r_ids in relationship.items():
             # Search the entries if query is in relationship_ids set and if the
@@ -525,6 +481,17 @@ def write_processed_results_to_file(results_outcome, relationships, representati
                     else:
                         relationships_report_file.writelines(f"\tCluster {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
                     seen = query_ids[i]
+
+    # Write all of the ids inside Joined cluster
+    # Create directory 
+    cluster_members_output = os.path.join(output_path, "joined_cluster_members")
+    ff.create_directory(cluster_members_output)
+    # Write files
+    for cluster_id, cluster in cluster_dict_1a.items():
+        cluster_output_path = os.path.join(cluster_members_output, f"Joined_cluster_{cluster_id}.txt")
+        with open(cluster_output_path, 'w') as output:
+            for c in cluster:
+                output.writelines(c + '\n')
 
     # Create directory 
     joined_cluster_relationships_output = os.path.join(output_path, "blast_results_by_class")
@@ -1049,7 +1016,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     report_file_path = os.path.join(blastn_processed_results_path, "blast_all_matches.tsv")
     
     # Separate results into different classes
-    results_outcome, classes_outcome, drop_dict = separate_blastn_results_into_classes(representative_blast_results,
+    results_outcome, classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
                                                                                        constants)
     # Write all of the BLASTn results to a file
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
@@ -1058,7 +1025,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Process the results_outcome dict and write individual classes to TSV file
     [results_outcome,
      relationships,
-     cluster_dict_1a] = process_classes(results_outcome, drop_dict)
+     cluster_dict_1a] = process_classes(results_outcome)
     print("Writting classes results to files...")
     write_processed_results_to_file(results_outcome, relationships,
                                     representative_blast_results, cluster_dict_1a,

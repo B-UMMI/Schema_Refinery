@@ -256,7 +256,7 @@ def contains_sublist(main_list, list_of_lists):
     Parameters
     ----------
     main_list : list
-        Query list to see if its elements are partially contained inside subject .
+        Query list to see if its elements are fully contained inside subject .
     list_of_lists : list
         Subject list that contains lists with which query is compared to see 
         if it is fully contained inside one of theose sublists.
@@ -268,6 +268,29 @@ def contains_sublist(main_list, list_of_lists):
     """
     for sublist in list_of_lists:
         if all_match_lists(main_list, sublist):
+            return True
+    return False
+
+def partially_contains_sublist(main_list, list_of_lists):
+    """
+    Based on inputs verifies if elements of mainlist are partially contained inside
+     one of the lists inside of list_of_lists.
+    
+    Parameters
+    ----------
+    main_list : list
+        Query list to see if its elements are partially contained inside subject .
+    list_of_lists : list
+        Subject list that contains lists with which query is compared to see 
+        if it is partially contained inside one of theose sublists.
+        
+    Returns
+    -------
+    return : bool
+        Returns a bool value if above mentioned condition is met or not.
+    """
+    for sublist in list_of_lists:
+        if any_match_lists(main_list, sublist):
             return True
     return False
 
