@@ -175,6 +175,106 @@ def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
                 protein_hashes[prot_hash].append(id_s)
                 
     return translation_dict, protein_hashes
+def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
+                         representative_blast_results_coords_all,
+                         representative_blast_results_coords_pident,
+                         frequency_cds_cluster):
+    # Add kmer cov, kmer sim and frequency of the cds in the genomes
+    for query, subjects_dict in list(representative_blast_results.items()):
+        for subject, blastn_results in list(subjects_dict.items()):
+            # Some results may not have kmers matches or BSR values so put them
+            # as 0
+            if subject in reps_kmers_sim[query]:
+                sim, cov = reps_kmers_sim[query][subject]
+            else:
+                sim = 0
+                cov = 0
+            if subject in bsr_values[query]:
+                bsr = bsr_values[query][subject]
+                # For some reason some isolates have bsr slighty higher than 1
+                # related to blast database and sequences used.
+                if bsr > 1.0:
+                    bsr = float(round(bsr))
+            # If subject not in inside queries alignments. This means that even
+            # though there was an BLASTn align, they didn´t align when BLASTp
+            # was employed.
+            else:
+                bsr = 0
+                
+            # Calculate total alignment for all of the fragments of BLASTn
+            # if there more than one BLASTn alignments
+            # For query and subject
+            if len(blastn_results) > 1:
+                total_length = {}
+                for ref, intervals in representative_blast_results_coords_all[query][subject].items():
+                    # Sort by start position
+                    sorted_intervals = [interval for interval in sorted(intervals,
+                                                                        key=lambda x: x[0])]
+                    # Merge alignments and calculate the total length of BLASTn alignments.
+                    length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                    total_length[ref] = length
+                # Calculate global palign
+                global_palign_all = min([(total_length['query']) / blastn_results[1]['query_length'],
+                                     (total_length['subject']) / blastn_results[1]['subject_length']])
+                
+                for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
+                    if len(intervals) != 0:
+                        # Sort by start position
+                        sorted_intervals = [interval for interval in sorted(intervals,
+                                                                            key=lambda x: x[0])]
+                        # Merge alignments and calculate the total length of BLASTn alignments.
+                        length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                        total_length[ref] = length
+                    else:
+                        # Since we are considering soem values that may not pass pident threshold
+                        # it means some may not have any interval based on pident
+                        total_length[ref] = 0
+                # Calculate global palign
+                global_palign_pident_min = min([(total_length['query']) / blastn_results[1]['query_length'],
+                                                (total_length['subject']) / blastn_results[1]['subject_length']])
+                
+                global_palign_pident_max = max([(total_length['query']) / blastn_results[1]['query_length'],
+                                                (total_length['subject']) / blastn_results[1]['subject_length']])
+            # If there is only one results
+            else:
+                global_palign_all = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1) / blastn_results[1]['query_length'],
+                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
+                
+                global_palign_pident_min = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1) / blastn_results[1]['query_length'],
+                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
+                
+                global_palign_pident_max = max([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1) / blastn_results[1]['query_length'],
+                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
+
+            # Create update dict with the values to add
+            update_dict = {'bsr' : bsr,
+                           'kmers_sim': sim,
+                           'kmers_cov': cov,
+                           'frequency_in_genomes_query_cds' : frequency_cds_cluster[query],
+                           'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject],
+                           'global_palign_all': global_palign_all,
+                           'global_palign_pident_min': global_palign_pident_min,
+                           'global_palign_pident_max': global_palign_pident_max}
+            
+            for entry_id, result in list(blastn_results.items()):
+                # Calculate local Palign particular to that BLASTn match
+                local_palign = min([(result['query_end'] - result['query_start'] + 1) / result['query_length'],
+                                    (result['subject_end'] - result['subject_start'] + 1) / result['subject_length']])
+                # Verify if inverse alignment was made
+                if local_palign >= 0:
+                    # update the update dict
+                    update_dict.update({'local_palign' : local_palign})
+                    # Add everything to the dict
+                    representative_blast_results[query][subject][entry_id].update(update_dict)
+                # Remove palign that is negative, meaning tha reverse blast alignment was made
+                else:
+                    del representative_blast_results[query][subject][entry_id]
+            # Remove empty subjects dicts
+            if len(representative_blast_results[query][subject]) == 0:
+                del representative_blast_results[query][subject]
+        # Remove empty query dicts
+        if len(representative_blast_results[query]) == 0:
+            del representative_blast_results[query]
 
 def separate_blastn_results_into_classes(representative_blast_results, constants):
     """
@@ -309,6 +409,8 @@ def process_classes(results_outcome):
     
     # Process all elements in other classes against each other
     for class_, results in results_outcome.items():
+        # Do not consider relationships in 1a because we just merge them between them
+        # into various clusters.
         if class_ == '1a':
             continue
         # Iterate over results
@@ -317,6 +419,9 @@ def process_classes(results_outcome):
             cluster_id = itf.identify_string_in_dict(result[1], cluster_dict_1a)
             if not cluster_id:
                 cluster_id = result[1]
+            # the structure is {real_subject_id : [query_id, subject_id]}
+            # where real_subject_id may be int or str dependeing if it is CDS id
+            # of joined cluster id
             # If entry exists
             if cluster_id not in relationships[class_]:
                 relationships[class_].update({cluster_id: [result]})
@@ -506,9 +611,9 @@ def write_processed_results_to_file(results_outcome, relationships, representati
         report_file_path = os.path.join(joined_cluster_relationships_output, f"blastn_group_{class_}.tsv")
         # Write individual class to file
         alignment_dict_to_file(write_dict, report_file_path, 'w')
-
-def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
-                    blastn_processed_results_path, output_path, cpu):
+            
+def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
+                          output_path, cpu):
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
@@ -526,8 +631,6 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     clusters : dict
         Dict that contains the cluster representatives as keys and similar CDS
         as values.
-    blastn_processed_results_path : str
-        Path to the folder where classes TSV files were saved.
     output_path : str
         Path to were write the FASTA files.
     cpu : int
@@ -538,24 +641,41 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
     Writes TSV and HTML files
     """
     # Create directories
-    cds_outcome_results = os.path.join(output_path, "Blast_results_outcomes_graphs")
-    ff.create_directory(cds_outcome_results)
+    cds_outcome_results_graphs = os.path.join(output_path, "Blast_results_outcomes_graphs")
+    ff.create_directory(cds_outcome_results_graphs)
     
-    cds_outcome_results_fastas_folder = os.path.join(output_path, "results_outcomes_fastas")
+    fasta_folder = os.path.join(output_path, "results_outcomes_fastas")
+    ff.create_directory(fasta_folder)
+    
+    cds_outcome_results_fastas_folder = os.path.join(fasta_folder, "results_outcomes_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
+    
+    cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_outcomes_reps_fastas")
+    ff.create_directory(cds_outcome_results_reps_fastas_folder)
     
     # Write FASTA files for each CDS group to join or retain
     print("Writting FASTA file for possible new loci...")
     outcome_paths = {}
+    outcome_paths_reps = {}
     for outcome in results_outcome:
         i = 1
         for group in results_outcome[outcome]:
+            # Skip if classfication is drop
+            if outcome == 'drop':
+                continue
             if outcome == '1a':
                 cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_outcome_{i}.fasta")
                 outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
+            elif outcome == '3a':
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"for_reference_3a_outcome_{group}.fasta")
+                outcome_paths[f"For_reference_3a_outcome_{group}"] = cds_outcome_results_fastas_file
+            elif outcome == '3b':
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"remaining_3b_outcome_{group}.fasta")
+                outcome_paths[f"Remaining_3b_outcome_{group}"] = cds_outcome_results_fastas_file
             else:
                 cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_outcome_{group}.fasta")
                 outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
+            if type(group) == str:
                 group = [group]
             i += 1
             with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
@@ -564,8 +684,21 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
                     for cds_id in cds_ids:
                         fasta_file.writelines(f">{cds_id}\n")
                         fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
+               
+            if outcome == '1a':
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_reps_fastas_folder, f"Joined_{i}.fasta")
+                outcome_paths_reps[f"Joined_{i}"] = cds_outcome_results_fastas_file
+            else:
+                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_reps_fastas_folder, f"Retained_{group}.fasta")
+                outcome_paths_reps[f"{group[0]}"] = cds_outcome_results_fastas_file
+                
+            with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
+                for rep_id in group:
+                    fasta_file.writelines(f">{rep_id}\n")
+                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
+                    
     # Create directories
-    cds_outcome_translation = os.path.join(output_path, "cds_outcome_translation")
+    cds_outcome_translation = os.path.join(fasta_folder, "cds_outcome_translation_deduplicated")
     ff.create_directory(cds_outcome_translation)
     # Translate possible new loci
     outcomes_translations = {}
@@ -574,8 +707,40 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
         outcomes_translations[key] = translation_path
         fasta_dict = fetch_fasta_dict(o_path, False)
         translation_dict, _ = translate_seq_deduplicate(fasta_dict, translation_path, False)
-        
-    print("Reading schema loci short FASTA files...")
+
+    # Create directories
+    cds_outcome_translation_rep = os.path.join(fasta_folder, "cds_outcome_translation_deduplicated")
+    ff.create_directory(cds_outcome_translation_rep)
+    # Translate possible new loci representatives
+    outcomes_translations_reps = {}
+    for key, o_path in outcome_paths_reps.items():
+        translation_path = os.path.join(cds_outcome_translation, key + ".fasta")
+        outcomes_translations_reps[key] = translation_path
+        fasta_dict = fetch_fasta_dict(o_path, False)
+        translation_dict, _ = translate_seq_deduplicate(fasta_dict, translation_path, False)
+
+    # Create graphs for all results and for each class
+    classes_tsv_path = os.path.join(output_path, 'blast_results_by_class')
+    for tsv_file_path in os.listdir(classes_tsv_path):
+        abs_path = os.path.join(classes_tsv_path, tsv_file_path)
+        file_name = os.path.basename(tsv_file_path)
+        # Create directories
+        graphs_path = os.path.join(cds_outcome_results_graphs, f"{file_name.replace('tsv','')}")
+        ff.create_directory(graphs_path)
+        # Render histograms
+        gf.render_histogram(abs_path,
+                            graphs_path,
+                            ['Query_length', 'Subject_length'],
+                            ['Length', 'Count'])
+        # Render line charts
+        gf.render_line_chart(abs_path,
+                             graphs_path,
+                             ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
+                              'Prot_seq_Kmer_cov'],
+                             ['Entries', 'Values'], False)
+    return outcomes_translations_reps
+
+def process_schema(schema, outcomes_translations_reps, output_path, cpu):
     # Get all of the schema loci short FASTA files path
     schema_short_path = os.path.join(schema, 'short')
     schema_loci_short = {loci_path.replace(".fasta", ""): os.path.join(schema_short_path, loci_path) 
@@ -600,21 +765,40 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
                 master_fasta.writelines(">"+loci_id+"\n")
                 master_fasta.writelines(str(sequence)+"\n")
     
-    # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA)
-    blastp_results_vs_loci_results = os.path.join(output_path, "blastp_results_vs_loci_results")
-    ff.create_directory(blastp_results_vs_loci_results)
-    bsr_values = {}
-    # Create query entries
-    for query in outcomes_translations:
-        bsr_values[query] = {}
+    # Get self-score for unclassified clusters of CDS
+    blastp_self_score_path = os.path.join(output_path, "blastp_self_score_results")
+    ff.create_directory(blastp_self_score_path)
+    
+    self_score = {}
     i = 1
-    total = len(outcomes_translations)
+    total = len(outcomes_translations_reps)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                outcomes_translations, 
+                                outcomes_translations_reps, 
                                 repeat('blastp'),
-                                repeat(blastp_results_vs_loci_results),
-                                repeat(outcomes_translations),
+                                repeat(blastp_self_score_path),
+                                repeat(outcomes_translations_reps),
+                                outcomes_translations_reps.values()):
+            _, self_score_value, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True)
+            
+            print(f"Calculating self-score for the CDS cluster {res[0]} - {i}/{total}")
+            self_score[res[0]] = self_score_value
+            i += 1
+    # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA)
+    blastp_results_path = os.path.join(output_path, "blastp_results_vs_loci_results")
+    ff.create_directory(blastp_results_path)
+    bsr_values = {}
+    # Create query entries
+    for query in outcomes_translations_reps:
+        bsr_values[query] = {}
+    i = 1
+    total = len(outcomes_translations_reps)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
+                                outcomes_translations_reps, 
+                                repeat('blastp'),
+                                repeat(blastp_results_path),
+                                repeat(outcomes_translations_reps),
                                 repeat(master_loci_short_translation_path)):
             
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False)
@@ -629,25 +813,7 @@ def wrap_up_results(schema, results_outcome, not_included_cds, clusters,
                             
             print(
                 f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total}")
-            i += 1             
-    # Create graphs for all results and for each class
-    for tsv_file_path in os.listdir(blastn_processed_results_path):
-        abs_path = os.path.join(blastn_processed_results_path, tsv_file_path)
-        file_name = os.path.basename(tsv_file_path)
-        # Create directories
-        graphs_path = os.path.join(cds_outcome_results, f"{file_name.replace('tsv','')}")
-        ff.create_directory(graphs_path)
-        # Render histograms
-        gf.render_histogram(abs_path,
-                            graphs_path,
-                            ['Query_length', 'Subject_length'],
-                            ['Length', 'Count'])
-        # Render line charts
-        gf.render_line_chart(abs_path,
-                             graphs_path,
-                             ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
-                              'Prot_seq_Kmer_cov'],
-                             ['Entries', 'Values'], False)
+            i += 1
 
 def main(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
@@ -909,111 +1075,15 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
             print(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts}")
             i += 1
 
-    # Add kmer cov, kmer sim and frequency of the cds in the genomes
-    for query, subjects_dict in list(representative_blast_results.items()):
-        for subject, blastn_results in list(subjects_dict.items()):
-            # Some results may not have kmers matches or BSR values so put them
-            # as 0
-            if subject in reps_kmers_sim[query]:
-                sim, cov = reps_kmers_sim[query][subject]
-            else:
-                sim = 0
-                cov = 0
-            if subject in bsr_values[query]:
-                bsr = bsr_values[query][subject]
-                # For some reason some isolates have bsr slighty higher than 1
-                # related to blast database and sequences used.
-                if bsr > 1.0:
-                    bsr = float(round(bsr))
-            # If subject not in inside queries alignments. This means that even
-            # though there was an BLASTn align, they didn´t align when BLASTp
-            # was employed.
-            else:
-                bsr = 0
-                
-            # Calculate total alignment for all of the fragments of BLASTn
-            # if there more than one BLASTn alignments
-            # For query and subject
-            if len(blastn_results) > 1:
-                total_length = {}
-                gaps_all = representative_blast_results_coords_all[query][subject].pop('gaps')
-                gaps_pident = representative_blast_results_coords_pident[query][subject].pop('gaps')
-                for ref, intervals in representative_blast_results_coords_all[query][subject].items():
-                    # Sort by start position
-                    sorted_intervals = [interval for interval in sorted(intervals,
-                                                                        key=lambda x: x[0])]
-                    # Merge alignments and calculate the total length of BLASTn alignments.
-                    length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
-                    total_length[ref] = length
-                # Calculate global palign
-                global_palign_all = min([(total_length['query'] + gaps_all) / blastn_results[1]['query_length'],
-                                     (total_length['subject']) / blastn_results[1]['subject_length']])
-                
-                for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
-                    if len(intervals) != 0:
-                        # Sort by start position
-                        sorted_intervals = [interval for interval in sorted(intervals,
-                                                                            key=lambda x: x[0])]
-                        # Merge alignments and calculate the total length of BLASTn alignments.
-                        length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
-                        total_length[ref] = length
-                    else:
-                        # Since we are considering soem values that may not pass pident threshold
-                        # it means some may not have any interval based on pident
-                        total_length[ref] = 0
-                # Calculate global palign
-                global_palign_pident_min = min([(total_length['query'] - gaps_pident) / blastn_results[1]['query_length'],
-                                                (total_length['subject']) / blastn_results[1]['subject_length']])
-                
-                global_palign_pident_max = max([(total_length['query'] - gaps_pident) / blastn_results[1]['query_length'],
-                                                (total_length['subject']) / blastn_results[1]['subject_length']])
-            # If there is only one results
-            else:
-                global_palign_all = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 - result['gaps']) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
-                
-                global_palign_pident_min = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 - result['gaps']) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
-                
-                global_palign_pident_max = max([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1 - result['gaps']) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
-
-            # Create update dict with the values to add
-            update_dict = {'bsr' : bsr,
-                           'kmers_sim': sim,
-                           'kmers_cov': cov,
-                           'frequency_in_genomes_query_cds' : frequency_cds_cluster[query],
-                           'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject],
-                           'global_palign_all': global_palign_all,
-                           'global_palign_pident_min': global_palign_pident_min,
-                           'global_palign_pident_max': global_palign_pident_max}
-            
-            for entry_id, result in list(blastn_results.items()):
-                # Calculate local Palign particular to that BLASTn match
-                local_palign = min([(result['query_end'] - result['query_start'] + 1 + result['gaps']) / result['query_length'],
-                                    (result['subject_end'] - result['subject_start'] + 1) / result['subject_length']])
-                # Verify if inverse alignment was made
-                if local_palign >= 0:
-                    # update the update dict
-                    update_dict.update({'local_palign' : local_palign})
-                    # Add everything to the dict
-                    representative_blast_results[query][subject][entry_id].update(update_dict)
-                # Remove palign that is negative, meaning tha reverse blast alignment was made
-                else:
-                    del representative_blast_results[query][subject][entry_id]
-            # Remove empty subjects dicts
-            if len(representative_blast_results[query][subject]) == 0:
-                del representative_blast_results[query][subject]
-        # Remove empty query dicts
-        if len(representative_blast_results[query]) == 0:
-            del representative_blast_results[query]
+    add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
+                         representative_blast_results_coords_all,
+                         representative_blast_results_coords_pident,
+                         frequency_cds_cluster)
 
     print("Filtering BLAST results into classes...")
-    results_output = os.path.join(output_directory, "3_Results_files")
+    results_output = os.path.join(output_directory, "3_Classes_processing")
     ff.create_directory(results_output)
-    blastn_processed_results_path = os.path.join(results_output, "Processed_Blast")
-    ff.create_directory(blastn_processed_results_path)
-    report_file_path = os.path.join(blastn_processed_results_path, "blast_all_matches.tsv")
+    report_file_path = os.path.join(results_output, "blast_all_matches.tsv")
     
     # Separate results into different classes
     results_outcome, classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
@@ -1023,14 +1093,16 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file
-    [results_outcome,
-     relationships,
-     cluster_dict_1a] = process_classes(results_outcome)
+    [results_outcome, relationships, cluster_dict_1a] = process_classes(results_outcome)
     print("Writting classes results to files...")
     write_processed_results_to_file(results_outcome, relationships,
                                     representative_blast_results, cluster_dict_1a,
-                                    classes_outcome, blastn_processed_results_path)
+                                    classes_outcome, results_output)
     
-    print("Wrapping up results...")
-    wrap_up_results(schema, results_outcome, not_included_cds, clusters, 
-                    blastn_processed_results_path, blastn_processed_results_path, cpu)
+    print("Wrapping up BLAST results...")
+    outcomes_translations_reps = wrap_up_blast_results(results_outcome, not_included_cds,
+                                                  clusters, results_output, cpu)
+    print("Reading schema loci short FASTA files...")
+    results_output = os.path.join(output_directory, "4_Schema_processing")
+    ff.create_directory(results_output)
+    process_schema(schema, outcomes_translations_reps, results_output, cpu)

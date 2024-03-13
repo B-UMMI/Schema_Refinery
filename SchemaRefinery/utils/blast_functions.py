@@ -127,7 +127,7 @@ def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results
     representative_file_dict : dict
         Dict that contains the path to file for each sequence(key).
     all_representatives_file : str
-        path to the consolidated file of all of the sequences.
+        Path to the file of all of the sequences to BLAST against.
 
     Returns
     -------
