@@ -179,6 +179,40 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
                          frequency_cds_cluster):
+    """
+    Function to add to BLAST results additional information, it adds:
+        bsr: value between the two CDS.
+        kmers_sim: kmer similarities.
+        kmer_cov: kmer coverage.
+        frequency_in_genomes_query_cds: how many times that query appears in the schema genomes.
+        frequency_in_genomes_subject_cds: how many subject appers in the schema genomes.
+        global_palign_all: minimum of how much query or subject covers each other.
+        global_palign_pident_min: minimum of how much query or subject covers each other, takes into
+                                  account only entries with specific pident value.
+        global_palign_pident_max: maximum of how much query or subject covers each other, takes into
+                                  account only entries with specific pident value.
+                                  
+    Parameters
+    ----------                                  
+    representative_blast_results : 
+        Dict that contains representatibes BLAST results.
+    reps_kmers_sim : dict
+        Dict that contains values for kmer similarities between CDS.
+    bsr_values : dict
+        Dict that contains BSR values between CDS.
+    representative_blast_results_coords_all : dict
+        Dict that contain the coords for all of the entries.
+    representative_blast_results_coords_pident : dict
+        Dict that contain the coords for all of the entries above certain pident value.
+    frequency_cds_cluster : dict
+        Dict that contains sum of frequency of that representatives cluster in the
+        genomes of the schema.
+    
+    Returns
+    -------
+    No returns, modifies the representative_blast_results dict inside the main
+    function.
+    """
     # Add kmer cov, kmer sim and frequency of the cds in the genomes
     for query, subjects_dict in list(representative_blast_results.items()):
         for subject, blastn_results in list(subjects_dict.items()):
@@ -461,7 +495,7 @@ def write_processed_results_to_file(results_outcome, relationships, representati
     relationships : dict
         Dict that contains relationships between various clusters
     representative_blast_results : dict
-        Dict containg representatibes BLAST results with all of the additional
+        Dict that contains representatibes BLAST results with all of the additional
         info.
     cluster_dict_1a : dict
         Joined clusters dict, these clusters contain various CDS representatives.
@@ -741,6 +775,9 @@ def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
     return outcomes_translations_reps
 
 def process_schema(schema, outcomes_translations_reps, output_path, cpu):
+    """
+    
+    """
     # Get all of the schema loci short FASTA files path
     schema_short_path = os.path.join(schema, 'short')
     schema_loci_short = {loci_path.replace(".fasta", ""): os.path.join(schema_short_path, loci_path) 
