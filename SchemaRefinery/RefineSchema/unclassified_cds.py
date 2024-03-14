@@ -181,16 +181,16 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                          frequency_cds_cluster):
     """
     Function to add to BLAST results additional information, it adds:
-        bsr: value between the two CDS.
-        kmers_sim: kmer similarities.
-        kmer_cov: kmer coverage.
-        frequency_in_genomes_query_cds: how many times that query appears in the schema genomes.
-        frequency_in_genomes_subject_cds: how many subject appers in the schema genomes.
-        global_palign_all: minimum of how much query or subject covers each other.
-        global_palign_pident_min: minimum of how much query or subject covers each other, takes into
-                                  account only entries with specific pident value.
-        global_palign_pident_max: maximum of how much query or subject covers each other, takes into
-                                  account only entries with specific pident value.
+    bsr: value between the two CDS.
+    kmers_sim: kmer similarities.
+    kmer_cov: kmer coverage.
+    frequency_in_genomes_query_cds: how many times that query appears in the schema genomes.
+    frequency_in_genomes_subject_cds: how many subject appers in the schema genomes.
+    global_palign_all: minimum of how much query or subject covers each other.
+    global_palign_pident_min: minimum of how much query or subject covers each other, takes into
+    account only entries with specific pident value.
+    global_palign_pident_max: maximum of how much query or subject covers each other, takes into
+    account only entries with specific pident value.
                                   
     Parameters
     ----------                                  
@@ -776,6 +776,23 @@ def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
 
 def process_schema(schema, outcomes_translations_reps, output_path, cpu):
     """
+    This function processes data related to the schema seed, importing, translating
+    and BLASTing against the unclassified CDS clusters representatives to validate
+    them.
+    
+    Parameters
+    ----------
+    schema : str
+        Path to the schema seed folder.
+    outcomes_translations_reps : dict
+        Dict with the paths to the translations of the unclassified CDS clusters.
+    output_path : str
+        Path were to write the results of this function.
+    cpu : int
+        Number of CPUs to use during multi processing.
+    
+    Returns
+    -------
     
     """
     # Get all of the schema loci short FASTA files path
