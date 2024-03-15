@@ -879,8 +879,17 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Identifying CDS not present in the schema...")
     # Get dict with CDS ids as key and sequence as values.
     not_included_cds = fetch_fasta_dict(file_path_cds, True)
+    total_cds = len(not_included_cds)
+    print(f"Identified {total_cds} valid CDS not present in the schema.")
+    # Filter by size.
+    if constants[5]:
+        for key, values in list(not_included_cds.items()):
+            if len(values) < constants[5]:
+                del not_included_cds[key]
+        print(f"{len(not_included_cds)}/{total_cds} have size greater or equal to {constants[5]} bp.")
+    else:
+        print("No size threshold was applied to the CDS filtering.")
 
-    print(f"Identified {len(not_included_cds)} valid CDS not present in the schema")
     # Create directories.
     ff.create_directory(output_directory)
 
@@ -906,7 +915,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 frequency_cds[id_] = 0
                 
 
-    print("Translate unclassified CDS...")
+    print("Translate and deduplicate unclassified CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
     # the same hash will be added under that hash in protein_hashes.
     cds_not_present_translation_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
@@ -914,6 +923,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     cds_translation_dict, protein_hashes = translate_seq_deduplicate(not_included_cds,
                                                                      cds_not_present_translation_file_path,
                                                                      True)
+    # Print additional information about translations and deduplications.
+    print(f"{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
 
     print("Extracting minimizers for the translated sequences and clustering...")
     # Create variables to store clustering info.
@@ -935,6 +946,13 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                            1, constants[3], 
                                                            constants[4],
                                                            True)
+    # Print additional information about clustering.
+    total_number_clusters = len(clusters)
+    print(f"{len(cds_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
+    singleton_cluster = len([cluster for cluster in clusters if len(cluster) == 1])
+    print(f"\tOut of those clusters, {singleton_cluster} are singletons")
+    print(f"\tOut of those clusters, {total_number_clusters - singleton_cluster} have more than one CDS.")
+    
     # Reformat the clusters output, we are interested only in  the ID of cluster members.
     clusters = {cluster_rep: [value[0] for value in values]
                 for cluster_rep, values in clusters.items()}
@@ -1094,6 +1112,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Create query entries
     for query in blastp_runs_to_do:
         bsr_values[query] = {}
+        # For self-score
         self_score_dict[query] = {}
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
     i = 1

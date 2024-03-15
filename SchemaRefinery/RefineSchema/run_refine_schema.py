@@ -13,7 +13,8 @@ except ModuleNotFoundError:
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_paralagous, 
          pident_threshold_paralagous, alignment_ratio_threshold_gene_fusions, 
-         pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence, cpu):
+         pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence,
+         size_threshold, cpu):
 
     if True:
         print("Identifying paralagous loci...")
@@ -30,7 +31,8 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                      pident_threshold_gene_fusions,
                      genome_presence,
                      clustering_sim,
-                     clustering_cov]
+                     clustering_cov,
+                     size_threshold]
         
         if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
             sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "

@@ -155,7 +155,11 @@ def refine_schema():
     parser.add_argument('-gp', '--genome_presence', type=int,
                     required=False, dest='genome_presence',
                     help='The minimum number of genomes specific cluster'
-                    'cluster of CDS must be present in order to be considered')
+                    'cluster of CDS must be present in order to be considered.')
+    
+    parser.add_argument('-st', '--size_threshold', type=int,
+                    required=False, dest='size_threshold',
+                    help='Size of the CDS to consider processing.')
     
     parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
