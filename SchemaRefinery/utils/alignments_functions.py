@@ -367,7 +367,8 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     }
             # Skip if entry matched itself and get self-score if needed
             if query == subject:
-                if float(pident) == 100 and get_self_score and int(self_score) > self_score:
+                # Largest self-score is choosen
+                if float(pident) == 100 and get_self_score and int(score) > self_score:
                     self_score = int(score)
                 continue
             
