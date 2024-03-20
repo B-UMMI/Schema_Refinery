@@ -1170,6 +1170,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     outcomes_translations_reps = wrap_up_blast_results(results_outcome, not_included_cds,
                                                   clusters, results_output, cpu)
     print("Reading schema loci short FASTA files...")
+    # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
     process_schema(schema, outcomes_translations_reps, results_output, self_score_dict, cpu)
