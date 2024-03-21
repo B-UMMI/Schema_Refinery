@@ -175,6 +175,7 @@ def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
                 protein_hashes[prot_hash].append(id_s)
                 
     return translation_dict, protein_hashes
+
 def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
@@ -223,91 +224,67 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
             else:
                 sim = 0
                 cov = 0
-            if subject in bsr_values[query]:
-                bsr = bsr_values[query][subject]
-                # For some reason some isolates have bsr slighty higher than 1
-                # related to blast database and sequences used.
-                if bsr > 1.0:
-                    bsr = float(round(bsr))
-            # If subject not in inside queries alignments. This means that even
-            # though there was an BLASTn align, they didn´t align when BLASTp
-            # was employed.
-            else:
-                bsr = 0
+            
+            # Get BSR value, if not in query return 0, meaning that even though
+            # there was BLASTn match no BLASTp match was made.
+            bsr = bsr_values[query].get(subject, 0)
+            # For some reason some isolates have bsr slighty higher than 1
+            # related to blast database and sequences used.
+            if bsr > 1.0:
+                bsr = float(round(bsr))
                 
             # Calculate total alignment for all of the fragments of BLASTn
             # if there more than one BLASTn alignments
             # For query and subject
-            if len(blastn_results) > 1:
+            for entry_id, result in blastn_results.items():
                 total_length = {}
+                # Sum all the intervals
                 for ref, intervals in representative_blast_results_coords_all[query][subject].items():
-                    # Sort by start position
-                    sorted_intervals = [interval for interval in sorted(intervals,
-                                                                        key=lambda x: x[0])]
-                    # Merge alignments and calculate the total length of BLASTn alignments.
-                    length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                    sorted_intervals = sorted(intervals, key=lambda x: x[0])
+                    length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
                     total_length[ref] = length
                 # Calculate global palign
-                global_palign_all = min([(total_length['query']) / blastn_results[1]['query_length'],
-                                     (total_length['subject']) / blastn_results[1]['subject_length']])
-                
+                global_palign_all = min(total_length['query'] / result['query_length'],
+                                        total_length['subject'] / result['subject_length'])
+                # Sum the intervals with desired pident threshold
                 for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
-                    if len(intervals) != 0:
-                        # Sort by start position
-                        sorted_intervals = [interval for interval in sorted(intervals,
-                                                                            key=lambda x: x[0])]
-                        # Merge alignments and calculate the total length of BLASTn alignments.
-                        length = sum([(interval[1] - interval[0] + 1) for interval in af.merge_intervals(sorted_intervals)])
+                    if intervals:
+                        sorted_intervals = sorted(intervals, key=lambda x: x[0])
+                        length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
                         total_length[ref] = length
                     else:
-                        # Since we are considering soem values that may not pass pident threshold
-                        # it means some may not have any interval based on pident
                         total_length[ref] = 0
-                # Calculate global palign
-                global_palign_pident_min = min([(total_length['query']) / blastn_results[1]['query_length'],
-                                                (total_length['subject']) / blastn_results[1]['subject_length']])
                 
-                global_palign_pident_max = max([(total_length['query']) / blastn_results[1]['query_length'],
-                                                (total_length['subject']) / blastn_results[1]['subject_length']])
-            # If there is only one results
-            else:
-                global_palign_all = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
-                
-                global_palign_pident_min = min([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
-                
-                global_palign_pident_max = max([(blastn_results[1]['query_end'] - blastn_results[1]['query_start'] + 1) / blastn_results[1]['query_length'],
-                                    (blastn_results[1]['subject_end'] - blastn_results[1]['subject_start'] + 1) / blastn_results[1]['subject_length']])
+                # Calculated min and max palign
+                global_palign_pident_min = min(total_length['query'] / result['query_length'],
+                                                total_length['subject'] / result['subject_length'])
 
-            # Create update dict with the values to add
-            update_dict = {'bsr' : bsr,
-                           'kmers_sim': sim,
-                           'kmers_cov': cov,
-                           'frequency_in_genomes_query_cds' : frequency_cds_cluster[query],
-                           'frequency_in_genomes_subject_cds' : frequency_cds_cluster[subject],
-                           'global_palign_all': global_palign_all,
-                           'global_palign_pident_min': global_palign_pident_min,
-                           'global_palign_pident_max': global_palign_pident_max}
-            
-            for entry_id, result in list(blastn_results.items()):
-                # Calculate local Palign particular to that BLASTn match
-                local_palign = min([(result['query_end'] - result['query_start'] + 1) / result['query_length'],
-                                    (result['subject_end'] - result['subject_start'] + 1) / result['subject_length']])
-                # Verify if inverse alignment was made
+                global_palign_pident_max = max(total_length['query'] / result['query_length'],
+                                                total_length['subject'] / result['subject_length'])
+                # Calculate local palign
+                local_palign = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
+                                    (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
+                # If the alignment is more than 0
                 if local_palign >= 0:
-                    # update the update dict
-                    update_dict.update({'local_palign' : local_palign})
-                    # Add everything to the dict
+                    update_dict = {
+                        'bsr': bsr,
+                        'kmers_sim': sim,
+                        'kmers_cov': cov,
+                        'frequency_in_genomes_query_cds': frequency_cds_cluster[query],
+                        'frequency_in_genomes_subject_cds': frequency_cds_cluster[subject],
+                        'global_palign_all': global_palign_all,
+                        'global_palign_pident_min': global_palign_pident_min,
+                        'global_palign_pident_max': global_palign_pident_max,
+                        'local_palign': local_palign
+                    }
                     representative_blast_results[query][subject][entry_id].update(update_dict)
-                # Remove palign that is negative, meaning tha reverse blast alignment was made
+                # If not then the inverse alignment was made, so we remove it
                 else:
                     del representative_blast_results[query][subject][entry_id]
-            # Remove empty subjects dicts
-            if len(representative_blast_results[query][subject]) == 0:
+                    
+            if not representative_blast_results[query][subject]:
                 del representative_blast_results[query][subject]
-        # Remove empty query dicts
-        if len(representative_blast_results[query]) == 0:
+        if not representative_blast_results[query]:
             del representative_blast_results[query]
 
 def separate_blastn_results_into_classes(representative_blast_results, constants):
@@ -437,9 +414,8 @@ def process_classes(results_outcome):
     for class_, results in results_outcome.items():
         results_outcome[class_] = itf.get_unique_sublists(results_outcome[class_])
         
-    relationships = {}
-    for class_ in results_outcome:
-        relationships[class_] = {}
+    # Initialize relationships dictionary for each class
+    relationships = {class_: {} for class_ in results_outcome}
     
     # Process all elements in other classes against each other
     for class_, results in results_outcome.items():
@@ -449,19 +425,10 @@ def process_classes(results_outcome):
             continue
         # Iterate over results
         for result in results:
-            # If cluster is classified as 1a add the id of the cluster
-            cluster_id = itf.identify_string_in_dict(result[1], cluster_dict_1a)
-            if not cluster_id:
-                cluster_id = result[1]
-            # the structure is {real_subject_id : [query_id, subject_id]}
-            # where real_subject_id may be int or str dependeing if it is CDS id
-            # of joined cluster id
-            # If entry exists
-            if cluster_id not in relationships[class_]:
-                relationships[class_].update({cluster_id: [result]})
-            # Add to entry
-            else:
-                relationships[class_][cluster_id].append(result)
+             # Identify the cluster id, if it is joined id or CDS id
+            cluster_id = itf.identify_string_in_dict(result[1], cluster_dict_1a) or result[1]
+            # Update relationships dictionary
+            relationships[class_].setdefault(cluster_id, []).append(result)
 
     # Remove entries that were added to Joined cluster
     drop = itf.flatten_list(list(cluster_dict_1a.values()))
@@ -512,6 +479,7 @@ def write_processed_results_to_file(results_outcome, relationships, representati
     # Create directory
     blast_by_cluster_output = os.path.join(output_path, "blast_results_by_cluster")
     ff.create_directory(blast_by_cluster_output)
+    
     # Get all of the BLAST entries for that cluster
     for class_, cluster in results_outcome.items():
         for i, cluster in enumerate(cluster):
@@ -536,8 +504,9 @@ def write_processed_results_to_file(results_outcome, relationships, representati
     report_relationships_output = os.path.join(blast_by_cluster_output, "2_relationships_to_joined_clusters")
     ff.create_directory(report_relationships_output)
     
+    # Write blast results by class and relationships
     for class_, relationship in relationships.items():
-        if len(relationship) == 0:
+        if not relationship:
             continue
         for cluster_id, r_ids in relationship.items():
             # Search the entries if query is in relationship_ids set and if the
@@ -549,24 +518,8 @@ def write_processed_results_to_file(results_outcome, relationships, representati
             query_ids = [query_id[0] for query_id in r_ids]
             subject_ids = [subject_id[1] for subject_id in r_ids]
             
-            # create the lists
-            transformed_query_ids = []
-            # Verify if the ids are present inside joined clusters
-            # if they are then add the joined cluster id to the transformed_query_ids list
-            if itf.any_match_lists(query_ids, itf.flatten_list(list(cluster_dict_1a.values()))):
-                # Iterate over current ids
-                for id_ in query_ids:
-                    # If id_ is present in some joined cluster this function returns
-                    # the key otherwise it returns None
-                    value = itf.identify_string_in_dict(id_, cluster_dict_1a)
-                    if value:
-                        transformed_query_ids.append(value)
-                    # If it is None then just add the original id
-                    else:
-                        transformed_query_ids.append(id_)
-            # If no elements of query_ids matched with any of the joined clusters
-            else:
-                transformed_query_ids = query_ids
+            # Get transformed values into the list
+            transformed_query_ids = [itf.identify_string_in_dict(id_, cluster_dict_1a) or id_ for id_ in query_ids]
             
             # Get entries based on BLAST
             write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
@@ -575,10 +528,8 @@ def write_processed_results_to_file(results_outcome, relationships, representati
                           for query, subjects in representative_blast_results.items() if query in query_ids}
                 
             report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_relationships_to_{cluster_id}.tsv")
-            if os.path.exists(report_file_path):
-                write_type = 'a'
-            else:
-                write_type = 'w'
+            # What write type to use
+            write_type = 'a' if os.path.exists(report_file_path) else 'w'
             # Write BLAST results to file
             alignment_dict_to_file(write_dict, report_file_path, write_type)
                 
@@ -599,28 +550,13 @@ def write_processed_results_to_file(results_outcome, relationships, representati
                 relationships_report_file.writelines(f"{cluster_id}:\n")
                 seen = ""
                 for i, query_id in enumerate(transformed_query_ids):
-                    # If query_id is a string value
-                    if type(query_id) == str:
-                        # If cluster has a string value, meaning that it only contains one CDS
-                        # it doesn´t matter to add subjects since they will all be the same
-                        if type(cluster_id) == str:
-                            relationships_report_file.writelines(f"\t{query_id}\n")
-                        # If query was already seen, add white spaces to add another subject under it to facilitate readibility
-                        elif query_ids[i] == seen:
-                            white_spaces = itf.create_whitespace_string(f"CDS {query_ids[i]} against ")
-                            relationships_report_file.writelines("\t" + white_spaces + f"{subject_ids[i]}\n")
-                        # Add subjects to the report to know to what CDS in the cluster did the query match
-                        else:
-                            relationships_report_file.writelines(f"\tCDS {query_ids[i]} against {subject_ids[i]}\n")
-                    # If query was already seen, add white spaces to add another subject under it to facilitate readibility
-                    elif query_ids[i] == seen:
-                        white_spaces = itf.create_whitespace_string(f"Cluster {query_id} entry: {query_ids[i]} against ")
-                        relationships_report_file.writelines("\t" + white_spaces + f"{subject_ids[i]}\n")
-                    # Add subjects to the report to know to what CDS in the cluster did the query match
-                    else:
-                        relationships_report_file.writelines(f"\tCluster {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
-                    seen = query_ids[i]
-
+                      if query_id == seen:
+                          white_spaces = itf.create_whitespace_string(f"{'CDS' if type(query_id) == str else 'Cluster'} {query_id} entry: {query_ids[i]} against ")
+                          relationships_report_file.write("\t" + white_spaces + f"{subject_ids[i]}\n")
+                      else:
+                          relationships_report_file.write(f"\t{'CDS' if type(query_id) == str else 'Cluster'} {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
+                      seen = query_id
+                
     # Write all of the ids inside Joined cluster
     # Create directory 
     cluster_members_output = os.path.join(output_path, "joined_cluster_members")
@@ -803,10 +739,12 @@ def process_schema(schema, outcomes_translations_reps, output_path, self_score_d
     schema_loci_short = {loci_path.replace(".fasta", ""): os.path.join(schema_short_path, loci_path) 
                          for loci_path in os.listdir(schema_short_path) 
                          if loci_path.endswith('.fasta')}
-    
+    # Create a folder for short translations.
     short_translation_folder = os.path.join(output_path, "short_translation_folder")
     ff.create_directory(short_translation_folder)
     master_loci_short_translation_path = os.path.join(short_translation_folder, "master_short_loci.fasta")
+    
+    # Translate each short loci and write to master fasta.
     i = 1
     len_short_folder = len(schema_loci_short)
     with open(master_loci_short_translation_path, 'w') as master_fasta:
@@ -826,6 +764,7 @@ def process_schema(schema, outcomes_translations_reps, output_path, self_score_d
     blastp_results_path = os.path.join(output_path, "blastp_results_vs_loci_results")
     ff.create_directory(blastp_results_path)
     bsr_values = {}
+    
     # Create query entries.
     for query in outcomes_translations_reps:
         bsr_values[query] = {}
