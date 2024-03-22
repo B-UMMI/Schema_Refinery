@@ -183,7 +183,7 @@ def translate_dna(dna_sequence, table_id, min_len, cds=True):
     ----------
     dna_sequence : str
         DNA sequence.
-    table_id : string
+    table_id : str
         translation method.
     min_len : int
         minimum length for the sequence.
@@ -198,8 +198,6 @@ def translate_dna(dna_sequence, table_id, min_len, cds=True):
         Translated sequence.
     coding_strand : str
         DNA strand in correct orientation.
-    exception_str : str
-        String containing all the exceptions found.
     """
 
     original_seq = dna_sequence.upper()
