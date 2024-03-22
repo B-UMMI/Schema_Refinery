@@ -9,19 +9,19 @@ except ModuleNotFoundError:
 
 def check_str_alphabet(input_string, alphabet):
     """
-    Verifies if input string has valid characters.
+    Verifies if all characters in the input string are present in the specified alphabet.
 
     Parameters
     ----------
     input_string : str
-        Input sequence.
-    alphabet : list
-        Contains list or set of letters for comparison.
+        The input sequence to be checked.
+    alphabet : list or set
+        The set of valid characters.
 
     Returns
     -------
     return : bool
-        if is or not multiple.
+        True if all characters in the input string are present in the alphabet, False otherwise.
     """
 
     alphabet_chars = set(alphabet)
@@ -33,35 +33,36 @@ def check_str_alphabet(input_string, alphabet):
 
 def check_str_multiple(input_string, number):
     """
-    Verifies is input string length is multiple of input number.
-    
+    Verifies if the length of the input string is a multiple of the specified number.
+
     Parameters
     ----------
     input_string : str
-        Input sequence.
+        The input sequence to be checked.
     number : int
-        number to be multiple of.
+        The number to check for being a multiple of.
 
     Returns
     -------
     return : bool
-        if is or not multiple.    
+        True if the length of the input string is a multiple of the specified number, False otherwise.
     """
 
     return (len(input_string) % number) == 0
 
 def reverse_str(string):
-    """ Reverse character order in input string.
+    """
+    Reverse the character order in the input string.
 
     Parameters
     ----------
     string : str
-        String to be reversed.
+        The string to be reversed.
 
     Returns
     -------
     revstr : str
-        Reverse of input string.
+        The reverse of the input string.
     """
 
     revstr = string[::-1]
@@ -70,7 +71,8 @@ def reverse_str(string):
 
 
 def reverse_complement(dna_sequence):
-    """ Determines the reverse complement of a DNA sequence.
+    """
+    Determines the reverse complement of a DNA sequence.
 
     Parameters
     ----------
@@ -80,8 +82,7 @@ def reverse_complement(dna_sequence):
     Returns
     -------
     reverse_complement : str
-        The reverse complement of the input DNA
-        sequence.
+        The reverse complement of the input DNA sequence.
     """
 
     base_complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
@@ -103,20 +104,22 @@ def reverse_complement(dna_sequence):
 
 
 def translate_sequence(dna_str, table_id, cds=True):
-    """ Translate a DNA sequence using the BioPython package.
+    """
+    Translate a DNA sequence into a protein sequence using the BioPython package.
 
     Parameters
     ----------
     dna_str : str
-        DNA sequence.
+        DNA sequence to be translated.
     table_id : int
-        Translation table identifier.
+        Identifier of the translation table to use.
+    cds : bool, optional
+        Indicates whether the input sequence is a complete and valid CDS (default is True).
 
     Returns
     -------
     protseq : str
-        Protein sequence created by translating
-        the input DNA sequence.
+        Protein sequence obtained by translating the input DNA sequence.
     """
 
     myseq_obj = Seq(dna_str)
@@ -127,60 +130,50 @@ def translate_sequence(dna_str, table_id, cds=True):
 
 def translate_dna_aux(dna_sequence, method, table_id, cds=True):
     """
-    Translates DNA sequence to protein sequence.
+    Translate a DNA sequence to a protein sequence using specified method.
 
     Parameters
     ----------
     dna_sequence : str
-        DNA sequence.
-    table_id : string
-        translation method.
+        DNA sequence to be translated.
     method : str
-        Translation orientatio.
-    cds : bool
-        if has cds.
+        Translation method to use:
+            - 'original': Translate the original sequence.
+            - 'revcomp': Translate the reverse complement of the sequence.
+            - 'rev': Translate the reverse of the sequence.
+            - 'revrevcomp': Translate the reverse reverse complement of the sequence.
+    cds : bool, optional
+        Indicates whether the input sequence is a complete and valid CDS (default is True).
 
     Returns
     -------
-    argh : exception
-        returns exception error.
-    protseq : str
-        Translated sequence.
-    myseq : str
-        Original DNA sequence.
+    tuple or str
+        If translation is successful, returns a tuple containing the translated protein sequence
+        and the processed DNA sequence. If an error occurs, returns an error message.
     """
 
     myseq = dna_sequence
-    # try to translate original sequence
-    if method == 'original':
-        try:
-            protseq = translate_sequence(myseq, table_id, cds=cds)
-        except Exception as argh:
-            return argh
-    # try to translate the reverse complement
-    elif method == 'revcomp':
-        try:
-            myseq = reverse_complement(myseq, DNA_BASES)
-            protseq = translate_sequence(myseq, table_id, cds=cds)
-        except Exception as argh:
-            return argh
-    # try to translate the reverse
-    elif method == 'rev':
-        try:
-            myseq = reverse_str(myseq)
-            protseq = translate_sequence(myseq, table_id, cds=cds)
-        except Exception as argh:
-            return argh
-    # try to translate the reverse reverse complement
-    elif method == 'revrevcomp':
-        try:
-            myseq = reverse_str(myseq)
-            myseq = reverse_complement(myseq, DNA_BASES)
-            protseq = translate_sequence(myseq, table_id, cds=cds)
-        except Exception as argh:
-            return argh
 
-    return [protseq, myseq]
+    try:
+        if method == 'original':
+            protseq = translate_sequence(myseq, table_id, cds=cds)
+        elif method == 'revcomp':
+            myseq = reverse_complement(myseq)
+            protseq = translate_sequence(myseq, table_id, cds=cds)
+        elif method == 'rev':
+            myseq = reverse_str(myseq)
+            protseq = translate_sequence(myseq, table_id, cds=cds)
+        elif method == 'revrevcomp':
+            myseq = reverse_str(myseq)
+            myseq = reverse_complement(myseq)
+            protseq = translate_sequence(myseq, table_id, cds=cds)
+        else:
+            return "Invalid method. Available methods: 'original', 'revcomp', 'rev', 'revrevcomp'"
+        
+        return [protseq, myseq]
+    
+    except Exception as e:
+        return e
 
 def translate_dna(dna_sequence, table_id, min_len, cds=True):
     """
@@ -210,49 +203,32 @@ def translate_dna(dna_sequence, table_id, min_len, cds=True):
     """
 
     original_seq = dna_sequence.upper()
-    exception_collector = []
-    strands = ['sense', 'antisense', 'revsense', 'revantisense']
+    exceptions = []
+    coding_strands = ['sense', 'antisense', 'revsense', 'revantisense']
     translating_methods = ['original', 'revcomp', 'rev', 'revrevcomp']
 
-    # check if the sequence has ambiguous bases
-    valid_dna = check_str_alphabet(original_seq, DNA_BASES)
-    if valid_dna is not True:
-        return 'ambiguous or invalid characters'
+    # Check if the sequence has ambiguous bases
+    if not check_str_alphabet(original_seq, DNA_BASES):
+        exceptions.append('ambiguous or invalid characters')
 
-    # check if sequence size is multiple of three
-    valid_length = check_str_multiple(original_seq, 3)
-    if valid_length is not True:
-        return 'sequence length is not a multiple of 3'
+    # Check if sequence size is multiple of three
+    if not check_str_multiple(original_seq, 3):
+        exceptions.append('sequence length is not a multiple of 3')
 
-    # check if sequence is not shorter than the accepted minimum length
+    # Check if sequence is not shorter than the accepted minimum length
     if len(original_seq) < min_len:
-        return 'sequence shorter than {0} nucleotides'.format(min_len)
+        exceptions.append(f'sequence shorter than {min_len} nucleotides')
 
-    # try to translate in 4 different orientations
-    # or reach the conclusion that the sequence cannot be translated
-    i = 0
-    translated = False
-    while translated is False:
-        translated_seq = translate_dna_aux(original_seq, translating_methods[i], table_id, cds=cds)
-        if not isinstance(translated_seq, list):
-            exception_collector.append('{0}({1})'.format(strands[i],
-                                                         translated_seq.args[0]))
+    # Try to translate in 4 different orientations
+    for method, coding_strand in zip(translating_methods, coding_strands):
+        translated_seq = translate_dna_aux(original_seq, method, table_id, cds=cds)
+        if isinstance(translated_seq, list):
+            return [translated_seq, coding_strand]
 
-        i += 1
-        if i == len(strands) or isinstance(translated_seq, list) is True:
-            translated = True
+        exceptions.append(f'{coding_strand}({translated_seq})')
 
-    coding_strand = strands[i-1]
+    return ','.join(exceptions)
 
-    # if the sequence could be translated, return list with protein and DNA
-    # sequence in correct orientation
-    if isinstance(translated_seq, list):
-        return [translated_seq, coding_strand]
-    # if it could not be translated, return the string with all exception
-    # that were collected
-    else:
-        exception_str = ','.join(exception_collector)
-        return exception_str
 
 def read_fasta_file_iterator(file):
     """
@@ -310,3 +286,99 @@ def hash_sequences(file_path):
         hash_set.add(seq_to_hash(str(rec.seq)))
 
     return hash_set
+
+def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, count_seq):
+    """
+    Translates the DNA sequence to protein and verifies if that protein is alredy
+    present in the dict, thus ensuring that the dict contains deduplicated sequences,
+    it writes the sequences to a FASTA files and return the dict.
+    
+    Parameters
+    ----------
+    seq_dict : dict
+        Dict that contains sequence ID as key and the sequence as value.
+    path_to_write : str
+        Path to the file to create and write.
+    untras_path : str or None
+        Path to write untranslated sequences, if there is no need to write use None
+    min_len : int
+        minimum length for the sequence.
+    count_seq : bool
+        If there is need to print into stdout the number of processed sequences.
+        
+    Returns
+    -------
+    translation_dict : dict
+        Dict that contais sequence ID as key and translated sequence as value.
+    protein_hashes : dict
+        Dict that contais sequence hash as key and sequences IDs as values.
+    """
+    translation_dict = {}
+    protein_hashes = {}
+    untras_seq = {}
+    if count_seq:
+        total = len(seq_dict)
+        
+    with open(path_to_write, 'w+') as translation:
+        for i, (id_s, sequence) in enumerate(seq_dict.items(),1):
+                
+            # Translate
+            protein_translation = translate_dna(str(sequence),
+                                                    11,
+                                                    min_len,
+                                                    True)
+            # Verify if was translated
+            if type(protein_translation) == list:
+                protein_translation = str(protein_translation[0][0])
+                if count_seq:
+                    print(f"Translated {i}/{total} CDS")
+            else:
+                if count_seq:
+                    print(f"Failed to translate {id_s}")
+                untras_seq.setdefault(id_s, protein_translation)
+                continue
+            
+            # Hash the sequence
+            prot_hash = seq_to_hash(protein_translation)
+            # Find unique proteins
+            if prot_hash not in protein_hashes:
+                protein_hashes[prot_hash] = [id_s]
+                translation_dict[id_s] = protein_translation
+                translation.write(f'>{id_s}\n{protein_translation}\n')
+            # Remember CDS with that protein hash for future
+            else:
+                protein_hashes[prot_hash].append(id_s)
+                
+    if untras_seq and untras_path:
+        with open(untras_path, 'w+') as untras_file:
+            for id_s, exceptions in untras_seq.items():
+                untras_file.write(">{}\n{}\n".format(id_s,'\n'.join(exceptions)))
+    return translation_dict, protein_hashes, untras_seq
+
+def fetch_fasta_dict(file_path, count_seq):
+    """
+    Fetches FASTAs from a file and adds the to a dict
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the file with FASTAs
+    count_seq : bool
+        If count the number of processed sequences inside the file
+
+    Returns
+    -------
+    fasta_dict : dict
+        Returns dict with key as fasta header and value as fasta sequence.
+    """
+    
+    fasta_dict = {}
+    i = 1
+    # Read FASTA files
+    for rec in read_fasta_file_iterator(file_path):
+        if count_seq:
+            print(f"Processed {i} CDS")
+            i += 1
+        fasta_dict[rec.id] = rec.seq
+
+    return fasta_dict

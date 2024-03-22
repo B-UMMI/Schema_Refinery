@@ -1,25 +1,24 @@
 import itertools
-from collections import defaultdict
+import pickle
 
 def join_list(lst, delimiter):
     """
-    Join all elements in a list into a single string.
+    Join all elements in a list into a single string using a delimiter.
 
     Parameters
     ----------
     lst : list
         List with elements to be joined.
     delimiter : str
-        Character used to join list elements.
+        Character or string used to join list elements.
 
     Returns
     -------
-    joined_list : str
-        A single string with all elements in the input
-        list joined by the character chosen as link.
+    return : str
+        A single string with all elements in the input list joined by the specified delimiter.
     """
 
-    joined_list = delimiter.join(lst)
+    joined_list = delimiter.join(map(str, lst))
 
     return joined_list
 
@@ -64,46 +63,48 @@ def isListEmpty(input_list):
 
 def divide_list_into_n_chunks(list_to_divide, n):
     """
-    Divides a list into a defined number of sublists.
+    Divides a list into a specified number of sublists.
 
     Parameters
     ----------
     list_to_divide : list
-        List to divide into sublists.
+        The list to divide into sublists.
     n : int
-        Number of sublists to create.
+        The number of sublists to create.
 
     Returns
     -------
     sublists : list
-        List with the sublists created by dividing
-        the input list.
+        A list of sublists created by dividing the input list.
     """
     
     sublists = []
-    d, r = divmod(len(list_to_divide), n)
+    list_length = len(list_to_divide)
+    sublist_size, remainder = divmod(list_length, n)
+    
+    # Determine sublist sizes and create sublists
+    start_idx = 0
     for i in range(n):
-        si = (d+1)*(i if i < r else r) + d*(0 if i < r else i - r)
-        sublists.append(list_to_divide[si:si+(d+1 if i < r else d)])
+        sublist_length = sublist_size + (1 if i < remainder else 0)
+        end_idx = start_idx + sublist_length
+        sublists.append(list_to_divide[start_idx:end_idx])
+        start_idx = end_idx
 
-    # exclude lists that are empty due to small number of elements
-    sublists = [line for line in sublists if len(line) > 0]
-
-    return sublists
+    return [sublist for sublist in sublists if sublist]  # Filter out empty sublists
 
 def get_max_min_values(input_list):
     """
-    From an input list return the max and min int/float present
+    From an input list, return the maximum and minimum integer or float values.
 
     Parameters
     ----------
-    input_list: int
-        List containing values
-    
+    input_list : list[int] or list[float]
+        List containing integer or float values.
+
     Returns
     -------
-    return : list
-        Returns largest value and smallest value.
+    return : tuple
+        A tuple containing the largest and smallest values in the input list.
     """
 
     return max(input_list), min(input_list)
@@ -139,7 +140,7 @@ def decompress_number(text, index):
         if n >= 0x20:
             # subtract 0x20 (0b100000) to get the 5-bit chunk
             n -= 0x20
-            # contruct the binary number with biwise shift to add each
+            # contruct the binary number with bitwise shift to add each
             # 5-bit chunk to original position
             number = number | (n << bitwise_shift)
             # increment bitwise shift value for next 5-bit chunk
@@ -185,86 +186,103 @@ def polyline_decoding(text):
 
     return number_list
 
+def decode_CDS_sequences_ids(path_to_file):
+    """
+    Read a dictionary contained in a pickle file and decode its values based on polyline.
+
+    Parameters
+    ----------
+    path_to_file : str
+        Path to the pickle file.
+
+    Returns
+    -------
+    decoded_dict : dict
+        Contains hashed CDS as keys, and number id of the genome where that CDS is present.
+    """
+    # Load pickle file
+    with open(path_to_file, "rb") as infile:
+        hash_table = pickle.load(infile)
+
+    # Decode the values using polyline
+    decoded_dict = {key: polyline_decoding(value) for key, value in hash_table.items()}
+
+    return decoded_dict
+
 def get_unique_sublists(list_of_lists):
     """
-    Based on input of a list that contains various lists this function identifies
-    unique sublists in main list.
-    
+    Identify unique sublists within a list of lists.
+
     Parameters
     ----------
     list_of_lists : list
-        List that contains various sublists.
-    
+        The list containing various sublists.
+
     Returns
     -------
-    unique_sublists : list
-        List that contains unique sublists inside.
+    return : list
+        List containing unique sublists.
     """
-    
     seen = set()
     unique_sublists = []
     for sublist in list_of_lists:
-        sublist_str = str(sublist)
-        if sublist_str not in seen:
-            seen.add(sublist_str)
+        sublist_tuple = tuple(sublist)
+        if sublist_tuple not in seen:
+            seen.add(sublist_tuple)
             unique_sublists.append(sublist)
     return unique_sublists
 
 def all_match_lists(list1, list2):
     """
-    Based on inputs verifies if elements of list1 are fully contained inside the
-    list2.
-    
+    Check if all elements of list1 are contained in list2.
+
     Parameters
     ----------
     list1 : list
-        Query list to see if its elements are fully contained inside subject .
+        The query list to check for full containment.
     list2 : list
-        Subject list to see if it contains all of the elements of the query list.
-        
+        The subject list to compare against the query list.
+
     Returns
     -------
     return : bool
-        Returns a bool value if above mentioned condition is met or not.
+        True if all elements of list1 are found in list2, False otherwise.
     """
     return all(elem in list2 for elem in list1)
 
 def any_match_lists(list1, list2):
     """
-    Based on inputs verifies if elements of list1 are partially contained inside the
-    list2.
-    
+    Check if any element of list1 is contained in list2.
+
     Parameters
     ----------
     list1 : list
-        Query list to see if its elements are partially contained inside subject .
+        The query list to check for partial containment.
     list2 : list
-        Subject list to see if it contains some of the elements of the query list.
-        
+        The subject list to compare against the query list.
+
     Returns
     -------
     return : bool
-        Returns a bool value if above mentioned condition is met or not.
+        True if any element of list1 is found in list2, False otherwise.
     """
     return any(elem in list2 for elem in list1)
 
 def contains_sublist(main_list, list_of_lists):
     """
-    Based on inputs verifies if elements of mainlist are fully contained inside
-     one of the lists inside of list_of_lists.
-    
+    Check if elements of the main list are fully contained in any sublist of the list of lists.
+
     Parameters
     ----------
     main_list : list
-        Query list to see if its elements are fully contained inside subject .
+        The query list to check for full containment.
     list_of_lists : list
-        Subject list that contains lists with which query is compared to see 
-        if it is fully contained inside one of theose sublists.
-        
+        The subject list containing sublists to compare against the query list.
+
     Returns
     -------
     return : bool
-        Returns a bool value if above mentioned condition is met or not.
+        True if all elements of the main list are fully contained in any sublist of the list of lists, False otherwise.
     """
     for sublist in list_of_lists:
         if all_match_lists(main_list, sublist):
@@ -273,45 +291,41 @@ def contains_sublist(main_list, list_of_lists):
 
 def partially_contains_sublist(main_list, list_of_lists):
     """
-    Based on inputs verifies if elements of mainlist are partially contained inside
-     one of the lists inside of list_of_lists.
-    
+    Check if elements of the main list are partially contained in any sublist of the list of lists.
+
     Parameters
     ----------
     main_list : list
-        Query list to see if its elements are partially contained inside subject .
+        The query list to check for partial containment.
     list_of_lists : list
-        Subject list that contains lists with which query is compared to see 
-        if it is partially contained inside one of theose sublists.
-        
+        The subject list containing sublists to compare against the query list.
+
     Returns
     -------
     return : bool
-        Returns a bool value if above mentioned condition is met or not.
+        True if any element of the main list is partially contained in any sublist of the list of lists, False otherwise.
     """
     for sublist in list_of_lists:
         if any_match_lists(main_list, sublist):
             return True
     return False
 
+
 def identify_string_in_dict(input_str, dictionary):
     """
-    Based on input string and dictionary this function identifies in what
-    entry of the dictionary that string is present and returns the key.
-    
+    Identify the key in the dictionary where the input string is present.
+
     Parameters
     ----------
     input_str : str
-        String to find.
+        The string to find.
     dictionary : dict
-        Dictionary where to find the string.
-    
+        The dictionary where to find the string.
+
     Returns
     -------
-    key : string/int
-        Returns the key to the entry where that string is present.
-    return : None
-        If not found in the dict returns None.
+    key : string or int
+        The key of the entry where the string is present, or None if not found.
     """
     for key, value in dictionary.items():
         if input_str in value:
@@ -320,20 +334,19 @@ def identify_string_in_dict(input_str, dictionary):
 
 def has_element_of_type(input_list, target_type):
     """
-    Based on input list and a type this function identifies if that type is
-    present in the input list.
-    
+    Check if any element in the input list matches the specified target type.
+
     Parameters
     ----------
     input_list : list
-        Input list to verify the type of the elements.
+        The list to check for the presence of the target type.
     target_type : type
-        What type to verify if it is contained in the list.
-        
+        The type to search for within the input list.
+
     Returns
     -------
-    returns : bool
-        Returns a bool value if above mentioned condition is met or not.        
+    return : bool
+        True if the target type is found in the input list, False otherwise.
     """
     for element in input_list:
         if isinstance(element, target_type):
@@ -342,18 +355,17 @@ def has_element_of_type(input_list, target_type):
 
 def create_whitespace_string(input_string):
     """
-    Function that based on input string returns another string with equivalent
-    blank spaces as the size of input string.
-    
+    Create a string with the same length as the input string filled with whitespace.
+
     Parameters
     ----------
     input_string : str
         Input string to get the size from.
-        
+
     Returns
     -------
     whitespace_string : str
-        returns a string that contains a set number of white spaces
+        String containing the same number of white spaces as the length of the input string.
     """
     whitespace_string = " " * len(input_string)
     return whitespace_string

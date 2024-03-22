@@ -1,5 +1,4 @@
 import os
-import pickle
 import concurrent.futures
 from itertools import repeat
 
@@ -22,61 +21,6 @@ except ModuleNotFoundError:
                                       iterable_functions as itf,
                                       graphical_functions as gf)
 
-def fetch_fasta_dict(file_path_cds, count_seq):
-    """
-    Compares the hashes list with the hashes obtained from cds.
-
-    Parameters
-    ----------
-    hash_list : list
-        List containing all of the sequences hashes present in the input files.
-    count_seq : bool
-        If count the number of processed sequences inside the file
-
-    Returns
-    -------
-    fasta_dict : dict
-        Returns dict with key as fasta header and value as fasta sequence.
-    """
-    
-    fasta_dict = {}
-    i = 1
-    # Read FASTA files
-    for rec in sf.read_fasta_file_iterator(file_path_cds):
-        if count_seq:
-            print(f"Processed {i} CDS")
-            i += 1
-        fasta_dict[rec.id] = rec.seq
-
-    return fasta_dict
-
-def decode_CDS_sequences_ids(path_to_file):
-    """
-    Function to read a dict contained in pickle file and decode its values based
-    on polyline.
-    
-    Parameters
-    ----------
-    path_to_file : str
-        Path to the pickle file.
-        
-    Returns
-    -------
-    decoded_dict : dict
-        Contains hashed CDS as keys, and number id of the genome which
-        that CDS is present
-    
-    """
-    # Load pickle file
-    with open(path_to_file, "rb") as infile:
-        hash_table = pickle.load(infile)
-    # Decode the file
-    decoded_dict = {}
-    for key, value in hash_table.items():
-        decoded_dict[key] = itf.polyline_decoding(value)
-        
-    return decoded_dict
-
 def alignment_dict_to_file(blast_results_dict, file_path, write_type):
     """
     Writes alignments strings to file.
@@ -94,87 +38,41 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
     -------
     No return, writes or appends a file at the file_path
     """
-    # Write first column into TSV file
+    
+    header = ["Query\t",
+              "Subject\t",
+              "Query_length\t",
+              "Subject_length\t",
+              "Query_start\t",
+              "Query_end\t",
+              "Subject_start\t",
+              "Subject_end\t",
+              "Length\t",
+              "Score\t",
+              "Number_of_gaps\t",
+              "Pident\t",
+              "Prot_BSR\t",
+              "Prot_seq_Kmer_sim\t",
+              "Prot_seq_Kmer_cov\t",
+              "Cluster_frequency_in_genomes_query_cds\t",
+              "Cluster_frequency_in_genomes_subject_cds\t",
+              "Global_palign_all\t",
+              "Global_palign_pident_min\t",
+              "Global_palign_pident_max\t",
+              "Palign_local\t",
+              "Class\n"]
+    
+    # Write or append to the file
     with open(file_path, write_type) as report_file:
+        # Write the header only if the file is being created
         if write_type == 'w':
-            report_file.writelines(["Query\t",
-                                    "Subject\t",
-                                    "Query_length\t",
-                                    "Subject_length\t",
-                                    "Query_start\t",
-                                    "Query_end\t",
-                                    "Subject_start\t",
-                                    "Subject_end\t",
-                                    "Length\t",
-                                    "Score\t",
-                                    "Number_of_gaps\t",
-                                    "Pident\t",
-                                    "Prot_BSR\t",
-                                    "Prot_seq_Kmer_sim\t",
-                                    "Prot_seq_Kmer_cov\t",
-                                    "Cluster_frequency_in_genomes_query_cds\t",
-                                    "Cluster_frequency_in_genomes_subject_cds\t",
-                                    "Global_palign_all\t",
-                                    "Global_palign_pident_min\t",
-                                    "Global_palign_pident_max\t",
-                                    "Palign_local\t",
-                                    "Class\n"])
-        # Write all of the matches into TSV file
+            report_file.write('\t'.join(header) + '\n')
+        
+        # Write all the alignment data
         for results in blast_results_dict.values():
             for result in results.values():
                 for r in result.values():
-                    report_file.writelines('\t'.join([str(r) for r in r.values()]) + '\n')
-
-def translate_seq_deduplicate(seq_dict, path_to_write, count_seq):
-    """
-    Translates the DNA sequence to protein and verifies if that protein is alredy
-    present in the dict, thus ensuring that the dict contains deduplicated sequences,
-    it writes the sequences to a FASTA files and return the dict.
-    
-    Parameters
-    ----------
-    seq_dict : dict
-        Dict that contains sequence ID as key and the sequence as value.
-    path_to_write : str
-        Path to the file to create and write.
-    count_seq : bool
-        If there is need to print into stdout the number of processed sequences.
-        
-    Returns
-    -------
-    translation_dict : dict
-        Dict that contais sequence ID as key and translated sequence as value.
-    protein_hashes : dict
-        Dict that contais sequence hash as key and sequences IDs as values.
-    """
-    translation_dict = {}
-    protein_hashes = {}
-    if count_seq:
-        i = 1
-        total = len(seq_dict)
-    with open(path_to_write, 'w+') as translation:
-        for id_s, sequence in seq_dict.items():
-            if count_seq:
-                print(f"Translated {i}/{total} CDS")
-                i += 1
-            # Translate
-            protein_translation = str(sf.translate_dna(str(sequence),
-                                                       11,
-                                                       0,
-                                                       True)[0][0])
-            # Hash the sequence
-            prot_hash = sf.seq_to_hash(protein_translation)
-            # Find unique proteins
-            if prot_hash not in protein_hashes:
-                protein_hashes[prot_hash] = [id_s]
-                translation_dict[id_s] = protein_translation
-                translation.writelines('>'+id_s+"\n")
-                translation.writelines(protein_translation+"\n")
-            # Remember CDS with that protein hash for future
-            else:
-                protein_hashes[prot_hash].append(id_s)
-                
-    return translation_dict, protein_hashes
+                    report_file.write('\t'.join(map(str, r.values())) + '\n')
 
 def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
@@ -236,7 +134,7 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
             # Calculate total alignment for all of the fragments of BLASTn
             # if there more than one BLASTn alignments
             # For query and subject
-            for entry_id, result in blastn_results.items():
+            for entry_id, result in list(blastn_results.items()):
                 total_length = {}
                 # Sum all the intervals
                 for ref, intervals in representative_blast_results_coords_all[query][subject].items():
@@ -583,7 +481,7 @@ def write_processed_results_to_file(results_outcome, relationships, representati
         alignment_dict_to_file(write_dict, report_file_path, 'w')
             
 def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
-                          output_path, cpu):
+                          output_path, constants, cpu):
     """
     This function wraps up the results for this module by writing FASTAs files
     for the possible new loci to include into the schema and creates graphs for
@@ -675,8 +573,11 @@ def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
     for key, o_path in outcome_paths.items():
         trans_path = os.path.join(cds_outcome_trans, key + ".fasta")
         outcomes_trans[key] = trans_path
-        fasta_dict = fetch_fasta_dict(o_path, False)
-        trans_dict, _ = translate_seq_deduplicate(fasta_dict, trans_path, False)
+        fasta_dict = sf.fetch_fasta_dict(o_path, False)
+        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, trans_path,
+                                                        None,
+                                                        constants[5], 
+                                                        False)
 
     # Translate all clusters into their respective cluster file.
     # Create directories
@@ -687,8 +588,12 @@ def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
     for key, o_path in outcome_paths_reps.items():
         trans_path = os.path.join(cds_outcome_trans, key + ".fasta")
         outcomes_trans_reps[key] = trans_path
-        fasta_dict = fetch_fasta_dict(o_path, False)
-        trans_dict, _ = translate_seq_deduplicate(fasta_dict, trans_path, False)
+        fasta_dict = sf.fetch_fasta_dict(o_path, False)
+        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
+                                                        trans_path, 
+                                                        None,
+                                                        constants[5], 
+                                                        False)
 
     # Create graphs for all results and for each class.
     classes_tsv_path = os.path.join(output_path, 'blast_results_by_class')
@@ -711,7 +616,8 @@ def wrap_up_blast_results(results_outcome, not_included_cds, clusters,
                              ['Entries', 'Values'], False)
     return outcomes_trans_reps
 
-def process_schema(schema, outcomes_translations_reps, output_path, self_score_dict, cpu):
+def process_schema(schema, outcomes_translations_reps, output_path, self_score_dict,
+                   constants, cpu):
     """
     This function processes data related to the schema seed, importing, translating
     and BLASTing against the unclassified CDS clusters representatives to validate
@@ -753,8 +659,12 @@ def process_schema(schema, outcomes_translations_reps, output_path, self_score_d
             print(f"Translated {i}/{len_short_folder} CDS")
             loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
             i += 1
-            fasta_dict = fetch_fasta_dict(loci_short_path, False)
-            translation_dict, _ = translate_seq_deduplicate(fasta_dict, loci_short_translation_path, False)
+            fasta_dict = sf.fetch_fasta_dict(loci_short_path, False)
+            translation_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
+                                                                  loci_short_translation_path,
+                                                                  None,
+                                                                  constants[5],
+                                                                  False)
             
             for loci_id, sequence in translation_dict.items():
                 master_fasta.writelines(">"+loci_id+"\n")
@@ -813,11 +723,11 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Identifying CDS present in the schema...")
     cds_present = os.path.join(temp_folder,"3_cds_preprocess/cds_deduplication/distinct_cds_merged.hashtable")
     # Get dict of CDS and their sequence hashes.
-    decoded_sequences_ids = decode_CDS_sequences_ids(cds_present)
+    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
 
     print("Identifying CDS not present in the schema...")
     # Get dict with CDS ids as key and sequence as values.
-    not_included_cds = fetch_fasta_dict(file_path_cds, True)
+    not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
     total_cds = len(not_included_cds)
     print(f"Identified {total_cds} valid CDS not present in the schema.")
     # Filter by size.
@@ -827,6 +737,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 del not_included_cds[key]
         print(f"{len(not_included_cds)}/{total_cds} have size greater or equal to {constants[5]} bp.")
     else:
+        constants[5] = 0
         print("No size threshold was applied to the CDS filtering.")
 
     # Create directories.
@@ -857,11 +768,14 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Translate and deduplicate unclassified CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
     # the same hash will be added under that hash in protein_hashes.
-    cds_not_present_translation_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
+    cds_not_present_trans_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
+    cds_not_present_untrans_file_path = os.path.join(cds_output, "CDS_not_found_untranslated.fasta")
     # Translate and deduplicate protein sequences.
-    cds_translation_dict, protein_hashes = translate_seq_deduplicate(not_included_cds,
-                                                                     cds_not_present_translation_file_path,
-                                                                     True)
+    cds_translation_dict, protein_hashes, _ = sf.translate_seq_deduplicate(not_included_cds,
+                                                                           cds_not_present_trans_file_path,
+                                                                           cds_not_present_untrans_file_path,
+                                                                           constants[5],
+                                                                           True)
     # Print additional information about translations and deduplications.
     print(f"{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
 
@@ -1107,9 +1021,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Wrapping up BLAST results...")
     outcomes_translations_reps = wrap_up_blast_results(results_outcome, not_included_cds,
-                                                  clusters, results_output, cpu)
+                                                  clusters, results_output, constants, cpu)
     print("Reading schema loci short FASTA files...")
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
-    process_schema(schema, outcomes_translations_reps, results_output, self_score_dict, cpu)
+    process_schema(schema, outcomes_translations_reps, results_output, 
+                   self_score_dict, constants, cpu)
