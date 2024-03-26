@@ -369,3 +369,22 @@ def create_whitespace_string(input_string):
     """
     whitespace_string = " " * len(input_string)
     return whitespace_string
+
+def remove_empty_dicts_recursive(nested_dict):
+    """
+    Recursively removes empty dictionary entries from a nested dictionary.
+
+    Parameters:
+    nested_dict (dict): The nested dictionary.
+
+    Returns:
+    dict: The nested dictionary with empty dictionaries removed.
+    """
+    if isinstance(nested_dict, dict):
+        # Iterate through a copy of the keys to avoid dictionary size change during iteration
+        for key in list(nested_dict.keys()):
+            nested_dict[key] = remove_empty_dicts_recursive(nested_dict[key])
+            # Remove empty dictionaries (not considering numeric values like 0 as empty)
+            if not nested_dict[key] and not isinstance(nested_dict[key], (bool, int, float)):
+                del nested_dict[key]
+    return nested_dict

@@ -66,8 +66,7 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
     with open(file_path, write_type) as report_file:
         # Write the header only if the file is being created
         if write_type == 'w':
-            report_file.write('\t'.join(header) + '\n')
-        
+            report_file.write("".join(header))
         # Write all the alignment data
         for results in blast_results_dict.values():
             for result in results.values():
@@ -130,7 +129,6 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
             # related to blast database and sequences used.
             if bsr > 1.0:
                 bsr = float(round(bsr))
-                
             # Calculate total alignment for all of the fragments of BLASTn
             # if there more than one BLASTn alignments
             # For query and subject
@@ -218,68 +216,78 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
         """
         
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
-        
+
+    def if_processed():
+        if class_ == '1a':
+            results_outcome[class_].append([query, id_subject])
+            processed_cases.update([query, id_subject])
+        else:
+            if query not in processed_cases and id_subject not in processed_cases:
+                results_outcome[class_].append([query, id_subject])
+                processed_cases.update([query, id_subject])
+            else:
+                other_relationships[class_].append([query, id_subject])
+    
     results_outcome = {}
     
     # Create all of the classes
     classes_outcome = ['1a',
-                       '3a',
                        '1b',
-                       '1c',
                        '2a',
+                       '1c',
                        '2b',
-                       '3b',
-                       'drop']
+                       '3a',
+                       '3b',]
 
+    processed_cases = set()
+    other_relationships = {}
     for class_ in classes_outcome:
         results_outcome[class_] = []
+        other_relationships[class_] = []
     # Process results into classes
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
+                query_subject_freq = blastn_entry['frequency_in_genomes_query_cds']/blastn_entry['frequency_in_genomes_subject_cds']
+                subject_query_freq = blastn_entry['frequency_in_genomes_subject_cds']/blastn_entry['frequency_in_genomes_query_cds']
                 
                 if blastn_entry['global_palign_all'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
-                        results_outcome['1a'].append([query, id_subject])
                     # If BSR <0.6 verify if query cluster is the most prevalent
-                    elif blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
+                    elif min([query_subject_freq,subject_query_freq]) >= 0.1:
                         add_class_to_dict('1b')
-                        results_outcome['1b'].append([query, id_subject])
-                        
-                    # Ignore cases were 1b was already assigned or will be assigned
-                    elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
-                        add_class_to_dict('drop')
-                        results_outcome['drop'].append([query, id_subject])
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
-                        results_outcome['1c'].append([query, id_subject])
                 # Palign < 0.8        
                 else:
                     if blastn_entry['pident'] >= constants[1]:
                         # verify if query cluster is the most prevalent
-                        if blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds'] * 10:
+                        if min([query_subject_freq,subject_query_freq]) >= 0.1:
                             add_class_to_dict('2a')
-                            results_outcome['2a'].append([query, id_subject])
-                        # Ignore cases were 2a was already assigned or will be assigned
-                        elif blastn_entry['frequency_in_genomes_subject_cds'] >= blastn_entry['frequency_in_genomes_query_cds'] * 10:
-                            add_class_to_dict('drop')
-                            results_outcome['drop'].append([query, id_subject])
                         else:
                             add_class_to_dict('2b')
-                            results_outcome['2b'].append([query, id_subject])
                             
                     else:
                         if blastn_entry['global_palign_pident_max'] >= 0.8:
                             add_class_to_dict('3a')
-                            results_outcome['3a'].append([query, id_subject])
                         else:
                             add_class_to_dict('3b')
-                            results_outcome['3b'].append([query, id_subject])
-
-    return results_outcome, classes_outcome
+    
+    for class_ in classes_outcome:
+        class_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
+                                   for subject, entries in subjects.items()}
+                          for query, subjects in representative_blast_results.items()}
+        
+        itf.remove_empty_dicts_recursive(class_dict)
+        
+        for query, rep_blast_result in class_dict.items():
+            for id_subject, matches in rep_blast_result.items():
+                if_processed()
+                
+    return results_outcome, classes_outcome, other_relationships
 
 def process_classes(results_outcome):
     """
@@ -317,9 +325,7 @@ def process_classes(results_outcome):
     
     # Process all elements in other classes against each other
     for class_, results in results_outcome.items():
-        # Do not consider relationships in 1a because we just merge them between them
-        # into various clusters.
-        if class_ == '1a':
+        if class_ == '3b':
             continue
         # Iterate over results
         for result in results:
@@ -328,12 +334,6 @@ def process_classes(results_outcome):
             # Update relationships dictionary
             relationships[class_].setdefault(cluster_id, []).append(result)
 
-    # Remove entries that were added to Joined cluster
-    drop = itf.flatten_list(list(cluster_dict_1a.values()))
-    for class_, results in results_outcome.items():
-        if class_ in ['2a','2b','1c','3a','3b']:
-            results_outcome[class_] = [result for result in results
-                                       if result[0] not in drop]
     # Remove duplicates entries
     for class_, results in results_outcome.items():
         results_outcome[class_] = set([result[0] for result in results])
@@ -1006,8 +1006,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     report_file_path = os.path.join(results_output, "blast_all_matches.tsv")
     
     # Separate results into different classes.
-    results_outcome, classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
-                                                                                       constants)
+    results_outcome, classes_outcome, other_relationships = separate_blastn_results_into_classes(representative_blast_results,
+                                                                                                 constants)
     # Write all of the BLASTn results to a file.
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
