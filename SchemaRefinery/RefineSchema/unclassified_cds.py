@@ -309,8 +309,6 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
         Dict of the CDS to keep by each classification.
     relationships : dict
         Dict that contains relationships between various CDS and clusters.
-    cluster_dict_1a : dict
-        Joined clusters dict, these clusters contain various CDS representatives.
     """
     # Create variables.
     # Variable to add the CDS what will be kept by class.
@@ -370,9 +368,6 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
 
     # Create the joined cluster by joining by IDs.
     cds_to_keep['1a'] = {i+1: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join))}
-                         
-    # Create cluster_dict as separate variable.
-    cluster_dict_1a = cds_to_keep['1a']
             
     # And remove duplicates
     for class_, results in other_relationships.items():
@@ -390,7 +385,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
         # Iterate over results
         for result in results:
              # Identify the cluster ID, if it is joined id or CDS ID.
-            cluster_id = itf.identify_string_in_dict(result[1], cluster_dict_1a) or result[1]
+            cluster_id = itf.identify_string_in_dict(result[1], cds_to_keep['1a']) or result[1]
             # Update relationships dictionary.
             relationships[class_].setdefault(cluster_id, []).append(result)
 
@@ -399,10 +394,10 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
         for id_, r in list(relationship.items()):
             relationships[class_][id_] = itf.get_unique_sublists(r)
             
-    return cds_to_keep, relationships, cluster_dict_1a
+    return cds_to_keep, relationships
 
 def write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    cluster_dict_1a, classes_outcome, output_path):
+                                    classes_outcome, output_path):
     """
     Write the results from processed_classes into various files.
     
@@ -415,8 +410,6 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     representative_blast_results : dict
         Dict that contains representatibes BLAST results with all of the additional
         info.
-    cluster_dict_1a : dict
-        Dict containing the IDs as keys and CDS as values for each joine cluster.
     classes_outcome : list
         List of list that contains class IDS used in the next function.
     output_path : str
@@ -426,8 +419,6 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     -------
     No returns, writes files in output path.
     """
-    # Remove from dict the joined clusters.
-    cds_to_keep['1a'] = [cluster for cluster in cluster_dict_1a.values()]
     # Create directory
     blast_by_cluster_output = os.path.join(output_path, "blast_results_by_cluster")
     ff.create_directory(blast_by_cluster_output)
@@ -438,6 +429,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
             if class_ == '1a':
                 id_ = i + 1
                 cluster_type = 'joined_cluster'
+                cluster = cds[id_]
             else:
                 id_ = cluster
                 cluster = [cluster]
@@ -468,7 +460,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
             subject_ids = [subject_id[1] for subject_id in r_ids]
             
             # Get transformed values into the list (replaces CDS name for joined cluster ID).
-            transformed_query_ids = [itf.identify_string_in_dict(id_, cluster_dict_1a) or id_ for id_ in query_ids]
+            transformed_query_ids = [itf.identify_string_in_dict(id_, cds_to_keep['1a']) or id_ for id_ in query_ids]
             
             # Get entries based on BLAST.
             write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
@@ -513,7 +505,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     cluster_members_output = os.path.join(output_path, "joined_cluster_members")
     ff.create_directory(cluster_members_output)
     # Write files.
-    for cluster_id, cluster in cluster_dict_1a.items():
+    for cluster_id, cluster in cds_to_keep['1a'].items():
         cluster_output_path = os.path.join(cluster_members_output, f"Joined_cluster_{cluster_id}.txt")
         with open(cluster_output_path, 'w') as output:
             for c in cluster:
@@ -596,8 +588,11 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
             else:
                 cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_outcome_{group}.fasta")
                 outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
+            # to decrease the number of code lines just iterate over string id as a list
             if type(group) == str:
                 group = [group]
+            else:
+                group = cds_to_keep[outcome][group]
             i += 1
             with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
                 for rep_id in group:
@@ -1066,10 +1061,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, relationships, cluster_dict_1a] = process_classes(representative_blast_results, classes_outcome, drop_list)
+    [cds_to_keep, relationships] = process_classes(representative_blast_results, classes_outcome, drop_list)
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    cluster_dict_1a, classes_outcome, results_output)
+                                    classes_outcome, results_output)
     
     print("Wrapping up BLAST results...")
     outcomes_translations_reps = wrap_up_blast_results(cds_to_keep, not_included_cds,
