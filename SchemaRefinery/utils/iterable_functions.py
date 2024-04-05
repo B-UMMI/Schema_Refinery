@@ -14,7 +14,7 @@ def join_list(lst, delimiter):
 
     Returns
     -------
-    return : str
+    joined_list : str
         A single string with all elements in the input list joined by the specified delimiter.
     """
 
@@ -220,7 +220,7 @@ def get_unique_sublists(list_of_lists):
 
     Returns
     -------
-    return : list
+    unique_sublists : list
         List containing unique sublists.
     """
     seen = set()
@@ -381,7 +381,7 @@ def remove_empty_dicts_recursive(nested_dict):
 
     Returns
     -------
-    return : dict
+    nested_dict : dict
         The nested dictionary with empty dictionaries removed.
     """
     if isinstance(nested_dict, dict):
