@@ -374,11 +374,15 @@ def remove_empty_dicts_recursive(nested_dict):
     """
     Recursively removes empty dictionary entries from a nested dictionary.
 
-    Parameters:
-    nested_dict (dict): The nested dictionary.
+    Parameters
+    ----------
+    nested_dict : dict
+        The nested dictionary.
 
-    Returns:
-    dict: The nested dictionary with empty dictionaries removed.
+    Returns
+    -------
+    return : dict
+        The nested dictionary with empty dictionaries removed.
     """
     if isinstance(nested_dict, dict):
         # Iterate through a copy of the keys to avoid dictionary size change during iteration
