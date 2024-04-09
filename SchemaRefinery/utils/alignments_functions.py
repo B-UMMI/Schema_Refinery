@@ -157,7 +157,7 @@ def process_alignments_for_graphs(alignments_dict: dict):
 
 def get_alignments_dict(blast_results_file):
     """
-    organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
+    Organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
     and value = a list of all alignments for that key correspondence.
 
     Parameters
