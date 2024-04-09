@@ -336,7 +336,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
         lines = f.readlines()
         i = 1
         for line in lines:
-            
+            # Extract the columns into the variables
             cols = line.replace('\n', '').split("\t")
             query = cols[0]
             subject = cols[1]
@@ -350,7 +350,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
             score = cols[9]
             gaps = cols[10]
             pident = cols[11]
-
+            # Save the dict
             value = {
                     "query": query,
                     "subject": subject,
