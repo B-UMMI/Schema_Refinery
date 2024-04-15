@@ -339,32 +339,26 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
                 # Find cases that were already processed or to be dropped.
                 processed_cases = itf.flatten_list([[c for c in cds] for cds in cds_to_keep.values()])
                 processed_cases.append(drop_list)
-                
-                add_relationship = False
                 # Process all of the cases that have 1a classification.
+                # even if they may be in drop_list
                 if class_ == '1a':
                     cds_to_keep[class_].update([query, id_subject])
                     cluster_to_join.append([query, id_subject])
                 # All of the other classifications
-                elif class_ not in ['3a','3b']:
+                else:
                     # Get those cases that query and subject were not processed.
                     if query not in processed_cases and id_subject not in processed_cases:
                         cds_to_keep[class_].update([query, id_subject])
-                        add_relationship = True
                     # If query was not processed.
                     elif query not in processed_cases:
                         cds_to_keep[class_].add(query)
-                        add_relationship = True
                     # If subject was not processed.
                     elif id_subject not in processed_cases:
                         cds_to_keep[class_].add(id_subject)
-                        add_relationship = True
                     # If to add relationship between different CDS and clusters.
-                    if add_relationship:
+                    # Keep only 3a as they are the one relevant for the output
+                    if query not in drop_list or id_subject not in drop_list and class_ == '3a':
                         other_relationships[class_].append([query, id_subject])
-                # Relationships for other classes.
-                else:
-                    other_relationships[class_].append([query, id_subject])
 
     # Create the joined cluster by joining by IDs.
     cds_to_keep['1a'] = {i+1: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join))}
@@ -498,8 +492,10 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                     else:
                         relationships_report_file.write(f"\t{'CDS' if type(query_id) == str else 'Cluster'} {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
                     
-                    seen = query_id
-                
+                    if type(query_id) == str:
+                        seen = query_id
+                    else:
+                        seen = query_ids[i]
     # Write all of the ids inside Joined cluster.
     # Create directory .
     cluster_members_output = os.path.join(output_path, "joined_cluster_members")
@@ -570,46 +566,42 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
     print("Writting FASTA file for possible new loci...")
     outcome_paths = {}
     outcome_paths_reps = {}
-    for outcome in cds_to_keep:
+    for class_, cds_list in cds_to_keep.items():
         i = 1
-        for group in cds_to_keep[outcome]:
-            # Skip if classfication is drop.
-            if outcome == 'drop':
-                continue
-            if outcome == '1a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_outcome_{i}.fasta")
-                outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
-            elif outcome == '3a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"for_reference_3a_outcome_{group}.fasta")
-                outcome_paths[f"For_reference_3a_outcome_{group}"] = cds_outcome_results_fastas_file
-            elif outcome == '3b':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"remaining_3b_outcome_{group}.fasta")
-                outcome_paths[f"Remaining_3b_outcome_{group}"] = cds_outcome_results_fastas_file
+        for cds in cds_list:
+            if class_ == '1a':
+                class_name_cds = f"joined_{i}"
+            elif class_ == '3a':
+                class_name_cds = f"for_reference_{class_}_{cds}"  
+            elif class_ == '3b':
+                class_name_cds = f"thrash_{class_}_{cds}"
             else:
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_outcome_{group}.fasta")
-                outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
+                class_name_cds = f"retained_{class_}_{cds}"
+            
+            # Create the files paths
+            cds_group_fasta_file = os.path.join(cds_outcome_results_fastas_folder, class_name_cds + '.fasta')
+            outcome_paths[class_name_cds] = cds_group_fasta_file
+            
+            cds_group_reps_file = os.path.join(cds_outcome_results_reps_fastas_folder, class_name_cds + '.fasta')
+            outcome_paths_reps[class_name_cds] = cds_group_reps_file
             # to decrease the number of code lines just iterate over string id as a list
-            if type(group) == str:
-                group = [group]
+            if type(cds) == str:
+                cds = [cds]
             else:
-                group = cds_to_keep[outcome][group]
+                cds = cds_to_keep[class_][cds]
+            # Add to counter
             i += 1
-            with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
-                for rep_id in group:
+            # Write all of the CDS in the group + all of the sequences in the
+            # cluster of those representatives
+            with open(cds_group_fasta_file, 'w') as fasta_file:
+                for rep_id in cds:
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
                     for cds_id in cds_ids:
                         fasta_file.writelines(f">{cds_id}\n")
                         fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
-               
-            if outcome == '1a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_reps_fastas_folder, f"Joined_{i}.fasta")
-                outcome_paths_reps[f"Joined_{i}"] = cds_outcome_results_fastas_file
-            else:
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_reps_fastas_folder, f"Retained_{group}.fasta")
-                outcome_paths_reps[f"{group[0]}"] = cds_outcome_results_fastas_file
-                
-            with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
-                for rep_id in group:
+            # Write the representatives CDS
+            with open(cds_group_reps_file, 'w') as fasta_file:
+                for rep_id in cds:
                     fasta_file.writelines(f">{rep_id}\n")
                     fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
                     
