@@ -344,6 +344,10 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
                 if class_ == '1a':
                     cds_to_keep[class_].update([query, id_subject])
                     cluster_to_join.append([query, id_subject])
+                    # Since query and subject CDS are kept inside joined clusters
+                    # then remove them from drop_list
+                    drop_list = [x for x in drop_list if x not in [query, id_subject]]
+                    
                 # All of the other classifications
                 else:
                     # Get those cases that query and subject were not processed.
@@ -357,7 +361,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
                         cds_to_keep[class_].add(id_subject)
                     # If to add relationship between different CDS and clusters.
                     # Keep only 3a as they are the one relevant for the output
-                    if query not in drop_list or id_subject not in drop_list and class_ == '3a':
+                    if (query not in drop_list or id_subject not in drop_list) and class_ == '3a':
                         other_relationships[class_].append([query, id_subject])
 
     # Create the joined cluster by joining by IDs.
