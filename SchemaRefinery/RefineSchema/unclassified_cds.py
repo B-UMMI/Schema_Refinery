@@ -1006,6 +1006,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     total_blasts = len(blastp_runs_to_do)
     bsr_values = {}
     self_score_dict = {}
+    none_blastp = {}
     # Create query entries
     for query in blastp_runs_to_do:
         bsr_values[query] = {}
@@ -1022,6 +1023,13 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                 rep_matches_prot.values()):
             
             filtered_alignments_dict, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True)
+            
+            # Get IDS of entries that matched with BLASTn but didnt match with BLASTp
+            blastn_entries = list(representative_blast_results[res[0]].keys())
+            blastp_entries = filtered_alignments_dict.values()
+            if len(blastn_entries) != len(blastp_entries):
+                none_blastp[res[0]] = list(set(blastn_entries).symmetric_difference(set(blastp_entries)))
+
             # Save self-score
             self_score_dict[res[0]] = self_score
             # Since BLAST may find several local aligments choose the largest one to calculate BSR.
