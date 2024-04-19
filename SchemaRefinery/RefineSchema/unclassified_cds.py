@@ -550,7 +550,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
         
     Returns
     -------
-    outcomes_trans_reps : dict
+    groups_trans_reps : dict
         Contains the translations of the representatives.
     """
     # Create directories.
@@ -565,11 +565,32 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
     
     cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_outcomes_reps_fastas")
     ff.create_directory(cds_outcome_results_reps_fastas_folder)
-    
+
+    # Display info about the results obtained from processing the classes.
+    # Get the total number of CDS reps considered for classification.
+    count_cases = {}
+    for class_, cds_list in cds_to_keep.items():
+        if class_ == '1a':
+            count_cases[class_] = len(itf.flatten_list(cds_list.values()))
+        else:
+            count_cases[class_] = len(cds_list)
+    # Write info about the classification results.
+    print(f"{sum(count_cases.values())} CDS representatives have been grouped into"
+          f" {len(itf.flatten_list(cds_to_keep.values()))} groups")
+    for class_, count in count_cases.items():
+        if class_ == '3b':
+            print(f"\tOut of those groups, {count} CDS are classified as {class_}"
+                  " and not considered further.")
+        elif class_ == '1a':
+            print(f"\tOut of those groups, {count} CDS are classified as {class_}"
+                  f" and are contained in {len(cds_to_keep['1a'])} joined groups.") 
+        else:
+            print(f"\tOut of those groups, {count} CDS are classified as {class_}.")
+
     # Write FASTA files for each CDS group to join or retain.
     print("Writting FASTA file for possible new loci...")
-    outcome_paths = {}
-    outcome_paths_reps = {}
+    groups_paths = {}
+    groups_paths_reps = {}
     for class_, cds_list in cds_to_keep.items():
         i = 1
         for cds in cds_list:
@@ -582,12 +603,14 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
             else:
                 class_name_cds = f"retained_{class_}_{cds}"
             
-            # Create the files paths
-            cds_group_fasta_file = os.path.join(cds_outcome_results_fastas_folder, class_name_cds + '.fasta')
-            outcome_paths[class_name_cds] = cds_group_fasta_file
-            
+            # Create the files paths for all of the FASTAS sequences for the group
+            # and only the representatives
+            cds_group_fasta_file = os.path.join(cds_outcome_results_fastas_folder, class_name_cds + '.fasta')    
             cds_group_reps_file = os.path.join(cds_outcome_results_reps_fastas_folder, class_name_cds + '.fasta')
-            outcome_paths_reps[class_name_cds] = cds_group_reps_file
+            # We want to save only retained or joined groups
+            if class_ not in ['3a', '3b']:
+                groups_paths[class_name_cds] = cds_group_fasta_file
+                groups_paths_reps[class_name_cds] = cds_group_reps_file
             # to decrease the number of code lines just iterate over string id as a list
             if type(cds) == str:
                 cds = [cds]
@@ -596,7 +619,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
             # Add to counter
             i += 1
             # Write all of the CDS in the group + all of the sequences in the
-            # cluster of those representatives
+            # cluster of those representatives.
             with open(cds_group_fasta_file, 'w') as fasta_file:
                 for rep_id in cds:
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
@@ -607,17 +630,16 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
             with open(cds_group_reps_file, 'w') as fasta_file:
                 for rep_id in cds:
                     fasta_file.writelines(f">{rep_id}\n")
-                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
-                    
+                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")        
     # Create directories.
-    cds_outcome_trans = os.path.join(fasta_folder, "cds_outcome_translation_deduplicated")
-    ff.create_directory(cds_outcome_trans)
+    groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation_deduplicated")
+    ff.create_directory(groups_trans_folder)
     # Translate possible new loci.
-    outcomes_trans = {}
-    for key, o_path in outcome_paths.items():
-        trans_path = os.path.join(cds_outcome_trans, key + ".fasta")
-        outcomes_trans[key] = trans_path
-        fasta_dict = sf.fetch_fasta_dict(o_path, False)
+    groups_trans = {}
+    for key, group_path in groups_paths.items():
+        trans_path = os.path.join(groups_trans_folder, key + ".fasta")
+        groups_trans[key] = trans_path
+        fasta_dict = sf.fetch_fasta_dict(group_path, False)
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, trans_path,
                                                         None,
                                                         constants[5], 
@@ -625,14 +647,14 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
 
     # Translate all clusters into their respective cluster file.
     # Create directories
-    cds_outcome_trans_rep = os.path.join(fasta_folder, "cds_outcome_translation_reps_deduplicated")
-    ff.create_directory(cds_outcome_trans_rep)
+    group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps_deduplicated")
+    ff.create_directory(group_trans_rep_folder)
     # Translate possible new loci representatives.
-    outcomes_trans_reps = {}
-    for key, o_path in outcome_paths_reps.items():
-        trans_path = os.path.join(cds_outcome_trans, key + ".fasta")
-        outcomes_trans_reps[key] = trans_path
-        fasta_dict = sf.fetch_fasta_dict(o_path, False)
+    groups_trans_reps = {}
+    for key, group_path in groups_paths_reps.items():
+        trans_path = os.path.join(group_trans_rep_folder, key + ".fasta")
+        groups_trans_reps[key] = trans_path
+        fasta_dict = sf.fetch_fasta_dict(group_path, False)
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
                                                         trans_path, 
                                                         None,
@@ -658,9 +680,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
                              ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
                               'Prot_seq_Kmer_cov'],
                              ['Entries', 'Values'], False)
-    return outcomes_trans_reps
+    return groups_trans_reps
 
-def process_schema(schema, outcomes_translations_reps, output_path, self_score_dict,
+def process_schema(schema, groups_trans_reps, output_path, self_score_dict,
                    constants, cpu):
     """
     This function processes data related to the schema seed, importing, translating
@@ -671,7 +693,7 @@ def process_schema(schema, outcomes_translations_reps, output_path, self_score_d
     ----------
     schema : str
         Path to the schema seed folder.
-    outcomes_translations_reps : dict
+    groups_trans_reps : dict
         Dict with the paths to the translations of the unclassified CDS clusters.
     output_path : str
         Path were to write the results of this function.
@@ -720,16 +742,16 @@ def process_schema(schema, outcomes_translations_reps, output_path, self_score_d
     bsr_values = {}
     
     # Create query entries.
-    for query in outcomes_translations_reps:
+    for query in groups_trans_reps:
         bsr_values[query] = {}
     i = 1
-    total = len(outcomes_translations_reps)
+    total = len(groups_trans_reps)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                outcomes_translations_reps, 
+                                groups_trans_reps, 
                                 repeat('blastp'),
                                 repeat(blastp_results_path),
-                                repeat(outcomes_translations_reps),
+                                repeat(groups_trans_reps),
                                 repeat(master_loci_short_translation_path)):
             
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False)
@@ -1074,11 +1096,11 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                     classes_outcome, results_output)
     
     print("Wrapping up BLAST results...")
-    outcomes_translations_reps = wrap_up_blast_results(cds_to_keep, not_included_cds,
+    groups_trans_reps = wrap_up_blast_results(cds_to_keep, not_included_cds,
                                                        clusters, results_output, constants, cpu)
     print("Reading schema loci short FASTA files...")
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
-    process_schema(schema, outcomes_translations_reps, results_output, 
+    process_schema(schema, groups_trans_reps, results_output, 
                    self_score_dict, constants, cpu)
