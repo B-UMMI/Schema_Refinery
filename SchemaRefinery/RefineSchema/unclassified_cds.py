@@ -1026,7 +1026,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
             
             # Get IDS of entries that matched with BLASTn but didnt match with BLASTp
             blastn_entries = list(representative_blast_results[res[0]].keys())
-            blastp_entries = filtered_alignments_dict.values()
+            if filtered_alignments_dict:
+                blastp_entries = list(filtered_alignments_dict[res[0]].keys())
+            else:
+                blastp_entries = {}
             if len(blastn_entries) != len(blastp_entries):
                 none_blastp[res[0]] = list(set(blastn_entries).symmetric_difference(set(blastp_entries)))
 
