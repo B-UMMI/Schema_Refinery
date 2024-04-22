@@ -297,7 +297,8 @@ def process_blast_results(blast_results_file, constants_threshold):
         
     return (alignment_strings, filtered_alignments_dict)
 
-def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold, get_coords, get_self_score):
+def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
+                                           get_coords, get_self_score):
     """
     Reads BLAST results file and extracts the necessary items, based on input
     also fetches the coordinates based on query sequences and self-score contained
