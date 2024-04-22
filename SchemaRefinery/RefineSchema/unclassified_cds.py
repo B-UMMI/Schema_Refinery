@@ -800,9 +800,9 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
         BLASTp is performed based on results of the BLASTn, since BLASTn result
         are added indiscriminately inside a dict, this multi_fasta dict allows 
         to destinguish which CDS that had matched with BLASTn and to add them inside 
-        the common group protein file to perform BLASTp so the results of BLASTp
-        are more compacted and the results file represent their original input
-        group.
+        the common group protein FASTA file to perform BLASTp so the results of 
+        BLASTp are more compacted and the results file represent their original 
+        input group.
     self_score_dict : dict
         This dict contains the self-score values for all of the CDSs that are
         processed in this function.
