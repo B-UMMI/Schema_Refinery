@@ -116,12 +116,16 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
         for subject, blastn_results in list(subjects_dict.items()):
             # Some results may not have kmers matches or BSR values so put them
             # as 0
-            if subject in reps_kmers_sim[query]:
-                sim, cov = reps_kmers_sim[query][subject]
+            if reps_kmers_sim:
+                if subject in reps_kmers_sim[query]:
+                    sim, cov = reps_kmers_sim[query][subject]
+                else:
+                    sim = 0
+                    cov = 0
             else:
-                sim = 0
-                cov = 0
-            
+                sim = '-'
+                cov = '-'
+
             # Get BSR value, if not in query return 0, meaning that even though
             # there was BLASTn match no BLASTp match was made.
             bsr = bsr_values[query].get(subject, 0)
@@ -339,32 +343,30 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
                 # Find cases that were already processed or to be dropped.
                 processed_cases = itf.flatten_list([[c for c in cds] for cds in cds_to_keep.values()])
                 processed_cases.append(drop_list)
-                
-                add_relationship = False
                 # Process all of the cases that have 1a classification.
+                # even if they may be in drop_list
                 if class_ == '1a':
                     cds_to_keep[class_].update([query, id_subject])
                     cluster_to_join.append([query, id_subject])
+                    # Since query and subject CDS are kept inside joined clusters
+                    # then remove them from drop_list
+                    drop_list = [x for x in drop_list if x not in [query, id_subject]]
+                    
                 # All of the other classifications
-                elif class_ not in ['3a','3b']:
+                else:
                     # Get those cases that query and subject were not processed.
                     if query not in processed_cases and id_subject not in processed_cases:
                         cds_to_keep[class_].update([query, id_subject])
-                        add_relationship = True
                     # If query was not processed.
                     elif query not in processed_cases:
                         cds_to_keep[class_].add(query)
-                        add_relationship = True
                     # If subject was not processed.
                     elif id_subject not in processed_cases:
                         cds_to_keep[class_].add(id_subject)
-                        add_relationship = True
                     # If to add relationship between different CDS and clusters.
-                    if add_relationship:
+                    # Keep only 3a as they are the one relevant for the output
+                    if (query not in drop_list or id_subject not in drop_list) and class_ == '3a':
                         other_relationships[class_].append([query, id_subject])
-                # Relationships for other classes.
-                else:
-                    other_relationships[class_].append([query, id_subject])
 
     # Create the joined cluster by joining by IDs.
     cds_to_keep['1a'] = {i+1: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join))}
@@ -408,7 +410,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     relationships : dict
         Dict that contains relationships between various clusters.
     representative_blast_results : dict
-        Dict that contains representatibes BLAST results with all of the additional
+        Dict that contains BLAST results of the representatives with all of the additional
         info.
     classes_outcome : list
         List of list that contains class IDS used in the next function.
@@ -498,8 +500,10 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                     else:
                         relationships_report_file.write(f"\t{'CDS' if type(query_id) == str else 'Cluster'} {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
                     
-                    seen = query_id
-                
+                    if type(query_id) == str:
+                        seen = query_id
+                    else:
+                        seen = query_ids[i]
     # Write all of the ids inside Joined cluster.
     # Create directory .
     cluster_members_output = os.path.join(output_path, "joined_cluster_members")
@@ -525,14 +529,12 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
         # Write individual class to file.
         alignment_dict_to_file(write_dict, report_file_path, 'w')
             
-def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
-                          output_path, constants, cpu):
+def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
+                          constants, cpu):
     """
-    This function wraps up the results for this module by writing FASTAs files
-    for the possible new loci to include into the schema and creates graphs for
-    each results group. It also translates schema short FASTAs into proteins
-    and the possible new loci, to calculate the BSR values to see if those
-    possible new loci are already present in the schema.
+    This function wraps up the results for processing of the unclassified CDSs
+    by writing FASTAs files for the possible new loci to include into the schema
+    and creates graphs for each results group.
     
     Parameters
     ----------
@@ -550,8 +552,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
         
     Returns
     -------
-    outcomes_trans_reps : dict
-        Contains the translations of the representatives.
+    groups_paths_reps : dict
+        Dict that contains as Key the ID of each group while the value is the
+        path to the FASTA file that contains its nucleotide sequences.
+    reps_trans_dict_cds : dict
+        Dict that contais the translations of all the CDSs inside the various
+        groups.
     """
     # Create directories.
     cds_outcome_results_graphs = os.path.join(output_path, "Blast_results_outcomes_graphs")
@@ -565,63 +571,82 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
     
     cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_outcomes_reps_fastas")
     ff.create_directory(cds_outcome_results_reps_fastas_folder)
-    
+
+    # Display info about the results obtained from processing the classes.
+    # Get the total number of CDS reps considered for classification.
+    count_cases = {}
+    for class_, cds_list in cds_to_keep.items():
+        if class_ == '1a':
+            count_cases[class_] = len(itf.flatten_list(cds_list.values()))
+        else:
+            count_cases[class_] = len(cds_list)
+    # Write info about the classification results.
+    print(f"{sum(count_cases.values())} CDS representatives have been grouped into"
+          f" {len(itf.flatten_list(cds_to_keep.values()))} groups")
+    for class_, count in count_cases.items():
+        if class_ == '3b':
+            print(f"\tOut of those groups, {count} CDS are classified as {class_}"
+                  " and not considered further.")
+        elif class_ == '1a':
+            print(f"\tOut of those groups, {count} CDS are classified as {class_}"
+                  f" and are contained in {len(cds_to_keep['1a'])} joined groups.") 
+        else:
+            print(f"\tOut of those groups, {count} CDS are classified as {class_}.")
+
     # Write FASTA files for each CDS group to join or retain.
     print("Writting FASTA file for possible new loci...")
-    outcome_paths = {}
-    outcome_paths_reps = {}
-    for outcome in cds_to_keep:
+    groups_paths = {}
+    groups_paths_reps = {}
+    for class_, cds_list in cds_to_keep.items():
         i = 1
-        for group in cds_to_keep[outcome]:
-            # Skip if classfication is drop.
-            if outcome == 'drop':
-                continue
-            if outcome == '1a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Joined_outcome_{i}.fasta")
-                outcome_paths[f"Joined_{outcome}_{i}"] = cds_outcome_results_fastas_file
-            elif outcome == '3a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"for_reference_3a_outcome_{group}.fasta")
-                outcome_paths[f"For_reference_3a_outcome_{group}"] = cds_outcome_results_fastas_file
-            elif outcome == '3b':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"remaining_3b_outcome_{group}.fasta")
-                outcome_paths[f"Remaining_3b_outcome_{group}"] = cds_outcome_results_fastas_file
+        for cds in cds_list:
+            if class_ == '1a':
+                class_name_cds = f"joined_{i}"
+            elif class_ == '3a':
+                class_name_cds = f"for_reference_{class_}_{cds}"  
+            elif class_ == '3b':
+                class_name_cds = f"thrash_{class_}_{cds}"
             else:
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_fastas_folder, f"Retained_outcome_{group}.fasta")
-                outcome_paths[f"Retained_{outcome}_{group}"] = cds_outcome_results_fastas_file
+                class_name_cds = f"retained_{class_}_{cds}"
+            
+            # Create the files paths for all of the FASTAS sequences for the group
+            # and only the representatives
+            cds_group_fasta_file = os.path.join(cds_outcome_results_fastas_folder, class_name_cds + '.fasta')    
+            cds_group_reps_file = os.path.join(cds_outcome_results_reps_fastas_folder, class_name_cds + '.fasta')
+            # We want to save only retained or joined groups
+            if class_ not in ['3a', '3b']:
+                groups_paths[class_name_cds] = cds_group_fasta_file
+                groups_paths_reps[class_name_cds] = cds_group_reps_file
             # to decrease the number of code lines just iterate over string id as a list
-            if type(group) == str:
-                group = [group]
+            if type(cds) == str:
+                cds = [cds]
             else:
-                group = cds_to_keep[outcome][group]
+                cds = cds_to_keep[class_][cds]
+            # Add to counter
             i += 1
-            with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
-                for rep_id in group:
+            # Write all of the CDS in the group + all of the sequences in the
+            # cluster of those representatives.
+            with open(cds_group_fasta_file, 'w') as fasta_file:
+                for rep_id in cds:
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
                     for cds_id in cds_ids:
                         fasta_file.writelines(f">{cds_id}\n")
                         fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
-               
-            if outcome == '1a':
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_reps_fastas_folder, f"Joined_{i}.fasta")
-                outcome_paths_reps[f"Joined_{i}"] = cds_outcome_results_fastas_file
-            else:
-                cds_outcome_results_fastas_file = os.path.join(cds_outcome_results_reps_fastas_folder, f"Retained_{group}.fasta")
-                outcome_paths_reps[f"{group[0]}"] = cds_outcome_results_fastas_file
-                
-            with open(cds_outcome_results_fastas_file, 'w') as fasta_file:
-                for rep_id in group:
+            # Write the representatives CDS
+            with open(cds_group_reps_file, 'w') as fasta_file:
+                for rep_id in cds:
                     fasta_file.writelines(f">{rep_id}\n")
-                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
-                    
+                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")       
+
     # Create directories.
-    cds_outcome_trans = os.path.join(fasta_folder, "cds_outcome_translation_deduplicated")
-    ff.create_directory(cds_outcome_trans)
+    groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation_deduplicated")
+    ff.create_directory(groups_trans_folder)
     # Translate possible new loci.
-    outcomes_trans = {}
-    for key, o_path in outcome_paths.items():
-        trans_path = os.path.join(cds_outcome_trans, key + ".fasta")
-        outcomes_trans[key] = trans_path
-        fasta_dict = sf.fetch_fasta_dict(o_path, False)
+    groups_trans = {}
+    for key, group_path in groups_paths.items():
+        trans_path = os.path.join(groups_trans_folder, key + ".fasta")
+        groups_trans[key] = trans_path
+        fasta_dict = sf.fetch_fasta_dict(group_path, False)
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, trans_path,
                                                         None,
                                                         constants[5], 
@@ -629,19 +654,22 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
 
     # Translate all clusters into their respective cluster file.
     # Create directories
-    cds_outcome_trans_rep = os.path.join(fasta_folder, "cds_outcome_translation_reps_deduplicated")
-    ff.create_directory(cds_outcome_trans_rep)
+    group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps_deduplicated")
+    ff.create_directory(group_trans_rep_folder)
     # Translate possible new loci representatives.
-    outcomes_trans_reps = {}
-    for key, o_path in outcome_paths_reps.items():
-        trans_path = os.path.join(cds_outcome_trans, key + ".fasta")
-        outcomes_trans_reps[key] = trans_path
-        fasta_dict = sf.fetch_fasta_dict(o_path, False)
+    groups_trans_reps_paths = {}
+    reps_trans_dict_cds = {}
+    for key, group_path in groups_paths_reps.items():
+        trans_path = os.path.join(group_trans_rep_folder, key + ".fasta")
+        groups_trans_reps_paths[key] = trans_path
+        fasta_dict = sf.fetch_fasta_dict(group_path, False)
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
                                                         trans_path, 
                                                         None,
                                                         constants[5], 
                                                         False)
+        for id_, sequence in trans_dict.items():
+            reps_trans_dict_cds[id_] = sequence
 
     # Create graphs for all results and for each class.
     classes_tsv_path = os.path.join(output_path, 'blast_results_by_class')
@@ -662,31 +690,40 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
                              ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
                               'Prot_seq_Kmer_cov'],
                              ['Entries', 'Values'], False)
-    return outcomes_trans_reps
+    return groups_paths_reps, reps_trans_dict_cds
 
-def process_schema(schema, outcomes_translations_reps, output_path, self_score_dict,
-                   constants, cpu):
+def process_schema(schema, groups_paths_reps, results_output, self_score_dict, reps_trans_dict_cds,
+                   constants, cpu, cds_to_keep):
     """
     This function processes data related to the schema seed, importing, translating
-    and BLASTing against the unclassified CDS clusters representatives to validate
-    them.
+    and BLASTing against the unclassified CDS clusters representatives groups to
+    validate them.
     
     Parameters
     ----------
     schema : str
         Path to the schema seed folder.
-    outcomes_translations_reps : dict
+    groups_trans_reps : dict
         Dict with the paths to the translations of the unclassified CDS clusters.
-    output_path : str
+    results_output : str
         Path were to write the results of this function.
-    self_score : dict
+    self_score_dict : dict
         Self-score for BSR calculation of the unclassified CDS reps to consider.
+    reps_trans_dict_cds : dict
+        Dict that contains the translations for each CDS.
+    constants : list
+        Contains the constants to be used in this function.
     cpu : int
         Number of CPUs to use during multi processing.
-    
+    cds_to_keep : dict     
+        Dict of the CDS to keep by each classification.
+
     Returns
     -------
-    
+    representative_blast_results : dict
+        Dict that contains BLAST results of the representatives with all of the additional
+        info.
+
     """
     # Get all of the schema loci short FASTA files path.
     schema_short_path = os.path.join(schema, 'short')
@@ -694,64 +731,276 @@ def process_schema(schema, outcomes_translations_reps, output_path, self_score_d
                          for loci_path in os.listdir(schema_short_path) 
                          if loci_path.endswith('.fasta')}
     # Create a folder for short translations.
-    short_translation_folder = os.path.join(output_path, "short_translation_folder")
+    short_translation_folder = os.path.join(results_output, "short_translation_folder")
     ff.create_directory(short_translation_folder)
-    master_loci_short_translation_path = os.path.join(short_translation_folder, "master_short_loci.fasta")
+    master_loci_short_path = os.path.join(short_translation_folder, "master_short_loci.fasta")
     
     # Translate each short loci and write to master fasta.
     i = 1
     len_short_folder = len(schema_loci_short)
-    with open(master_loci_short_translation_path, 'w') as master_fasta:
+    with open(master_loci_short_path, 'w') as master_fasta:
         
         for loci, loci_short_path in schema_loci_short.items():
-            print(f"Translated {i}/{len_short_folder} CDS")
-            loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
+            print(f"Added to master Fasta file and translated: {i}/{len_short_folder}")
             i += 1
             fasta_dict = sf.fetch_fasta_dict(loci_short_path, False)
+            
+            for loci_id, sequence in fasta_dict.items():
+                master_fasta.writelines(">"+loci_id+"\n")
+                master_fasta.writelines(str(sequence)+"\n")
+            
+            loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
             translation_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
                                                                   loci_short_translation_path,
                                                                   None,
                                                                   constants[5],
                                                                   False)
-            
             for loci_id, sequence in translation_dict.items():
-                master_fasta.writelines(">"+loci_id+"\n")
-                master_fasta.writelines(str(sequence)+"\n")
+                reps_trans_dict_cds[loci_id] = sequence
 
-    # Run BLASTp between new possible loci vs existing loci (all new loci sequences vs loci short FASTA).
-    blastp_results_path = os.path.join(output_path, "blastp_results_vs_loci_results")
-    ff.create_directory(blastp_results_path)
-    bsr_values = {}
+    [representative_blast_results,
+     representative_blast_results_coords_all,
+     representative_blast_results_coords_pident,
+     bsr_values,
+     _] = run_blasts(master_loci_short_path, groups_paths_reps, reps_trans_dict_cds,
+                     groups_paths_reps, results_output, constants, cpu, cds_to_keep['1a'],
+                     self_score_dict)
+
+    return representative_blast_results
+
+def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dict,
+               rep_paths_nuc, output_dir, constants, cpu, multi_fasta = None,
+               self_score_dict = None):
+    """
+    This functions runs both BLASTn and Subsequently BLASTp based on results of
+    BLASTn.
     
-    # Create query entries.
-    for query in outcomes_translations_reps:
-        bsr_values[query] = {}
+    Parameters
+    ----------
+    master_fasta_to_blast_against : str
+        Path to the master FASTA file that contains all of the nucleotide sequences
+        to BLASTn against.
+    cds_to_blast : list
+        A list that contains all of the ids to BLASTn against master FASTA file.
+    reps_translation_dict : dict
+        Dict that contains the translations of all the sequences in the master file
+        and the CDSs to BLASTn against master file.
+    rep_paths_nuc : dict
+        Dict that contains the ID of the CDSs to BLASTn against master file
+        while the value is the path to the FASTA that contains those CDSs.
+    output_dir : str
+        Path to write the output of the whole function.
+    constants : list
+        Contains the constants to be used in this function.
+    cpu : int
+        Number of CPUs to use during multi processing.
+    multi_fasta : dict
+        This dict is used as argument in case there are more than one element
+        inside each of CDSs FASTA file, since in the initial input of the FASTA
+        file may contain more than one CDSs (in case there are more than one
+        representatives). BLASTn will perform BLAST with the right file, while
+        BLASTp is performed based on results of the BLASTn, since BLASTn result
+        are added indiscriminately inside a dict, this multi_fasta dict allows 
+        to destinguish which CDS that had matched with BLASTn and to add them inside 
+        the common group protein FASTA file to perform BLASTp so the results of 
+        BLASTp are more compacted and the results file represent their original 
+        input group.
+    self_score_dict : dict
+        This dict contains the self-score values for all of the CDSs that are
+        processed in this function.
+        
+    Returns
+    -------
+    representative_blast_results : 
+        Dict that contains representatibes BLAST results.
+    representative_blast_results_coords_all : dict
+        Dict that contain the coords for all of the entries.
+    representative_blast_results_coords_pident : dict
+        Dict that contain the coords for all of the entries above certain pident value.
+    bsr_values : dict
+        Dict that contains BSR values between CDS.
+    self_score_dict : dict
+        This dict contains the self-score values for all of the CDSs that are
+        processed in this function.
+    """
+    # Create directory
+    blastn_results_folder = os.path.join(output_dir, "blastn_results")
+    ff.create_directory(blastn_results_folder)
+    # Run BLASTn for all representatives (rep vs all)
+    total_reps = len(rep_paths_nuc)
+    representative_blast_results = {}
+    representative_blast_results_coords_all = {}
+    representative_blast_results_coords_pident = {}
     i = 1
-    total = len(outcomes_translations_reps)
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                outcomes_translations_reps, 
+                                cds_to_blast,
+                                repeat('blastn'),
+                                repeat(blastn_results_folder),
+                                repeat(rep_paths_nuc),
+                                repeat(master_fasta_to_blast_against)):
+
+            filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
+                res[1], constants[1], True, False)
+            # Save the BLASTn results
+            representative_blast_results.update(filtered_alignments_dict)
+            representative_blast_results_coords_all.update(alignment_coords_all)
+            representative_blast_results_coords_pident.update(alignment_coords_pident)
+
+            print(
+                f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
+            i += 1
+
+    print("Running BLASTp based on BLASTn results matches...")
+    # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
+    # Based on BLASTn results.
+    blastp_runs_to_do = {query: itf.flatten_list([[subject[1]['subject']
+                                            for subject in subjects.values()]]) 
+                         for query, subjects in representative_blast_results.items()}
+    
+    # Create directories.
+    blastp_results = os.path.join(output_dir,
+                                  "BLASTp_processing")
+    ff.create_directory(blastp_results)
+    
+    blastn_results_matches_translations = os.path.join(blastp_results,
+                                                       "blastn_results_matches_translations")
+    ff.create_directory(blastn_results_matches_translations)
+
+    representatives_blastp_folder = os.path.join(blastn_results_matches_translations,
+                                                "cluster_rep_translation")
+    ff.create_directory(representatives_blastp_folder)
+    
+    blastp_results_folder = os.path.join(blastp_results,
+                                         "BLASTp_results")
+    ff.create_directory(blastp_results_folder)
+    
+    blastp_results_ss_folder = os.path.join(blastp_results,
+                                            "BLASTp_results_self_score_results")
+    ff.create_directory(blastp_results_ss_folder)
+    # Write the protein FASTA files.
+    rep_paths_prot = {}
+    rep_matches_prot = {}
+    if multi_fasta:
+        blasts_to_run = {}
+        seen_entries = {} 
+    for query_id, subjects_ids in blastp_runs_to_do.items():
+        
+        if multi_fasta:
+            filename = itf.identify_string_in_dict(query_id, multi_fasta)
+            if filename:
+                blasts_to_run.setdefault(filename, set()).update(subjects_ids)
+                seen_entries[filename] = set()
+            else:
+                filename = query_id
+                seen_entries[filename] = set()
+                blasts_to_run.setdefault(filename, set()).update(subjects_ids)
+        else:
+            filename = query_id
+        # First write the representative protein sequence.
+        rep_translation_file = os.path.join(representatives_blastp_folder,
+                                            f"cluster_rep_translation_{filename}.fasta")
+        
+        write_type = 'a' if os.path.exists(rep_translation_file) else 'w'
+        
+        rep_paths_prot[filename] = rep_translation_file
+        with open(rep_translation_file, write_type) as trans_fasta_rep:
+            trans_fasta_rep.writelines(">"+query_id+"\n")
+            trans_fasta_rep.writelines(str(reps_translation_dict[query_id])+"\n")
+        # Then write in another file all of the matches for that protein sequence
+        # including the representative itself.
+        rep_matches_translation_file = os.path.join(blastn_results_matches_translations,
+                                                    f"cluster_matches_translation_{filename}.fasta")
+        
+        rep_matches_prot[filename] = rep_matches_translation_file
+        with open(rep_matches_translation_file, write_type) as trans_fasta:            
+            for subject_id in subjects_ids:
+                if multi_fasta:
+                    if subject_id in seen_entries[filename]:
+                        continue
+
+                trans_fasta.writelines(">"+subject_id+"\n")
+                trans_fasta.writelines(str(reps_translation_dict[subject_id])+"\n")
+                
+            if multi_fasta:  
+                seen_entries.setdefault(filename, set()).update(subjects_ids)
+
+    # Calculate BSR based on BLASTp.
+    bsr_values = {}
+    none_blastp = {}
+    
+    # Create query entries
+    for query in blastp_runs_to_do:
+        bsr_values[query] = {}
+        
+    if multi_fasta:
+        blastp_runs_to_do = blasts_to_run
+    
+    # Total number of runs
+    total_blasts = len(blastp_runs_to_do)
+    # If there is need to calculate self-score
+    if not self_score_dict:
+        self_score_dict = {}
+        for query in rep_paths_prot:
+            # For self-score
+            self_score_dict[query] = {}
+        # Calculate self-score
+        i = 1
+        with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+            for res in executor.map(bf.run_self_score_multiprocessing,
+                                    rep_paths_prot.keys(),
+                                    repeat('blastp'),
+                                    rep_paths_prot.values(),
+                                    repeat(blastp_results_ss_folder)):
+                
+                filtered_alignments_dict, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True)
+        
+                # Save self-score
+                self_score_dict[res[0]] = self_score
+                                
+                print(f"Running BLASTp to calculate self-score for {res[0]}")
+                i += 1
+
+    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
+    i = 1
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
+                                blastp_runs_to_do, 
                                 repeat('blastp'),
-                                repeat(blastp_results_path),
-                                repeat(outcomes_translations_reps),
-                                repeat(master_loci_short_translation_path)):
+                                repeat(blastp_results_folder),
+                                repeat(rep_paths_prot),
+                                rep_matches_prot.values()):
             
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False)
+            
+            if not multi_fasta:
+                # Get IDS of entries that matched with BLASTn but didnt match with BLASTp
+                blastn_entries = list(representative_blast_results[res[0]].keys())
+                if filtered_alignments_dict:
+                    blastp_entries = list(filtered_alignments_dict[res[0]].keys())
+                else:
+                    blastp_entries = {}
+                if len(blastn_entries) != len(blastp_entries):
+                    none_blastp[res[0]] = list(set(blastn_entries).symmetric_difference(set(blastp_entries)))
+
+            # Since BLAST may find several local aligments choose the largest one to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
                 for subject_id, results in subjects_dict.items():
+                    largest_score = 0
                     # Score is the largest one between query-subject alignment.
                     # We want the largest score since there may be various matches
                     # alignments, we are interested in knowing overall BSR score
                     # between matches and not for the local alignment.
-                    largest_score = 0
                     for entry_id, result in results.items():
                         if result['score'] > largest_score:
-                            largest_score = result['score']
-                            bsr_values[res[0]].update({subject_id: bf.compute_bsr(result['score'], self_score_dict[query])})
+                            largest_score = self_score_dict[query]
+                            bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score_dict[query])})
                             
-            print(
-                f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total}")
+            print(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts}")
             i += 1
+        
+    return [representative_blast_results, representative_blast_results_coords_all,
+            representative_blast_results_coords_pident, bsr_values, self_score_dict]
 
 def main(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
@@ -932,116 +1181,14 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
             with open(rep_fasta_file, 'w') as rep_fasta:
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
                 rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
-    # Create directory
-    blastn_results_folder = os.path.join(blastn_output, "blastn_results")
-    ff.create_directory(blastn_results_folder)
-    # Run BLASTn for all representatives (rep vs all)
-    total_reps = len(rep_paths_nuc)
-    representative_blast_results = {}
-    representative_blast_results_coords_all = {}
-    representative_blast_results_coords_pident = {}
-    i = 1
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                clusters,
-                                repeat('blastn'),
-                                repeat(blastn_results_folder),
-                                repeat(rep_paths_nuc),
-                                repeat(representatives_all_fasta_file)):
-
-            filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-                res[1], constants[1], True, False)
-            # Save the BLASTn results
-            representative_blast_results.update(filtered_alignments_dict)
-            representative_blast_results_coords_all.update(alignment_coords_all)
-            representative_blast_results_coords_pident.update(alignment_coords_pident)
-
-            print(
-                f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
-            i += 1
-
-    print("Running BLASTp based on BLASTn results matches...")
-    # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
-    # Based on BLASTn results.
-    blastp_runs_to_do = {query: itf.flatten_list([[query],[subject[1]['subject']
-                                            for subject in subjects.values()]]) 
-                         for query, subjects in representative_blast_results.items()}
+                
+    [representative_blast_results,
+     representative_blast_results_coords_all,
+     representative_blast_results_coords_pident,
+     bsr_values,
+     self_score_dict] = run_blasts(representatives_all_fasta_file, clusters, reps_translation_dict,
+                                   rep_paths_nuc, blastn_output, constants, cpu)
     
-    # Create directories.
-    blastp_results = os.path.join(blast_output,
-                                  "BLASTp_processing")
-    ff.create_directory(blastp_results)
-    
-    blastn_results_matches_translations = os.path.join(blastp_results,
-                                                       "blastn_results_matches_translations")
-    ff.create_directory(blastn_results_matches_translations)
-
-    representatives_blastp_folder = os.path.join(blastn_results_matches_translations,
-                                                "cluster_rep_translation")
-    ff.create_directory(representatives_blastp_folder)
-    
-    blastp_results_folder = os.path.join(blastp_results,
-                                         "BLASTp_results")
-    ff.create_directory(blastp_results_folder)
-    # Write the protein FASTA files.
-    rep_paths_prot = {}
-    rep_matches_prot = {}    
-    for query_id, subjects_ids in blastp_runs_to_do.items():
-        # First write the representative protein sequence.
-        rep_translation_file = os.path.join(representatives_blastp_folder,
-                                            f"cluster_rep_translation_{query_id}.fasta")
-        rep_paths_prot[query_id] = rep_translation_file
-        with open(rep_translation_file, 'w') as trans_fasta:
-            trans_fasta.writelines(">"+query_id+"\n")
-            trans_fasta.writelines(str(reps_translation_dict[query_id])+"\n")
-        # Then write in another file all of the matches for that protein sequence
-        # including the representative itself.
-        rep_matches_translation_file = os.path.join(blastn_results_matches_translations,
-                                                    f"cluster_matches_translation_{query_id}.fasta")
-        
-        rep_matches_prot[query_id] = rep_matches_translation_file
-        with open(rep_matches_translation_file, 'w') as trans_fasta:            
-            for subject_id in subjects_ids:
-                trans_fasta.writelines(">"+subject_id+"\n")
-                trans_fasta.writelines(str(reps_translation_dict[subject_id])+"\n")
-
-
-    # Calculate BSR based on BLASTp.
-    total_blasts = len(blastp_runs_to_do)
-    bsr_values = {}
-    self_score_dict = {}
-    # Create query entries
-    for query in blastp_runs_to_do:
-        bsr_values[query] = {}
-        # For self-score
-        self_score_dict[query] = {}
-    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
-    i = 1
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                blastp_runs_to_do, 
-                                repeat('blastp'),
-                                repeat(blastp_results_folder),
-                                repeat(rep_paths_prot),
-                                rep_matches_prot.values()):
-            
-            filtered_alignments_dict, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True)
-            # Save self-score
-            self_score_dict[res[0]] = self_score
-            # Since BLAST may find several local aligments choose the largest one to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                for subject_id, results in subjects_dict.items():
-                    largest_score = 0
-                    # Score is the largest one between query-subject alignment.
-                    # We want the largest score since there may be various matches
-                    # alignments, we are interested in knowing overall BSR score
-                    # between matches and not for the local alignment.
-                    for entry_id, result in results.items():
-                        if result['score'] > largest_score:
-                            bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score)})
-
-            print(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts}")
-            i += 1
 
     add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
@@ -1067,11 +1214,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                     classes_outcome, results_output)
     
     print("Wrapping up BLAST results...")
-    outcomes_translations_reps = wrap_up_blast_results(cds_to_keep, not_included_cds,
-                                                       clusters, results_output, constants, cpu)
+    [groups_paths_reps, reps_trans_dict_cds] = wrap_up_blast_results(cds_to_keep, not_included_cds,
+                                                                        clusters, results_output, constants, cpu)
     print("Reading schema loci short FASTA files...")
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
-    process_schema(schema, outcomes_translations_reps, results_output, 
-                   self_score_dict, constants, cpu)
+    # Run Blasts for the found loci against schema short
+    representative_blast_results = process_schema(schema, groups_paths_reps, results_output,self_score_dict,
+                                                 reps_trans_dict_cds, constants, cpu, cds_to_keep)

@@ -1,5 +1,6 @@
 def string_kmerizer(input_string, k_value, offset=1, position=False):
-    """Decompose a string into k-mers.
+    """
+    Decompose a string into k-mers.
 
     Parameters
     ----------
@@ -34,7 +35,8 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
 
 def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
                          position=False, guarantee_tip=False):
-    """Determine minimizers for a input string.
+    """
+    Determine minimizers for a input string.
 
     Determines minimizers for a string based on lexicographical
     order. Skips windows that cannot have a minimizer based on

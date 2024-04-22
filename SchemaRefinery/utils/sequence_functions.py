@@ -147,7 +147,7 @@ def translate_dna_aux(dna_sequence, method, table_id, cds=True):
 
     Returns
     -------
-    tuple or str
+    return : tuple or str
         If translation is successful, returns a tuple containing the translated protein sequence
         and the processed DNA sequence. If an error occurs, returns an error message.
     """
@@ -275,7 +275,7 @@ def hash_sequences(file_path):
 
     Returns
     -------
-    hash_list : set
+    hash_set : set
         Returns a list containing all of the sequences hashes present in the input files.
     """
 
@@ -310,6 +310,8 @@ def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, cou
         Dict that contais sequence ID as key and translated sequence as value.
     protein_hashes : dict
         Dict that contais sequence hash as key and sequences IDs as values.
+    untras_seq : dict
+        Dict that contains untranslated id as key and error as value.
     """
     translation_dict = {}
     protein_hashes = {}

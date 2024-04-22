@@ -151,6 +151,21 @@ def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results
 
     return [id_, blast_results_file]
 
+def run_self_score_multiprocessing(id_, blast_type, file_path, output):
+    blast_results_file = os.path.join(output, f"blast_results_{id_}.tsv")
+    
+    blast_args = [blast_type, '-query', file_path,
+                  '-subject',
+                  file_path,
+                  '-outfmt',
+                  '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
+                  '-out', 
+                  blast_results_file]
+
+    run_blast_with_args_only(blast_args)
+
+    return [id_, blast_results_file]
+
 def compute_bsr(subject_score, query_score):
     """Compute the BLAST Score Ratio for an alignment between two sequences.
 

@@ -157,7 +157,7 @@ def process_alignments_for_graphs(alignments_dict: dict):
 
 def get_alignments_dict(blast_results_file):
     """
-    organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
+    Organize alignments with the same key "Locus_A:Locus_B" into othe same dictionary builds a dictionary where key = "Locus_A:Locus_B" 
     and value = a list of all alignments for that key correspondence.
 
     Parameters
@@ -297,7 +297,8 @@ def process_blast_results(blast_results_file, constants_threshold):
         
     return (alignment_strings, filtered_alignments_dict)
 
-def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold, get_coords, get_self_score):
+def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
+                                           get_coords, get_self_score):
     """
     Reads BLAST results file and extracts the necessary items, based on input
     also fetches the coordinates based on query sequences and self-score contained
@@ -336,7 +337,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
         lines = f.readlines()
         i = 1
         for line in lines:
-            
+            # Extract the columns into the variables
             cols = line.replace('\n', '').split("\t")
             query = cols[0]
             subject = cols[1]
@@ -350,7 +351,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
             score = cols[9]
             gaps = cols[10]
             pident = cols[11]
-
+            # Save the dict
             value = {
                     "query": query,
                     "subject": subject,
