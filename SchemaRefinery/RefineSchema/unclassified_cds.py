@@ -529,14 +529,12 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
         # Write individual class to file.
         alignment_dict_to_file(write_dict, report_file_path, 'w')
             
-def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
-                          output_path, constants, cpu):
+def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
+                          constants, cpu):
     """
-    This function wraps up the results for this module by writing FASTAs files
-    for the possible new loci to include into the schema and creates graphs for
-    each results group. It also translates schema short FASTAs into proteins
-    and the possible new loci, to calculate the BSR values to see if those
-    possible new loci are already present in the schema.
+    This function wraps up the results for processing of the unclassified CDSs
+    by writing FASTAs files for the possible new loci to include into the schema
+    and creates graphs for each results group.
     
     Parameters
     ----------
@@ -554,8 +552,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
         
     Returns
     -------
-    groups_trans_reps : dict
-        Contains the translations of the representatives.
+    groups_paths_reps : dict
+        Dict that contains as Key the ID of each group while the value is the
+        path to the FASTA file that contains its nucleotide sequences.
+    reps_trans_dict_cds : dict
+        Dict that contais the translations of all the CDSs inside the various
+        groups.
     """
     # Create directories.
     cds_outcome_results_graphs = os.path.join(output_path, "Blast_results_outcomes_graphs")
@@ -656,7 +658,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
     ff.create_directory(group_trans_rep_folder)
     # Translate possible new loci representatives.
     groups_trans_reps_paths = {}
-    reps_trans_dict_groups = {}
+    reps_trans_dict_cds = {}
     for key, group_path in groups_paths_reps.items():
         trans_path = os.path.join(group_trans_rep_folder, key + ".fasta")
         groups_trans_reps_paths[key] = trans_path
@@ -667,7 +669,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
                                                         constants[5], 
                                                         False)
         for id_, sequence in trans_dict.items():
-            reps_trans_dict_groups[id_] = sequence
+            reps_trans_dict_cds[id_] = sequence
 
     # Create graphs for all results and for each class.
     classes_tsv_path = os.path.join(output_path, 'blast_results_by_class')
@@ -688,14 +690,14 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters,
                              ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
                               'Prot_seq_Kmer_cov'],
                              ['Entries', 'Values'], False)
-    return groups_paths_reps, reps_trans_dict_groups
+    return groups_paths_reps, reps_trans_dict_cds
 
-def process_schema(schema, groups_paths_reps, results_output, self_score_dict, reps_trans_dict_groups,
+def process_schema(schema, groups_paths_reps, results_output, self_score_dict, reps_trans_dict_cds,
                    constants, cpu, cds_to_keep):
     """
     This function processes data related to the schema seed, importing, translating
-    and BLASTing against the unclassified CDS clusters representatives to validate
-    them.
+    and BLASTing against the unclassified CDS clusters representatives groups to
+    validate them.
     
     Parameters
     ----------
@@ -707,7 +709,7 @@ def process_schema(schema, groups_paths_reps, results_output, self_score_dict, r
         Path were to write the results of this function.
     self_score_dict : dict
         Self-score for BSR calculation of the unclassified CDS reps to consider.
-    reps_trans_dict_groups : dict
+    reps_trans_dict_cds : dict
         Dict that contains the translations for each CDS.
     constants : list
         Contains the constants to be used in this function.
@@ -754,13 +756,13 @@ def process_schema(schema, groups_paths_reps, results_output, self_score_dict, r
                                                                   constants[5],
                                                                   False)
             for loci_id, sequence in translation_dict.items():
-                reps_trans_dict_groups[loci_id] = sequence
+                reps_trans_dict_cds[loci_id] = sequence
 
     [representative_blast_results,
      representative_blast_results_coords_all,
      representative_blast_results_coords_pident,
      bsr_values,
-     _] = run_blasts(master_loci_short_path, groups_paths_reps, reps_trans_dict_groups,
+     _] = run_blasts(master_loci_short_path, groups_paths_reps, reps_trans_dict_cds,
                      groups_paths_reps, results_output, constants, cpu, cds_to_keep['1a'],
                      self_score_dict)
 
@@ -1212,7 +1214,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                     classes_outcome, results_output)
     
     print("Wrapping up BLAST results...")
-    [groups_paths_reps, reps_trans_dict_groups] = wrap_up_blast_results(cds_to_keep, not_included_cds,
+    [groups_paths_reps, reps_trans_dict_cds] = wrap_up_blast_results(cds_to_keep, not_included_cds,
                                                                         clusters, results_output, constants, cpu)
     print("Reading schema loci short FASTA files...")
     # Create directory
@@ -1220,4 +1222,4 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     ff.create_directory(results_output)
     # Run Blasts for the found loci against schema short
     representative_blast_results = process_schema(schema, groups_paths_reps, results_output,self_score_dict,
-                                                 reps_trans_dict_groups, constants, cpu, cds_to_keep)
+                                                 reps_trans_dict_cds, constants, cpu, cds_to_keep)
