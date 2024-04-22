@@ -116,12 +116,16 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
         for subject, blastn_results in list(subjects_dict.items()):
             # Some results may not have kmers matches or BSR values so put them
             # as 0
-            if subject in reps_kmers_sim[query]:
-                sim, cov = reps_kmers_sim[query][subject]
+            if reps_kmers_sim:
+                if subject in reps_kmers_sim[query]:
+                    sim, cov = reps_kmers_sim[query][subject]
+                else:
+                    sim = 0
+                    cov = 0
             else:
-                sim = 0
-                cov = 0
-            
+                sim = '-'
+                cov = '-'
+
             # Get BSR value, if not in query return 0, meaning that even though
             # there was BLASTn match no BLASTp match was made.
             bsr = bsr_values[query].get(subject, 0)
@@ -406,7 +410,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     relationships : dict
         Dict that contains relationships between various clusters.
     representative_blast_results : dict
-        Dict that contains representatibes BLAST results with all of the additional
+        Dict that contains BLAST results of the representatives with all of the additional
         info.
     classes_outcome : list
         List of list that contains class IDS used in the next function.
@@ -699,16 +703,25 @@ def process_schema(schema, groups_paths_reps, results_output, self_score_dict, r
         Path to the schema seed folder.
     groups_trans_reps : dict
         Dict with the paths to the translations of the unclassified CDS clusters.
-    output_path : str
+    results_output : str
         Path were to write the results of this function.
-    self_score : dict
+    self_score_dict : dict
         Self-score for BSR calculation of the unclassified CDS reps to consider.
+    reps_trans_dict_groups : dict
+        Dict that contains the translations for each CDS.
+    constants : list
+        Contains the constants to be used in this function.
     cpu : int
         Number of CPUs to use during multi processing.
-    
+    cds_to_keep : dict     
+        Dict of the CDS to keep by each classification.
+
     Returns
     -------
-    
+    representative_blast_results : dict
+        Dict that contains BLAST results of the representatives with all of the additional
+        info.
+
     """
     # Get all of the schema loci short FASTA files path.
     schema_short_path = os.path.join(schema, 'short')
@@ -743,13 +756,71 @@ def process_schema(schema, groups_paths_reps, results_output, self_score_dict, r
             for loci_id, sequence in translation_dict.items():
                 reps_trans_dict_groups[loci_id] = sequence
 
-    run_blasts(master_loci_short_path, groups_paths_reps, reps_trans_dict_groups,
-               groups_paths_reps, results_output, constants, cpu, cds_to_keep['1a'],
-               self_score_dict)
+    [representative_blast_results,
+     representative_blast_results_coords_all,
+     representative_blast_results_coords_pident,
+     bsr_values,
+     _] = run_blasts(master_loci_short_path, groups_paths_reps, reps_trans_dict_groups,
+                     groups_paths_reps, results_output, constants, cpu, cds_to_keep['1a'],
+                     self_score_dict)
+
+    return representative_blast_results
 
 def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dict,
                rep_paths_nuc, output_dir, constants, cpu, multi_fasta = None,
                self_score_dict = None):
+    """
+    This functions runs both BLASTn and Subsequently BLASTp based on results of
+    BLASTn.
+    
+    Parameters
+    ----------
+    master_fasta_to_blast_against : str
+        Path to the master FASTA file that contains all of the nucleotide sequences
+        to BLASTn against.
+    cds_to_blast : list
+        A list that contains all of the ids to BLASTn against master FASTA file.
+    reps_translation_dict : dict
+        Dict that contains the translations of all the sequences in the master file
+        and the CDSs to BLASTn against master file.
+    rep_paths_nuc : dict
+        Dict that contains the ID of the CDSs to BLASTn against master file
+        while the value is the path to the FASTA that contains those CDSs.
+    output_dir : str
+        Path to write the output of the whole function.
+    constants : list
+        Contains the constants to be used in this function.
+    cpu : int
+        Number of CPUs to use during multi processing.
+    multi_fasta : dict
+        This dict is used as argument in case there are more than one element
+        inside each of CDSs FASTA file, since in the initial input of the FASTA
+        file may contain more than one CDSs (in case there are more than one
+        representatives). BLASTn will perform BLAST with the right file, while
+        BLASTp is performed based on results of the BLASTn, since BLASTn result
+        are added indiscriminately inside a dict, this multi_fasta dict allows 
+        to destinguish which CDS that had matched with BLASTn and to add them inside 
+        the common group protein file to perform BLASTp so the results of BLASTp
+        are more compacted and the results file represent their original input
+        group.
+    self_score_dict : dict
+        This dict contains the self-score values for all of the CDSs that are
+        processed in this function.
+        
+    Returns
+    -------
+    representative_blast_results : 
+        Dict that contains representatibes BLAST results.
+    representative_blast_results_coords_all : dict
+        Dict that contain the coords for all of the entries.
+    representative_blast_results_coords_pident : dict
+        Dict that contain the coords for all of the entries above certain pident value.
+    bsr_values : dict
+        Dict that contains BSR values between CDS.
+    self_score_dict : dict
+        This dict contains the self-score values for all of the CDSs that are
+        processed in this function.
+    """
     # Create directory
     blastn_results_folder = os.path.join(output_dir, "blastn_results")
     ff.create_directory(blastn_results_folder)
@@ -1148,9 +1219,5 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
     # Run Blasts for the found loci against schema short
-    [representative_blast_results,
-     representative_blast_results_coords_all,
-     representative_blast_results_coords_pident,
-     bsr_values,
-     _] = process_schema(schema, groups_paths_reps, results_output,self_score_dict,
-                         reps_trans_dict_groups, constants, cpu, cds_to_keep)
+    representative_blast_results = process_schema(schema, groups_paths_reps, results_output,self_score_dict,
+                                                 reps_trans_dict_groups, constants, cpu, cds_to_keep)
