@@ -322,12 +322,14 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
     # for example Z and X classified as 2b (keep both) then we add to this dict
     # this case for end-user to know.
     other_relationships = {}
+    important_relationships = {}
     # List that contains the various CDS with 1a classification to join.
     cluster_to_join = []
     
     for class_ in classes_outcome:
         cds_to_keep[class_] = set()
         other_relationships[class_] = []
+        important_relationships[class_]
         # Get all entries with the desired class.
         class_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
                                    for subject, entries in subjects.items()}
@@ -357,12 +359,15 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
                     # Get those cases that query and subject were not processed.
                     if query not in processed_cases and id_subject not in processed_cases:
                         cds_to_keep[class_].update([query, id_subject])
+                        important_relationships[class_].append([query, id_subject])
                     # If query was not processed.
                     elif query not in processed_cases:
                         cds_to_keep[class_].add(query)
+                        important_relationships[class_].append([query, id_subject])
                     # If subject was not processed.
                     elif id_subject not in processed_cases:
                         cds_to_keep[class_].add(id_subject)
+                        important_relationships[class_].append([query, id_subject])
                     # If to add relationship between different CDS and clusters.
                     # Keep only 3a as they are the one relevant for the output
                     if (query not in drop_list or id_subject not in drop_list) and class_ == '3a':
@@ -396,7 +401,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
         for id_, r in list(relationship.items()):
             relationships[class_][id_] = itf.get_unique_sublists(r)
             
-    return cds_to_keep, relationships
+    return cds_to_keep, relationships, important_relationships
 
 def write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
                                     classes_outcome, output_path):
@@ -692,8 +697,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                              ['Entries', 'Values'], False)
     return groups_paths_reps, reps_trans_dict_cds
 
-def process_schema(schema, groups_paths_reps, results_output, self_score_dict, reps_trans_dict_cds,
-                   constants, cpu, cds_to_keep):
+def process_schema(schema, groups_paths_reps, results_output, self_score_dict,
+                   reps_trans_dict_cds, cds_to_keep, cds_present, frequency_cds_cluster,
+                   allelecall_directory, constants, cpu):
     """
     This function processes data related to the schema seed, importing, translating
     and BLASTing against the unclassified CDS clusters representatives groups to
@@ -734,14 +740,22 @@ def process_schema(schema, groups_paths_reps, results_output, self_score_dict, r
     short_translation_folder = os.path.join(results_output, "short_translation_folder")
     ff.create_directory(short_translation_folder)
     master_loci_short_path = os.path.join(short_translation_folder, "master_short_loci.fasta")
-    
+
+    # Find the file in the allele call results that contains the total of each.
+    # classification obtained for each loci.
+    results_statistics = os.path.join(allelecall_directory, 'results_statistics.tsv')
+    # Convert TSV table to dict.
+    results_statistics_dict = itf.tsv_to_dict(results_statistics)
+    # Add the results for all of the Exact matches to the frequency_cds_cluster dict.
+    for key, value in results_statistics_dict.items():
+        frequency_cds_cluster.setdefault(key, value[0])
     # Translate each short loci and write to master fasta.
     i = 1
     len_short_folder = len(schema_loci_short)
     with open(master_loci_short_path, 'w') as master_fasta:
         
         for loci, loci_short_path in schema_loci_short.items():
-            print(f"Added to master Fasta file and translated: {i}/{len_short_folder}")
+            print(f"\rAdded to master Fasta file and translated: {i}/{len_short_folder}", end='', flush=True)
             i += 1
             fasta_dict = sf.fetch_fasta_dict(loci_short_path, False)
             
@@ -765,6 +779,11 @@ def process_schema(schema, groups_paths_reps, results_output, self_score_dict, r
      _] = run_blasts(master_loci_short_path, groups_paths_reps, reps_trans_dict_cds,
                      groups_paths_reps, results_output, constants, cpu, cds_to_keep['1a'],
                      self_score_dict)
+
+    add_items_to_results(representative_blast_results, None, bsr_values,
+                         representative_blast_results_coords_all,
+                         representative_blast_results_coords_pident,
+                         frequency_cds_cluster)
 
     return representative_blast_results
 
@@ -823,10 +842,16 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
         This dict contains the self-score values for all of the CDSs that are
         processed in this function.
     """
+    
+    print("\nRunning BLASTn between cluster representatives..." if not multi_fasta else
+          "\nRunning BLASTn between groups representatives against schema loci short...")
+    # BLASTn folder
+    blastn_output = os.path.join(output_dir, "BLASTn_processing")
     # Create directory
-    blastn_results_folder = os.path.join(output_dir, "blastn_results")
+    blastn_results_folder = os.path.join(blastn_output, "BLASTn_results")
     ff.create_directory(blastn_results_folder)
     # Run BLASTn for all representatives (rep vs all)
+    max_id_length = len(max(cds_to_blast))
     total_reps = len(rep_paths_nuc)
     representative_blast_results = {}
     representative_blast_results_coords_all = {}
@@ -848,10 +873,11 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
             representative_blast_results_coords_pident.update(alignment_coords_pident)
 
             print(
-                f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps}")
+                f"\rRunning BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", 
+                end='', flush=True)
             i += 1
 
-    print("Running BLASTp based on BLASTn results matches...")
+    print("\nRunning BLASTp based on BLASTn results matches...")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
     # Based on BLASTn results.
     blastp_runs_to_do = {query: itf.flatten_list([[subject[1]['subject']
@@ -935,11 +961,11 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
         
     if multi_fasta:
         blastp_runs_to_do = blasts_to_run
-    
     # Total number of runs
     total_blasts = len(blastp_runs_to_do)
     # If there is need to calculate self-score
     if not self_score_dict:
+        print("\nCalculate self-score for the CDSs...")
         self_score_dict = {}
         for query in rep_paths_prot:
             # For self-score
@@ -958,9 +984,13 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
                 # Save self-score
                 self_score_dict[res[0]] = self_score
                                 
-                print(f"Running BLASTp to calculate self-score for {res[0]}")
+                print(f"\rRunning BLASTp to calculate self-score for {res[0]}", end='', flush=True)
                 i += 1
-
+        # Print newline
+        print('\n')  
+    
+    print("Running BLASTp for representatives..." if not multi_fasta
+          else "Running BLASTp for representatives against schema short...")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -995,10 +1025,10 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
                         if result['score'] > largest_score:
                             largest_score = self_score_dict[query]
                             bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score_dict[query])})
-                            
-            print(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts}")
-            i += 1
         
+            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
+            i += 1
+
     return [representative_blast_results, representative_blast_results_coords_all,
             representative_blast_results_coords_pident, bsr_values, self_score_dict]
 
@@ -1026,7 +1056,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Get dict with CDS ids as key and sequence as values.
     not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
     total_cds = len(not_included_cds)
-    print(f"Identified {total_cds} valid CDS not present in the schema.")
+    print(f"\nIdentified {total_cds} valid CDS not present in the schema.")
     # Filter by size.
     if constants[5]:
         for key, values in list(not_included_cds.items()):
@@ -1062,7 +1092,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 frequency_cds[id_] = 0
                 
 
-    print("Translate and deduplicate unclassified CDS...")
+    print("\nTranslate and deduplicate unclassified CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
     # the same hash will be added under that hash in protein_hashes.
     cds_not_present_trans_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
@@ -1074,7 +1104,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                                            constants[5],
                                                                            True)
     # Print additional information about translations and deduplications.
-    print(f"{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
+    print(f"\n{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
 
     print("Extracting minimizers for the translated sequences and clustering...")
     # Create variables to store clustering info.
@@ -1118,7 +1148,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 clusters[cluster_rep] + cds_ids[1:]
                 break
 
-    print("Filtering clusters...")
+    print("\nFiltering clusters...")
     # Get frequency of cluster.
     frequency_cds_cluster = {rep: sum([frequency_cds[entry] for entry in value]) 
                              for rep, value in clusters.items()}
@@ -1151,7 +1181,6 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
         reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
                                       for match_values in reps_kmers_sim[cluster_id]}
 
-    print("Running BLASTn between cluster representatives...")
     # Create directories.
     blast_output = os.path.join(output_directory, "2_BLAST_processing")
     ff.create_directory(blast_output)
@@ -1187,7 +1216,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
      representative_blast_results_coords_pident,
      bsr_values,
      self_score_dict] = run_blasts(representatives_all_fasta_file, clusters, reps_translation_dict,
-                                   rep_paths_nuc, blastn_output, constants, cpu)
+                                   rep_paths_nuc, blast_output, constants, cpu)
     
 
     add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
@@ -1195,7 +1224,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                          representative_blast_results_coords_pident,
                          frequency_cds_cluster)
 
-    print("Filtering BLAST results into classes...")
+    print("\nFiltering BLAST results into classes...")
     results_output = os.path.join(output_directory, "3_Classes_processing")
     ff.create_directory(results_output)
     report_file_path = os.path.join(results_output, "blast_all_matches.tsv")
@@ -1208,7 +1237,9 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, relationships] = process_classes(representative_blast_results, classes_outcome, drop_list)
+    [cds_to_keep, relationships, important_relationships] = process_classes(representative_blast_results,
+                                                                            classes_outcome,
+                                                                            drop_list)
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
                                     classes_outcome, results_output)
@@ -1220,6 +1251,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
+    # Create BLASTn_processing directory
+    blastn_output = os.path.join(results_output, "BLASTn_processing")
+    ff.create_directory(blastn_output)
     # Run Blasts for the found loci against schema short
-    representative_blast_results = process_schema(schema, groups_paths_reps, results_output,self_score_dict,
-                                                 reps_trans_dict_cds, constants, cpu, cds_to_keep)
+    representative_blast_results = process_schema(schema, groups_paths_reps,
+                                                  results_output, self_score_dict,
+                                                  reps_trans_dict_cds,cds_to_keep,
+                                                  cds_present,frequency_cds_cluster,
+                                                  allelecall_directory, constants, cpu)

@@ -331,10 +331,10 @@ def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, cou
             if type(protein_translation) == list:
                 protein_translation = str(protein_translation[0][0])
                 if count_seq:
-                    print(f"Translated {i}/{total} CDS")
+                    print(f"\rTranslated {i}/{total} CDS", end='', flush=True)
             else:
                 if count_seq:
-                    print(f"Failed to translate {id_s}")
+                    print(f"\rFailed to translate {id_s}", end='', flush=True)
                 untras_seq.setdefault(id_s, protein_translation)
                 continue
             
@@ -377,7 +377,7 @@ def fetch_fasta_dict(file_path, count_seq):
     # Read FASTA files
     for rec in read_fasta_file_iterator(file_path):
         if count_seq:
-            print(f"Processed {i} CDS")
+            print(f"\rProcessed {i} CDS", end='', flush=True)
             i += 1
         fasta_dict[rec.id] = rec.seq
 
