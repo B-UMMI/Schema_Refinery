@@ -392,3 +392,28 @@ def remove_empty_dicts_recursive(nested_dict):
             if not nested_dict[key] and not isinstance(nested_dict[key], (bool, int, float)):
                 del nested_dict[key]
     return nested_dict
+
+def tsv_to_dict(file_path, skip_header = False):
+    # Initialize an empty dictionary to store data
+    data_dict = {}
+
+    # Open the TSV file for reading
+    with open(file_path, 'r') as f:
+        # Read each line in the file
+        for i, line in enumerate(f):
+            if i == 0:
+                continue
+                
+            # Split the line by tabs
+            values = line.strip().split('\t')
+
+            # Extract the key (first column entry)
+            key = values[0]
+
+            # Extract the rest of the values (excluding the first column entry)
+            rest_values = values[1:]
+
+            # Add the key-value pair to the dictionary
+            data_dict[key] = rest_values
+
+    return data_dict

@@ -285,7 +285,8 @@ def hash_sequences(file_path):
 
     return hash_set
 
-def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, count_seq):
+def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, count_seq,
+                              deduplicate = True):
     """
     Translates the DNA sequence to protein and verifies if that protein is alredy
     present in the dict, thus ensuring that the dict contains deduplicated sequences,
@@ -338,21 +339,24 @@ def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, cou
                 untras_seq.setdefault(id_s, protein_translation)
                 continue
             
-            # Hash the sequence
-            prot_hash = seq_to_hash(protein_translation)
-            # Find unique proteins
-            if prot_hash not in protein_hashes:
-                protein_hashes[prot_hash] = [id_s]
-                translation_dict[id_s] = protein_translation
-                translation.write(f'>{id_s}\n{protein_translation}\n')
-            # Remember CDS with that protein hash for future
+            if deduplicate:
+                # Hash the sequence
+                prot_hash = seq_to_hash(protein_translation)
+                # Find unique proteins
+                if prot_hash not in protein_hashes:
+                    protein_hashes[prot_hash] = [id_s]
+                    translation_dict[id_s] = protein_translation
+                    translation.write(f'>{id_s}\n{protein_translation}\n')
+                # Remember CDS with that protein hash for future
+                else:
+                    protein_hashes[prot_hash].append(id_s)
             else:
-                protein_hashes[prot_hash].append(id_s)
-                
+                translation_dict[id_s] = protein_translation
     if untras_seq and untras_path:
         with open(untras_path, 'w+') as untras_file:
             for id_s, exceptions in untras_seq.items():
                 untras_file.write(">{}\n{}\n".format(id_s,'\n'.join(exceptions)))
+
     return translation_dict, protein_hashes, untras_seq
 
 def fetch_fasta_dict(file_path, count_seq):
