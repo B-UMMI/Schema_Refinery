@@ -187,7 +187,7 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                     }
                     # Get the original loci representived ID.
                     if loci_ids:
-                        subject = query_before
+                        query = query_before
                     representative_blast_results[query][subject][entry_id].update(update_dict)
                 # If not then the inverse alignment was made, so we remove it
                 else:
@@ -247,7 +247,8 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                        '1c',
                        '2b',
                        '3a',
-                       '3b']
+                       '3b',
+                       '4']
     # Set of IDs to drop
     drop_list = set()
     # Process results into classes
@@ -263,7 +264,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         add_class_to_dict('1a')
                     # If BSR <0.6 verify if between CDS there ir more than 10x
                     # difference in presence in the schema
-                    elif min([query_subject_freq,subject_query_freq]) >= 0.1:
+                    elif min([query_subject_freq,subject_query_freq]) <= 0.1:
                         add_class_to_dict('1b')
                         # Remove the subject
                         if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_query_cds']:
@@ -275,11 +276,11 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     else:
                         add_class_to_dict('1c')
                 # Palign < 0.8        
-                else:
+                elif blastn_entry['global_palign_all'] > 0.2 and blastn_entry['global_palign_all'] <= 0.8:
                     if blastn_entry['pident'] >= constants[1]:
                         # Verify if between CDS there ir more than 10x
                         # difference in presence in the schema
-                        if min([query_subject_freq,subject_query_freq]) >= 0.1:
+                        if min([query_subject_freq,subject_query_freq]) <= 0.1:
                             add_class_to_dict('2a')
                             # Remove the subject
                             if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_query_cds']:
@@ -298,7 +299,9 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         # Everything else not classified
                         else:
                             add_class_to_dict('3b')
-    
+                else:
+                    add_class_to_dict('4')
+
     return classes_outcome, drop_list
 
 def process_classes(representative_blast_results, classes_outcome, drop_list):
@@ -600,12 +603,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     print(f"{sum(count_cases.values())} CDS representatives have been grouped into"
           f" {len(itf.flatten_list(cds_to_keep.values()))} groups")
     for class_, count in count_cases.items():
-        if class_ == '3b':
+        if class_ in ['3b', '4']:
             print(f"\tOut of those groups, {count} CDS are classified as {class_}"
                   " and not considered further.")
         elif class_ == '1a':
             print(f"\tOut of those groups, {count} CDS are classified as {class_}"
-                  f" and are contained in {len(cds_to_keep['1a'])} joined groups.") 
+                  f" and are contained in {len(cds_to_keep['1a'])} joined groups.")
         else:
             print(f"\tOut of those groups, {count} CDS are classified as {class_}.")
 
@@ -616,7 +619,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     for class_, cds_list in cds_to_keep.items():
         i = 1
         for cds in cds_list:
-            if class_ == '1a':
+            if class_ == '4':
+                continue
+            elif class_ == '1a':
                 class_name_cds = f"joined_{i}"
             elif class_ == '3a':
                 class_name_cds = f"for_reference_{class_}_{cds}"  
@@ -1054,8 +1059,8 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
                     # between matches and not for the local alignment.
                     for entry_id, result in results.items():
                         if result['score'] > largest_score:
-                            largest_score = self_score_dict[query]
-                            bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score_dict[query])})
+                            largest_score = self_score_dict[res[0]]
+                            bsr_values[query].update({subject_id: bf.compute_bsr(result['score'], self_score_dict[res[0]])})
         
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
@@ -1280,7 +1285,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
      reps_trans_dict_cds,
      master_file_rep] = wrap_up_blast_results(cds_to_keep, not_included_cds,
                                               clusters, results_output, constants, cpu)
-    print("Reading schema loci short FASTA files...")
+    print("\nReading schema loci short FASTA files...")
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
