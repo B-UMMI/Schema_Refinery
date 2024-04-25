@@ -549,7 +549,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
         alignment_dict_to_file(write_dict, report_file_path, 'w')
             
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
-                          constants, cpu):
+                          constants):
     """
     This function wraps up the results for processing of the unclassified CDSs
     by writing FASTAs files for the possible new loci to include into the schema
@@ -566,8 +566,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         as values.
     output_path : str
         Path to were write the FASTA files.
-    cpu : int
-        Number of cores to use in BLAST multiprocessing.
         
     Returns
     -------
@@ -600,18 +598,23 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         else:
             count_cases[class_] = len(cds_list)
     # Write info about the classification results.
-    print(f"{sum(count_cases.values())} CDS representatives have been grouped into"
-          f" {len(itf.flatten_list(cds_to_keep.values()))} groups")
+    print(f"Out of {len(clusters) if not cds_to_keep.get('Retained_not_matched_by_blastn') else {len(clusters) + len(cds_to_keep.get('Retained_not_matched_by_blastn'))}} clusters:")
+    print(f"\t{sum(count_cases.values())} CDS representatives had matches with BLASTn"
+          f"  which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
     for class_, count in count_cases.items():
-        if class_ in ['3b', '4']:
-            print(f"\tOut of those groups, {count} CDS are classified as {class_}"
+        if class_ == 'Retained_not_matched_by_blastn':
+            continue
+        elif class_ in ['3b', '4']:
+            print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
                   " and not considered further.")
         elif class_ == '1a':
-            print(f"\tOut of those groups, {count} CDS are classified as {class_}"
+            print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
                   f" and are contained in {len(cds_to_keep['1a'])} joined groups.")
         else:
-            print(f"\tOut of those groups, {count} CDS are classified as {class_}.")
-
+            print(f"\t\tOut of those groups, {count} CDS are classified as {class_}.")
+    if cds_to_keep.get('Retained_not_matched_by_blastn'):
+       print(f"\t{len(cds_to_keep['Retained_not_matched_by_blastn'])} didn't have any BLASTn matches so they were retained.")
+    
     # Write FASTA files for each CDS group to join or retain.
     print("Writting FASTA file for possible new loci...")
     groups_paths = {}
@@ -785,7 +788,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
         
         for loci_id, sequence in fasta_dict.items():
             loci_alleles.setdefault(loci, []).append(loci_id)
-            
+
         loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
         translation_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
                                                               loci_short_translation_path,
@@ -820,6 +823,29 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
     [cds_to_keep, relationships, important_relationships] = process_classes(representative_blast_results,
                                                                             classes_outcome,
                                                                             drop_list)
+    # Replace the alleles entries with their loci ID.
+    cds_to_keep = {
+        class_: set(
+            [entry if not itf.identify_string_in_dict(entry, loci_alleles) else itf.identify_string_in_dict(entry, loci_alleles) for entry in entries]
+        )
+        for class_, entries in cds_to_keep.items()
+    }
+    # Filter repeated entries
+    seen = set()
+    for class_, entries in list(cds_to_keep.items()):
+        for entry in list(entries):
+            if entry in seen:
+                cds_to_keep[class_].remove(entry)
+            else:
+                seen.add(entry)
+
+    print("Writting classes results to files...")
+    write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
+                                    classes_outcome, results_output)
+    
+    print("Wrapping up BLAST results...")
+
+                                              
     return representative_blast_results
 
 def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dict,
@@ -1246,7 +1272,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
             with open(rep_fasta_file, 'w') as rep_fasta:
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
                 rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
-                
+    
+    # Run the BLASTn and BLASTp
     [representative_blast_results,
      representative_blast_results_coords_all,
      representative_blast_results_coords_pident,
@@ -1254,7 +1281,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
      self_score_dict] = run_blasts(representatives_all_fasta_file, clusters, reps_translation_dict,
                                    rep_paths_nuc, blast_output, constants, cpu)
     
-
+    # Add various results to the dict
     add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
@@ -1276,6 +1303,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     [cds_to_keep, relationships, important_relationships] = process_classes(representative_blast_results,
                                                                             classes_outcome,
                                                                             drop_list)
+    print("Add remaining cluster that didn't match by BLASTn...")
+    # Add cluster not matched by BLASTn
+    cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in representative_blast_results.keys()])
+
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
                                     classes_outcome, results_output)
@@ -1284,7 +1315,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     [groups_paths_reps,
      reps_trans_dict_cds,
      master_file_rep] = wrap_up_blast_results(cds_to_keep, not_included_cds,
-                                              clusters, results_output, constants, cpu)
+                                              clusters, results_output, constants)
     print("\nReading schema loci short FASTA files...")
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
