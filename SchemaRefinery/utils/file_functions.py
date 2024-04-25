@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 
 def create_directory(dir:str):
     """
@@ -35,3 +36,8 @@ def check_and_delete_file(file:str):
     
     if os.path.isfile(file):
         os.remove(file)
+
+def import_df_from_file(file_path, sep):
+    df = pd.read_csv(file_path, sep=sep)
+
+    return df

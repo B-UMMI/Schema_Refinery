@@ -56,10 +56,10 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
               "Prot_seq_Kmer_cov\t",
               "Cluster_frequency_in_genomes_query_cds\t",
               "Cluster_frequency_in_genomes_subject_cds\t",
-              "Global_palign_all\t",
+              "Global_palign_all_max\t",
               "Global_palign_pident_min\t",
               "Global_palign_pident_max\t",
-              "Palign_local\t",
+              "Palign_local_min\t",
               "Class\n"]
     
     # Write or append to the file
@@ -84,11 +84,13 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
     kmer_cov: kmer coverage.
     frequency_in_genomes_query_cds: how many times that query appears in the schema genomes.
     frequency_in_genomes_subject_cds: how many subject appers in the schema genomes.
-    global_palign_all: minimum of how much query or subject covers each other.
+    global_palign_all_max: minimum of how much query or subject covers each other.
     global_palign_pident_min: minimum of how much query or subject covers each other, takes into
     account only entries with specific pident value.
     global_palign_pident_max: maximum of how much query or subject covers each other, takes into
     account only entries with specific pident value.
+    local_palign_min: minimum of how much query or subject covers each other, takes into
+    account only local alignemnt.
                                   
     Parameters
     ----------                                  
@@ -147,8 +149,8 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                     length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
                     total_length[ref] = length
                 # Calculate global palign
-                global_palign_all = min(total_length['query'] / result['query_length'],
-                                        total_length['subject'] / result['subject_length'])
+                global_palign_all_max = min(total_length['query'] / result['query_length'],
+                                            total_length['subject'] / result['subject_length'])
                 # Sum the intervals with desired pident threshold
                 for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
                     if intervals:
@@ -165,10 +167,10 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                 global_palign_pident_max = max(total_length['query'] / result['query_length'],
                                                 total_length['subject'] / result['subject_length'])
                 # Calculate local palign
-                local_palign = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
-                                    (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
+                local_palign_min = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
+                                       (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
                 # If the alignment is more than 0
-                if local_palign >= 0:
+                if local_palign_min >= 0:
                     # if IDs of loci representatives are included in the frequency_cds_cluster
                     # they are in this format loci1_x.
                     if loci_ids:
@@ -180,10 +182,10 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                         'kmers_cov': cov,
                         'frequency_in_genomes_query_cds': frequency_cds_cluster[query],
                         'frequency_in_genomes_subject_cds': frequency_cds_cluster[subject],
-                        'global_palign_all': global_palign_all,
+                        'global_palign_all_max': global_palign_all_max,
                         'global_palign_pident_min': global_palign_pident_min,
                         'global_palign_pident_max': global_palign_pident_max,
-                        'local_palign': local_palign
+                        'local_palign_min': local_palign_min
                     }
                     # Get the original loci representived ID.
                     if loci_ids:
@@ -258,7 +260,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                 query_subject_freq = blastn_entry['frequency_in_genomes_query_cds']/blastn_entry['frequency_in_genomes_subject_cds']
                 subject_query_freq = blastn_entry['frequency_in_genomes_subject_cds']/blastn_entry['frequency_in_genomes_query_cds']
                 
-                if blastn_entry['global_palign_all'] >= 0.8:
+                if blastn_entry['global_palign_all_max'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
@@ -276,7 +278,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     else:
                         add_class_to_dict('1c')
                 # Palign < 0.8        
-                elif blastn_entry['global_palign_all'] > 0.2 and blastn_entry['global_palign_all'] <= 0.8:
+                elif blastn_entry['global_palign_all_max'] > 0.2 and blastn_entry['global_palign_all_max'] <= 0.8:
                     if blastn_entry['pident'] >= constants[1]:
                         # Verify if between CDS there ir more than 10x
                         # difference in presence in the schema
@@ -577,16 +579,14 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         groups.
     """
     # Create directories.
-    cds_outcome_results_graphs = os.path.join(output_path, "Blast_results_outcomes_graphs")
-    ff.create_directory(cds_outcome_results_graphs)
     
-    fasta_folder = os.path.join(output_path, "results_outcomes_fastas")
+    fasta_folder = os.path.join(output_path, "results_fastas")
     ff.create_directory(fasta_folder)
     
-    cds_outcome_results_fastas_folder = os.path.join(fasta_folder, "results_outcomes_fastas")
+    cds_outcome_results_fastas_folder = os.path.join(fasta_folder, "results_group_dna_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
     
-    cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_outcomes_reps_fastas")
+    cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_group_dna_reps_fastas")
     ff.create_directory(cds_outcome_results_reps_fastas_folder)
 
     # Display info about the results obtained from processing the classes.
@@ -612,6 +612,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                   f" and are contained in {len(cds_to_keep['1a'])} joined groups.")
         else:
             print(f"\t\tOut of those groups, {count} CDS are classified as {class_}.")
+
     if cds_to_keep.get('Retained_not_matched_by_blastn'):
        print(f"\t{len(cds_to_keep['Retained_not_matched_by_blastn'])} didn't have any BLASTn matches so they were retained.")
     
@@ -671,7 +672,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                         fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
 
     # Create directories.
-    groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation_deduplicated")
+    groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation")
     ff.create_directory(groups_trans_folder)
     # Translate possible new loci.
     groups_trans = {}
@@ -686,7 +687,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
     # Translate all clusters into their respective cluster file.
     # Create directories
-    group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps_deduplicated")
+    group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps")
     ff.create_directory(group_trans_rep_folder)
     # Translate possible new loci representatives.
     groups_trans_reps_paths = {}
@@ -704,27 +705,23 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         for id_, sequence in trans_dict.items():
             reps_trans_dict_cds[id_] = sequence
 
-    # Create graphs for all results and for each class.
-    classes_tsv_path = os.path.join(output_path, 'blast_results_by_class')
-    for tsv_file_path in os.listdir(classes_tsv_path):
-        abs_path = os.path.join(classes_tsv_path, tsv_file_path)
-        file_name = os.path.basename(tsv_file_path)
-        # Create directories.
-        graphs_path = os.path.join(cds_outcome_results_graphs, f"{file_name.replace('tsv','')}")
-        ff.create_directory(graphs_path)
-        # Render histograms.
-        gf.render_histogram(abs_path,
-                            graphs_path,
-                            ['Query_length', 'Subject_length'],
-                            ['Length', 'Count'])
-        # Render line charts.
-        gf.render_line_chart(abs_path,
-                             graphs_path,
-                             ['Pident', 'Prot_BSR', 'Prot_seq_Kmer_sim',
-                              'Prot_seq_Kmer_cov'],
-                             ['Entries', 'Values'], False)
-
     return groups_paths_reps, reps_trans_dict_cds, master_file_rep
+
+def create_graphs(file_path, output_path):
+    
+    results_output = os.path.join(output_path, "Graph_folder")
+    ff.create_directory(results_output)
+    
+    blast_results_df = ff.import_df_from_file(file_path, '\t')
+    
+    # Create boxplots
+    traces = []
+    for column in ['Global_palign_all_max', 'Global_palign_pident_min', 'Global_palign_pident_max', 'Palign_local_min']:
+        traces.append(gf.trace_box_plot(blast_results_df[column]))
+    
+    fig = gf.generate_box_plot(traces, "Palign Values", "Palign", "Column")
+    
+    gf.write_fig_to_html(fig, results_output, "BLAST_results_unclassified_classes")
 
 def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cds, 
                    cds_to_keep, cds_present, frequency_cds_cluster, allelecall_directory, 
@@ -1316,6 +1313,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
      reps_trans_dict_cds,
      master_file_rep] = wrap_up_blast_results(cds_to_keep, not_included_cds,
                                               clusters, results_output, constants)
+                                              
+    print("Create graphs for the BLAST results...")
+    create_graphs(report_file_path, results_output)
+
     print("\nReading schema loci short FASTA files...")
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
