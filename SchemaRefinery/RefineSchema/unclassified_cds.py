@@ -41,32 +41,32 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_groups
     No return, writes or appends a file at the file_path
     """
     
-    header = ["Query\t",
-              "Subject\t",
-              "Query_length\t",
-              "Subject_length\t",
-              "Query_start\t",
-              "Query_end\t",
-              "Subject_start\t",
-              "Subject_end\t",
-              "Length\t",
-              "Score\t",
-              "Number_of_gaps\t",
-              "Pident\t",
-              "Prot_BSR\t",
-              "Prot_seq_Kmer_sim\t",
-              "Prot_seq_Kmer_cov\t",
-              "Cluster_frequency_in_genomes_query_cds\t",
-              "Cluster_frequency_in_genomes_subject_cds\t",
-              "Global_palign_all_max\t",
-              "Global_palign_pident_min\t",
-              "Global_palign_pident_max\t",
-              "Palign_local_min\t",
-              "Class\n"]
+    header = ['Query\t',
+              'Subject\t',
+              'Query_length\t',
+              'Subject_length\t',
+              'Query_start\t',
+              'Query_end\t',
+              'Subject_start\t',
+              'Subject_end\t',
+              'Length\t',
+              'Score\t',
+              'Number_of_gaps\t',
+              'Pident\t',
+              'Prot_BSR\t',
+              'Prot_seq_Kmer_sim\t',
+              'Prot_seq_Kmer_cov\t',
+              'Cluster_frequency_in_genomes_query_cds\t',
+              'Cluster_frequency_in_genomes_subject_cds\t',
+              'Global_palign_all_max\t',
+              'Global_palign_pident_min\t',
+              'Global_palign_pident_max\t',
+              'Palign_local_min\t',
+              'Class\n']
 
     if add_groups_ids:
-        header[-1].replace('\n', '\t')
-        header.append('cds_group')
+        header[-1].replace("Class\n", 'CDS_group\t')
+        header.append('Class\n')
 
     # Write or append to the file
     with open(file_path, write_type) as report_file:
