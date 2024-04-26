@@ -10,7 +10,8 @@ try:
                        alignments_functions as af,
                        kmers_functions as kf,
                        iterable_functions as itf,
-                       graphical_functions as gf)
+                       graphical_functions as gf,
+                       pandas_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       sequence_functions as sf,
@@ -19,9 +20,10 @@ except ModuleNotFoundError:
                                       alignments_functions as af,
                                       kmers_functions as kf,
                                       iterable_functions as itf,
-                                      graphical_functions as gf)
+                                      graphical_functions as gf,
+                                      pandas_functions as pf)
 
-def alignment_dict_to_file(blast_results_dict, file_path, write_type):
+def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_groups_ids = False):
     """
     Writes alignments strings to file.
 
@@ -61,7 +63,11 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
               "Global_palign_pident_max\t",
               "Palign_local_min\t",
               "Class\n"]
-    
+
+    if add_groups_ids:
+        header[-1].replace('\n', '\t')
+        header.append('cds_group')
+
     # Write or append to the file
     with open(file_path, write_type) as report_file:
         # Write the header only if the file is being created
@@ -76,7 +82,7 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type):
 def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
-                         frequency_cds_cluster, loci_ids = False):
+                         frequency_cds_cluster, loci_ids, add_groups_ids = None):
     """
     Function to add to BLAST results additional information, it adds:
     bsr: value between the two CDS.
@@ -191,6 +197,14 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                     if loci_ids:
                         query = query_before
                     representative_blast_results[query][subject][entry_id].update(update_dict)
+
+                    if add_groups_ids:
+                        id_ = itf.identify_string_in_dict(subject, add_groups_ids)
+                        if not id_:
+                            id_ = subject
+                        update_dict = {'cds_group': id_}
+                        representative_blast_results[query][subject][entry_id].update(update_dict)
+
                 # If not then the inverse alignment was made, so we remove it
                 else:
                     del representative_blast_results[query][subject][entry_id]
@@ -598,7 +612,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         else:
             count_cases[class_] = len(cds_list)
     # Write info about the classification results.
-    print(f"Out of {len(clusters) if not cds_to_keep.get('Retained_not_matched_by_blastn') else {len(clusters) + len(cds_to_keep.get('Retained_not_matched_by_blastn'))}} clusters:")
+    print(f"Out of {len(clusters) if not cds_to_keep.get('Retained_not_matched_by_blastn') else len(clusters) + len(cds_to_keep.get('Retained_not_matched_by_blastn'))} clusters:")
     print(f"\t{sum(count_cases.values())} CDS representatives had matches with BLASTn"
           f"  which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
     for class_, count in count_cases.items():
@@ -707,7 +721,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
     return groups_paths_reps, reps_trans_dict_cds, master_file_rep
 
-def create_graphs(file_path, output_path):
+def create_graphs(file_path, output_path, other_plots = None):
     
     results_output = os.path.join(output_path, "Graph_folder")
     ff.create_directory(results_output)
@@ -717,11 +731,28 @@ def create_graphs(file_path, output_path):
     # Create boxplots
     traces = []
     for column in ['Global_palign_all_max', 'Global_palign_pident_min', 'Global_palign_pident_max', 'Palign_local_min']:
-        traces.append(gf.trace_box_plot(blast_results_df[column]))
+        traces.append(gf.create_graph_trace('boxplot', plotname = blast_results_df[column].name, y = blast_results_df[column]))
     
-    fig = gf.generate_box_plot(traces, "Palign Values", "Palign", "Column")
+    boxplot = gf.generate_plot(traces, "Palign Values between BLAST results", "Column", "Palign")
     
-    gf.write_fig_to_html(fig, results_output, "BLAST_results_unclassified_classes")
+    # Create line plot.
+    traces = []
+    for column in ['Prot_BSR', 'Prot_seq_Kmer_sim', 'Prot_seq_Kmer_cov']:
+        traces.append(gf.create_graph_trace('boxplot', plotname = blast_results_df[column].name, y = blast_results_df[column]))
+    
+    line_plot = gf.generate_plot(traces, "Protein values between BLAST results", "BLAST entries ID", "Columns")
+    
+    # Create other plots
+    extra_plot = []
+    if other_plots:
+        for plot in other_plots:
+            plot_df = pf.dict_to_df(plot[0])
+            for column in plot_df.columns.tolist():
+                trace = gf.create_graph_trace(plot[1], plotname = plot_df[column].name, x = plot_df[column])
+            
+            extra_plot.append(gf.generate_plot(trace, plot[2], plot[3], plot[4]))
+
+    gf.save_plots_to_html([boxplot, line_plot] + extra_plot, results_output, "Graphs_results")
 
 def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cds, 
                    cds_to_keep, cds_present, frequency_cds_cluster, allelecall_directory, 
@@ -805,7 +836,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
     add_items_to_results(representative_blast_results, None, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
-                         frequency_cds_cluster, True)
+                         frequency_cds_cluster, True, cds_to_keep['1a'])
 
     # Separate results into different classes.
     classes_outcome, drop_list = separate_blastn_results_into_classes(representative_blast_results,
@@ -813,7 +844,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
     
     report_file_path = os.path.join(results_output, "blast_all_matches.tsv")
     # Write all of the BLASTn results to a file.
-    alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
+    alignment_dict_to_file(representative_blast_results, report_file_path, 'w', True)
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
@@ -924,7 +955,7 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
                                 repeat(master_fasta_to_blast_against)):
 
             filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-                res[1], constants[1], True, False)
+                res[1], constants[1], True, False, True)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
             representative_blast_results_coords_all.update(alignment_coords_all)
@@ -1038,7 +1069,7 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
                                 rep_paths_prot.values(),
                                 repeat(blastp_results_ss_folder)):
             
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True)
+            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True)
     
             # Save self-score
             self_score_dict[res[0]] = self_score
@@ -1060,7 +1091,7 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
             
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True)
             
             if not multi_fasta:
                 # Get IDS of entries that matched with BLASTn but didnt match with BLASTp
@@ -1114,6 +1145,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Identifying CDS not present in the schema...")
     # Get dict with CDS ids as key and sequence as values.
     not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
+    
+    # Count CDS size
+    cds_size = {}
+    for key, sequence in not_included_cds.items():
+        cds_size.setdefault(key, len(str(sequence)))
+
     total_cds = len(not_included_cds)
     print(f"\nIdentified {total_cds} valid CDS not present in the schema.")
     # Filter by size.
@@ -1162,6 +1199,11 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                                            cds_not_present_untrans_file_path,
                                                                            constants[5],
                                                                            True)
+    # Count translation sizes.
+    cds_translation_size = {}
+    for key, sequence in cds_translation_dict.items():
+        cds_translation_size.setdefault(key, len(sequence))
+
     # Print additional information about translations and deduplications.
     print(f"\n{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
 
@@ -1282,7 +1324,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
-                         frequency_cds_cluster)
+                         frequency_cds_cluster, False)
 
     print("\nFiltering BLAST results into classes...")
     results_output = os.path.join(output_directory, "3_Classes_processing")
@@ -1315,7 +1357,12 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                               clusters, results_output, constants)
                                               
     print("Create graphs for the BLAST results...")
-    create_graphs(report_file_path, results_output)
+    cds_size_dicts = {'IDs': cds_size.keys(),
+                      'Size': cds_size.values()}
+    cds_translation_size_dicts = {'IDs': cds_size.keys(),
+                                  'Size': cds_size.values()}
+    create_graphs(report_file_path, results_output, [[cds_size_dicts, 'histogram', "Nucleotide Size", 'Size', 'CDS'],
+                                                     [cds_translation_size_dicts, 'histogram','Protein Size' , 'Size', 'CDS']])
 
     print("\nReading schema loci short FASTA files...")
     # Create directory

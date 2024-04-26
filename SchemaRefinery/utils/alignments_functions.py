@@ -298,7 +298,7 @@ def process_blast_results(blast_results_file, constants_threshold):
     return (alignment_strings, filtered_alignments_dict)
 
 def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
-                                           get_coords, get_self_score):
+                                           get_coords, get_self_score, skip_reverse_alignemnts):
     """
     Reads BLAST results file and extracts the necessary items, based on input
     also fetches the coordinates based on query sequences and self-score contained
@@ -317,6 +317,8 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
         queries from which we can get self-score it returns the largest self-score. 
         Also to note, for self-score to be fecth the query must be also
         in the subjects database).
+    skip_reverse_alignemnts : bool
+        If to skip inverse alignments.
 
     Returns
     -------
@@ -373,6 +375,10 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     self_score = int(score)
                 continue
             
+            if skip_reverse_alignemnts:
+                if int(query_start) > int(query_end) or int(subject_start) > int(subject_end):
+                    continue
+
             if not query in alignments_dict.keys():
                 alignments_dict[query] = {}
                 if get_coords:

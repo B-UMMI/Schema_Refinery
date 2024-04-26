@@ -1,7 +1,6 @@
 import os
 import plotly.graph_objects as go
-import plotly.io as pio
-from plotly.subplots import make_subplots
+import plotly.offline
 
 def render_line_chart(df, output_path, columns, labels, ascending):
     """
@@ -68,11 +67,18 @@ def render_histogram(df, output_path, columns, labels):
         html_path = os.path.join(output_path, f'histogram_{column_id}.html')
         fig.write_html(html_path)
 
-def trace_box_plot(serie):
+def create_graph_trace(function, plotname = None, x = None, y = None):
     
-    return go.Box(x=None, y=serie, name = serie.name)
+    if function == 'boxplot':
+        function = go.Box
+    elif function == 'scatterplot':
+        function = go.Scatter
+    elif function == "histogram":
+        function = go.Histogram
+    
+    return function(x= x, y= y, name = plotname)
 
-def generate_box_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
+def generate_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
     """
     Generate a box plot using Plotly.
 
@@ -99,3 +105,22 @@ def write_fig_to_html(fig, output_path, filename):
     
     html_path = os.path.join(output_path, f'{filename}.html')
     fig.write_html(html_path)
+    
+def save_plots_to_html(figures, output_path, filename):
+    """
+    """
+    
+    html_path = os.path.join(output_path, f'{filename}.html')
+    # Open a new HTML file
+    with open(html_path, 'w') as f:
+        # Write HTML header
+        f.write('<!DOCTYPE html>\n<html>\n<head><title>Plotly Plots</title></head>\n<body>\n')
+    
+        # Write each figure's HTML div to the file
+        for fig in figures:
+            f.write('<div>\n')
+            f.write(plotly.offline.plot(fig, output_type='div', include_plotlyjs=True))
+            f.write('\n</div>\n')
+
+        # Write HTML footer
+        f.write('</body>\n</html>')
