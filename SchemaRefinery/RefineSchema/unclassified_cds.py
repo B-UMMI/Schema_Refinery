@@ -65,7 +65,7 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_groups
               'Class\n']
 
     if add_groups_ids:
-        header[-1].replace("Class\n", 'CDS_group\t')
+        header[-1] = 'CDS_group\t'
         header.append('Class\n')
 
     # Write or append to the file
@@ -283,7 +283,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     elif min([query_subject_freq,subject_query_freq]) <= 0.1:
                         add_class_to_dict('1b')
                         # Remove the subject
-                        if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_query_cds']:
+                        if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_subject_cds']:
                             drop_list.add(id_subject)
                         # Remove the query
                         else:
@@ -299,7 +299,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         if min([query_subject_freq,subject_query_freq]) <= 0.1:
                             add_class_to_dict('2a')
                             # Remove the subject
-                            if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_query_cds']:
+                            if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_subject_cds']:
                                 drop_list.add(id_subject)
                             # Remove the query
                             else:
@@ -374,7 +374,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
                 
                 # Find cases that were already processed or to be dropped.
                 processed_cases = itf.flatten_list([[c for c in cds] for cds in cds_to_keep.values()])
-                processed_cases.append(drop_list)
+                processed_cases += drop_list
                 # Process all of the cases that have 1a classification.
                 # even if they may be in drop_list
                 if class_ == '1a':
@@ -434,7 +434,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
     return cds_to_keep, relationships, important_relationships
 
 def write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    classes_outcome, output_path):
+                                    classes_outcome, loci_alleles, cds_matched_loci, cds_cluster, output_path):
     """
     Write the results from processed_classes into various files.
     
@@ -461,6 +461,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     ff.create_directory(blast_by_cluster_output)
     
     # Get all of the BLAST entries for that cluster.
+    add_groups_ids = False
     for class_, cds in cds_to_keep.items():
         for i, cluster in enumerate(cds):
             if class_ == '1a':
@@ -471,13 +472,47 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                 id_ = cluster
                 cluster = [cluster]
                 cluster_type = 'retained'
-            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
-                                   for subject, entries in subjects.items()}
-                          for query, subjects in representative_blast_results.items()
-                          if query in cluster}
-        
+            # For the entries that have more than one entry in BLAST results
+            # e.g loci1 has alleles loci1_1 and loci1_2
+            if loci_alleles:
+                is_cds = False
+                add_groups_ids = True
+                cluster_alleles = []
+                for entry in cluster:
+                    # Skip results in the entries if are retained CDS
+                    if entry not in loci_alleles or type(entry) == int:
+                        if type(entry) == int:
+                            cluster = loci_alleles[entry]
+                        cluster_type = 'CDS_cluster'
+                        is_cds = True
+                    else:
+                        cluster_type = 'loci'
+                        cluster_alleles += loci_alleles[entry]
+
+                if not is_cds:
+                    cluster = cluster_alleles
+            else:
+                is_cds = True
+
+            if is_cds and cds_matched_loci:
+                queries = []
+                if type(id_) == int:
+                    queries = cds_matched_loci[id_]
+                else:
+                    for c in cluster:
+                        queries += cds_matched_loci[c]
+                write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
+                                       for subject, entries in subjects.items() if subject in cluster}
+                              for query, subjects in representative_blast_results.items()
+                              if query in queries}
+            else:
+                write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
+                                       for subject, entries in subjects.items()}
+                              for query, subjects in representative_blast_results.items()
+                              if query in cluster}
+
             report_file_path = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{id_}.tsv")
-            alignment_dict_to_file(write_dict, report_file_path, 'w')
+            alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
     
     # Create directory.
     joined_cluster_relationships_output = os.path.join(blast_by_cluster_output, "1_blast_results_by_cluster_relationships")
@@ -509,7 +544,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
             # What write type to use (if file already exists).
             write_type = 'a' if os.path.exists(report_file_path) else 'w'
             # Write BLAST results to file.
-            alignment_dict_to_file(write_dict, report_file_path, write_type)
+            alignment_dict_to_file(write_dict, report_file_path, write_type, add_groups_ids)
             # Path to the relationships report.
             relationships_report_file_path = os.path.join(report_relationships_output, f"relationships_to_cluster_{cluster_id}_report.txt")
             
@@ -562,7 +597,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
 
         report_file_path = os.path.join(joined_cluster_relationships_output, f"blastn_group_{class_}.tsv")
         # Write individual class to file.
-        alignment_dict_to_file(write_dict, report_file_path, 'w')
+        alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
             
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
                           constants):
@@ -612,8 +647,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         else:
             count_cases[class_] = len(cds_list)
     # Write info about the classification results.
-    print(f"Out of {len(clusters) if not cds_to_keep.get('Retained_not_matched_by_blastn') else len(clusters) + len(cds_to_keep.get('Retained_not_matched_by_blastn'))} clusters:")
-    print(f"\t{sum(count_cases.values())} CDS representatives had matches with BLASTn"
+    print(f"Out of {len(clusters)} clusters:")
+    print(f"\t{sum(count_cases.values() - len(cds_to_keep['Retained_not_matched_by_blastn']))} CDS representatives had matches with BLASTn"
           f"  which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
     for class_, count in count_cases.items():
         if class_ == 'Retained_not_matched_by_blastn':
@@ -770,17 +805,21 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
         Dict with the paths to the translations of the unclassified CDS clusters.
     results_output : str
         Path were to write the results of this function.
-    self_score_dict : dict
-        Self-score for BSR calculation of the unclassified CDS reps to consider.
     reps_trans_dict_cds : dict
         Dict that contains the translations for each CDS.
+    cds_to_keep : dict     
+        Dict of the CDS to keep by each classification.
+    cds_present : dict
+        Dict that contains the frequency of each CDS in the genomes.
+    allelecall_directory : str
+        Path to the allele call directory.
+    master_file_rep : str
+        Path to the maste file containing retained CDS.
+    frequency_cds_cluster
     constants : list
         Contains the constants to be used in this function.
     cpu : int
         Number of CPUs to use during multi processing.
-    cds_to_keep : dict     
-        Dict of the CDS to keep by each classification.
-
     Returns
     -------
     representative_blast_results : dict
@@ -838,6 +877,9 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
                          representative_blast_results_coords_pident,
                          frequency_cds_cluster, True, cds_to_keep['1a'])
 
+    # Add CDS joined clusters to loci_alleles IDS
+    cds_cluster = cds_to_keep['1a']
+    loci_alleles.update(cds_cluster)
     # Separate results into different classes.
     classes_outcome, drop_list = separate_blastn_results_into_classes(representative_blast_results,
                                                                       constants)
@@ -856,20 +898,33 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
         class_: set(
             [entry if not itf.identify_string_in_dict(entry, loci_alleles) else itf.identify_string_in_dict(entry, loci_alleles) for entry in entries]
         )
-        for class_, entries in cds_to_keep.items()
+        if class_ != '1a' else entries for class_, entries in cds_to_keep.items()
     }
+
     # Filter repeated entries
     seen = set()
     for class_, entries in list(cds_to_keep.items()):
         for entry in list(entries):
-            if entry in seen:
-                cds_to_keep[class_].remove(entry)
-            else:
+            if entry not in seen:
                 seen.add(entry)
+            else:
+                cds_to_keep[class_].remove(entry)
+
+    cds_matched_loci = {}
+    for class_, entries in list(cds_to_keep.items()):
+        for entry in list(entries):
+            if entry not in schema_loci_short:
+                if type(entry) == int:
+                    id_ = entry
+                    entry = cds_cluster[entry]
+                else:
+                    id_ = entry
+                    entry = [entry]
+                cds_matched_loci.setdefault(id_, set([i[0] for i in itf.flatten_list(important_relationships.values()) if i[1] in entry]))
 
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    classes_outcome, results_output)
+                                    classes_outcome, loci_alleles, cds_matched_loci, cds_cluster, results_output)
     
     print("Wrapping up BLAST results...")
 
@@ -1348,7 +1403,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
 
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    classes_outcome, results_output)
+                                    classes_outcome, None, None, None, results_output)
     
     print("Wrapping up BLAST results...")
     [groups_paths_reps,
