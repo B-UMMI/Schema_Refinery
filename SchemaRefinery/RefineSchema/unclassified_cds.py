@@ -434,7 +434,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list):
     return cds_to_keep, relationships, important_relationships
 
 def write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    classes_outcome, loci_alleles, cds_matched_loci, cds_cluster, output_path):
+                                    classes_outcome, all_alleles, cds_matched_loci, output_path):
     """
     Write the results from processed_classes into various files.
     
@@ -449,6 +449,13 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
         info.
     classes_outcome : list
         List of list that contains class IDS used in the next function.
+    all_alleles : dict
+        Dict that contains the loci and joined group as keys and their alleles and 
+        elements IDS as values.
+        Can be None if no loci are involved.
+    cds_matched_loci : dict
+        Dict that contains with which loci alleles did CDS and joined group match.
+        Can be None if no loci are involved.
     output_path : str
         Path were to write files.
         
@@ -474,20 +481,20 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                 cluster_type = 'retained'
             # For the entries that have more than one entry in BLAST results
             # e.g loci1 has alleles loci1_1 and loci1_2
-            if loci_alleles:
+            if all_alleles:
                 is_cds = False
                 add_groups_ids = True
                 cluster_alleles = []
                 for entry in cluster:
                     # Skip results in the entries if are retained CDS
-                    if entry not in loci_alleles or type(entry) == int:
+                    if entry not in all_alleles or type(entry) == int:
                         if type(entry) == int:
-                            cluster = loci_alleles[entry]
+                            cluster = all_alleles[entry]
                         cluster_type = 'CDS_cluster'
                         is_cds = True
                     else:
                         cluster_type = 'loci'
-                        cluster_alleles += loci_alleles[entry]
+                        cluster_alleles += all_alleles[entry]
 
                 if not is_cds:
                     cluster = cluster_alleles
@@ -617,7 +624,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         as values.
     output_path : str
         Path to were write the FASTA files.
-        
+    constants : list
+        Contains the constants to be used in this function.
     Returns
     -------
     groups_paths_reps : dict
@@ -811,11 +819,12 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
         Dict of the CDS to keep by each classification.
     cds_present : dict
         Dict that contains the frequency of each CDS in the genomes.
-    allelecall_directory : str
-        Path to the allele call directory.
     master_file_rep : str
         Path to the maste file containing retained CDS.
-    frequency_cds_cluster
+    frequency_cds_cluster : dict
+        Contains the frequency of each CDS/loci in the genomes.
+    allelecall_directory : str
+        Path to the allele call directory.
     constants : list
         Contains the constants to be used in this function.
     cpu : int
@@ -847,14 +856,14 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
     # Translate each short loci and write to master fasta.
     i = 1
     len_short_folder = len(schema_loci_short)
-    loci_alleles = {}
+    all_alleles = {}
     for loci, loci_short_path in schema_loci_short.items():
         print(f"\rTranslated fasta short loci: {i}/{len_short_folder}", end='', flush=True)
         i += 1
         fasta_dict = sf.fetch_fasta_dict(loci_short_path, False)
         
         for loci_id, sequence in fasta_dict.items():
-            loci_alleles.setdefault(loci, []).append(loci_id)
+            all_alleles.setdefault(loci, []).append(loci_id)
 
         loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
         translation_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
@@ -870,16 +879,16 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
      representative_blast_results_coords_pident,
      bsr_values,
      _] = run_blasts(master_file_rep, schema_loci_short, reps_trans_dict_cds,
-                     schema_loci_short, results_output, constants, cpu, loci_alleles)
+                     schema_loci_short, results_output, constants, cpu, all_alleles)
 
     add_items_to_results(representative_blast_results, None, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
                          frequency_cds_cluster, True, cds_to_keep['1a'])
 
-    # Add CDS joined clusters to loci_alleles IDS
-    cds_cluster = cds_to_keep['1a']
-    loci_alleles.update(cds_cluster)
+    # Add CDS joined clusters to all_alleles IDS
+    cds_joined_cluster = cds_to_keep['1a']
+    all_alleles.update(cds_joined_cluster)
     # Separate results into different classes.
     classes_outcome, drop_list = separate_blastn_results_into_classes(representative_blast_results,
                                                                       constants)
@@ -896,7 +905,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
     # Replace the alleles entries with their loci ID.
     cds_to_keep = {
         class_: set(
-            [entry if not itf.identify_string_in_dict(entry, loci_alleles) else itf.identify_string_in_dict(entry, loci_alleles) for entry in entries]
+            [entry if not itf.identify_string_in_dict(entry, all_alleles) else itf.identify_string_in_dict(entry, all_alleles) for entry in entries]
         )
         if class_ != '1a' else entries for class_, entries in cds_to_keep.items()
     }
@@ -916,7 +925,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
             if entry not in schema_loci_short:
                 if type(entry) == int:
                     id_ = entry
-                    entry = cds_cluster[entry]
+                    entry = cds_joined_cluster[entry]
                 else:
                     id_ = entry
                     entry = [entry]
@@ -924,7 +933,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
 
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    classes_outcome, loci_alleles, cds_matched_loci, cds_cluster, results_output)
+                                    classes_outcome, all_alleles, cds_matched_loci, results_output)
     
     print("Wrapping up BLAST results...")
 
@@ -1403,7 +1412,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
 
     print("Writting classes results to files...")
     write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
-                                    classes_outcome, None, None, None, results_output)
+                                    classes_outcome, None, None, results_output)
     
     print("Wrapping up BLAST results...")
     [groups_paths_reps,
