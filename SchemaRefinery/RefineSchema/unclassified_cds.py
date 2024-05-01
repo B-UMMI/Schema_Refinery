@@ -383,6 +383,7 @@ def process_classes(representative_blast_results, classes_outcome, drop_list, cd
                     # Since query and subject CDS are kept inside joined clusters
                     # then remove them from drop_list
                     drop_list = [x for x in drop_list if x not in [query, id_subject]]
+                    important_relationships[class_].append([query, id_subject])
                     
                 # All of the other classifications
                 else:
@@ -843,6 +844,7 @@ def process_schema(schema, groups_paths_reps, results_output, reps_trans_dict_cd
         Contains the constants to be used in this function.
     cpu : int
         Number of CPUs to use during multi processing.
+
     Returns
     -------
     representative_blast_results : dict
@@ -1229,32 +1231,61 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
             representative_blast_results_coords_pident, bsr_values, self_score_dict]
 
 def report_main_relationships(important_relationships, representative_blast_results, all_alleles, loci, results_output):
+    """
+    This function reports on the decisive relationships. Based on these relationships the
+    decision to which class those CDS or loci were added and if they were ratained
+    or removed.
+
+    Parameters
+    ----------
+    important_relationships : dict
+        Dict that contains as keys the class and values the decisive relatioships
+        between loci/CDS.
+    representative_blast_results : dict
+        Dict that contains BLAST results of the representatives with all of the additional
+        info.
+    all_alleles : dict
+        Dict that contains the loci and joined group as keys and their alleles and 
+        elements IDS as values.
+    loci : bool
+        If loci allele IDs are presebt in the important_relationships and representative_blast_results.
+    results_output : str
+        Path were to write the results of this function.
+        
+    Returns
+    -------
+    """
     # Create directories and files
     relationship_output_dir = os.path.join(results_output, "Relationships_results")
     ff.create_directory(relationship_output_dir)
-
     
     for class_, relationships in important_relationships.items():
         for relationship in relationships:
             query_id = relationship[0]
+            # If loci id is present e.g loci1_1.
             if loci:
                 id_1 = relationship[0].split('_')[0]
+            # CDS ID e.g CDS.
             else:
-                id_1 = relationship[0]
-            
+                # If CDS is part of joined group.
+                id_1 = itf.identify_string_in_dict(relationship[1], all_alleles)
+                if not id_1:
+                    id_1 = relationship[0]
+            # If CDS is part of joined group.
             id_2 = itf.identify_string_in_dict(relationship[1], all_alleles)
             subject_id = relationship[1]
             if not id_2:
                 id_2 = relationship[1]
-            
+            # Get BLAST results by query, subject and class.
             write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
                                    for subject, entries in subjects.items() if subject == subject_id}
                           for query, subjects in representative_blast_results.items() if query == query_id}
-
-            report_file_path = os.path.join(relationship_output_dir, f"{id_1}_vs_{id_2}_{class_}.tsv")
-
+            # If two CDS were part of the same joined cluster just keep the ID of the cluster.
+            file_name = f"{id_1}_vs_{id_2}_{class_}.tsv" if id_1 != id_2 else f"{id_1}_{class_}.tsv"
+            report_file_path = os.path.join(relationship_output_dir, file_name)
+            # If file already exists just append.
             write_type = 'a' if os.path.exists(report_file_path) else 'w'
-            
+            # Write to file the results.
             alignment_dict_to_file(write_dict, report_file_path, write_type, True)
         
 def main(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
