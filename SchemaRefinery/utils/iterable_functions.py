@@ -417,3 +417,12 @@ def tsv_to_dict(file_path, skip_header = False):
             data_dict[key] = rest_values
 
     return data_dict
+
+def partially_contains_fragment_of_list(sublist, target_list):
+    """
+    Check if any sublist in a list of lists partially contains the target list.
+    """
+    for sub in sublist:
+        if any(sub[i:i+len(target_list)] == target_list for i in range(len(sub)-len(target_list)+1)):
+            return True
+    return False
