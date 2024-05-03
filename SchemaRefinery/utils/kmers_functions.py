@@ -8,9 +8,9 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
         String to divide into k-mers.
     k_value : int
         Value for the size of k-mers.
-    offset : int
+    offset : int, optional
         Value to indicate offset of consecutive k-mers.
-    position : bool
+    position : bool, optional
         If the start position of the k-mers in the string
         should be stored.
 
@@ -50,11 +50,13 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
         Window size value. Number of adjacent k-mers per group.
     k_value : int
         Value of k for the k-mer size.
-    offset : int
+    offset : int, optional
         Value to indicate offset of consecutive k-mers.
-    position : bool
+    position : bool, optional
         If the start position of the k-mers in the sequence
         should be stored.
+    guarantee_tip : bool, optional
+        If guarantee that the minimizer cover the start and end of the sequence.
 
     Returns
     -------

@@ -393,7 +393,24 @@ def remove_empty_dicts_recursive(nested_dict):
                 del nested_dict[key]
     return nested_dict
 
-def tsv_to_dict(file_path, skip_header = False):
+def tsv_to_dict(file_path, skip_header = False, sep = '\t'):
+    """
+    Converts input TSV into a dict based on the desired separator.
+    
+    Parameters
+    ----------
+    file_path : str
+        Path to the TSV file.
+    skip_header : bool, optional
+        If to ignore the header when importing.
+    sep : str, optional
+        String to seperate the values inside the TSV file.
+    
+    Returns
+    -------
+    data_dict : dict
+        Returns the TSV file converted to the dict.
+    """
     # Initialize an empty dictionary to store data
     data_dict = {}
 
@@ -405,7 +422,7 @@ def tsv_to_dict(file_path, skip_header = False):
                 continue
                 
             # Split the line by tabs
-            values = line.strip().split('\t')
+            values = line.strip().split(sep)
 
             # Extract the key (first column entry)
             key = values[0]
@@ -418,11 +435,24 @@ def tsv_to_dict(file_path, skip_header = False):
 
     return data_dict
 
-def partially_contains_fragment_of_list(sublist, target_list):
+def partially_contains_fragment_of_list(target_list, list_of_lists):
     """
-    Check if any sublist in a list of lists partially contains the target list.
+    Check if the target_list is contained inside sublist even if it partially.
+    e.g partially_contains_fragment_of_list(['a', 'b'], [['a', 'b', 'c'], ['d', 'e']])
+    returns True.
+    
+    Parameters
+    ----------
+    target_list : list
+        List to find inside the list_of_lists.
+    list_of_lists : list
+        The nested list.
+    Returns
+    -------
+    returns : bool
+        True if contains False if not.
     """
-    for sub in sublist:
+    for sub in list_of_lists:
         if any(sub[i:i+len(target_list)] == target_list for i in range(len(sub)-len(target_list)+1)):
             return True
     return False

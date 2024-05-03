@@ -187,7 +187,7 @@ def translate_dna(dna_sequence, table_id, min_len, cds=True):
         translation method.
     min_len : int
         minimum length for the sequence.
-    cds : bool
+    cds : bool, optional
         if has cds
 
     Returns
@@ -304,7 +304,9 @@ def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, cou
         minimum length for the sequence.
     count_seq : bool
         If there is need to print into stdout the number of processed sequences.
-        
+    deduplicate : bool, optional
+        If the process of sequence deduplication is needed.
+    
     Returns
     -------
     translation_dict : dict

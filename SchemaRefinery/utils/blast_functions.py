@@ -51,18 +51,18 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
         to align against the database.
     blast_output : str
         Path to the output file.
-    max_hsps : int
+    max_hsps : int, optional
         Maximum number of High-Scoring Pairs.
-    threads : int
+    threads : int, optional
         Number of threads passed to BLAST.
-    ids_file : path
+    ids_file : path, optional
         Path to a file with the identifiers of the sequences
         to align against. Used to specify the database sequences
         we want to align against.
-    blast_task : str
+    blast_task : str, optional
         BLAST task. Allows to set default parameters for a specific
         type of search.
-    max_targets : int
+    max_targets : int, optional
         Maximum number of targets sequences to align against.
 
     Returns
@@ -114,7 +114,8 @@ def run_blast_with_args_only(blast_args):
     if len(stderr) > 0:
         print(stderr)
 
-def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results_all_representatives, representative_file_dict, all_representatives_file):
+def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results_all_representatives,
+                                                  representative_file_dict, all_representatives_file):
     """
     This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
 

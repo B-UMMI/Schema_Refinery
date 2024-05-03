@@ -67,30 +67,55 @@ def render_histogram(df, output_path, columns, labels):
         html_path = os.path.join(output_path, f'histogram_{column_id}.html')
         fig.write_html(html_path)
 
-def create_graph_trace(function, plotname = None, x = None, y = None):
+def create_graph_trace(function, x , y, plotname = None):
+    """
+    Based on input creates and returns a graph trace using plotly.
     
+    Parameters
+    ----------
+    function : str
+        Which plot to trace, can be ['boxplot', 'scatterplot', 'histogram']
+    x : pandas dataframe
+        Values to add to the trace contained in pandas dataframe.
+    y : pandas dataframe
+        Values to add to the trace contained in pandas dataframe.
+    plotname : str, optional
+        The name for the plot.
+    
+    Returns
+    -------
+    returns : plotly.graph_objects object
+        Returns a trace.
+
+    """
     if function == 'boxplot':
         function = go.Box
     elif function == 'scatterplot':
         function = go.Scatter
-    elif function == "histogram":
+    elif function == 'histogram':
         function = go.Histogram
     
     return function(x= x, y= y, name = plotname)
 
 def generate_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
     """
-    Generate a box plot using Plotly.
+    Generate a plot using Plotly based on input traces.
 
-    Args:
-        x_data (list): List of labels for the categories.
-        y_data (list of lists): List of lists containing the values for each category.
-        title (str, optional): Title of the plot.
-        xaxis_title (str, optional): Title of the x-axis.
-        yaxis_title (str, optional): Title of the y-axis.
+    Parameters
+    ----------
+    traces : list
+        Contains List of traces.
+    title : str, optional
+        Title for the plot.
+    xaxis_title : str, optional
+        x axis title.
+    yaxis_title : str, optional
+        y axis title
 
-    Returns:
-        None
+    Returns
+    -------
+    returns : plotly.graph_objects object
+        Returns a generated plot.
     """
 
     # Create layout
@@ -102,12 +127,41 @@ def generate_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
     return fig
 
 def write_fig_to_html(fig, output_path, filename):
-    
+    """
+    Writes the fig plotly object to HTML file.
+
+    Parameters
+    ----------
+    fig : plotly.graph_objects object
+        Figure onject to write to HTML file.
+    output_path : str
+        Path were to save the HTML file.
+    filename : str
+        Name for the HTML file.
+        
+    Returns
+    -------
+    Writes an HTML file containg the plot to the output directory.
+    """
     html_path = os.path.join(output_path, f'{filename}.html')
     fig.write_html(html_path)
     
 def save_plots_to_html(figures, output_path, filename):
     """
+    Saves a list of plotly.graph_objects object to one HTML file.
+    
+    Parameters
+    ----------
+    figures : list
+        List that contains the figures to save.
+    output_path : str
+        Path to the output directory.
+    filename : str
+        Name for the HTML file.
+
+    Returns
+    -------
+    Writes an HTML file containg the plots to the output directory.
     """
     
     html_path = os.path.join(output_path, f'{filename}.html')

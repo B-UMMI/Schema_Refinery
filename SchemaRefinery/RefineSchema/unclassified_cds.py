@@ -35,6 +35,8 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_groups
         File path to create to write the file
     write_type : str
         If to create new file and write or to append to existing file
+    add_groups_ids : bool, optional
+        If to add to the header the CDS_group column.
 
     Returns
     -------
@@ -317,16 +319,22 @@ def process_classes(representative_blast_results, classes_outcome, cds_joined_cl
         info.
     classes_outcome : list
         All of the existing classes.
-    drop_list
-        Contains the CDS IDs to be removed from further processing for appearing
-        fewer time in genomes than their match.
-        
+    cds_joined_cluster : dict, optional
+        Dict that contains as keys the IDS of joined clusters or loci, and values
+        its elements.
+
     Returns
     -------
     cds_to_keep : dict     
         Dict of the CDS to keep by each classification.
     relationships : dict
         Dict that contains relationships between various CDS and clusters.
+    important_relationships : dict
+        Dict that contains as keys the class and values the decisive relatioships
+        between loci/CDS.
+    drop_list : dict
+        Contains the CDS IDs to be removed from further processing for appearing
+        fewer time in genomes than their match.
     """
     # Create variables.
     # Variable to add the CDS what will be kept by class.
@@ -425,7 +433,7 @@ def process_classes(representative_blast_results, classes_outcome, cds_joined_cl
                         else:
                             retain[0] = 'ar'
 
-                if not itf.partially_contains_fragment_of_list(important_relationships[class_], [id_subject, query]) and retain:
+                if not itf.partially_contains_fragment_of_list([id_subject, query], important_relationships[class_]) and retain:
                     important_relationships[class_].append([query, id_subject, retain])
 
                 # If to add relationship between different CDS and clusters.
@@ -797,7 +805,25 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     return groups_paths_reps, reps_trans_dict_cds, master_file_rep
 
 def create_graphs(file_path, output_path, other_plots = None):
+    """
+    Create graphs based on representative_blast_results written inside a TSV file,
+    this function creates severall plots related to palign and protein values, with
+    the option to create additional plots based on inputs values.
     
+    Parameters
+    ----------
+    file_path : str
+        Path to the TSV file.
+    output_path : str
+        Path to the output directory.
+    other_plots : list, optional
+        List that contains additional data to create plots.
+
+    Returns
+    -------
+    Create an HTML file inside the output_path that contains all of the created
+    graphs.
+    """
     results_output = os.path.join(output_path, "Graph_folder")
     ff.create_directory(results_output)
     
@@ -1031,7 +1057,7 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
         Contains the constants to be used in this function.
     cpu : int
         Number of CPUs to use during multi processing.
-    multi_fasta : dict
+    multi_fasta : dict, optional
         This dict is used as argument in case there are more than one element
         inside each of CDSs FASTA file, since in the initial input of the FASTA
         file may contain more than one CDSs (in case there are more than one
@@ -1042,9 +1068,6 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
         the common group protein FASTA file to perform BLASTp so the results of 
         BLASTp are more compacted and the results file represent their original 
         input group.
-    self_score_dict : dict
-        This dict contains the self-score values for all of the CDSs that are
-        processed in this function.
         
     Returns
     -------
@@ -1277,6 +1300,8 @@ def report_main_relationships(important_relationships, representative_blast_resu
         
     Returns
     -------
+    Creates various TSV files inside the results_output directory for each
+    imporant relationship present.
     """
     # Create directories and files
     relationship_output_dir = os.path.join(results_output, "Relationships_results")
