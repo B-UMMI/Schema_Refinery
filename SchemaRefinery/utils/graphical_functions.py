@@ -67,7 +67,7 @@ def render_histogram(df, output_path, columns, labels):
         html_path = os.path.join(output_path, f'histogram_{column_id}.html')
         fig.write_html(html_path)
 
-def create_graph_trace(function, x , y, plotname = None):
+def create_graph_trace(function, x = None , y = None, plotname = None):
     """
     Based on input creates and returns a graph trace using plotly.
     
@@ -75,9 +75,9 @@ def create_graph_trace(function, x , y, plotname = None):
     ----------
     function : str
         Which plot to trace, can be ['boxplot', 'scatterplot', 'histogram']
-    x : pandas dataframe
+    x : pandas dataframe, optional
         Values to add to the trace contained in pandas dataframe.
-    y : pandas dataframe
+    y : pandas dataframe, optional
         Values to add to the trace contained in pandas dataframe.
     plotname : str, optional
         The name for the plot.
