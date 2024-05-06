@@ -53,3 +53,23 @@ def get_paths_in_directory(directory):
     file_paths = [os.path.join(directory, item) for item in all_items if os.path.isfile(os.path.join(directory, item))]
     
     return file_paths
+
+def get_file_paths_dict(directory):
+    """
+    Get a dictionary where keys are filenames and values are file paths within the directory.
+    """
+    file_paths_dict = {}
+    
+    # List all files and directories in the specified directory
+    all_items = os.listdir(directory)
+    
+    # Iterate over the filenames and construct the dictionary
+    for filename in all_items:
+        # Construct the file path
+        file_path = os.path.join(directory, filename)
+        # Check if it's a file (not a directory)
+        if os.path.isfile(file_path):
+            # Add to the dictionary
+            file_paths_dict[filename] = file_path
+    
+    return file_paths_dict
