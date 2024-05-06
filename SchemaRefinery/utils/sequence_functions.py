@@ -354,6 +354,7 @@ def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, cou
                     protein_hashes[prot_hash].append(id_s)
             else:
                 translation_dict[id_s] = protein_translation
+                translation.write(f'>{id_s}\n{protein_translation}\n')
     if untras_seq and untras_path:
         with open(untras_path, 'w+') as untras_file:
             for id_s, exceptions in untras_seq.items():
