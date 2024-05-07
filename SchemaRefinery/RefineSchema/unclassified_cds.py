@@ -284,7 +284,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     else:
                         add_class_to_dict('1c')
                 # Palign < 0.8        
-                elif blastn_entry['global_palign_all_max'] > 0.2 and blastn_entry['global_palign_all_max'] <= 0.8:
+                elif blastn_entry['global_palign_all_max'] > 0.4 and blastn_entry['global_palign_all_max'] <= 0.8:
                     if blastn_entry['pident'] >= constants[1]:
                         # Verify if between CDS there ir more than 10x
                         # difference in presence in the schema
@@ -1741,7 +1741,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     cds_size_dicts = {'IDs': cds_size.keys(),
                       'Size': cds_size.values()}
     cds_translation_size_dicts = {'IDs': cds_size.keys(),
-                                  'Size': cds_size.values()}
+                                  'Size': [int(cds/3) for cds in cds_size.values()]}
     create_graphs(report_file_path, results_output, [[cds_size_dicts, 'histogram', "Nucleotide Size", 'Size', 'CDS'],
                                                      [cds_translation_size_dicts, 'histogram','Protein Size' , 'Size', 'CDS']])
 
