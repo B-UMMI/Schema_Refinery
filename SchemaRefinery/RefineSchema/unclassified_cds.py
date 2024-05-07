@@ -816,6 +816,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     file_path = os.path.join(cds_outcome_results, class_name_cds)
                     origin_path = groups_paths_old[cds] if case_id == 0 else loci[cds]
                     ff.copy_file(origin_path, file_path)
+
+        return groups_paths_reps, groups_paths
     else:
         # Write FASTA files for each CDS group to join or retain.
         print("Writting FASTA file for possible new loci...")
@@ -870,45 +872,45 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                             fasta_file.writelines(f">{rep_id}\n")
                             fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
     
-        # Create directories.
-        groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation")
-        ff.create_directory(groups_trans_folder)
-        # Translate possible new loci.
-        groups_trans = {}
-        for key, group_path in groups_paths.items():
-            trans_path = os.path.join(groups_trans_folder, os.path.basename(group_path))
-            groups_trans[key] = trans_path
-            fasta_dict = sf.fetch_fasta_dict(group_path,
-                                             False)
-            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
-                                                            trans_path,
-                                                            None,
-                                                            constants[5], 
-                                                            False,
-                                                            False)
-    
-        # Translate all clusters into their respective cluster file.
-        # Create directories
-        group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps")
-        ff.create_directory(group_trans_rep_folder)
-        # Translate possible new loci representatives.
-        groups_trans_reps_paths = {}
-        reps_trans_dict_cds = {}
-        for key, group_path in groups_paths_reps.items():
-            trans_path = os.path.join(group_trans_rep_folder, os.path.basename(group_path))
-            groups_trans_reps_paths[key] = trans_path
-            fasta_dict = sf.fetch_fasta_dict(group_path,
-                                             False)
-            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
-                                                            trans_path, 
-                                                            None,
-                                                            constants[5], 
-                                                            False,
-                                                            False)
-            for id_, sequence in trans_dict.items():
-                reps_trans_dict_cds[id_] = sequence
+            # Create directories.
+            groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation")
+            ff.create_directory(groups_trans_folder)
+            # Translate possible new loci.
+            groups_trans = {}
+            for key, group_path in groups_paths.items():
+                trans_path = os.path.join(groups_trans_folder, os.path.basename(group_path))
+                groups_trans[key] = trans_path
+                fasta_dict = sf.fetch_fasta_dict(group_path,
+                                                 False)
+                trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+                                                                trans_path,
+                                                                None,
+                                                                constants[5], 
+                                                                False,
+                                                                False)
+        
+            # Translate all clusters into their respective cluster file.
+            # Create directories
+            group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps")
+            ff.create_directory(group_trans_rep_folder)
+            # Translate possible new loci representatives.
+            groups_trans_reps_paths = {}
+            reps_trans_dict_cds = {}
+            for key, group_path in groups_paths_reps.items():
+                trans_path = os.path.join(group_trans_rep_folder, os.path.basename(group_path))
+                groups_trans_reps_paths[key] = trans_path
+                fasta_dict = sf.fetch_fasta_dict(group_path,
+                                                 False)
+                trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
+                                                                trans_path, 
+                                                                None,
+                                                                constants[5], 
+                                                                False,
+                                                                False)
+                for id_, sequence in trans_dict.items():
+                    reps_trans_dict_cds[id_] = sequence
 
-    return groups_paths_reps, groups_paths, reps_trans_dict_cds, master_file_rep
+        return groups_paths_reps, groups_paths, reps_trans_dict_cds, master_file_rep
 
 def create_graphs(file_path, output_path, other_plots = None):
     """
@@ -1114,7 +1116,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                     entry = [entry]
                 cds_matched_loci.setdefault(id_, set([i[0] for i in itf.flatten_list(important_relationships.values()) if i[1] in entry]))
 
-    print("Writting classes results to files...")
+    print("\nWritting classes results to files...")
     write_processed_results_to_file(cds_to_keep,
                                     relationships,
                                     representative_blast_results,
@@ -1123,7 +1125,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                     cds_matched_loci,
                                     results_output)
     
-    print("Wrapping up BLAST results...")
+    print("\nWrapping up BLAST results...")
     
     report_main_relationships(important_relationships,
                               representative_blast_results,
@@ -1132,16 +1134,15 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                               results_output)
 
     [groups_paths_reps,
-     groups_paths,
-     reps_trans_dict_cds,
-     master_file_rep] = wrap_up_blast_results(cds_to_keep,
-                                              not_included_cds,
-                                              all_alleles,
-                                              results_output,
-                                              constants,
-                                              drop_list,
-                                              schema_loci_short,
-                                              groups_paths)
+     groups_paths] = wrap_up_blast_results(cds_to_keep,
+                                           not_included_cds,
+                                           all_alleles,
+                                           results_output,
+                                           constants,
+                                           drop_list,
+                                           schema_loci_short,
+                                           groups_paths)
+
     return representative_blast_results
 
 def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dict,
@@ -1555,11 +1556,15 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Cluster by minimizers.
     [clusters, reps_sequences, 
      reps_groups, prot_len_dict] = cf.minimizer_clustering(cds_translation_dict,
-                                                           5, 5, True, 1, 
+                                                           5,
+                                                           5,
+                                                           True,
+                                                           1, 
                                                            clusters,
                                                            reps_sequences, 
                                                            reps_groups,
-                                                           1, constants[3], 
+                                                           1,
+                                                           constants[3], 
                                                            constants[4],
                                                            True)
     # Print additional information about clustering.
@@ -1607,14 +1612,20 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # is set to 0.
     for cluster_id in reps_translation_dict:
         kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id],
-                                                5, 5, 1, True, True))
+                                                5,
+                                                5,
+                                                1,
+                                                True,
+                                                True)
+                        )
         
         reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep,
                                                                reps_groups,
                                                                0,
                                                                0,
                                                                prot_len_dict,
-                                                               cluster_id, 5)
+                                                               cluster_id,
+                                                               5)
 
         reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
                                       for match_values in reps_kmers_sim[cluster_id]}
@@ -1693,11 +1704,11 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                               False,
                               results_output)
     
-    print("Add remaining cluster that didn't match by BLASTn...")
+    print("\nAdd remaining cluster that didn't match by BLASTn...")
     # Add cluster not matched by BLASTn
     cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in representative_blast_results.keys()])
 
-    print("Writting classes results to files...")
+    print("\nWritting classes results to files...")
     write_processed_results_to_file(cds_to_keep,
                                     relationships,
                                     representative_blast_results,
@@ -1706,7 +1717,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                     None,
                                     results_output)
     
-    print("Wrapping up BLAST results...")
+    print("\nWrapping up BLAST results...")
     [groups_paths_reps,
      groups_paths,
      reps_trans_dict_cds,
