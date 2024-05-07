@@ -576,10 +576,10 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
             alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
     
     # Create directory.
-    joined_cluster_relationships_output = os.path.join(blast_by_cluster_output, "1_blast_results_by_cluster_relationships")
-    ff.create_directory(joined_cluster_relationships_output)
-    report_relationships_output = os.path.join(blast_by_cluster_output, "2_relationships_to_joined_clusters")
-    ff.create_directory(report_relationships_output)
+    partially_contained_relationships = os.path.join(blast_by_cluster_output, "1_partially_contained_relationships")
+    ff.create_directory(partially_contained_relationships)
+    blast_results_partially_contained = os.path.join(blast_by_cluster_output, "2_blast_results_partially_contained")
+    ff.create_directory(blast_results_partially_contained)
     
     # Write blast results by class and relationships.
     for class_, relationship in relationships.items():
@@ -601,13 +601,13 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                                    for subject, entries in subjects.items() if subject in subject_ids}
                           for query, subjects in representative_blast_results.items() if query in query_ids}
                 
-            report_file_path = os.path.join(joined_cluster_relationships_output, f"blast_relationships_to_{cluster_id}.tsv")
+            report_file_path = os.path.join(blast_results_partially_contained, f"blast_relationships_to_{cluster_id}.tsv")
             # What write type to use (if file already exists).
             write_type = 'a' if os.path.exists(report_file_path) else 'w'
             # Write BLAST results to file.
             alignment_dict_to_file(write_dict, report_file_path, write_type, add_groups_ids)
             # Path to the relationships report.
-            relationships_report_file_path = os.path.join(report_relationships_output, f"relationships_to_cluster_{cluster_id}_report.txt")
+            relationships_report_file_path = os.path.join(partially_contained_relationships, f"relationships_to_cluster_{cluster_id}_report.txt")
             
             # Write all of the report files.
             with open(relationships_report_file_path, write_type) as relationships_report_file:
