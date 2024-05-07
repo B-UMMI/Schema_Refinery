@@ -1,4 +1,5 @@
 import os
+import shutil
 import pandas as pd
 
 def create_directory(dir:str):
@@ -36,6 +37,10 @@ def check_and_delete_file(file:str):
     
     if os.path.isfile(file):
         os.remove(file)
+
+def copy_file(source_file, destination_file):
+    # Copy the file to the destination directory
+    shutil.copy(source_file, destination_file)
 
 def import_df_from_file(file_path, sep):
     df = pd.read_csv(file_path, sep=sep)
