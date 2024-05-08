@@ -635,16 +635,6 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                         seen = query_id
                     else:
                         seen = query_ids[i]
-    # Write all of the ids inside Joined cluster.
-    # Create directory .
-    cluster_members_output = os.path.join(output_path, "joined_cluster_members")
-    ff.create_directory(cluster_members_output)
-    # Write files.
-    for cluster_id, cluster in cds_to_keep['1a'].items():
-        cluster_output_path = os.path.join(cluster_members_output, f"Joined_cluster_{cluster_id}.txt")
-        with open(cluster_output_path, 'w') as output:
-            for c in cluster:
-                output.writelines(c + '\n')
 
     # Create directory.
     joined_cluster_relationships_output = os.path.join(output_path, "blast_results_by_class")
@@ -820,14 +810,15 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         return groups_paths_reps, groups_paths
     else:
         # Write FASTA files for each CDS group to join or retain.
-        print("Writting FASTA file for possible new loci...")
+        print("Writting FASTA and additional files for possible new loci...")
+
         groups_paths = {}
         groups_paths_reps = {}
+
         for class_, cds_list in cds_to_keep.items():
-            i = 1
             for cds in cds_list:
                 if class_ == '1a':
-                    class_name_cds = f"joined_{i}"
+                    class_name_cds = f"joined_{cds}"
                 elif class_ == '3a':
                     class_name_cds = f"for_reference_{class_}_{cds}"  
                 elif class_ == '3b':
@@ -849,8 +840,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     cds = [cds]
                 else:
                     cds = cds_to_keep[class_][cds]
-                # Add to counter
-                i += 1
                 # Write all of the CDS in the group + all of the sequences in the
                 # cluster of those representatives.
                 with open(cds_group_fasta_file, 'w') as fasta_file:
@@ -909,6 +898,30 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                                                                 False)
                 for id_, sequence in trans_dict.items():
                     reps_trans_dict_cds[id_] = sequence
+        
+        # File to output clusters, their representatives and members.
+        cluster_members_output = os.path.join(output_path, 'cluster_members.tsv')
+        
+        with open(cluster_members_output, 'w') as cluster_members_file:
+            # Write header.
+            cluster_members_file.write('Cluster_ID\tRepresentatives_IDs\tRep_cluster_members\n')
+            for class_, cds_list in cds_to_keep.items():
+                for cds in cds_list:
+                    if class_ == '1a':
+                        cluster_members_file.write(str(cds))
+                        cds = cds_to_keep[class_][cds]
+                    else:
+                        cluster_members_file.write(cds)
+                        cds = [cds]
+
+                    for rep_id in cds:
+                        cluster_members_file.write('\t' + rep_id)
+                        cds_ids = [cds_id for cds_id in clusters[rep_id]]
+                        for count, cds_id in enumerate(cds_ids):
+                            if count == 0:
+                                cluster_members_file.write('\t' + cds_id + '\n')
+                            else:
+                                cluster_members_file.write('\t\t' + cds_id + '\n')
 
         return groups_paths_reps, groups_paths, reps_trans_dict_cds, master_file_rep
 
@@ -1596,8 +1609,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value.
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
                 if frequency_cds_cluster[rep] >= constants[2]}
-    print(f"After filtering by CDS frequency in the genomes (> {constants[2]}),"
-          f" out of {total_number_clusters} {len(clusters)} remained.")
+    print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
+          f" out of {total_number_clusters} clusters, {len(clusters)} remained.")
 
     print("\nRetrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
