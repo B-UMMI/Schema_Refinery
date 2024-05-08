@@ -651,7 +651,7 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
         alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
             
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
-                          constants, drop_list, loci = None, groups_paths_old = None):
+                          constants, drop_list, loci = None, groups_paths_old = None, frequency_cds_cluster = None):
     """
     This function wraps up the results for processing of the unclassified CDSs
     by writing FASTAs files for the possible new loci to include into the schema
@@ -904,7 +904,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         
         with open(cluster_members_output, 'w') as cluster_members_file:
             # Write header.
-            cluster_members_file.write('Cluster_ID\tRepresentatives_IDs\tRep_cluster_members\n')
+            cluster_members_file.write('Cluster_ID\tRepresentatives_IDs'
+                                       '\tRep_cluster_members\tFrequency_of_rep\n')
             for class_, cds_list in cds_to_keep.items():
                 for cds in cds_list:
                     if class_ == '1a':
@@ -919,7 +920,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                         cds_ids = [cds_id for cds_id in clusters[rep_id]]
                         for count, cds_id in enumerate(cds_ids):
                             if count == 0:
-                                cluster_members_file.write('\t' + cds_id + '\n')
+                                cluster_members_file.write('\t' + cds_id +
+                                                           '\t' + str(frequency_cds_cluster[cds_id]) +
+                                                           '\n')
                             else:
                                 cluster_members_file.write('\t\t' + cds_id + '\n')
 
@@ -953,16 +956,16 @@ def create_graphs(file_path, output_path, other_plots = None):
     # Create boxplots
     traces = []
     for column in ['Global_palign_all_max', 'Global_palign_pident_min', 'Global_palign_pident_max', 'Palign_local_min']:
-        traces.append(gf.create_graph_trace('boxplot', plotname = blast_results_df[column].name, y = blast_results_df[column]))
+        traces.append(gf.create_violin_plot(y = blast_results_df[column], name = blast_results_df[column].name))
     
-    boxplot = gf.generate_plot(traces, "Palign Values between BLAST results", "Column", "Palign")
+    violinplot1 = gf.generate_plot(traces, "Palign Values between BLAST results", "Column", "Palign")
     
     # Create line plot.
     traces = []
     for column in ['Prot_BSR', 'Prot_seq_Kmer_sim', 'Prot_seq_Kmer_cov']:
-        traces.append(gf.create_graph_trace('boxplot', plotname = blast_results_df[column].name, y = blast_results_df[column]))
+        traces.append(gf.create_violin_plot(y = blast_results_df[column], name = blast_results_df[column].name))
     
-    line_plot = gf.generate_plot(traces, "Protein values between BLAST results", "BLAST entries ID", "Columns")
+    violinplot2 = gf.generate_plot(traces, "Protein values between BLAST results", "BLAST entries ID", "Columns")
     
     # Create other plots
     extra_plot = []
@@ -970,11 +973,12 @@ def create_graphs(file_path, output_path, other_plots = None):
         for plot in other_plots:
             plot_df = pf.dict_to_df(plot[0])
             for column in plot_df.columns.tolist():
-                trace = gf.create_graph_trace(plot[1], plotname = plot_df[column].name, x = plot_df[column])
+                if plot[1] == 'histogram':
+                   trace = gf.create_histogram(x = plot_df[column], name = plot_df[column].name)
             
             extra_plot.append(gf.generate_plot(trace, plot[2], plot[3], plot[4]))
 
-    gf.save_plots_to_html([boxplot, line_plot] + extra_plot, results_output, "Graphs_results")
+    gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, "Graphs_results")
 
 def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds, 
                    cds_to_keep, cds_present, frequency_cds_cluster, allelecall_directory, 
@@ -1154,7 +1158,8 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                            constants,
                                            drop_list,
                                            schema_loci_short,
-                                           groups_paths)
+                                           groups_paths,
+                                           None)
 
     return representative_blast_results
 
@@ -1739,7 +1744,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                               clusters,
                                               results_output,
                                               constants,
-                                              drop_list)
+                                              drop_list,
+                                              None,
+                                              None,
+                                              frequency_cds_cluster)
     
     # Add new frequencies in genomes for joined groups
     new_cluster_freq = {}

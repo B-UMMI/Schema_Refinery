@@ -87,12 +87,12 @@ def create_graph_trace(function, x = None , y = None, plotname = None, mode = No
     
     Returns
     -------
-    returns : plotly.graph_objects object
-        Returns a trace.
+    returns : plotly.graph_objs.Figure
+        The Plotly figure object containing plot.
 
     """
     if function == 'scatter':
-        function = go.Scatter
+        return go.Scatter(x = x, y = y, name = plotname, mode = mode)
     elif function == 'boxplot':
         function = go.Box
     elif function == 'scatterplot':
@@ -102,7 +102,113 @@ def create_graph_trace(function, x = None , y = None, plotname = None, mode = No
     elif function == 'violin':
         function = go.Violin
     
-    return function(x= x, y= y, name = plotname, mode = mode)
+    
+    return function(x = x, y = y, name = plotname)
+
+def create_violin_plot(y = None, x = None, name = None, orientation = 'v', box_visible = True, 
+                       meanline_visible = False, points = 'outliers', line_color = None, 
+                       marker = None, opacity = 1, side = 'both', scalemode = 'width', 
+                       spanmode = 'soft', scalegroup = None):
+    """
+    Create a violin plot using Plotly.
+    
+    Parameters
+    ----------
+    y : list, array-like, or pandas Series, optional
+        The data for the violin plot.
+    x : str, int, or list of str/int, optional
+        The group labels or positions along the x-axis for the violin plot.
+    name : str, optional
+        The given name for the plot.
+    orientation : str, optional
+        The orientation of the violin plot ('v' for vertical, 'h' for horizontal).
+    box_visible : bool, optional
+        Whether to display the box plot inside the violin plot (default is True).
+    meanline_visible : bool, optional
+        Whether to display the mean line inside the violin plot (default is False).
+    points : str, optional
+        Whether to show points on the violin plot ('outliers', 'suspectedoutliers', or 'all').
+    line_color : str or int, optional
+        The color of the line around the violin plot.
+    marker : dict, optional
+        A dictionary specifying the marker properties for the points (if shown).
+    opacity : float, optional
+        The opacity of the violin plot (a value between 0 and 1, default is 1).
+    side : str, optional
+        The side of the violin plot to plot points ('both', 'positive', or 'negative').
+    scalemode : str, optional
+        The scaling mode for the violin plot ('width' or 'count', default is 'width').
+    spanmode : str, optional
+        The span mode for the violin plot ('soft' or 'hard', default is 'soft').
+    scalegroup : str, optional
+        The name of the group of violins whose widths should be made proportional to the number of samples in each group.
+        
+    Returns
+    -------
+    fig : plotly.graph_objs.Figure
+        The Plotly figure object containing the violin plot.
+    """
+    return go.Violin(y = y, x = x, name = name, orientation = orientation, box_visible = box_visible,
+                     meanline_visible = meanline_visible, points = points,
+                     line_color = line_color, marker = marker, opacity = opacity,
+                     side = side, scalemode = scalemode, spanmode = spanmode,
+                     scalegroup = scalegroup)
+
+
+def create_box_plot(y = None, x = None, name = None, orientation = 'v', boxpoints = 'outliers', 
+                    jitter = 0.3, title = None, xaxis_title = None, yaxis_title = None):
+    """
+    Create a box plot using Plotly.
+    
+    Parameters
+    ----------
+    y : list, array-like, or pandas Series, optional
+        The data for the box plot.
+    x : str, int, or list of str/int, optional
+        The group labels or positions along the x-axis for the box plot.
+    name : str, optional
+        The given name for the plot.
+    orientation : str, optional
+        The orientation of the box plot ('v' for vertical, 'h' for horizontal).
+    boxpoints : str, optional
+        Specifies how the data points are displayed ('outliers', 'suspectedoutliers', 'all', or False).
+    jitter : float, optional
+        Sets the amount of jitter in the box plot points (0 for no jitter, 1 for full jitter).
+    
+    Returns
+    -------
+    fig : plotly.graph_objs.Figure
+        The Plotly figure object containing the box plot.
+    """
+    
+    return go.Box(y = y, x = x, name = name, orientation = orientation,
+                  boxpoints = boxpoints, jitter = jitter)
+
+def create_histogram(x, name = None, xbins = None, histnorm = None, orientation = 'v'):
+    """
+    Create a histogram using Plotly.
+    
+    Parameters
+    ----------
+    
+    x : list, array-like, or pandas Series
+        The data for the histogram.
+    name : str, optional
+        The given name for the plot.
+    bins : dict or int, optional
+        Specification of histogram bins (see Plotly documentation for details).
+    histnorm : str, optional
+        Specifies the type of normalization for the histogram.
+    orientation : str, optional
+        The orientation of the histogram ('v' for vertical, 'h' for horizontal).
+    
+    Returns
+    -------
+    fig : plotly.graph_objs.Figure
+        The Plotly figure object containing the box plot.
+    """
+    
+    return go.Histogram(x = x, xbins = xbins, histnorm = histnorm, orientation = orientation)
 
 def generate_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
     """
@@ -121,7 +227,7 @@ def generate_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
 
     Returns
     -------
-    fig : plotly.graph_objects object
+    fig : plotly.graph_objs.Figure
         Returns a generated plot.
     """
 
