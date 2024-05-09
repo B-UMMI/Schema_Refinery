@@ -646,9 +646,14 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
                                for subject, entries in subjects.items()}
                       for query, subjects in representative_blast_results.items()}
 
-        report_file_path = os.path.join(joined_cluster_relationships_output, f"blastn_group_{class_}.tsv")
+        report_file_path = os.path.join(joined_cluster_relationships_output,
+                                        f"blastn_group_{class_}.tsv")
+        
         # Write individual class to file.
-        alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
+        alignment_dict_to_file(write_dict,
+                               report_file_path,
+                               'w',
+                               add_groups_ids)
             
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
                           constants, drop_list, loci = None, groups_paths_old = None, frequency_cds_cluster = None):
@@ -749,11 +754,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 elif class_ == '1a':
                     print(f"\t\tOut of those groups, {len(itf.flatten_list(printout['1a']))}"
                           f" {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
-                          f" and are contained in {len(printout['1a'])} joined groups.")
+                          f" and are contained in {len(printout['1a'])} joined groups that were retained.")
                 elif class_ == 'dropped':
-                    print(f"\t\tOut of those {len(group)} {'CDSs groups' if i== 0 else 'loci'} were dropped from the analysis.")
+                    print(f"\t\tOut of those {len(group)} {'CDSs groups' if i== 0 else 'loci'}"
+                          f" {'were removed from the analysis' if i== 0 else 'are recommended to be replaced with their matched CDS in the schema.'}")
                 else:
-                    print(f"\t\tOut of those groups, {len(group)} CDS are classified as {class_}.")
+                    print(f"\t\tOut of those groups, {len(group)} CDS are classified as {class_} and were retained.")
             if i == 0:
                 print(f"\t{len(groups_paths_old) - len(itf.flatten_list(printout.values()))}"
                       " didn't have any BLASTn matches so they were retained.\n")
@@ -770,11 +776,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                       " and not considered further.")
             elif class_ == '1a':
                 print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
-                      f" and are contained in {len(cds_to_keep['1a'])} joined groups.")
+                      f" and are contained in {len(cds_to_keep['1a'])} joined groups"
+                      F" that were retained.")
             else:
-                print(f"\t\tOut of those groups, {count} CDS are classified as {class_}.")
+                print(f"\t\tOut of those groups, {count} CDS are classified as {class_} and were retained.")
         
-        print(f"\t\tOut of those {len(drop_list)} CDSs groups were dropped from the analysis.")
+        print(f"\t\tOut of those {len(drop_list)} CDSs groups were removed from the analysis.")
 
         if Retained_not_matched_by_blastn:
            print(f"\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
@@ -789,6 +796,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             cds_outcome_results = os.path.join(cds_outcome_results_fastas_folder, f"results_{'CDSs' if case_id == 0 else 'loci'}_fastas")
             ff.create_directory(cds_outcome_results)
 
+            id_folder = os.path.join(output_path, "results_IDs")
+            ff.create_directory(id_folder)
+            id_report_path = os.path.join(id_folder, f"{'CDS_Results' if case_id == 0 else 'Loci_Results'}.tsv")
+            # Write dict to TSV
+            ff.write_dict_to_tsv(id_report_path, cases)
+            
             groups_paths = {}
             groups_paths_reps = {}
             for class_, cds_list in cases.items():
@@ -796,10 +809,13 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 for cds in cds_list:
                     if class_ == '1a':
                         class_name_cds = f"joined_{i}"
+                        i += 1
                     elif class_ == '3a':
                         class_name_cds = f"for_reference_{class_}_{cds}"  
                     elif class_ == '3b':
                         class_name_cds = f"thrash_{class_}_{cds}"
+                    elif class_ == 'dropped':
+                        class_name_cds = f"dropped_{cds}"
                     else:
                         class_name_cds = f"retained_{class_}_{cds}"
                     
@@ -808,6 +824,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     ff.copy_file(origin_path, file_path)
 
         return groups_paths_reps, groups_paths
+
     else:
         # Write FASTA files for each CDS group to join or retain.
         print("Writting FASTA and additional files for possible new loci...")
@@ -928,7 +945,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
         return groups_paths_reps, groups_paths, reps_trans_dict_cds, master_file_rep
 
-def create_graphs(file_path, output_path, other_plots = None):
+def create_graphs(file_path, output_path, filename, other_plots = None):
     """
     Create graphs based on representative_blast_results written inside a TSV file,
     this function creates severall plots related to palign and protein values, with
@@ -978,7 +995,7 @@ def create_graphs(file_path, output_path, other_plots = None):
             
             extra_plot.append(gf.generate_plot(trace, plot[2], plot[3], plot[4]))
 
-    gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, "Graphs_results")
+    gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
 def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds, 
                    cds_to_keep, cds_present, frequency_cds_cluster, allelecall_directory, 
@@ -1763,8 +1780,16 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                       'Size': cds_size.values()}
     cds_translation_size_dicts = {'IDs': cds_size.keys(),
                                   'Size': [int(cds/3) for cds in cds_size.values()]}
-    create_graphs(report_file_path, results_output, [[cds_size_dicts, 'histogram', "Nucleotide Size", 'Size', 'CDS'],
-                                                     [cds_translation_size_dicts, 'histogram','Protein Size' , 'Size', 'CDS']])
+    create_graphs(report_file_path,
+                  results_output,
+                  'All_of_CDS_graphs',
+                  [[cds_size_dicts, 'histogram', "Nucleotide Size", 'Size', 'CDS'],
+                   [cds_translation_size_dicts, 'histogram','Protein Size' , 'Size', 'CDS']])
+    
+    for file in ff.get_paths_in_directory(os.path.join(results_output, 'blast_results_by_class')):
+        create_graphs(file,
+                      results_output,
+                      f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
 
     print("\nReading schema loci short FASTA files...")
     # Create directory
