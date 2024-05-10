@@ -40,10 +40,40 @@ def check_and_delete_file(file:str):
         os.remove(file)
 
 def copy_file(source_file, destination_file):
+    """
+    Copies source file to the destination.
+    
+    Parameters
+    ----------
+    source_file : str
+        Path to the file.
+    destination_file : str
+        Path to where to copy the file.
+    
+    Returns
+    -------
+    return : No return
+        Copies the file.
+    """
     # Copy the file to the destination directory
     shutil.copy(source_file, destination_file)
 
 def import_df_from_file(file_path, sep):
+    """
+    Using pandas imports an file path as dataframe.
+    
+    Parameters
+    ----------
+    file_path : str
+        Path to the file.
+    sep : str
+        By which string to seprate entries in the file.
+
+    Returns
+    -------
+    df : pandas dataframe
+        Pandas dataframe that contains the file values seperated by sep.
+    """
     df = pd.read_csv(file_path, sep=sep)
 
     return df
@@ -51,6 +81,16 @@ def import_df_from_file(file_path, sep):
 def get_paths_in_directory(directory):
     """
     Get all paths of files in the specified directory.
+    
+    Parameters
+    ----------
+    directory : str
+        Path to the directory.
+        
+    Returns
+    -------
+    file_paths_dict : list
+        List that contains all of the file paths as values.
     """
     # List all files and directories in the specified directory
     all_items = os.listdir(directory)
@@ -63,6 +103,16 @@ def get_paths_in_directory(directory):
 def get_file_paths_dict(directory):
     """
     Get a dictionary where keys are filenames and values are file paths within the directory.
+    
+    Parameters
+    ----------
+    directory : str
+        Path to the directory.
+        
+    Returns
+    -------
+    file_paths_dict : dict
+        Dict that contains all of the filenames as keys and file paths as values.
     """
     file_paths_dict = {}
     

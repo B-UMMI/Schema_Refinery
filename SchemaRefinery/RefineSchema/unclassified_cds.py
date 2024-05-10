@@ -60,6 +60,7 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_groups
               'Prot_seq_Kmer_cov\t',
               'Cluster_frequency_in_genomes_query_cds\t',
               'Cluster_frequency_in_genomes_subject_cds\t',
+              'Global_palign_all_min\t',
               'Global_palign_all_max\t',
               'Global_palign_pident_min\t',
               'Global_palign_pident_max\t',
@@ -157,7 +158,9 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                     length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
                     total_length[ref] = length
                 # Calculate global palign
-                global_palign_all_max = min(total_length['query'] / result['query_length'],
+                global_palign_all_min = min(total_length['query'] / result['query_length'],
+                                            total_length['subject'] / result['subject_length'])
+                global_palign_all_max = max(total_length['query'] / result['query_length'],
                                             total_length['subject'] / result['subject_length'])
                 # Sum the intervals with desired pident threshold
                 for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
@@ -190,6 +193,7 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                         'kmers_cov': cov,
                         'frequency_in_genomes_query_cds': frequency_cds_cluster[query],
                         'frequency_in_genomes_subject_cds': frequency_cds_cluster[subject],
+                        'global_palign_all_min' : global_palign_all_min,
                         'global_palign_all_max': global_palign_all_max,
                         'global_palign_pident_min': global_palign_pident_min,
                         'global_palign_pident_max': global_palign_pident_max,
@@ -272,7 +276,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                 query_subject_freq = blastn_entry['frequency_in_genomes_query_cds']/blastn_entry['frequency_in_genomes_subject_cds']
                 subject_query_freq = blastn_entry['frequency_in_genomes_subject_cds']/blastn_entry['frequency_in_genomes_query_cds']
                 
-                if blastn_entry['global_palign_all_max'] >= 0.8:
+                if blastn_entry['global_palign_all_min'] >= 0.8:
                     # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
                         add_class_to_dict('1a')
@@ -284,7 +288,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                     else:
                         add_class_to_dict('1c')
                 # Palign < 0.8        
-                elif blastn_entry['global_palign_all_max'] > 0.4 and blastn_entry['global_palign_all_max'] <= 0.8:
+                elif blastn_entry['global_palign_all_min'] > 0.4 and blastn_entry['global_palign_all_min'] < 0.8:
                     if blastn_entry['pident'] >= constants[1]:
                         # Verify if between CDS there ir more than 10x
                         # difference in presence in the schema
@@ -751,6 +755,10 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     print(f"\t\tOut of those groups, {len(group)} {'CDSs groups' if i == 0 else 'loci'}"
                           f" are classified as {class_}"
                           " and not considered further.")
+                elif class_ == '3a':
+                    print(f"\t\tOut of those groups, {len(group)} CDS are classified as {class_} and were retained"
+                          " but it is recomended to verify them as they may be contained partially inside"
+                          " their BLAST match.")
                 elif class_ == '1a':
                     print(f"\t\tOut of those groups, {len(itf.flatten_list(printout['1a']))}"
                           f" {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
@@ -774,6 +782,10 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             if class_ in ['3b']:
                 print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
                       " and not considered further.")
+            elif class_ == '3a':
+                print(f"\t\tOut of those groups, {count} CDS are classified as {class_} and were retained"
+                      " but it is recomended to verify them as they may be contained partially inside"
+                      " their BLAST match.")
             elif class_ == '1a':
                 print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
                       f" and are contained in {len(cds_to_keep['1a'])} joined groups"
@@ -972,7 +984,7 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
     
     # Create boxplots
     traces = []
-    for column in ['Global_palign_all_max', 'Global_palign_pident_min', 'Global_palign_pident_max', 'Palign_local_min']:
+    for column in ['Global_palign_all_min', 'Global_palign_all_max', 'Global_palign_pident_min', 'Global_palign_pident_max', 'Palign_local_min']:
         traces.append(gf.create_violin_plot(y = blast_results_df[column], name = blast_results_df[column].name))
     
     violinplot1 = gf.generate_plot(traces, "Palign Values between BLAST results", "Column", "Palign")
