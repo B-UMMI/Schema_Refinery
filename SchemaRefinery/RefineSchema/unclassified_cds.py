@@ -263,11 +263,16 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     classes_outcome = ['1a',
                        '1b',
                        '2a',
-                       '1c',
                        '2b',
                        '3a',
+                       '1c',
                        '3b',
-                       '4']
+                       '4a',
+                       '4b',
+                       '4c',
+                       '5a',
+                       '5b',
+                       '5c']
 
     # Process results into classes
     for query, rep_blast_result in representative_blast_results.items():
@@ -282,31 +287,45 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                         add_class_to_dict('1a')
                     # If BSR <0.6 verify if between CDS there ir more than 10x
                     # difference in presence in the schema
-                    elif min([query_subject_freq,subject_query_freq]) <= 0.1:
+                    elif min([query_subject_freq, subject_query_freq]) <= 0.1:
                         add_class_to_dict('1b')
                     # Add two as separate
                     else:
                         add_class_to_dict('1c')
                 # Palign < 0.8        
-                elif blastn_entry['global_palign_all_min'] > 0.4 and blastn_entry['global_palign_all_min'] < 0.8:
+                elif blastn_entry['global_palign_all_min'] >= 0.4 and blastn_entry['global_palign_all_min'] < 0.8:
                     if blastn_entry['pident'] >= constants[1]:
+                        if blastn_entry['global_palign_pident_max'] >= 0.8:
+                            if min([query_subject_freq, subject_query_freq]) <= 0.1:
+                                add_class_to_dict('2a')
+                            else:
+                                add_class_to_dict('2b')
                         # Verify if between CDS there ir more than 10x
                         # difference in presence in the schema
-                        if min([query_subject_freq,subject_query_freq]) <= 0.1:
-                            add_class_to_dict('2a')
+                        elif min([query_subject_freq, subject_query_freq]) <= 0.1:
+                            add_class_to_dict('3a')
                         # If in similiar proportion in genomes then add two as separate
                         else:
-                            add_class_to_dict('2b')
+                            add_class_to_dict('3b')
                             
                     else:
                         # If one CDS is contained inside another
                         if blastn_entry['global_palign_pident_max'] >= 0.8:
-                            add_class_to_dict('3a')
+                            if min([query_subject_freq, subject_query_freq]) <= 0.1:
+                                add_class_to_dict('4a')
+                            else:
+                                add_class_to_dict('4b')
                         # Everything else not classified
                         else:
-                            add_class_to_dict('3b')
+                            add_class_to_dict('4c')
                 else:
-                    add_class_to_dict('4')
+                    if blastn_entry['global_palign_pident_max'] >= 0.8:
+                        if min([query_subject_freq, subject_query_freq]) <= 0.1:
+                            add_class_to_dict('5a')
+                        else:
+                            add_class_to_dict('5b')
+                    else:
+                        add_class_to_dict('5c')
 
     return classes_outcome
 
@@ -425,7 +444,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                         retain.insert(0, 'ar')
                     processed = True
 
-                if class_ in ['1b', '2a'] and processed:
+                if class_ in ['1b', '2a', '3a', '5a'] and processed:
                     blastn_entry = matches[list(matches.keys())[0]]
                     if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_subject_cds']:
                         if id_subject not in cds_to_keep['1a']:
@@ -458,7 +477,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
                 # If to add relationship between different CDS and clusters.
                 # Keep only 3a as they are the one relevant for the output
-                if (query not in drop_list or id_subject not in drop_list) and class_ == '3a':
+                if (query not in drop_list or id_subject not in drop_list) and class_ in ['2b', '4c', '5b']:
                     other_relationships[class_].append([query, id_subject])
 
     # Create the joined cluster by joining by IDs.
@@ -473,10 +492,6 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     
     # Process all relationships identified (Identify the Joined cluster ID).
     for class_, results in other_relationships.items():
-        # Classification 3b is to be ignored because the is no need for them
-        # it means that query and subject are too different.
-        if class_ == '3b':
-            continue
         # Iterate over results
         for result in results:
              # Identify the cluster ID, if it is joined id or CDS ID.
@@ -751,13 +766,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             print(f"\t{len(itf.flatten_list(printout.values()))} {'CDSs' if i == 0 else 'loci'}"
                   f" representatives had matches with BLASTn against the {'schema' if i == 0 else 'CDSs'}.")
             for class_, group in printout.items():
-                if class_ in ['3b']:
-                    print(f"\t\tOut of those groups, {len(group)} {'CDSs groups' if i == 0 else 'loci'}"
-                          f" are classified as {class_}"
-                          " and not considered further.")
-                elif class_ == '3a':
+                if class_ in ['2b', '4b', '5b']:
                     print(f"\t\tOut of those groups, {len(group)} CDS are classified as {class_} and were retained"
-                          " but it is recomended to verify them as they may be contained partially inside"
+                          " but it is recomended to verify them as they may be contained or contain partially inside"
                           " their BLAST match.")
                 elif class_ == '1a':
                     print(f"\t\tOut of those groups, {len(itf.flatten_list(printout['1a']))}"
@@ -779,12 +790,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         print(f"\t{sum(count_cases.values()) + len(drop_list)} CDS representatives had matches with BLASTn"
               f" which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
         for class_, count in count_cases.items():
-            if class_ in ['3b']:
-                print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
-                      " and not considered further.")
-            elif class_ == '3a':
+            if class_ in ['2b', '4b', '5b']:
                 print(f"\t\tOut of those groups, {count} CDS are classified as {class_} and were retained"
-                      " but it is recomended to verify them as they may be contained partially inside"
+                      " but it is recomended to verify them as they may be contained or contain partially"
                       " their BLAST match.")
             elif class_ == '1a':
                 print(f"\t\tOut of those groups, {count} CDS are classified as {class_}"
@@ -822,10 +830,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     if class_ == '1a':
                         class_name_cds = f"joined_{i}"
                         i += 1
-                    elif class_ == '3a':
-                        class_name_cds = f"for_reference_{class_}_{cds}"  
-                    elif class_ == '3b':
-                        class_name_cds = f"thrash_{class_}_{cds}"
                     elif class_ == 'dropped':
                         class_name_cds = f"dropped_{cds}"
                     else:
@@ -848,10 +852,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             for cds in cds_list:
                 if class_ == '1a':
                     class_name_cds = f"joined_{cds}"
-                elif class_ == '3a':
-                    class_name_cds = f"for_reference_{class_}_{cds}"  
-                elif class_ == '3b':
-                    class_name_cds = f"thrash_{class_}_{cds}"
                 else:
                     class_name_cds = f"retained_{class_}_{cds}"
                 
@@ -860,10 +860,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 cds_group_fasta_file = os.path.join(cds_outcome_results_fastas_folder, class_name_cds + '.fasta')    
                 cds_group_reps_file = os.path.join(cds_outcome_results_reps_fastas_folder, class_name_cds + '.fasta')
                 master_file_rep = os.path.join(fasta_folder, 'master_rep_file.fasta')
-                # We want to save only retained or joined groups
-                if class_ not in ['3a','3b']:
-                    groups_paths[cds] = cds_group_fasta_file
-                    groups_paths_reps[cds] = cds_group_reps_file
+                # Save the paths.
+                groups_paths[cds] = cds_group_fasta_file
+                groups_paths_reps[cds] = cds_group_reps_file
                 # to decrease the number of code lines just iterate over string id as a list
                 if type(cds) == str:
                     cds = [cds]
