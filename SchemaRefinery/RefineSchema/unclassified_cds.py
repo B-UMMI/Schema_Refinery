@@ -125,100 +125,250 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
     No returns, modifies the representative_blast_results dict inside the main
     function.
     """
-    # Add kmer cov, kmer sim and frequency of the cds in the genomes
-    for query, subjects_dict in list(representative_blast_results.items()):
-        for subject, blastn_results in list(subjects_dict.items()):
-            # Some results may not have kmers matches or BSR values so put them
-            # as 0
-            if reps_kmers_sim:
-                if subject in reps_kmers_sim[query]:
-                    sim, cov = reps_kmers_sim[query][subject]
-                else:
-                    sim = 0
-                    cov = 0
+    def get_kmer_values(reps_kmers_sim, query, subject):
+        """
+        Retrieves kmer values for a given query and subject from the reps_kmers_sim dictionary.
+        
+        Parameters
+        ----------
+        reps_kmers_sim : dict
+            A dictionary containing kmer similarity and coverage values.
+        query : str
+            The query sequence ID.
+        subject : str
+            The subject sequence ID.
+    
+        Returns
+        -------
+        sim : float or str
+            The similarity value if it exists, otherwise returns 0 or '-'.
+        cov : float or str
+            The coverage value if it exists, otherwise returns 0 or '-'.
+        """
+        if reps_kmers_sim:
+            if subject in reps_kmers_sim[query]:
+                sim, cov = reps_kmers_sim[query][subject]
             else:
-                sim = '-'
-                cov = '-'
+                sim = 0
+                cov = 0
+        else:
+            sim = '-'
+            cov = '-'
+        return sim, cov
 
-            # Get BSR value, if not in query return 0, meaning that even though
-            # there was BLASTn match no BLASTp match was made.
-            bsr = bsr_values[query].get(subject, 0)
-            # For some reason some isolates have bsr slighty higher than 1
-            # related to blast database and sequences used.
-            if bsr > 1.0:
-                bsr = float(round(bsr))
-            # Calculate total alignment for all of the fragments of BLASTn
-            # if there more than one BLASTn alignments
-            # For query and subject
-            for entry_id, result in list(blastn_results.items()):
-                total_length = {}
-                # Sum all the intervals
-                for ref, intervals in representative_blast_results_coords_all[query][subject].items():
-                    sorted_intervals = sorted(intervals, key=lambda x: x[0])
-                    length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
-                    total_length[ref] = length
-                # Calculate global palign
-                global_palign_all_min = min(total_length['query'] / result['query_length'],
-                                            total_length['subject'] / result['subject_length'])
-                global_palign_all_max = max(total_length['query'] / result['query_length'],
-                                            total_length['subject'] / result['subject_length'])
-                # Sum the intervals with desired pident threshold
-                for ref, intervals in representative_blast_results_coords_pident[query][subject].items():
-                    if intervals:
-                        sorted_intervals = sorted(intervals, key=lambda x: x[0])
-                        length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
-                        total_length[ref] = length
-                    else:
-                        total_length[ref] = 0
-                
-                # Calculated min and max palign
-                global_palign_pident_min = min(total_length['query'] / result['query_length'],
-                                                total_length['subject'] / result['subject_length'])
+    def get_bsr_value(bsr_values, query, subject):
+        """
+        Retrieves BSR value for a given query and subject from the bsr_values dictionary.
+        
+        Parameters
+        ----------
+        bsr_values : dict
+            A dictionary containing BSR values.
+        query : str
+            The query sequence ID.
+        subject : str
+            The subject sequence ID.
+            
+        Returns
+        -------
+        bsr : float
+            The BSR value if it exists, otherwise returns 0. If BSR value is greater than 1, it is rounded to the nearest integer.
+        """
+        bsr = bsr_values[query].get(subject, 0)
+        if bsr > 1.0:
+            bsr = float(round(bsr))
+        return bsr
 
-                global_palign_pident_max = max(total_length['query'] / result['query_length'],
-                                                total_length['subject'] / result['subject_length'])
-                # Calculate local palign
-                local_palign_min = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
-                                       (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
-                # If the alignment is more than 0
-                if local_palign_min >= 0:
-                    # if IDs of loci representatives are included in the frequency_cds_cluster
-                    # they are in this format loci1_x.
-                    if loci_ids:
-                        query_before = query
-                        query = query.split('_')[0]
-                    update_dict = {
-                        'bsr': bsr,
-                        'kmers_sim': sim,
-                        'kmers_cov': cov,
-                        'frequency_in_genomes_query_cds': frequency_cds_cluster[query],
-                        'frequency_in_genomes_subject_cds': frequency_cds_cluster[subject],
-                        'global_palign_all_min' : global_palign_all_min,
-                        'global_palign_all_max': global_palign_all_max,
-                        'global_palign_pident_min': global_palign_pident_min,
-                        'global_palign_pident_max': global_palign_pident_max,
-                        'local_palign_min': local_palign_min
-                    }
-                    # Get the original loci representived ID.
-                    if loci_ids:
-                        query = query_before
-                    representative_blast_results[query][subject][entry_id].update(update_dict)
+    def calculate_total_length(representative_blast_results_coords, query, subject):
+        """
+        Calculates total length for a given query and subject.
+        
+        Parameters
+        ----------
+        representative_blast_results_coords : dict
+            A dictionary containing BLAST results coordinates.
+        query : str
+            The query sequence ID.
+        subject : str
+            The subject sequence ID.
+            
+        Returns
+        -------
+        total_length : dict
+            A dictionary with the total length of each reference sequence.
+        """
+        total_length = {}
+        for ref, intervals in representative_blast_results_coords[query][subject].items():
+            if intervals:
+                sorted_intervals = sorted(intervals, key=lambda x: x[0])
+                length = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
+                total_length[ref] = length
+            else:
+                total_length[ref] = 0
+        return total_length
 
-                    if add_groups_ids:
-                        id_ = itf.identify_string_in_dict(subject, add_groups_ids)
-                        if not id_:
-                            id_ = subject
-                        update_dict = {'cds_group': id_}
-                        representative_blast_results[query][subject][entry_id].update(update_dict)
+    def calculate_global_palign(total_length, result):
+        """
+        Calculates global palign for a given total length and result.
+        
+        Parameters
+        ----------
+        total_length : dict
+            A dictionary containing the total length of each reference sequence.
+        result : dict
+            A dictionary containing the result of a BLAST search.
+            
+        Returns
+        -------
+        global_palign_min : float
+            The minimum global palign value.
+        global_palign_max : float
+            The maximum global palign value.
+        """
+        global_palign_min = min(total_length['query'] / result['query_length'],
+                                total_length['subject'] / result['subject_length'])
+        global_palign_max = max(total_length['query'] / result['query_length'],
+                                total_length['subject'] / result['subject_length'])
+        return global_palign_min, global_palign_max
 
-                # If not then the inverse alignment was made, so we remove it
-                else:
-                    del representative_blast_results[query][subject][entry_id]
-                    
-            if not representative_blast_results[query][subject]:
-                del representative_blast_results[query][subject]
+    def calculate_local_palign(result):
+        """
+        Calculates local palign for a given result.
+        
+        Parameters
+        ----------
+        result : dict
+            A dictionary containing the result of a BLAST search.
+            
+        Returns
+        -------
+        local_palign_min : float
+            The minimum local palign value.
+        """
+        local_palign_min = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
+                            (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
+        return local_palign_min
+
+    def update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_cds_cluster, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, loci_ids, add_groups_ids):
+        """
+        Updates results for a given query and subject.
+        
+        Parameters
+        ----------
+        representative_blast_results : dict
+            A dictionary containing BLAST results.
+        query : str
+            The query sequence ID.
+        subject : str
+            The subject sequence ID.
+        entry_id : str
+            The ID of the entry to update.
+        bsr, sim, cov : float
+            The BSR, similarity, and coverage values.
+        frequency_cds_cluster : dict
+            A dictionary containing the frequency of CDS clusters.
+        global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min : float
+            The minimum and maximum global palign values, and the minimum local palign value.
+        loci_ids : list
+            A list of loci IDs.
+        add_groups_ids : list
+            A list of additional group IDs.
+        
+        Returns
+        -------
+        No returns, modifies the representative_blast_results dict inside the parent function.
+        """
+        if loci_ids:
+            query_before = query
+            query = query.split('_')[0]
+        update_dict = {
+            'bsr': bsr,
+            'kmers_sim': sim,
+            'kmers_cov': cov,
+            'frequency_in_genomes_query_cds': frequency_cds_cluster[query],
+            'frequency_in_genomes_subject_cds': frequency_cds_cluster[subject],
+            'global_palign_all_min' : global_palign_all_min,
+            'global_palign_all_max': global_palign_all_max,
+            'global_palign_pident_min': global_palign_pident_min,
+            'global_palign_pident_max': global_palign_pident_max,
+            'local_palign_min': local_palign_min
+        }
+        if loci_ids:
+            query = query_before
+        representative_blast_results[query][subject][entry_id].update(update_dict)
+
+        if add_groups_ids:
+            id_ = itf.identify_string_in_dict(subject, add_groups_ids)
+            if not id_:
+                id_ = subject
+            update_dict = {'cds_group': id_}
+            representative_blast_results[query][subject][entry_id].update(update_dict)
+
+    def remove_results(representative_blast_results, query, subject, entry_id):
+        """
+        Removes results for a given query and subject.
+        
+        Parameters
+        ----------
+        representative_blast_results : dict
+            A dictionary containing BLAST results.
+        query : str
+            The query sequence ID.
+        subject : str
+            The subject sequence ID.
+        entry_id : str
+            The ID of the entry to remove.
+        
+        Returns
+        -------
+        No returns, modifies the representative_blast_results dict inside the parent function.
+        """
+        del representative_blast_results[query][subject][entry_id]
+
+    def clean_up_results(representative_blast_results, query, subject):
+        """
+        Cleans up results for a given query and subject by removing empty entries.
+        
+        Parameters
+        ----------
+        representative_blast_results : dict
+            A dictionary containing BLAST results.
+        query : str
+            The query sequence ID.
+        subject : str
+            The subject sequence ID.
+        
+        Returns
+        -------
+        No returns, modifies the representative_blast_results dict inside the parent function.
+        """
+        if not representative_blast_results[query][subject]:
+            del representative_blast_results[query][subject]
         if not representative_blast_results[query]:
             del representative_blast_results[query]
+
+    # Iterate over the representative_blast_results dictionary
+    for query, subjects_dict in list(representative_blast_results.items()):
+        for subject, blastn_results in list(subjects_dict.items()):
+            sim, cov = get_kmer_values(reps_kmers_sim, query, subject)
+            bsr = get_bsr_value(bsr_values, query, subject)
+
+            # Iterate over the blastn_results dictionary
+            for entry_id, result in list(blastn_results.items()):
+                total_length = calculate_total_length(representative_blast_results_coords_all, query, subject)
+                global_palign_all_min, global_palign_all_max = calculate_global_palign(total_length, result)
+
+                total_length = calculate_total_length(representative_blast_results_coords_pident, query, subject)
+                global_palign_pident_min, global_palign_pident_max = calculate_global_palign(total_length, result)
+
+                local_palign_min = calculate_local_palign(result)
+
+                if local_palign_min >= 0:
+                    update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_cds_cluster, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, loci_ids, add_groups_ids)
+                else:
+                    remove_results(representative_blast_results, query, subject, entry_id)
+
+            clean_up_results(representative_blast_results, query, subject)
 
 def separate_blastn_results_into_classes(representative_blast_results, constants):
     """
@@ -254,77 +404,50 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
         """
         
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
-    
-    # Create all of the classes order based on priority when choosing which CDS
-    # to keep and remove e.g if two CDS are joined by one while another result makes
-    # them separete we keep them joined or when one result X and Y chooses class
-    # 2a which means that X is 10x more frequent in the genomes while another
-    # results Y and Z adds them as separate in this case we only keep X and Z
-    classes_outcome = ['1a',
-                       '1b',
-                       '2a',
-                       '2b',
-                       '3a',
-                       '1c',
-                       '3b',
-                       '4a',
-                       '4b',
-                       '4c',
-                       '5a',
-                       '5b',
-                       '5c']
 
-    # Process results into classes
+    # Define classes based on priority
+    classes_outcome = ['1a', '1b', '2a', '2b', '3a', '1c', '3b', '4a', '4b', '4c', '5a', '5b', '5c']
+
+    # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
-                query_subject_freq = blastn_entry['frequency_in_genomes_query_cds']/blastn_entry['frequency_in_genomes_subject_cds']
-                subject_query_freq = blastn_entry['frequency_in_genomes_subject_cds']/blastn_entry['frequency_in_genomes_query_cds']
+                # Calculate the frequency ratio
+                freq_ratio = min(blastn_entry['frequency_in_genomes_query_cds']/blastn_entry['frequency_in_genomes_subject_cds'],
+                                blastn_entry['frequency_in_genomes_subject_cds']/blastn_entry['frequency_in_genomes_query_cds'])
                 
+                # Classify based on global_palign_all_min and bsr
                 if blastn_entry['global_palign_all_min'] >= 0.8:
-                    # Based on BSR
                     if blastn_entry['bsr'] >= 0.6:
+                        # Add to class '1a' if bsr is greater than or equal to 0.6
                         add_class_to_dict('1a')
-                    # If BSR <0.6 verify if between CDS there ir more than 10x
-                    # difference in presence in the schema
-                    elif min([query_subject_freq, subject_query_freq]) <= 0.1:
+                    elif freq_ratio <= 0.1:
+                        # Add to class '1b' if frequency ratio is less than or equal to 0.1
                         add_class_to_dict('1b')
-                    # Add two as separate
                     else:
+                        # Add to class '1c' if none of the above conditions are met
                         add_class_to_dict('1c')
-                # Palign < 0.8        
-                elif blastn_entry['global_palign_all_min'] >= 0.4 and blastn_entry['global_palign_all_min'] < 0.8:
+                elif 0.4 <= blastn_entry['global_palign_all_min'] < 0.8:
                     if blastn_entry['pident'] >= constants[1]:
                         if blastn_entry['global_palign_pident_max'] >= 0.8:
-                            if min([query_subject_freq, subject_query_freq]) <= 0.1:
-                                add_class_to_dict('2a')
-                            else:
-                                add_class_to_dict('2b')
-                        # Verify if between CDS there ir more than 10x
-                        # difference in presence in the schema
-                        elif min([query_subject_freq, subject_query_freq]) <= 0.1:
-                            add_class_to_dict('3a')
-                        # If in similiar proportion in genomes then add two as separate
+                            # Add to class '2a' or '2b' based on frequency ratio
+                            add_class_to_dict('2a' if freq_ratio <= 0.1 else '2b')
                         else:
-                            add_class_to_dict('3b')
-                            
+                            # Add to class '3a' or '3b' based on frequency ratio
+                            add_class_to_dict('3a' if freq_ratio <= 0.1 else '3b')
                     else:
-                        # If one CDS is contained inside another
                         if blastn_entry['global_palign_pident_max'] >= 0.8:
-                            if min([query_subject_freq, subject_query_freq]) <= 0.1:
-                                add_class_to_dict('4a')
-                            else:
-                                add_class_to_dict('4b')
-                        # Everything else not classified
+                            # Add to class '4a' or '4b' based on frequency ratio
+                            add_class_to_dict('4a' if freq_ratio <= 0.1 else '4b')
                         else:
+                            # Add to class '4c' if none of the above conditions are met
                             add_class_to_dict('4c')
                 else:
                     if blastn_entry['global_palign_pident_max'] >= 0.8:
-                        if min([query_subject_freq, subject_query_freq]) <= 0.1:
-                            add_class_to_dict('5a')
-                        else:
-                            add_class_to_dict('5b')
+                        # Add to class '5a' or '5b' based on frequency ratio
+                        add_class_to_dict('5a' if freq_ratio <= 0.1 else '5b')
                     else:
+                        # Add to class '5c' if none of the above conditions are met
                         add_class_to_dict('5c')
 
     return classes_outcome
@@ -350,8 +473,6 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     -------
     cds_to_keep : dict     
         Dict of the CDS to keep by each classification.
-    relationships : dict
-        Dict that contains relationships between various CDS and clusters.
     important_relationships : dict
         Dict that contains as keys the class and values the decisive relatioships
         between loci/CDS.
@@ -359,154 +480,88 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
         Contains the CDS IDs to be removed from further processing for appearing
         fewer time in genomes than their match.
     """
-    # Create variables.
-    # Variable to add the CDS what will be kept by class.
+    # Initialize variables
     cds_to_keep = {}
-    # Variable for other ralationships between CDS e.g if two CDS X and Y are 
-    # classified as 1a (join) and there are other classfication with them
-    # for example Z and X classified as 2b (keep both) then we add to this dict
-    # this case for end-user to know.
-    other_relationships = {}
     important_relationships = {}
-    # List that contains the various CDS with 1a classification to join.
     cluster_to_join = []
-    
-    # Set of IDs to drop
     drop_list = set()
     processed_case = 0
     main_ids = []
+
+    # Loop over each class
     for class_ in classes_outcome:
         cds_to_keep[class_] = set()
-        other_relationships[class_] = []
         important_relationships[class_] = []
-        # Get all entries with the desired class.
-        class_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
-                                   for subject, entries in subjects.items()}
-                          for query, subjects in representative_blast_results.items()}
-        # Remove empty dicts entries
+
+        # Get all entries with the desired class and remove empty entries
+        class_dict = {query: {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
+                              for subject, entries in subjects.items()}
+                      for query, subjects in representative_blast_results.items()}
         itf.remove_empty_dicts_recursive(class_dict)
-        
-        # Process the CDS to find what CDS to retain while also adding the
-        # relationships between different CDS.
+
+        # Process the CDS to find what CDS to retain while also adding the relationships between different CDS
         for query, rep_blast_result in class_dict.items():
             for id_subject, matches in rep_blast_result.items():
-                # Process all of the cases that have 1a classification.
-                # even if they may be in drop_list
+                # Process all of the cases that have 1a classification
                 if class_ == '1a':
                     cds_to_keep[class_].update([query, id_subject])
                     cluster_to_join.append([query, id_subject])
                     important_relationships[class_].append([query, id_subject])
                     continue
 
+                # Initialize retain list
                 retain = []
-                # All of the other classifications
-                # Find cases that were already processed or to be dropped.
+
+                # Find cases that were already processed or to be dropped
                 processed_cases = itf.flatten_list([[c for c in cds] for cds in cds_to_keep.values()])
                 processed_cases += drop_list
 
-                if all_alleles:
-                    # Change the ID dict if the number of processed cases increases
-                    if processed_case != len(processed_cases):
-                        processed_case = len(processed_cases)
-                        main_ids = set([itf.identify_string_in_dict(group_id, all_alleles) for group_id in processed_cases])
-                        main_ids = set(filter(lambda x: x is not None, main_ids))
-                        
-                    
-                    # Don't run the analysis again if one joined CDS or loci already have some results.
-                    loci_id = itf.identify_string_in_dict(query, all_alleles)
-                    if loci_id in main_ids:
-                        continue
+                # Change the ID dict if the number of processed cases increases
+                if all_alleles and processed_case != len(processed_cases):
+                    processed_case = len(processed_cases)
+                    main_ids = set([itf.identify_string_in_dict(group_id, all_alleles) for group_id in processed_cases])
+                    main_ids = set(filter(lambda x: x is not None, main_ids))
 
-                processed = False
-                # Get those cases that query and subject were not processed.
+                # Don't run the analysis again if one joined CDS or loci already have some results
+                if all_alleles and itf.identify_string_in_dict(query, all_alleles) in main_ids:
+                    continue
+
+                # Process cases where neither query nor subject were processed
                 if query not in processed_cases and id_subject not in processed_cases:
                     cds_to_keep[class_].update([query, id_subject])
                     retain = ['r', 'r']
-                    processed = True
 
-                # If query was not processed.
+                # Process cases where only query was not processed
                 elif query not in processed_cases:
                     cds_to_keep[class_].add(query)
-                    retain = ['r']
-                    if id_subject in drop_list:
-                        retain.append('ad')
-                    else:
-                        retain.append('ar')
-                    processed = True
+                    retain = ['r', 'ad' if id_subject in drop_list else 'ar']
 
-                # If subject was not processed.
+                # Process cases where only subject was not processed
                 elif id_subject not in processed_cases:
                     cds_to_keep[class_].add(id_subject)
-                    retain = ['r']
-                    if query in drop_list:
-                        retain.insert(0, 'ad')
-                    else:
-                        retain.insert(0, 'ar')
-                    processed = True
+                    retain = ['ad' if query in drop_list else 'ar', 'r']
 
-                if class_ in ['1b', '2a', '3a', '5a'] and processed:
+                if class_ in ['1b', '2a', '3a', '5a'] and retain:
                     blastn_entry = matches[list(matches.keys())[0]]
-                    if blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_subject_cds']:
-                        if id_subject not in cds_to_keep['1a']:
-                            if not id_subject in drop_list:
-                                retain[1] = 'd'
-                                drop_list.add(id_subject)
-                            else:
-                                retain[1] = 'ad'
-
-                            if id_subject in cds_to_keep[class_]:
-                                cds_to_keep[class_].remove(id_subject)
-                        else:
-                            retain[1] = 'ar'
-                    # Remove the query
-                    else:
-                        if query not in cds_to_keep['1a']:
-                            if not query in drop_list:
-                                retain[0] = 'd'
-                                drop_list.add(query)
-                            else:
-                                retain[1] = 'ad'
-    
-                            if query in cds_to_keep[class_]:
-                                cds_to_keep[class_].remove(query)
-                        else:
-                            retain[0] = 'ar'
+                    is_frequency_greater = blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_subject_cds']
+                    id_or_query = id_subject if is_frequency_greater else query
+                    retain_index = 1 if is_frequency_greater else 0
+                    retain_value = 'ar' if id_or_query in cds_to_keep['1a'] else 'ad' if id_or_query in drop_list else 'd'
+                    
+                    retain[retain_index] = retain_value
+                    if retain_value != 'ar':
+                        drop_list.add(id_or_query)
+                        cds_to_keep[class_].discard(id_or_query)
 
                 if not itf.partially_contains_fragment_of_list([id_subject, query], important_relationships[class_]) and retain:
                     important_relationships[class_].append([query, id_subject, retain])
 
-                # If to add relationship between different CDS and clusters.
-                # Keep only 3a as they are the one relevant for the output
-                if (query not in drop_list or id_subject not in drop_list) and class_ in ['2b', '4c', '5b']:
-                    other_relationships[class_].append([query, id_subject])
-
     # Create the joined cluster by joining by IDs.
     cds_to_keep['1a'] = {i+1: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join))}
-            
-    # And remove duplicates
-    for class_, results in other_relationships.items():
-        other_relationships[class_] = itf.get_unique_sublists(other_relationships[class_])
-        
-    # Initialize relationships dictionary for each class.
-    relationships = {class_: {} for class_ in other_relationships}
-    
-    # Process all relationships identified (Identify the Joined cluster ID).
-    for class_, results in other_relationships.items():
-        # Iterate over results
-        for result in results:
-             # Identify the cluster ID, if it is joined id or CDS ID.
-            cluster_id = itf.identify_string_in_dict(result[1], cds_to_keep['1a']) or result[1]
-            # Update relationships dictionary.
-            relationships[class_].setdefault(cluster_id, []).append(result)
 
-    # Get unique relationships.
-    for class_, relationship in list(relationships.items()):
-        for id_, r in list(relationship.items()):
-            relationships[class_][id_] = itf.get_unique_sublists(r)
-            
-    return cds_to_keep, relationships, important_relationships, drop_list
+    return cds_to_keep, important_relationships, drop_list
 
-def write_processed_results_to_file(cds_to_keep, relationships, representative_blast_results,
+def write_processed_results_to_file(cds_to_keep, representative_blast_results,
                                     classes_outcome, all_alleles, cds_matched_loci, output_path):
     """
     Write the results from processed_classes into various files.
@@ -515,8 +570,6 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
     ----------
     cds_to_keep : dict
         Dict of the CDS to keep by each classification.
-    relationships : dict
-        Dict that contains relationships between various clusters.
     representative_blast_results : dict
         Dict that contains BLAST results of the representatives with all of the additional
         info.
@@ -593,67 +646,6 @@ def write_processed_results_to_file(cds_to_keep, relationships, representative_b
 
             report_file_path = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{id_}.tsv")
             alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
-    
-    # Create directory.
-    partially_contained_relationships = os.path.join(blast_by_cluster_output, "1_partially_contained_relationships")
-    ff.create_directory(partially_contained_relationships)
-    blast_results_partially_contained = os.path.join(blast_by_cluster_output, "2_blast_results_partially_contained")
-    ff.create_directory(blast_results_partially_contained)
-    
-    # Write blast results by class and relationships.
-    for class_, relationship in relationships.items():
-        # Skip empty entries.
-        if not relationship:
-            continue
-        # Process and write relationships.
-        for cluster_id, r_ids in relationship.items():
-            # Get all IDs into a list.
-            query_ids = [query_id[0] for query_id in r_ids]
-            subject_ids = [subject_id[1] for subject_id in r_ids]
-            
-            # Get transformed values into the list (replaces CDS name for joined cluster ID).
-            transformed_query_ids = [itf.identify_string_in_dict(id_, cds_to_keep['1a']) or id_ for id_ in query_ids]
-            
-            # Get entries based on BLAST.
-            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()
-                                             if entry['class'] == class_}
-                                   for subject, entries in subjects.items() if subject in subject_ids}
-                          for query, subjects in representative_blast_results.items() if query in query_ids}
-                
-            report_file_path = os.path.join(blast_results_partially_contained, f"blast_relationships_to_{cluster_id}.tsv")
-            # What write type to use (if file already exists).
-            write_type = 'a' if os.path.exists(report_file_path) else 'w'
-            # Write BLAST results to file.
-            alignment_dict_to_file(write_dict, report_file_path, write_type, add_groups_ids)
-            # Path to the relationships report.
-            relationships_report_file_path = os.path.join(partially_contained_relationships, f"relationships_to_cluster_{cluster_id}_report.txt")
-            
-            # Write all of the report files.
-            with open(relationships_report_file_path, write_type) as relationships_report_file:
-                # Class that has CDS that are partially contained or cantains other CDS.
-                if class_ == '3a':
-
-                    relationships_report_file.writelines("The following CDS may partially contain the following "
-                                                         "CDS from this cluster:\n")
-                else:
-                    relationships_report_file.writelines("The following CDS matched with BLASTn to the following"
-                                                         f" elements of this cluster and have the classification '{class_}'"
-                                                         " to this elements however they are probably different loci:\n")
-                # Write the cluster ID.
-                relationships_report_file.writelines(f"{cluster_id}:\n")
-                seen = ""
-                for i, query_id in enumerate(transformed_query_ids):
-                    # To increase redability and reduce redundancy we simplify the output.
-                    if query_id == seen:
-                        white_spaces = itf.create_whitespace_string(f"{'CDS' if type(query_id) == str else 'Cluster'} {query_id} entry: {query_ids[i]} against ")
-                        relationships_report_file.write("\t" + white_spaces + f"{subject_ids[i]}\n")
-                    else:
-                        relationships_report_file.write(f"\t{'CDS' if type(query_id) == str else 'Cluster'} {query_id} entry: {query_ids[i]} against {subject_ids[i]}\n")
-                    
-                    if type(query_id) == str:
-                        seen = query_id
-                    else:
-                        seen = query_ids[i]
 
     # Create directory.
     joined_cluster_relationships_output = os.path.join(output_path, "blast_results_by_class")
@@ -1127,10 +1119,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     
     print("\nProcessing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, relationships,
-     important_relationships, drop_list] = process_classes(representative_blast_results,
-                                                           classes_outcome,
-                                                           all_alleles)
+    [cds_to_keep, important_relationships, drop_list] = process_classes(representative_blast_results,
+                                                                        classes_outcome,
+                                                                        all_alleles)
     # Replace the alleles entries with their loci ID.
     cds_to_keep = {
         class_: set(
@@ -1163,7 +1154,6 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
 
     print("\nWritting classes results to files...")
     write_processed_results_to_file(cds_to_keep,
-                                    relationships,
                                     representative_blast_results,
                                     classes_outcome,
                                     all_alleles,
@@ -1741,8 +1731,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, relationships, important_relationships, drop_list] = process_classes(representative_blast_results,
-                                                                                       classes_outcome)
+    [cds_to_keep, important_relationships, drop_list] = process_classes(representative_blast_results,
+                                                                        classes_outcome)
 
     report_main_relationships(important_relationships,
                               representative_blast_results,
@@ -1756,7 +1746,6 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
 
     print("\nWritting classes results to files...")
     write_processed_results_to_file(cds_to_keep,
-                                    relationships,
                                     representative_blast_results,
                                     classes_outcome,
                                     None,
