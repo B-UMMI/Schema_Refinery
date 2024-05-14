@@ -589,82 +589,99 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
     -------
     No returns, writes files in output path.
     """
-    # Create directory
-    blast_by_cluster_output = os.path.join(output_path, "blast_results_by_cluster")
-    ff.create_directory(blast_by_cluster_output)
-    
-    # Get all of the BLAST entries for that cluster.
-    add_groups_ids = False
-    for class_, cds in cds_to_keep.items():
-        for i, cluster in enumerate(cds):
-            if class_ == '1a':
-                id_ = i + 1
-                cluster_type = 'joined_cluster'
-                cluster = cds[id_]
-            else:
-                id_ = cluster
-                cluster = [cluster]
-                cluster_type = 'retained'
-            # For the entries that have more than one entry in BLAST results
-            # e.g loci1 has alleles loci1_1 and loci1_2
-            if all_alleles:
-                is_cds = False
-                add_groups_ids = True
-                cluster_alleles = []
-                for entry in cluster:
-                    # Skip results in the entries if are retained CDS
-                    if entry not in all_alleles or type(entry) == int:
-                        if type(entry) == int:
-                            cluster = all_alleles[entry]
-                        cluster_type = 'CDS_cluster'
-                        is_cds = True
-                    else:
-                        cluster_type = 'loci'
-                        cluster_alleles += all_alleles[entry]
+    def process_clusters(cds_to_keep, representative_blast_results, all_alleles, cds_matched_loci, output_path):
+        """
+        Process and write cluster results.
+        """
+        for class_, cds in cds_to_keep.items():
+            for i, cluster in enumerate(cds):
+                id_, cluster, cluster_type, is_cds, add_groups_ids = process_cluster(class_, i, cluster, all_alleles, cds)
+                write_dict = generate_write_dict(id_, cluster, is_cds, cds_matched_loci, representative_blast_results)
+                report_file_path = os.path.join(output_path, f"blast_{cluster_type}_{id_}.tsv")
+                alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
+        
+        return add_groups_ids
 
-                if not is_cds:
-                    cluster = cluster_alleles
-            else:
-                is_cds = True
 
-            if is_cds and cds_matched_loci:
-                queries = []
-                if type(id_) == int:
-                    queries = cds_matched_loci[id_]
+    def process_cluster(class_, i, cluster, all_alleles, cds):
+        """
+        Process a single cluster.
+        """
+        if class_ == '1a':
+            id_ = i + 1
+            cluster_type = 'joined_cluster'
+            cluster = cds[id_]
+        else:
+            id_ = cluster
+            cluster = [cluster]
+            cluster_type = 'retained'
+
+        if all_alleles:
+            add_groups_ids = True
+            is_cds = False
+            cluster_alleles = []
+            for entry in cluster:
+                if entry not in all_alleles or type(entry) == int:
+                    if type(entry) == int:
+                        cluster = all_alleles[entry]
+                    cluster_type = 'CDS_cluster'
+                    is_cds = True
                 else:
-                    for c in cluster:
-                        queries += cds_matched_loci[c]
-                write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
-                                       for subject, entries in subjects.items() if subject in cluster}
-                              for query, subjects in representative_blast_results.items()
-                              if query in queries}
-            else:
-                write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
-                                       for subject, entries in subjects.items()}
-                              for query, subjects in representative_blast_results.items()
-                              if query in cluster}
+                    cluster_type = 'loci'
+                    cluster_alleles += all_alleles[entry]
+            if not is_cds:
+                cluster = cluster_alleles
+        else:
+            add_groups_ids = False
+            is_cds = True
 
-            report_file_path = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{id_}.tsv")
+        return id_, cluster, cluster_type, is_cds, add_groups_ids
+
+
+    def generate_write_dict(id_, cluster, is_cds, cds_matched_loci, representative_blast_results):
+        """
+        Generate the dictionary to be written to file.
+        """
+        if is_cds and cds_matched_loci:
+            queries = []
+            if type(id_) == int:
+                queries = cds_matched_loci[id_]
+            else:
+                for c in cluster:
+                    queries += cds_matched_loci[c]
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
+                                for subject, entries in subjects.items() if subject in cluster}
+                        for query, subjects in representative_blast_results.items()
+                        if query in queries}
+        else:
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
+                                for subject, entries in subjects.items()}
+                        for query, subjects in representative_blast_results.items()
+                        if query in cluster}
+        return write_dict
+
+
+    def process_classes(classes_outcome, representative_blast_results, output_path, add_groups_ids):
+        """
+        Process and write class results.
+        """
+        for class_ in classes_outcome:
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
+                                for subject, entries in subjects.items()}
+                        for query, subjects in representative_blast_results.items()}
+            report_file_path = os.path.join(output_path, f"blastn_group_{class_}.tsv")
             alignment_dict_to_file(write_dict, report_file_path, 'w', add_groups_ids)
 
-    # Create directory.
-    joined_cluster_relationships_output = os.path.join(output_path, "blast_results_by_class")
-    ff.create_directory(joined_cluster_relationships_output)
-    # Write classes to file.
-    for class_ in classes_outcome:
-        # Fetch all entries with the desired class.
-        write_dict = {query : {subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
-                               for subject, entries in subjects.items()}
-                      for query, subjects in representative_blast_results.items()}
+    # Create directories for output
+    blast_by_cluster_output = ff.create_directory(output_path, "blast_results_by_cluster")
+    joined_cluster_relationships_output = ff.create_directory(output_path, "blast_results_by_class")
 
-        report_file_path = os.path.join(joined_cluster_relationships_output,
-                                        f"blastn_group_{class_}.tsv")
-        
-        # Write individual class to file.
-        alignment_dict_to_file(write_dict,
-                               report_file_path,
-                               'w',
-                               add_groups_ids)
+    # Process and write cluster results
+    add_groups_ids = process_clusters(cds_to_keep, representative_blast_results, all_alleles, cds_matched_loci, blast_by_cluster_output)
+
+    # Process and write class results
+    process_classes(classes_outcome, representative_blast_results, joined_cluster_relationships_output, add_groups_ids)
+
             
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
                           constants, drop_list, loci = None, groups_paths_old = None, frequency_cds_cluster = None):
