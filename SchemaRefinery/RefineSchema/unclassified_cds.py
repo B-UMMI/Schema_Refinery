@@ -406,7 +406,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
 
     # Define classes based on priority
-    classes_outcome = ['1a', '1b', '2a', '2b', '3a', '1c', '3b', '4a', '4b', '4c', '5a', '5b', '5c']
+    classes_outcome = ['1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c','5']
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
@@ -443,12 +443,8 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
                             # Add to class '4c' if none of the above conditions are met
                             add_class_to_dict('4c')
                 else:
-                    if blastn_entry['global_palign_pident_max'] >= 0.8:
-                        # Add to class '5a' or '5b' based on frequency ratio
-                        add_class_to_dict('5a' if freq_ratio <= 0.1 else '5b')
-                    else:
-                        # Add to class '5c' if none of the above conditions are met
-                        add_class_to_dict('5c')
+                    # Add to class '5' for everything that is unrelated
+                    add_class_to_dict('5')
 
     return classes_outcome
 
@@ -541,9 +537,9 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                     cds_to_keep[class_].add(id_subject)
                     retain = ['ad' if query in drop_list else 'ar', 'r']
 
-                if class_ in ['1b', '2a', '3a', '5a'] and retain:
+                if class_ in ['1b', '2a', '3a'] and retain:
                     blastn_entry = matches[list(matches.keys())[0]]
-                    is_frequency_greater = blastn_entry['frequency_in_genomes_query_cds'] > blastn_entry['frequency_in_genomes_subject_cds']
+                    is_frequency_greater = blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds']
                     id_or_query = id_subject if is_frequency_greater else query
                     retain_index = 1 if is_frequency_greater else 0
                     retain_value = 'ar' if id_or_query in cds_to_keep['1a'] else 'ad' if id_or_query in drop_list else 'd'
@@ -825,18 +821,19 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         -------
         None, prints in stdout
         """
-        if class_ in ['2b', '4b', '5b']:
-            print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained"
-                " but it is recommended to verify them as they may be contained or contain partially inside"
-                " their BLAST match.")
-        elif class_ == '1a':
-            print(f"\t\tOut of those groups, {count} {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
-                f" and are contained in {len(printout['1a'])} joined groups that were retained.")
-        elif class_ == 'dropped':
-            print(f"\t\tOut of those {count} {'CDSs groups' if i== 0 else 'loci'}"
-                f" {'were removed from the analysis' if i== 0 else 'are recommended to be replaced with their matched CDS in the schema.'}")
-        else:
-            print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained.")
+        if count > 0:
+            if class_ in ['2b', '4b']:
+                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained"
+                    " but it is recommended to verify them as they may be contained or contain partially inside"
+                    " their BLAST match.")
+            elif class_ == '1a':
+                print(f"\t\tOut of those groups, {count} {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
+                    f" and are contained in {len(printout['1a'])} joined groups that were retained.")
+            elif class_ == 'dropped':
+                print(f"\t\tOut of those {count} {'CDSs groups' if i== 0 else 'loci'}"
+                    f" {'were removed from the analysis' if i== 0 else 'are recommended to be replaced with their matched CDS in the schema.'}")
+            else:
+                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained.")
 
     def create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, case_id, cases):
         """
@@ -1055,9 +1052,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     
     cds_outcome_results_fastas_folder = os.path.join(fasta_folder, "results_group_dna_fastas")
     ff.create_directory(cds_outcome_results_fastas_folder)
-    
-    cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_group_dna_reps_fastas")
-    ff.create_directory(cds_outcome_results_reps_fastas_folder)
+    if not loci:
+        cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, "results_group_dna_reps_fastas")
+        ff.create_directory(cds_outcome_results_reps_fastas_folder)
 
 
     # If 'Retained_not_matched_by_blastn' exists in cds_to_keep, remove it and store it separately
@@ -1127,6 +1124,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             
             cds_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
 
+    # Initialize dictionaries to store paths
+    groups_paths = {}
+    groups_paths_reps = {}
     # Check if loci is not None.
     if loci:
         print("Writing FASTA file for possible new loci...")
@@ -1138,17 +1138,14 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             for class_, cds_list in cases.items():
                 copy_fasta(class_, cds_list, case_id, cds_outcome_results, groups_paths_old, loci)
             # Copy CDS that didnt match
-            for cds in groups_paths_old:
+            for cds, path in groups_paths_old.items():
                 cds_name = f"retained_not_matched_by_blastn_{cds}"
                 file_path = os.path.join(cds_outcome_results, cds_name)
-                ff.copy_file(Retained_not_matched_by_blastn[cds], file_path)
+                ff.copy_file(path, file_path)
 
         master_file_rep = None
         reps_trans_dict_cds = None
     else:
-        # Initialize dictionaries to store paths
-        groups_paths = {}
-        groups_paths_reps = {}
         print("Writing FASTA and additional files for possible new loci...")
 
         # Process each class and CDS list in cds_to_keep
