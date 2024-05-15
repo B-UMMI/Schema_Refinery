@@ -849,7 +849,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 class_name_cds = f"retained_{class_}_{cds}"
             
             file_path = os.path.join(cds_outcome_results, class_name_cds)
-            origin_path = groups_paths_old[cds] if case_id == 0 else loci[cds]
+            origin_path = groups_paths_old.pop(cds) if case_id == 0 else loci[cds]
             ff.copy_file(origin_path, file_path)
 
     def write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder, fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters):
@@ -859,6 +859,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         for cds in cds_list:
             if class_ == '1a':
                 class_name_cds = f"joined_{cds}"
+            elif class_ == 'Retained_not_matched_by_blastn':
+                class_name_cds = f"retained_not_matched_by_blastn_{cds}"
             else:
                 class_name_cds = f"retained_{class_}_{cds}"
             
@@ -1015,12 +1017,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             print(f"\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
             
             cds_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
-    
-    # Initialize dictionaries to store paths
-    groups_paths = {}
-    groups_paths_reps = {}
 
-    # Check if loci exists
+    # Check if loci is not None.
     if loci:
         print("Writing FASTA file for possible new loci...")
         for case_id, cases in enumerate([cds_cases, loci_cases]):
@@ -1030,9 +1028,18 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             # Process each class and CDS list in cases
             for class_, cds_list in cases.items():
                 copy_fasta(class_, cds_list, case_id, cds_outcome_results, groups_paths_old, loci)
+            # Copy CDS that didnt match
+            for cds in groups_paths_old:
+                cds_name = f"retained_not_matched_by_blastn_{cds}"
+                file_path = os.path.join(cds_outcome_results, cds_name)
+                ff.copy_file(Retained_not_matched_by_blastn[cds], file_path)
+
         master_file_rep = None
         reps_trans_dict_cds = None
     else:
+        # Initialize dictionaries to store paths
+        groups_paths = {}
+        groups_paths_reps = {}
         print("Writing FASTA and additional files for possible new loci...")
 
         # Process each class and CDS list in cds_to_keep
