@@ -807,6 +807,24 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         groups.
     """
     def print_classification_results(class_, count, printout, i):
+        """
+        Prints the classification results based on the class type.
+
+        Parameters
+        ----------
+        class_ : str
+            The class type.
+        count : int
+            The count of groups.
+        printout : dict
+            The dictionary containing printout information.
+        i : int
+            An index used to determine the printout message.
+
+        Returns
+        -------
+        None, prints in stdout
+        """
         if class_ in ['2b', '4b', '5b']:
             print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained"
                 " but it is recommended to verify them as they may be contained or contain partially inside"
@@ -823,6 +841,22 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     def create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, case_id, cases):
         """
         Create directories and write dict to TSV.
+
+        Parameters
+        ----------
+        cds_outcome_results_fastas_folder : str
+            The path to the folder where the results will be stored.
+        output_path : str
+            The path where the output will be written.
+        case_id : int
+            The ID of the case.
+        cases : dict
+            The dictionary containing the cases.
+
+        Returns
+        -------
+        cds_outcome_results : str
+            The path to the results folder.
         """
         cds_outcome_results = os.path.join(cds_outcome_results_fastas_folder, f"results_{'CDSs' if case_id == 0 else 'loci'}_fastas")
         ff.create_directory(cds_outcome_results)
@@ -837,6 +871,25 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     def copy_fasta(class_, cds_list, case_id, cds_outcome_results, groups_paths_old, loci):
         """
         Process each class and CDS list in cases.
+
+        Parameters
+        ----------
+        class_ : str
+            The class type.
+        cds_list : list
+            The list of CDSs.
+        case_id : int
+            The ID of the case.
+        cds_outcome_results : str
+            The path to the results folder.
+        groups_paths_old : dict
+            The dictionary containing the old paths.
+        loci : dict
+            The dictionary containing the loci.
+
+        Returns
+        -------
+        None, copies file from origin to destination.
         """
         i = 1
         for cds in cds_list:
@@ -855,6 +908,31 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     def write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder, fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters):
         """
         Process each class and CDS list in cds_to_keep.
+
+        Parameters
+        ----------
+        class_ : str
+            The class type.
+        cds_list : list
+            The list of CDSs.
+        cds_outcome_results_fastas_folder : str
+            The path to the results folder.
+        cds_outcome_results_reps_fastas_folder : str
+            The path to the folder where the representative results will be stored.
+        fasta_folder : str
+            The path to the folder where the fasta files are stored.
+        groups_paths : dict
+            The dictionary containing the paths to the groups.
+        groups_paths_reps : dict
+            The dictionary containing the paths to the representative groups.
+        not_included_cds : dict
+            The dictionary containing the CDSs that were not included.
+        clusters : dict
+            The dictionary containing the clusters.
+
+        Returns
+        -------
+        None, writtes FASTA files.
         """
         for cds in cds_list:
             if class_ == '1a':
@@ -891,7 +969,23 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
     def translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants):
         """
-        Translate possible new loci and write to master file.
+        Translate possible new loci and writes to master file.
+
+        Parameters
+        ----------
+        fasta_folder : str
+            The path to the folder where the fasta files are stored.
+        groups_paths : dict
+            The dictionary containing the paths to the groups.
+        groups_paths_reps : dict
+            The dictionary containing the paths to the representative groups.
+        constants : list
+            The list of constants.
+
+        Returns
+        -------
+        reps_trans_dict_cds :dict
+            The dictionary containing the translated sequences.
         """
         groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation")
         ff.create_directory(groups_trans_folder)
@@ -919,6 +1013,21 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_cds_cluster):
         """
         Write cluster members to file.
+
+        Parameters
+        ----------
+        output_path : str
+            The path where the output will be written.
+        cds_to_keep : dict
+            The dictionary containing the CDSs to keep.
+        clusters : dict
+            The dictionary containing the clusters.
+        frequency_cds_cluster : dict
+            The dictionary containing the frequency of each CDS in the cluster.
+
+        Returns
+        -------
+        None, writes to file.
         """
         cluster_members_output = os.path.join(output_path, 'cluster_members.tsv')
         with open(cluster_members_output, 'w') as cluster_members_file:
