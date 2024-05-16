@@ -1,3 +1,4 @@
+import re
 import itertools
 import pickle
 
@@ -456,3 +457,6 @@ def partially_contains_fragment_of_list(target_list, list_of_lists):
         if any(sub[i:i+len(target_list)] == target_list for i in range(len(sub)-len(target_list)+1)):
             return True
     return False
+
+def split_ids(string, pattern):
+    return re.sub(pattern, '', string)
