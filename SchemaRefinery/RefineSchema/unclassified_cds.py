@@ -365,6 +365,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                                            cds_not_present_trans_file_path,
                                                                            cds_not_present_untrans_file_path,
                                                                            constants[5],
+                                                                           True,
                                                                            True)
     # Count translation sizes.
     cds_translation_size = {}
@@ -590,6 +591,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     # Create directory
     results_output = os.path.join(output_directory, "4_Schema_processing")
     ff.create_directory(results_output)
+
     loci_ids = [True, False]
     # Run Blasts for the found loci against schema short
     representative_blast_results = cof.process_schema(schema,
@@ -601,6 +603,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                   allelecall_directory, 
                                                   master_file_rep,
                                                   loci_ids,
+                                                  False,
                                                   False,
                                                   constants,
                                                   cpu)

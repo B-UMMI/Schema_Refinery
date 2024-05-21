@@ -1,8 +1,10 @@
 from copy import deepcopy
 try:
     from RefineSchema.constants import MAX_GAP_UNITS
+    from utils import iterable_functions as itf
 except ModuleNotFoundError:
     from SchemaRefinery.RefineSchema.constants import MAX_GAP_UNITS
+    from SchemaRefinery.utils import iterable_functions as itf
 
 def join_intervals(alignments):
     """
@@ -371,7 +373,8 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     }
             
             if if_loci:
-                if query.split("_")[0] == subject.split("_")[0]:
+                pattern = '_(\d+)'
+                if itf.remove_by_regex(query, pattern) == itf.remove_by_regex(subject, pattern):
                      # Largest self-score is choosen
                     if float(pident) == 100 and get_self_score and int(score) > self_score:
                         self_score = int(score)

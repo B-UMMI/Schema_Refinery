@@ -1,5 +1,3 @@
-import os
-import concurrent.futures
 from itertools import repeat
 
 try:
@@ -28,6 +26,16 @@ except ModuleNotFoundError:
 def main(schema, allelecall_directory, output_directory, constants, cpu):
     frequency_cds_cluster = {}
     loci_ids = [True, True]
-    cof.process_schema(schema, [], output_directory, None, 
-                   None, frequency_cds_cluster, allelecall_directory, 
-                   None ,loci_ids, True, constants, cpu)
+    cof.process_schema(schema,
+                       [],
+                       output_directory,
+                       None,
+                       None,
+                       frequency_cds_cluster,
+                       allelecall_directory,
+                       None,
+                       loci_ids,
+                       True,
+                       True,
+                       constants,
+                       cpu)

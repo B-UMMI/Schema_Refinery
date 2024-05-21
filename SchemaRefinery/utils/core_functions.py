@@ -280,10 +280,10 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
         """
         if loci_ids[0]:
             query_before = query
-            query = itf.split_ids(query, '_(\d+)')
+            query = itf.remove_by_regex(query, '_(\d+)')
         if loci_ids[1]:
             subject_before = subject
-            subject = itf.split_ids(subject, '_(\d+)')
+            subject = itf.remove_by_regex(subject, '_(\d+)')
         update_dict = {
             'bsr': bsr,
             'kmers_sim': sim,
@@ -358,16 +358,16 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
             sim, cov = get_kmer_values(reps_kmers_sim, query, subject)
             bsr = get_bsr_value(bsr_values, query, subject)
 
+            total_length = calculate_total_length(representative_blast_results_coords_all, query, subject)
+            global_palign_all_min, global_palign_all_max = calculate_global_palign(total_length, blastn_results[1])
+
+            total_length = calculate_total_length(representative_blast_results_coords_pident, query, subject)
+            global_palign_pident_min, global_palign_pident_max = calculate_global_palign(total_length, blastn_results[1])
             # Iterate over the blastn_results dictionary
             for entry_id, result in list(blastn_results.items()):
-                total_length = calculate_total_length(representative_blast_results_coords_all, query, subject)
-                global_palign_all_min, global_palign_all_max = calculate_global_palign(total_length, result)
-
-                total_length = calculate_total_length(representative_blast_results_coords_pident, query, subject)
-                global_palign_pident_min, global_palign_pident_max = calculate_global_palign(total_length, result)
 
                 local_palign_min = calculate_local_palign(result)
-
+                # Remove entries with negative local palign values meaning that they are inverse alignments.
                 if local_palign_min >= 0:
                     update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_cds_cluster, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, loci_ids, add_groups_ids)
                 else:
@@ -505,19 +505,9 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
             for id_subject, matches in rep_blast_result.items():
                 # Process all of the cases that have 1a classification
                 if class_ == '1a':
-                    if all_alleles:
-                        replaced_query = itf.identify_string_in_dict(query, all_alleles)
-                        if replaced_query:
-                            old_query = query
-                            query = replaced_query
-                        replaced_id_subject = itf.identify_string_in_dict(id_subject, all_alleles)
-                        if replaced_id_subject:
-                            old_id_subject = id_subject
-                            id_subject = replaced_id_subject
-                     
                     cds_to_keep[class_].update([query, id_subject])
                     cluster_to_join.append([query, id_subject])
-                    important_relationships[class_].append([old_query, old_id_subject] if all_alleles else [query, id_subject] )
+                    important_relationships[class_].append([query, id_subject])
                     continue
 
                 # Initialize retain list
@@ -534,7 +524,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                     main_ids = set(filter(lambda x: x is not None, main_ids))
 
                 # Don't run the analysis again if one joined CDS or loci already have some results
-                if all_alleles and itf.identify_string_in_dict(query, all_alleles) in main_ids:
+                if all_alleles and (itf.identify_string_in_dict(query, all_alleles) in main_ids or itf.identify_string_in_dict(id_subject, all_alleles)):
                     continue
 
                 # Process cases where neither query nor subject were processed
@@ -564,11 +554,23 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                         drop_list.add(id_or_query)
                         cds_to_keep[class_].discard(id_or_query)
 
-                if not itf.partially_contains_fragment_of_list([id_subject, query], important_relationships[class_]) and retain:
+                if retain:
                     important_relationships[class_].append([query, id_subject, retain])
 
     # Create the joined cluster by joining by IDs.
-    cds_to_keep['1a'] = {i+1: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join))}
+    cds_to_keep['1a'] = {i: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join), 1)}
+
+    if all_alleles:
+        # Replace all the alleles entries with their loci/CDS ID in class 1a.
+
+        # Replace the alleles entries with their loci/CDS ID.
+        cds_to_keep = {
+            class_: set(
+                [entry if not itf.identify_string_in_dict(entry, all_alleles) else itf.identify_string_in_dict(entry, all_alleles) for entry in entries]
+            )
+            if class_ != '1a' else entries for class_, entries in cds_to_keep.items()
+        }
+        drop_list = set([entry if not itf.identify_string_in_dict(entry, all_alleles) else itf.identify_string_in_dict(entry, all_alleles) for entry in drop_list])
 
     return cds_to_keep, important_relationships, drop_list
 
@@ -911,7 +913,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
             # Print the classification results
             for class_, group in printout.items():
-                print_classification_results(class_, len(group), printout, i)
+                print_classification_results(class_ ,len(group) if class_ != '1a' else len(itf.flatten_list(group.values())) ,printout, i)
 
             if i == 0:
                 print(f"\t{len(groups_paths_old) - len(itf.flatten_list(printout.values()))}"
@@ -941,7 +943,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     groups_paths_reps = {}
     # Check if loci is not None.
     if loci:
-        print("Writing FASTA file for possible new loci...")
+        print("\nWriting FASTA file for possible new loci...")
         for case_id, cases in enumerate([cds_cases, loci_cases]):
             # Create directories and write dict to TSV
             cds_outcome_results = create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, case_id, cases)
@@ -1500,7 +1502,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
 
 def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds, 
                    cds_to_keep, frequency_cds_cluster, allelecall_directory, 
-                   master_file_rep, loci_ids, only_loci, constants, cpu):
+                   master_file_rep, loci_ids, only_loci, master_alleles, constants, cpu):
     """
     This function processes data related to the schema seed, importing, translating
     and BLASTing against the unclassified CDS clusters representatives groups to
@@ -1545,6 +1547,12 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     schema_loci_short = {loci_path.replace("_short.fasta", ""): os.path.join(schema_short_path, loci_path) 
                          for loci_path in os.listdir(schema_short_path) 
                          if loci_path.endswith('.fasta')}
+    
+    # Get all of the schema loci FASTA files path.
+    schema_loci = {loci_path.replace(".fasta", ""): os.path.join(schema, loci_path) 
+                         for loci_path in os.listdir(schema) 
+                         if loci_path.endswith('.fasta')}
+
     # Create a folder for short translations.
     short_translation_folder = os.path.join(results_output, "short_translation_folder")
     ff.create_directory(short_translation_folder)
@@ -1562,35 +1570,39 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     len_short_folder = len(schema_loci_short)
     all_alleles = {}
     if not master_file_rep:
-        master_file_rep_folder = os.path.join(results_output, "master_file_rep")
+        filename = 'master_file' if master_alleles else 'master_file_rep'
+        master_file_rep_folder = os.path.join(results_output, filename)
         ff.create_directory(master_file_rep_folder)
-        master_file_rep = os.path.join(master_file_rep_folder, "master_file_rep.fasta")
+        master_file_rep = os.path.join(master_file_rep_folder, f"{filename}.fasta")
         write_to_master = True
     else:
         write_to_master = False
     # Create varible to store proteins sequences if it doesn't exist.
     reps_trans_dict_cds = {} if not reps_trans_dict_cds else reps_trans_dict_cds
-    for loci, loci_short_path in schema_loci_short.items():
-        print(f"\rTranslated fasta short loci: {i}/{len_short_folder}", end='', flush=True)
+    # If to BLAST against reps or all of the alleles.
+    schema_loci if master_alleles else schema_loci_short
+    for loci, loci_short_path in schema_loci.items():
+        print(f"\rTranslated{'' if master_alleles else ' short'} loci FASTA: {i}/{len_short_folder}", end='', flush=True)
         i += 1
         fasta_dict = sf.fetch_fasta_dict(loci_short_path, False)
         
-        for loci_id, sequence in fasta_dict.items():
-            all_alleles.setdefault(loci, []).append(loci_id)
+        for allele_id, sequence in fasta_dict.items():
+            all_alleles.setdefault(loci, []).append(allele_id)
 
             if write_to_master:
                 write_type = 'w' if not os.path.exists(master_file_rep) else 'a'
                 with open(master_file_rep, write_type) as master_file:
-                    master_file.write(f">{loci_id}\n{sequence}\n")
+                    master_file.write(f">{allele_id}\n{sequence}\n")
 
         loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
         translation_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
                                                               loci_short_translation_path,
                                                               None,
                                                               constants[5],
+                                                              False,
                                                               False)
-        for loci_id, sequence in translation_dict.items():
-            reps_trans_dict_cds[loci_id] = sequence
+        for allele_id, sequence in translation_dict.items():
+            reps_trans_dict_cds[allele_id] = sequence
 
     [representative_blast_results,
      representative_blast_results_coords_all,
@@ -1632,15 +1644,6 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     [cds_to_keep, important_relationships, drop_list] = process_classes(representative_blast_results,
                                                                         classes_outcome,
                                                                         all_alleles)
-    # Replace the alleles entries with their loci ID.
-    cds_to_keep = {
-        class_: set(
-            [entry if not itf.identify_string_in_dict(entry, all_alleles) else itf.identify_string_in_dict(entry, all_alleles) for entry in entries]
-        )
-        if class_ != '1a' else entries for class_, entries in cds_to_keep.items()
-    }
-
-    drop_list = set([entry if not itf.identify_string_in_dict(entry, all_alleles) else itf.identify_string_in_dict(entry, all_alleles) for entry in drop_list])
     # Filter repeated entries
     seen = set()
     for class_, entries in list(cds_to_keep.items()):

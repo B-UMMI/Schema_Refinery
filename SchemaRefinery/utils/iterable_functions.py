@@ -458,5 +458,5 @@ def partially_contains_fragment_of_list(target_list, list_of_lists):
             return True
     return False
 
-def split_ids(string, pattern):
+def remove_by_regex(string, pattern):
     return re.sub(pattern, '', string)
