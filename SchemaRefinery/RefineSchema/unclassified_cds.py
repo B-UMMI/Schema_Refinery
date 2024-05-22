@@ -527,7 +527,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, important_relationships, drop_list] = cof.process_classes(representative_blast_results,
+    [cds_to_keep, important_relationships, drop_list, _] = cof.process_classes(representative_blast_results,
                                                                         classes_outcome)
 
     cof.report_main_relationships(important_relationships,
