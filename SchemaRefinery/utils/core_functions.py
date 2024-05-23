@@ -523,7 +523,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                 if class_ == '1a':
                     cds_to_keep[class_].update([new_query, new_id_subject])
                     cluster_to_join.append([new_query, new_id_subject])
-                    important_relationships[class_].append(ids_for_relationship)
+                    important_relationships[class_].append(ids_for_relationship + [['j', 'j']])
                     continue
 
                 # Initialize retain list
@@ -852,7 +852,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                         cds_ids = [cds_id for cds_id in clusters[rep_id]]
                         for count, cds_id in enumerate(cds_ids):
                             if count == 0:
-                                cluster_members_file.write('\t' + cds_id + '\t' + str(frequency_cds_cluster[cds_id]) + '\n')
+                                cluster_members_file.write('\t' + cds_id + '\t' + str(frequency_cds_cluster[rep_id]) + '\n')
                             else:
                                 cluster_members_file.write('\t\t' + cds_id + '\n')
     # Create directories.
@@ -938,6 +938,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     # Skip the next step to copy or write FASTAS because we are working with the
     # schema only.
     if only_loci:
+        # Write cluster members to file
+        write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_cds_cluster)
         for case_id, cases in enumerate([cds_cases, loci_cases]):
             # Create directories and write dict to TSV
             cds_outcome_results = create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, case_id, cases)
@@ -1280,10 +1282,10 @@ def report_main_relationships(important_relationships, representative_blast_resu
             # If two CDS were part of the same joined cluster just keep the ID of the cluster.
             file_name = f"{id_1}_vs_{id_2}_{class_}.tsv" if id_1 != id_2 else f"{id_1}_{class_}.tsv"
             
+            retain = relationship[2]
             if class_ != '1a':
-                retain = relationship[2]
-                
                 file_name = retain[0] + '_' + file_name.replace('vs_', 'vs_' + retain[1] + '_')
+
 
             report_file_path = os.path.join(relationship_output_dir, file_name)
             # If file already exists just append.
@@ -1292,9 +1294,17 @@ def report_main_relationships(important_relationships, representative_blast_resu
             cds_cluster = True if loci else False
             # Write to file the results.
             alignment_dict_to_file(write_dict, report_file_path, write_type, cds_cluster)
+            #TODO finish this function
+            write_master_file = os.path.join(relationship_output_dir, "master_relationships_file.tsv")
+            write_type = 'a' if os.path.exists(write_master_file) else 'w'
+            with open(write_master_file, write_type) as master_file:
+                if write_type == 'w':
+                    master_file.write('Query_ID\tSubject_ID\tStatus_query\tStatus_subject\tClass')
+                master_file.write(f"{query_id}\t{subject_id}\t{retain[0]}\t{retain[1]}\t{class_}")
+            alignment_dict_to_file(write_dict, write_master_file, write_type, cds_cluster)
 
 def write_processed_results_to_file(cds_to_keep, representative_blast_results,
-                                    classes_outcome, all_alleles, cds_matched_loci, output_path):
+                                    classes_outcome, all_alleles, is_matched, is_matched_alleles, output_path):
     """
     Write the results from processed_classes into various files.
     
@@ -1311,9 +1321,8 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         Dict that contains the loci and joined group as keys and their alleles and 
         elements IDS as values.
         Can be None if no loci are involved.
-    cds_matched_loci : dict
-        Dict that contains with which loci alleles did CDS and joined group match.
-        Can be None if no loci are involved.
+    is_matched : dict
+        Dictionary of CDS/loci that were matched.
     output_path : str
         Path were to write files.
         
@@ -1321,7 +1330,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
     -------
     No returns, writes files in output path.
     """
-    def process_clusters(cds_to_keep, representative_blast_results, all_alleles, cds_matched_loci, output_path):
+    def process_clusters(cds_to_keep, representative_blast_results, all_alleles, is_matched, is_matched_alleles, output_path):
         """
         Process and write cluster results.
 
@@ -1333,8 +1342,10 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             Dictionary of representative blast results.
         all_alleles : dict
             Dict that contains the IDs as key and of all alleles related to that ID as values.
-        cds_matched_loci : dict
-            Dictionary of CDS matched loci.
+        is_matched : dict
+            Dictionary of CDS/loci that were matched.
+        is_matched_alleles : dict
+            Dictionary that
         output_path : str
             Path to the output directory.
 
@@ -1352,7 +1363,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
                 # Process the cluster and get the necessary details
                 id_, cluster, cluster_type, is_cds, add_groups_ids = process_cluster(class_, id_, cluster, all_alleles, cds)
                 # Generate a dictionary to be written to the file
-                write_dict = generate_write_dict(id_, cluster, is_cds, cds_matched_loci, representative_blast_results)
+                write_dict = generate_write_dict(id_, cluster, is_cds, is_matched, is_matched_alleles, representative_blast_results)
                 # Define the path of the report file
                 report_file_path = os.path.join(output_path, f"blast_{cluster_type}_{id_}.tsv")
                 # Write the dictionary to the file
@@ -1422,7 +1433,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
 
         return id_, cluster, cluster_type, is_cds, add_groups_ids
 
-    def generate_write_dict(id_, cluster, is_cds, cds_matched_loci, representative_blast_results):
+    def generate_write_dict(id_, cluster, is_cds, is_matched, is_matched_alleles, representative_blast_results):
         """
         Generate the dictionary to be written to file.
 
@@ -1434,8 +1445,8 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             List of the clusters.
         is_cds : bool
             Boolean indicating if it's a CDS.
-        cds_matched_loci : dict
-            Dictionary of CDS matched loci.
+        is_matched : dict
+            Dictionary of CDS/loci that were matched.
         representative_blast_results : dict
             Dictionary of representative blast results.
 
@@ -1445,18 +1456,28 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             Dictionary to be written to file.
         """
         # Check if it's a CDS and if it matches loci
-        if is_cds and cds_matched_loci:
+        if is_cds and is_matched:
             queries = []
             if type(id_) == int:
-                queries = cds_matched_loci[id_]
+                queries = is_matched[id_]
             else:
                 for c in cluster:
-                    queries += cds_matched_loci[c]
+                    queries += is_matched[c]
             # Generate the dictionary to be written
             write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
                                 for subject, entries in subjects.items() if subject in cluster}
                         for query, subjects in representative_blast_results.items()
                         if itf.remove_by_regex(query, '_(\d+)') in queries}
+        # for cases that didn't match anything but got matched against.
+        elif id_ in is_matched:
+            queries = is_matched[id_]
+            cluster = is_matched_alleles[id_]
+            # Generate the dictionary to be written
+            write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
+                                for subject, entries in subjects.items() if subject in cluster}
+                        for query, subjects in representative_blast_results.items()
+                        if query in queries}
+        # For all other normal cases.
         else:
             # Generate the dictionary to be written
             write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
@@ -1502,7 +1523,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
     ff.create_directory(blast_results_by_class_output)
 
     # Process and write cluster results
-    add_groups_ids = process_clusters(cds_to_keep, representative_blast_results, all_alleles, cds_matched_loci, blast_by_cluster_output)
+    add_groups_ids = process_clusters(cds_to_keep, representative_blast_results, all_alleles, is_matched, is_matched_alleles, blast_by_cluster_output)
 
     # Process and write class results
     process_classes(classes_outcome, representative_blast_results, blast_results_by_class_output, add_groups_ids)
@@ -1661,8 +1682,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                 cds_to_keep[class_].remove(entry)
     # Get all of the CDS that matched with loci
     if not all(loci_ids):
-        all_relationships = itf.flatten_list(all_relationships.values())
-        cds_matched_loci = {}
+        relationships = itf.flatten_list(all_relationships.values())
+        is_matched = {}
+        is_matched_alleles = None
         for class_, entries in list(cds_to_keep.items()):
             for entry in list(entries):
                 if entry not in schema_loci_short:
@@ -1672,16 +1694,31 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                     else:
                         id_ = entry
                         entry = [entry]
-                    cds_matched_loci.setdefault(id_, set([itf.remove_by_regex(i[0], '_(\d+)') for i in all_relationships if i[1] in entry]))
+                    is_matched.setdefault(id_, set([itf.remove_by_regex(i[0], '_(\d+)') for i in relationships if i[1] in entry]))
     else:
-        cds_matched_loci = None
+        relationships = itf.flatten_list(all_relationships.values())
+        changed_ids = [[r[0], itf.remove_by_regex(r[1], '_(\d+)')] for r in relationships]
+        had_matches = set([itf.remove_by_regex(rep, '_(\d+)') for rep in representative_blast_results])
+        is_matched = {}
+        is_matched_alleles = {}
+        for class_, entries in list(cds_to_keep.items()):
+            for entry in list(entries):
+                if entry not in had_matches and type(entry) != int:
+                    id_ = entry
+                    entry = [entry]
+                    is_matched.setdefault(id_, set([i[0] for i in changed_ids if i[1] in entry]))
+                    is_matched_alleles.setdefault(id_, set([i[1] 
+                                                            for i in relationships 
+                                                            if i[0] in is_matched[id_] 
+                                                            and itf.remove_by_regex(i[1], '_(\d+)') in entry]))
 
     print("\nWritting classes results to files...")
     write_processed_results_to_file(cds_to_keep,
                                     representative_blast_results,
                                     classes_outcome,
                                     all_alleles,
-                                    cds_matched_loci,
+                                    is_matched,
+                                    is_matched_alleles,
                                     results_output)
     
     print("\nWrapping up BLAST results...")
@@ -1700,7 +1737,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                         drop_list,
                         schema_loci_short,
                         groups_paths,
-                        None,
+                        frequency_cds_cluster,
                         only_loci)
 
     return representative_blast_results
