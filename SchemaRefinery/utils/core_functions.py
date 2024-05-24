@@ -493,7 +493,8 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     all_relationships = {}
     cluster_to_join = []
     drop_list = set()
-    main_ids = set()
+    related_clusters = []
+
     # Loop over each class
     for class_ in classes_outcome:
         cds_to_keep[class_] = set()
@@ -525,7 +526,6 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                     cluster_to_join.append([new_query, new_id_subject])
                     important_relationships[class_].append(ids_for_relationship + [['j', 'j']])
                     continue
-
                 # Initialize retain list
                 retain = []
 
@@ -548,6 +548,11 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                 elif new_id_subject not in processed_cases:
                     cds_to_keep[class_].add(new_id_subject)
                     retain = ['ad' if new_query in drop_list else 'ar', 'r']
+
+                if class_ not in ['4c','5'] and retain:
+                    validation = itf.add_strings_to_subsets(related_clusters, [new_query, new_id_subject])
+                    if not validation:
+                        related_clusters.append(set([new_query, new_id_subject]))
 
                 if class_ in ['1b', '2a', '3a'] and retain:
                     blastn_entry = matches[list(matches.keys())[0]]
@@ -573,7 +578,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     # Create the joined cluster by joining by IDs.
     cds_to_keep['1a'] = {i: join for i, join in enumerate(cf.cluster_by_ids(cluster_to_join), 1)}
 
-    return cds_to_keep, important_relationships, drop_list, all_relationships
+    return cds_to_keep, important_relationships, drop_list, all_relationships, related_clusters
 
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
                           constants, drop_list, loci, groups_paths_old, frequency_cds_cluster,
@@ -1669,9 +1674,14 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     
     print("\nProcessing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, important_relationships, drop_list, all_relationships] = process_classes(representative_blast_results,
-                                                                                           classes_outcome,
-                                                                                           all_alleles)
+    [cds_to_keep, important_relationships, drop_list, all_relationships, related_clusters] = process_classes(representative_blast_results,
+                                                                                                            classes_outcome,
+                                                                                                            all_alleles)
+    related_matches = os.path.join(results_output, "related_matches.tsv")
+    with open(related_matches, 'w') as related_matches_file:
+        for related in related_clusters:
+            related_matches_file.write('\t'.join(related) + '\n')
+    
     # Filter repeated entries
     seen = set()
     for class_, entries in list(cds_to_keep.items()):

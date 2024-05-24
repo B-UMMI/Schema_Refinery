@@ -460,3 +460,15 @@ def partially_contains_fragment_of_list(target_list, list_of_lists):
 
 def remove_by_regex(string, pattern):
     return re.sub(pattern, '', string)
+
+def add_strings_to_subsets(my_list, my_strings):
+    found = False
+    for my_string in my_strings:
+        if found:
+            break
+        for sublist in my_list:
+            if my_string in sublist:
+                sublist.update(my_strings)
+                found = True
+                break
+    return found
