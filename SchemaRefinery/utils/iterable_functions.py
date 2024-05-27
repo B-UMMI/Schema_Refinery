@@ -465,6 +465,11 @@ def regex_present(regex_list, string):
     return any(re.search(regex, string) for regex in regex_list)
 
 def add_strings_to_subsets(my_list, my_strings):
+    """
+    Clustering algorithm that finds a string in a list of strings in
+    a list of sets and adds th whole list to the set if any string of 
+    that list is inside the set
+    """
     found = False
     for my_string in my_strings:
         if found:

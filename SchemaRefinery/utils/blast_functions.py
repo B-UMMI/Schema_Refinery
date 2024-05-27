@@ -114,8 +114,8 @@ def run_blast_with_args_only(blast_args):
     if len(stderr) > 0:
         print(stderr)
 
-def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results_all_representatives,
-                                                  representative_file_dict, all_representatives_file):
+def run_blast_fastas_multiprocessing(id_, blast_type, blast_results,
+                                                file_dict, all_fasta_file):
     """
     This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
 
@@ -138,15 +138,72 @@ def run_all_representative_blasts_multiprocessing(id_, blast_type, blast_results
         list containing locus id and path to the blast_results_file for that locus.
     """
 
-    blast_results_file = os.path.join(blast_results_all_representatives, f"blast_results_{id_}.tsv")
+    blast_results_file = os.path.join(blast_results, f"blast_results_{id_}.tsv")
     
-    blast_args = [blast_type, '-query', representative_file_dict[id_],
+    blast_args = [blast_type, '-query', file_dict[id_],
                   '-subject',
-                  all_representatives_file,
+                  all_fasta_file,
                   '-outfmt',
                   '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
                   '-out', 
                   blast_results_file]
+
+    run_blast_with_args_only(blast_args)
+
+    return [id_, blast_results_file]
+
+def run_blastdb_multiprocessing(blast_path, blast_db, fasta_file, id_, blast_output,
+              max_hsps=None, threads=1, ids_file=None, blast_task=None,
+              max_targets=None):
+    """
+    Execute BLAST.
+
+    Parameters
+    ----------
+    blast_path : str
+        Path to the BLAST executable.
+    blast_db : str
+        Path to the BLAST database.
+    fasta_file : str
+        Path to the Fasta file that contains the sequences
+        to align against the database.
+    id_ : str
+        Identifier of the sequence.
+    blast_output : str
+        Path to the output file.
+    max_hsps : int, optional
+        Maximum number of High-Scoring Pairs.
+    threads : int, optional
+        Number of threads passed to BLAST.
+    ids_file : path, optional
+        Path to a file with the identifiers of the sequences
+        to align against. Used to specify the database sequences
+        we want to align against.
+    blast_task : str, optional
+        BLAST task. Allows to set default parameters for a specific
+        type of search.
+    max_targets : int, optional
+        Maximum number of targets sequences to align against.
+
+    Returns
+    -------
+    stderr : list
+        List with the warnings/errors reported by BLAST.
+    """
+    blast_results_file = os.path.join(blast_output, f"blast_results_{id_}.tsv")
+
+    blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
+                '-out', blast_results_file, '-outfmt', 
+                '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
+                '-num_threads', str(threads), '-evalue', '0.001']
+    if max_hsps is not None:
+        blast_args.extend(['-max_hsps', str(max_hsps)])
+    if ids_file is not None:
+        blast_args.extend(['-seqidlist', ids_file])
+    if blast_task is not None:
+        blast_args.extend(['-task', blast_task])
+    if max_targets is not None:
+        blast_args.extend(['-max_target_seqs', str(max_targets)])
 
     run_blast_with_args_only(blast_args)
 

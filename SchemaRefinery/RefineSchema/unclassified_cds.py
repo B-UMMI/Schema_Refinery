@@ -81,7 +81,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
 
     temp_folder = temp_paths[0]
     file_path_cds = temp_paths[1]
-    missing_classes_fastas = temp_paths[2]
+    #missing_classes_fastas = temp_paths[2]
 
     # Verify if the dataset is small, if it is, keep minimum genomes in which
     # specific CDS cluster is present to 5 if not to 1% of the dataset size.
@@ -101,10 +101,10 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     print("Identifying CDS not present in the schema...")
     # Get dict with CDS ids as key and sequence as values.
     not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
-    
+
+    """
     print("Identifying CDS identified as missing classes...")
     missing_classes_fastas = sf.fetch_fasta_dict(missing_classes_fastas, True)
-
     print("Filtering missing CDS in the schema...")
     missing_classes_fastas = {itf.remove_by_regex(key.split('|')[3], '&.*'): value 
                               for key, value in missing_classes_fastas.items() 
@@ -113,7 +113,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     missing_classes_fastas = itf.deduplicate_fasta_dict(missing_classes_fastas)
 
     not_included_cds.update(missing_classes_fastas)
-
+    """
+    print("Filtering missing CDS in the schema...")
     # Count CDS size
     cds_size = {}
     for key, sequence in not_included_cds.items():
@@ -293,18 +294,23 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                 rep_fasta.writelines(">"+cluster_rep_id+"\n")
                 rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
     
+    # Create BLAST db for the schema DNA sequences.
+    print("\nCreating BLASTn database for the unclassified and missed CDSs...")
+    blast_db = os.path.join(blastn_output, "blast_db_nuc")
+    bf.make_blast_db(representatives_all_fasta_file, blast_db, 'nucl')
+
     # Run the BLASTn and BLASTp
     [representative_blast_results,
      representative_blast_results_coords_all,
      representative_blast_results_coords_pident,
      bsr_values,
-     self_score_dict] = cof.run_blasts(representatives_all_fasta_file,
-                                   clusters,
-                                   reps_translation_dict,
-                                   rep_paths_nuc,
-                                   blast_output,
-                                   constants,
-                                   cpu)
+     _] = cof.run_blasts(blast_db,
+                        clusters,
+                        reps_translation_dict,
+                        rep_paths_nuc,
+                        blast_output,
+                        constants,
+                        cpu)
     
     # Add various results to the dict
     cof.add_items_to_results(representative_blast_results,
@@ -328,8 +334,8 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, important_relationships, drop_list, _] = cof.process_classes(representative_blast_results,
-                                                                        classes_outcome)
+    [cds_to_keep, important_relationships, drop_list, _, _] = cof.process_classes(representative_blast_results,
+                                                                                classes_outcome)
 
     cof.report_main_relationships(important_relationships,
                               representative_blast_results,
@@ -345,6 +351,7 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
     cof.write_processed_results_to_file(cds_to_keep,
                                     representative_blast_results,
                                     classes_outcome,
+                                    None,
                                     None,
                                     None,
                                     results_output)

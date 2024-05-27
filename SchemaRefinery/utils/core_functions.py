@@ -987,7 +987,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
     return groups_paths, reps_trans_dict_cds, master_file_rep
 
-def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dict,
+def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                rep_paths_nuc, output_dir, constants, cpu, multi_fasta = None, if_loci = None):
     """
     This functions runs both BLASTn and Subsequently BLASTp based on results of
@@ -995,9 +995,8 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
     
     Parameters
     ----------
-    master_fasta_to_blast_against : str
-        Path to the master FASTA file that contains all of the nucleotide sequences
-        to BLASTn against.
+    blast_db : str
+        Path to the BLAST db folder.
     cds_to_blast : list
         A list that contains all of the ids to BLASTn against master FASTA file.
     reps_translation_dict : dict
@@ -1023,6 +1022,8 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
         the common group protein FASTA file to perform BLASTp so the results of 
         BLASTp are more compacted and the results file represent their original 
         input group.
+    if_loci : bool, optional
+        If True, the function will process loci instead of CDSs.
         
     Returns
     -------
@@ -1040,13 +1041,14 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
     """
     
     print("\nRunning BLASTn between cluster representatives..." if not multi_fasta else
-          "\nRunning BLASTn between groups representatives against schema loci short...")
+          "\nRunning BLASTn between groups representatives against schema loci short..." if not if_loci else
+          "\nRunning BLASTn between loci representatives against schema loci...")
     # BLASTn folder
     blastn_output = os.path.join(output_dir, "BLASTn_processing")
     # Create directory
     blastn_results_folder = os.path.join(blastn_output, "BLASTn_results")
     ff.create_directory(blastn_results_folder)
-    # Run BLASTn for all representatives (rep vs all)
+    # Run BLASTn
     # Calculate max id length for print.
     max_id_length = len(max(cds_to_blast))
     total_reps = len(rep_paths_nuc)
@@ -1055,12 +1057,13 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
     representative_blast_results_coords_pident = {}
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
-                                cds_to_blast,
+        for res in executor.map(bf.run_blastdb_multiprocessing,
                                 repeat('blastn'),
-                                repeat(blastn_results_folder),
-                                repeat(rep_paths_nuc),
-                                repeat(master_fasta_to_blast_against)):
+                                repeat(blast_db),
+                                rep_paths_nuc.values(),
+                                cds_to_blast,
+                                repeat(blastn_results_folder)
+                                ):
 
             filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
                 res[1], constants[1], True, False, True, if_loci)
@@ -1192,7 +1195,7 @@ def run_blasts(master_fasta_to_blast_against, cds_to_blast, reps_translation_dic
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_all_representative_blasts_multiprocessing,
+        for res in executor.map(bf.run_blast_fastas_multiprocessing,
                                 blastp_runs_to_do, 
                                 repeat('blastp'),
                                 repeat(blastp_results_folder),
@@ -1328,6 +1331,8 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         Can be None if no loci are involved.
     is_matched : dict
         Dictionary of CDS/loci that were matched.
+    is_matched_alleles : dict
+        Dictionary that contains the alleles of the matched CDS/loci.
     output_path : str
         Path were to write files.
         
@@ -1350,7 +1355,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         is_matched : dict
             Dictionary of CDS/loci that were matched.
         is_matched_alleles : dict
-            Dictionary that
+            Dictionary that contains the alleles of the matched CDS/loci.
         output_path : str
             Path to the output directory.
 
@@ -1452,6 +1457,8 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             Boolean indicating if it's a CDS.
         is_matched : dict
             Dictionary of CDS/loci that were matched.
+        is_matched_alleles : dict
+            Dictionary that contains the alleles of the matched CDS/loci.
         representative_blast_results : dict
             Dictionary of representative blast results.
 
@@ -1474,7 +1481,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
                         for query, subjects in representative_blast_results.items()
                         if itf.remove_by_regex(query, '_(\d+)') in queries}
         # for cases that didn't match anything but got matched against.
-        elif id_ in is_matched:
+        elif is_matched and id_ in is_matched:
             queries = is_matched[id_]
             cluster = is_matched_alleles[id_]
             # Generate the dictionary to be written
@@ -1571,8 +1578,10 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
         info.
 
     """
+    blast_results = os.path.join(results_output, "BLAST_processing")
+    ff.create_directory(blast_results)
     # Create BLASTn_processing directory
-    blastn_output = os.path.join(results_output, "BLASTn_processing")
+    blastn_output = os.path.join(blast_results, "BLASTn_processing")
     ff.create_directory(blastn_output)
 
     # Get all of the schema loci short FASTA files path.
@@ -1637,15 +1646,20 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
         for allele_id, sequence in translation_dict.items():
             reps_trans_dict_cds[allele_id] = sequence
 
+    # Create BLAST db for the schema DNA sequences.
+    blast_db = os.path.join(blastn_output, "blast_db_nuc")
+    ff.create_directory(blast_db)
+    bf.make_blast_db(master_file_rep, blast_db, 'nucl')
+
     [representative_blast_results,
      representative_blast_results_coords_all,
      representative_blast_results_coords_pident,
      bsr_values,
-     _] = run_blasts(master_file_rep,
+     _] = run_blasts(blast_db,
                      schema_loci_short,
                      reps_trans_dict_cds,
                      schema_loci_short,
-                     results_output,
+                     blast_results,
                      constants,
                      cpu,
                      all_alleles,
@@ -1680,7 +1694,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     related_matches = os.path.join(results_output, "related_matches.tsv")
     with open(related_matches, 'w') as related_matches_file:
         for related in related_clusters:
-            related_matches_file.write('\t'.join(related) + '\n')
+            related_matches_file.write('\t'.join(str(item) for item in related) + '\n')
     
     # Filter repeated entries
     seen = set()
