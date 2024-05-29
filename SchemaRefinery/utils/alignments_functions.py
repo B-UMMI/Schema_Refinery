@@ -322,6 +322,8 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
         in the subjects database).
     skip_reverse_alignemnts : bool
         If to skip inverse alignments.
+    if_loci : bool, optional
+        If True, the function will process only loci instead of CDSs.
 
     Returns
     -------
@@ -337,6 +339,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
     alignments_dict = {}
     alignment_coords_pident = {}
     alignment_coords_all = {}
+    pattern = '_(\d+)'
     self_score = 0
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
@@ -373,14 +376,13 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     }
             
             if if_loci:
-                pattern = '_(\d+)'
                 if itf.remove_by_regex(query, pattern) == itf.remove_by_regex(subject, pattern):
                      # Largest self-score is choosen
                     if float(pident) == 100 and get_self_score and int(score) > self_score:
                         self_score = int(score)
                     continue
             # Skip if entry matched itself and get self-score if needed
-            if query == subject:
+            elif query == subject:
                 # Largest self-score is choosen
                 if float(pident) == 100 and get_self_score and int(score) > self_score:
                     self_score = int(score)

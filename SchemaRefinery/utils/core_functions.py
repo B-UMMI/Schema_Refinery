@@ -618,7 +618,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     loci : dict
         Dict that contains the loci IDs and paths.
     groups_paths_old : dict
-        Dict that contains the old paths for the CDSs groups.
+        The dictionary containing the old paths for the CDSs groups used 
+        to cp instead of creating new FASTAs files.
     frequency_in_genomes : dict
         Dict that contains sum of frequency of that representatives cluster in the
         genomes of the schema.
@@ -633,6 +634,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     reps_trans_dict_cds : dict
         Dict that contais the translations of all the CDSs inside the various
         groups.
+    master_file_rep : str or None
+        Path to the master file that contains all of the representative sequences.
     """
     def print_classification_results(class_, count, printout, i):
         """
@@ -715,7 +718,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         cds_outcome_results : str
             The path to the results folder.
         groups_paths_old : dict
-            The dictionary containing the old paths for the CDSs groups.
+            The dictionary containing the old paths for the CDSs groups used 
+            to cp instead of creating new FASTAs files.
         loci : dict
             The dictionary containing the loci IDs and paths.
 
@@ -816,7 +820,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
         Returns
         -------
-        reps_trans_dict_cds :dict
+        reps_trans_dict_cds : dict
             The dictionary containing the translated sequences.
         """
         groups_trans_folder = os.path.join(fasta_folder, "cds_groups_translation")
@@ -1044,7 +1048,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
         BLASTp are more compacted and the results file represent their original 
         input group.
     if_loci : bool, optional
-        If True, the function will process loci instead of CDSs.
+        If True, the function will process only loci instead of CDSs.
         
     Returns
     -------
@@ -1402,7 +1406,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         
         return add_groups_column
 
-    def process_cluster(class_,id_ , cluster, all_alleles, cds):
+    def process_cluster(class_, id_, cluster, all_alleles, cds):
         """
         Process a single cluster.
 
@@ -1424,7 +1428,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         id_ : str or int
             ID of the cluster.
         cluster : list
-            List of the clusters.
+            List with the clusters elements IDs.
         cluster_type : str
             Type of the cluster.
         is_cds : bool
@@ -1573,8 +1577,8 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     ----------
     schema : str
         Path to the schema seed folder.
-    groups_trans_reps : dict
-        Dict with the paths to the translations of the unclassified CDS clusters.
+    groups_paths : dict
+        Dict that contains the path to the FASTA file for each group.
     results_output : str
         Path were to write the results of this function.
     reps_trans_dict_cds : dict
