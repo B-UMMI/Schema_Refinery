@@ -24,18 +24,17 @@ except ModuleNotFoundError:
                                       pandas_functions as pf)
 
 def main(schema, allelecall_directory, output_directory, constants, cpu):
-    frequency_cds_cluster = {}
+    frequency_in_genomes = {}
     loci_ids = [True, True]
     cof.process_schema(schema,
                        [],
                        output_directory,
                        None,
                        None,
-                       frequency_cds_cluster,
+                       frequency_in_genomes,
                        allelecall_directory,
                        None,
                        loci_ids,
-                       True,
                        True,
                        constants,
                        cpu)

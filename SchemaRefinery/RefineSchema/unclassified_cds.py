@@ -412,6 +412,5 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                   master_file_rep,
                                                   loci_ids,
                                                   False,
-                                                  False,
                                                   constants,
                                                   cpu)
