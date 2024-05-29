@@ -483,9 +483,8 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
         info.
     classes_outcome : list
         All of the existing classes.
-    cds_joined_cluster : dict, optional
-        Dict that contains as keys the IDS of joined clusters or loci, and values
-        its elements.
+    all_alleles : dict, optional
+        Dict that contains the cds/loci main ID as key and the value are their alleles.
 
     Returns
     -------
