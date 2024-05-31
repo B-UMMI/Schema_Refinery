@@ -22,7 +22,8 @@ def render_line_chart(df, output_path, columns, labels, ascending):
     
     Returns
     -------
-    Writes HTML files inside the output path.
+    return : None
+        Writes HTML files inside the output path.
     """
     
     for column_id in columns:
@@ -53,7 +54,8 @@ def render_histogram(df, output_path, columns, labels):
     
     Returns
     -------
-    Writes HTML files inside the output path.
+    return : None
+        Writes HTML files inside the output path.
     """
     
     
@@ -87,7 +89,7 @@ def create_graph_trace(function, x = None , y = None, plotname = None, mode = No
     
     Returns
     -------
-    returns : plotly.graph_objs.Figure
+    returns : plotly.graph_objs._trace
         The Plotly figure object containing plot.
 
     """
@@ -145,7 +147,7 @@ def create_violin_plot(y = None, x = None, name = None, orientation = 'v', box_v
         
     Returns
     -------
-    fig : plotly.graph_objs.Figure
+    return : plotly.graph_objs.Violin
         The Plotly figure object containing the violin plot.
     """
     return go.Violin(y = y, x = x, name = name, orientation = orientation, box_visible = box_visible,
@@ -177,7 +179,7 @@ def create_box_plot(y = None, x = None, name = None, orientation = 'v', boxpoint
     
     Returns
     -------
-    fig : plotly.graph_objs.Figure
+    return : plotly.graph_objs.Box
         The Plotly figure object containing the box plot.
     """
     
@@ -204,7 +206,7 @@ def create_histogram(x, name = None, xbins = None, histnorm = None, orientation 
     
     Returns
     -------
-    fig : plotly.graph_objs.Figure
+    fig : plotly.graph_objs.Histogram
         The Plotly figure object containing the box plot.
     """
     
@@ -256,7 +258,8 @@ def write_fig_to_html(fig, output_path, filename):
         
     Returns
     -------
-    Writes an HTML file containg the plot to the output directory.
+    return : None
+        Writes an HTML file containg the plot to the output directory.
     """
     html_path = os.path.join(output_path, f'{filename}.html')
     fig.write_html(html_path)
@@ -336,8 +339,8 @@ def plotly_update_layout(fig, title = None, xaxis_title= None, yaxis_title= None
         
     Returns
     -------
-    fig : plotly.graph_objects object
-        Returns a generated plot.
+    fig : plotly.graph_objects
+        Returns the updated plot.
     """
     
     return fig.update_layout(title = title,
@@ -359,6 +362,7 @@ def plotly_update_layout(fig, title = None, xaxis_title= None, yaxis_title= None
                              scene = scene,
                              geo = geo,
                              showlegend = showlegend)
+
 def create_subplots(traces, rows, columns, share_x = None, share_y = None, subplot_titles = None, coords = None):
     """
     Creates subplots from traces using plotly.
@@ -380,8 +384,8 @@ def create_subplots(traces, rows, columns, share_x = None, share_y = None, subpl
     coords : list
         Contains the list of lists of coords of rows and columns to add each subplot.
     
-    fig : plotly.graph_objects object
-        Returns subplot.
+    fig : plotly.graph_objects.Figure
+        Returns a Figure object containing the subplots.
     """
     fig = make_subplots(rows = rows,
                         cols= columns,
@@ -418,7 +422,8 @@ def save_plots_to_html(figures, output_path, filename):
 
     Returns
     -------
-    Writes an HTML file containg the plots to the output directory.
+    return : None
+        Writes an HTML file containing the plots to the output directory.
     """
     
     html_path = os.path.join(output_path, f'{filename}.html')
