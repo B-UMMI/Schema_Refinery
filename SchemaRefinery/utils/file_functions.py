@@ -14,7 +14,7 @@ def create_directory(dir:str):
 
     Returns
     -------
-    return : No return
+    return : None
         Creates directory at desired dir path.
     """
 
@@ -32,7 +32,7 @@ def check_and_delete_file(file:str):
 
     Returns
     -------
-    return : No return
+    return : None
         Deletes file based on input file path
     """
     
@@ -52,7 +52,7 @@ def copy_file(source_file, destination_file):
     
     Returns
     -------
-    return : No return
+    return : None
         Copies the file.
     """
     # Copy the file to the destination directory
@@ -143,7 +143,7 @@ def write_dict_to_tsv(file_path, data):
     
     Returns
     -------
-    return : No return
+    return : None
         Write dict to file.
     """
     with open(file_path, 'w') as f:
