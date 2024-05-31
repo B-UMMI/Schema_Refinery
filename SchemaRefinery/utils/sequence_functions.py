@@ -245,6 +245,19 @@ def read_fasta_file_iterator(file):
     return SeqIO.parse(file, "fasta")
 
 def read_fasta_file_dict(file):
+    """
+    Reads a FASTA file and returns a dictionary where the keys are sequence identifiers and the values are sequence records.
+
+    Parameters
+    ----------
+    file : str
+        Path to the FASTA file.
+
+    Returns
+    -------
+    retun : dict
+        A dictionary where the keys are sequence identifiers and the values are Bio.SeqRecord objects.
+    """
     return SeqIO.to_dict(SeqIO.parse(file, "fasta"))
 
 def seq_to_hash(seq):
@@ -391,6 +404,20 @@ def fetch_fasta_dict(file_path, count_seq):
     return fasta_dict
 
 def deduplicate_fasta_dict(fasta_dict):
+    """
+    Deduplicates a dictionary of FASTA sequences. The deduplication is based on the SHA256 hash of the sequences.
+
+    Parameters
+    ----------
+    fasta_dict : dict
+        A dictionary where the keys are sequence identifiers and the values are sequences.
+
+    Returns
+    -------
+    return : dict
+        A dictionary where the keys are sequence identifiers and the values are sequences. Sequences that were duplicated in the input dictionary are removed.
+    """
+
     deduplicated_list = []
     for key, sequence in fasta_dict.items():
         # Create a hash of the sequence
