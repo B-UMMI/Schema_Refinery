@@ -464,16 +464,16 @@ def merge_intervals(intervals):
     """
     Merges intersecting intervals.
 
-        Parameters
-        ----------
-        intervals : list
-            List that contains list with coordinates of various BLAST matches
+    Parameters
+    ----------
+    intervals : list
+        List that contains list with coordinates of various BLAST matches
 
-        Returns
-        -------
-        merged : list
-            Dictionary with the result of merging intervals
-            that overlapped.
+    Returns
+    -------
+    merged : list
+        Dictionary with the result of merging intervals
+        that overlapped.
     """
 
     merged = [deepcopy(intervals[0])]
