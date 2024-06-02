@@ -1678,6 +1678,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
             reps_trans_dict_cds[allele_id] = sequence
 
     # Create BLAST db for the schema DNA sequences.
+    print(f"Create BLAST db for the {'schema' if master_alleles else 'unclassified'} DNA sequences...")
     blast_db = os.path.join(blastn_output, "blast_db_nuc")
     ff.create_directory(blast_db)
     bf.make_blast_db(master_file_rep, blast_db, 'nucl')

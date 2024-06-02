@@ -414,7 +414,7 @@ def deduplicate_fasta_dict(fasta_dict):
 
     Returns
     -------
-    return : dict
+    fasta_dict : dict
         A dictionary where the keys are sequence identifiers and the values are sequences. Sequences that were duplicated in the input dictionary are removed.
     """
 

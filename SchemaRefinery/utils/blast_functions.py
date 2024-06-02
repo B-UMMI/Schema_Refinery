@@ -17,8 +17,8 @@ def make_blast_db(input_fasta, output_path, db_type):
 
     Returns
     -------
-        returns : No return
-            Creates blast database
+    return : None
+        Creates blast database
     """
 
     blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
@@ -29,7 +29,6 @@ def make_blast_db(input_fasta, output_path, db_type):
                                   stderr=subprocess.PIPE)
 
     stdout, stderr = makedb_cmd.communicate()
-    print(stdout, stderr)
 
     makedb_cmd.wait()
 
@@ -102,7 +101,7 @@ def run_blast_with_args_only(blast_args):
 
     Returns
     -------
-    returns : No return
+    return : None
         Generates BLAST files at output directory
     """
     
