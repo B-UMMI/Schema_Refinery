@@ -114,7 +114,7 @@ def unclassified_cds():
 
     parser.add_argument('-s', '--schema', type=str,
                         required=True, dest='schema',
-                        help='Path to the schema seed.')
+                        help='Path to the created schema folder.')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
@@ -177,7 +177,7 @@ def spurious_loci():
 
     parser.add_argument('-s', '--schema', type=str,
                         required=True, dest='schema',
-                        help='Path to the schema seed.')
+                        help='Path to the created schema folder.')
 
     parser.add_argument('-o', '--output-directory', type=str,
                         required=True, dest='output_directory',
@@ -217,10 +217,11 @@ def spurious_loci():
 
 def main():
 
-    module_info = {"DownloadAssemblies": ['Downloads assemblies from the NCBI '
-                                       'and the ENA661K database.', download_assemblies],
-                   "SpuriousLoci": ['Identifies spurious loci in a schema', spurious_loci],
-                   "UnclassifiedCDS": ['Classifies unclassified and missed classes CDS from a schema', unclassified_cds]}
+    module_info = {'DownloadAssemblies': ["Downloads assemblies from the NCBI "
+                                       "and the ENA661K database.", download_assemblies],
+                   'SpuriousLoci': ["Identifies spurious loci in a schema", spurious_loci],
+                   'UnclassifiedCDS': ["Classifies unclassified and"
+                                       "missed classes CDS from a schema", unclassified_cds]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')
@@ -231,7 +232,6 @@ def main():
 
     module = sys.argv[1]
     module_info[module][1]()
-
 
 if __name__ == "__main__":
 
