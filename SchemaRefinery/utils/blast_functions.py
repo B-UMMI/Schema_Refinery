@@ -1,7 +1,7 @@
 import subprocess
 import os
 
-def make_blast_db(input_fasta, output_path, db_type):
+def make_blast_db(makeblastdb_exec ,input_fasta, output_path, db_type):
     """
     Create a BLAST database.
 
@@ -21,7 +21,7 @@ def make_blast_db(input_fasta, output_path, db_type):
         Creates blast database
     """
 
-    blastdb_cmd = ['makeblastdb', '-in', input_fasta, '-out', output_path,
+    blastdb_cmd = [makeblastdb_exec, '-in', input_fasta, '-out', output_path,
                    '-parse_seqids', '-dbtype', db_type]
 
     makedb_cmd = subprocess.Popen(blastdb_cmd,

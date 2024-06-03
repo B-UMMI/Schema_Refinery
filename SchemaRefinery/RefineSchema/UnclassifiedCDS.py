@@ -296,8 +296,10 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     # Create BLAST db for the schema DNA sequences.
     print("\nCreating BLASTn database for the unclassified and missed CDSs...")
+    # Get the path to the makeblastdb executable.
+    makeblastdb_exec = lf.get_tool_path('makeblastdb')
     blast_db = os.path.join(blastn_output, "blast_db_nuc")
-    bf.make_blast_db(representatives_all_fasta_file, blast_db, 'nucl')
+    bf.make_blast_db(makeblastdb_exec, representatives_all_fasta_file, blast_db, 'nucl')
 
     # Run the BLASTn and BLASTp
     [representative_blast_results,
