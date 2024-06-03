@@ -1,6 +1,4 @@
 import os
-import concurrent.futures
-from itertools import repeat
 
 try:
     from utils import (file_functions as ff,
@@ -8,7 +6,6 @@ try:
                        clustering_functions as cf,
                        core_functions as cof,
                        blast_functions as bf,
-                       alignments_functions as af,
                        kmers_functions as kf,
                        iterable_functions as itf,
                        graphical_functions as gf,
@@ -19,7 +16,6 @@ except ModuleNotFoundError:
                                       clustering_functions as cf,
                                       core_functions as cof,  
                                       blast_functions as bf,
-                                      alignments_functions as af,
                                       kmers_functions as kf,
                                       iterable_functions as itf,
                                       graphical_functions as gf,

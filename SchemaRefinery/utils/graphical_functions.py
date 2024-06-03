@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import plotly.offline
 from plotly.subplots import make_subplots
 
-def render_line_chart(df, output_path, columns, labels, ascending):
+def render_line_chart(df, output_path, columns, ascending):
     """
     Render line chart for each column name in input.
     

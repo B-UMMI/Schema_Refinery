@@ -8,10 +8,7 @@ try:
                        clustering_functions as cf,
                        blast_functions as bf,
                        alignments_functions as af,
-                       kmers_functions as kf,
                        iterable_functions as itf,
-                       graphical_functions as gf,
-                       pandas_functions as pf,
                        linux_functions as lf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
@@ -19,10 +16,7 @@ except ModuleNotFoundError:
                                       clustering_functions as cf,
                                       blast_functions as bf,
                                       alignments_functions as af,
-                                      kmers_functions as kf,
                                       iterable_functions as itf,
-                                      graphical_functions as gf,
-                                      pandas_functions as pf,
                                       linux_functions as lf)
 
 def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_group_column = False):
