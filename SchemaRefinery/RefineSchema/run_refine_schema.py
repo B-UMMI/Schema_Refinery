@@ -24,7 +24,8 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
 
     if allelecall_directory:
         temp_paths = [os.path.join(allelecall_directory, "temp"), 
-                      os.path.join(allelecall_directory, "unclassified_sequences.fasta")]
+                      os.path.join(allelecall_directory, "unclassified_sequences.fasta"),
+                      os.path.join(allelecall_directory, "missing_classes.fasta")]
         # Put all constants in one dict in order to decrease number of variables
         # used around.
         constants = [alignment_ratio_threshold_gene_fusions, 

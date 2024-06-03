@@ -1,3 +1,4 @@
+import re
 import itertools
 import pickle
 
@@ -392,3 +393,120 @@ def remove_empty_dicts_recursive(nested_dict):
             if not nested_dict[key] and not isinstance(nested_dict[key], (bool, int, float)):
                 del nested_dict[key]
     return nested_dict
+
+def tsv_to_dict(file_path, skip_header = False, sep = '\t'):
+    """
+    Converts input TSV into a dict based on the desired separator.
+    
+    Parameters
+    ----------
+    file_path : str
+        Path to the TSV file.
+    skip_header : bool, optional
+        If to ignore the header when importing.
+    sep : str, optional
+        String to seperate the values inside the TSV file.
+    
+    Returns
+    -------
+    data_dict : dict
+        Returns the TSV file converted to the dict.
+    """
+    # Initialize an empty dictionary to store data
+    data_dict = {}
+
+    # Open the TSV file for reading
+    with open(file_path, 'r') as f:
+        # Read each line in the file
+        for i, line in enumerate(f):
+            if i == 0:
+                continue
+                
+            # Split the line by tabs
+            values = line.strip().split(sep)
+
+            # Extract the key (first column entry)
+            key = values[0]
+
+            # Extract the rest of the values (excluding the first column entry)
+            rest_values = values[1:]
+
+            # Add the key-value pair to the dictionary
+            data_dict[key] = rest_values
+
+    return data_dict
+
+def partially_contains_fragment_of_list(target_list, list_of_lists):
+    """
+    Check if the target_list is contained inside sublist even if it partially.
+    e.g partially_contains_fragment_of_list(['a', 'b'], [['a', 'b', 'c'], ['d', 'e']])
+    returns True.
+    
+    Parameters
+    ----------
+    target_list : list
+        List to find inside the list_of_lists.
+    list_of_lists : list
+        The nested list.
+    Returns
+    -------
+    returns : bool
+        True if contains False if not.
+    """
+    for sub in list_of_lists:
+        if any(sub[i:i+len(target_list)] == target_list for i in range(len(sub)-len(target_list)+1)):
+            return True
+    return False
+
+def remove_by_regex(string, pattern):
+    """
+    Remove all occurrences of a pattern from a string.
+
+    Parameters
+    ----------
+    string : str
+        The string to remove the pattern from.
+    pattern : str
+        The regex pattern to remove from the string.
+
+    Returns
+    -------
+    return : str
+        The string with all occurrences of the pattern removed.
+    """
+    return re.sub(pattern, '', string)
+
+def regex_present(regex_list, string):
+    """
+    Check if any regex in a list is found in a string.
+
+    Parameters
+    ----------
+    regex_list : list of str
+        The list of regexes to search for in the string.
+    string : str
+        The string to search in.
+
+    Returns
+    -------
+    return : bool
+        True if any regex is found in the string, False otherwise.
+    """
+    return any(re.search(regex, string) for regex in regex_list)
+
+def add_strings_to_subsets(my_list, my_strings):
+    """
+    Clustering algorithm that finds a string in a list of strings in
+    a list of sets and adds th whole list to the set if any string of 
+    that list is inside the set
+    """
+    found = False
+    for my_string in my_strings:
+        if found:
+            break
+        for sublist in my_list:
+            if my_string in sublist:
+                sublist.update(my_strings)
+                found = True
+                break
+    return found
