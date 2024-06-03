@@ -18,11 +18,13 @@ from RefineSchema import SpuriousLoci
 
 try:
     from DownloadAssemblies import DownloadAssemblies
+    from SchemaAnnotation import SchemaAnnotation
     from utils import parameter_validation as pv
     from RefineSchema import (UnclassifiedCDS,
                               SpuriousLoci)
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
+    from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
     from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import (UnclassifiedCDS,
                                             SpuriousLoci)
@@ -103,6 +105,97 @@ def download_assemblies():
     del args.DownloadAssemblies
 
     DownloadAssemblies.main(args)
+
+def schema_annotation():
+
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument('SchemaAnnotation', nargs='+',
+                        help='')
+
+    parser.add_argument('-s', '--schema-directory', type=str,
+                        required=True, dest='schema_directory',
+                        help='Path to the schema\'s directory.')
+
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the output directory where to '
+                             'save the files.')
+
+    parser.add_argument('-ao', '--annotation-options', type=str,
+                        required=True, dest='annotation_options',
+                        nargs='+',
+                        choices=['uniprot-proteomes', 'genbank',
+                                 'uniprot-sparql', 'match-schemas'],
+                        help='Annotation options to run. "uniprot-proteomes" '
+                             'to download UniProt reference proteomes for '
+                             'the taxa and align with BLASTp. "genbank-files"'
+                             ' to aligned against the CDSs in a set of '
+                             'Genbank files. "uniprot-sparql" to search for '
+                             'exact matches through UniProt\'s SPARQL '
+                             'endpoint. "match-schemas" to align against '
+                             'provided target schema and report best matches.')
+
+    parser.add_argument('-pt', '--proteome-table', type=str,
+                        required=False, dest='proteome_table',
+                        help='TSV file downloaded from UniProt '
+                             'that contains the list of proteomes.')
+
+    parser.add_argument('-gf', '--genbank-files', type=str,
+                        required=False, dest='genbank_files',
+                        help='Path to the directory that contains '
+                             'Genbank files with annotations to '
+                             'extract.')
+
+    parser.add_argument('-ca', '--chewie-annotations', type=str,
+                        required=False, nargs='+', dest='chewie_annotations',
+                        help='File with the results from chewBBACA '
+                             'UniprotFinder module.')
+
+    parser.add_argument('-ss', '--subject-schema', type=str,
+                        required=False, dest='subject_schema',
+                        help='Path to que subject schema directory. '
+                             'This argument is needed by the Match Schemas '
+                             'sub-module.')
+
+    parser.add_argument('-sa', '--subject-annotations', type=str,
+                        required=False, dest='subject_annotations',
+                        help='Annotations of the subject schema.')
+
+    parser.add_argument('-sc', '--subject-columns', type=str, required=False,
+                        nargs='+',
+                        dest='subject_columns',
+                        help='Columns from the subject schema annotations '
+                             'to merge into the new schema annotations.')
+
+    parser.add_argument('--bsr', type=float, required=False,
+                        default=0.6, dest='blast_score_ratio',
+                        help='Minimum BSR value to consider aligned '
+                             'alleles as alleles for the same locus. '
+                             'This argument is optional for the Match Schemas '
+                             'sub-module.')
+
+    parser.add_argument('-th', '--threads', type=int,
+                        required=False, default=2,
+                        dest='threads',
+                        help='Number of threads for concurrent download.')
+
+    parser.add_argument('-r', '--retry', type=int,
+                        required=False, dest='retry',
+                        default=7,
+                        help='Maximum number of retries when a '
+                             'download fails.')
+
+    parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
+                        dest='cpu_cores', default=1,
+                        help='Number of CPU cores to pass to BLAST.')
+
+    args = parser.parse_args()
+
+    del args.SchemaAnnotation
+
+    SchemaAnnotation.main(args)
 
 def unclassified_cds():
     
@@ -219,9 +312,13 @@ def main():
 
     module_info = {'DownloadAssemblies': ["Downloads assemblies from the NCBI "
                                        "and the ENA661K database.", download_assemblies],
-                   'SpuriousLoci': ["Identifies spurious loci in a schema", spurious_loci],
-                   'UnclassifiedCDS': ["Classifies unclassified and"
-                                       "missed classes CDS from a schema", unclassified_cds]}
+                    'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot '
+                                         'records, and based on alignment against Genbank '
+                                         'files and other schemas.',
+                                        schema_annotation],
+                    'SpuriousLoci': ["Identifies spurious loci in a schema.", spurious_loci],
+                    'UnclassifiedCDS': ["Classifies unclassified and"
+                                        "missed classes CDS from a schema.", unclassified_cds]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')
