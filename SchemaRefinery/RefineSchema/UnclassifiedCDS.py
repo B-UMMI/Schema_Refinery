@@ -1,4 +1,8 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
+import sys
 
 try:
     from utils import (file_functions as ff,
@@ -73,7 +77,7 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
-def main(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
+def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
     temp_folder = temp_paths[0]
     file_path_cds = temp_paths[1]
@@ -410,3 +414,28 @@ def main(schema, output_directory, allelecall_directory, constants, temp_paths, 
                                                   False,
                                                   constants,
                                                   cpu)
+    
+def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_gene_fusions, 
+        pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence,
+        size_threshold, cpu):
+    
+    temp_paths = [os.path.join(allelecall_directory, "temp"), 
+                      os.path.join(allelecall_directory, "unclassified_sequences.fasta"),
+                      os.path.join(allelecall_directory, "missing_classes.fasta")]
+    # Put all constants in one dict in order to decrease number of variables
+    # used around.
+    constants = [alignment_ratio_threshold_gene_fusions, 
+                    pident_threshold_gene_fusions,
+                    genome_presence,
+                    clustering_sim,
+                    clustering_cov,
+                    size_threshold]
+    
+    if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
+        sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
+                    "was run using --no-cleanup and --output-unclassified flag.")
+        
+    print("Identifying genes fusions...")
+    unclassified_cds_output = os.path.join(output_directory, "unclassified_cds")
+    classify_cds(schema, unclassified_cds_output, allelecall_directory,
+                constants,temp_paths, cpu)

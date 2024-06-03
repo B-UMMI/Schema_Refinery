@@ -1,27 +1,11 @@
 import os
-import sys
-import pickle
 import concurrent.futures
 from itertools import repeat
 
 try:
-    from utils import (file_functions as ff,
-                       sequence_functions as sf,
-                       clustering_functions as cf,
-                       blast_functions as bf,
-                       alignments_functions as af,
-                       kmers_functions as kf,
-                       iterable_functions as itf,
-                       graphical_functions as gf)
+    from utils import (blast_functions as bf,)
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import (file_functions as ff,
-                                      sequence_functions as sf,
-                                      clustering_functions as cf,
-                                      blast_functions as bf,
-                                      alignments_functions as af,
-                                      kmers_functions as kf,
-                                      iterable_functions as itf,
-                                      graphical_functions as gf)
+    from SchemaRefinery.utils import (blast_functions as bf)
 
 def main(schema_path_folder, output_directory, allelecall_directory, temp_paths, cpu):
         

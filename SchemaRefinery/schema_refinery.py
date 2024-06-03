@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Purpose
 -------
@@ -13,14 +14,18 @@ Code documentation
 import sys
 import argparse
 
+from RefineSchema import SpuriousLoci
+
 try:
     from DownloadAssemblies import DownloadAssemblies
     from utils import parameter_validation as pv
-    from RefineSchema import run_refine_schema
+    from RefineSchema import (UnclassifiedCDS,
+                              SpuriousLoci)
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.utils import parameter_validation as pv
-    from SchemaRefinery.RefineSchema import run_refine_schema
+    from SchemaRefinery.RefineSchema import (UnclassifiedCDS,
+                                            SpuriousLoci)
 
 
 def download_assemblies():
@@ -99,7 +104,7 @@ def download_assemblies():
 
     DownloadAssemblies.main(args)
 
-def refine_schema():
+def unclassified_cds():
     
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -122,22 +127,12 @@ def refine_schema():
                              'allele call directory that was run'
                              'with --no-cleanup.')
     
-    parser.add_argument('-ap', '--alignment_ratio_threshold_paralagous', type=float,
-                        required=False, dest='alignment_ratio_threshold_paralagous',
-                        default=0.6, help='Threshold value for alignment used to '
-                        'identify paralagous loci (float: 0-1).')
-    
-    parser.add_argument('-pp', '--pident_threshold_paralagous', type=int,
-                    required=False, dest='pident_threshold_paralagous',
-                    default=70, help='Threshold value for pident values used to '
-                    'identify paralagous loci (int 0-100).')
-    
-    parser.add_argument('-ag', '--alignment_ratio_threshold_gene_fusions', type=float,
+    parser.add_argument('-at', '--alignment_ratio_threshold', type=float,
                         required=False, dest='alignment_ratio_threshold_gene_fusions',
                         default=0.9, help='Threshold value for alignment used to '
                         'indentify gene fusions (float: 0-1).')
     
-    parser.add_argument('-pg', '--pident_threshold_gene_fusions', type=int,
+    parser.add_argument('-pt', '--pident_threshold', type=int,
                     required=False, dest='pident_threshold_gene_fusions',
                     default=90, help='Threshold value for pident values used to '
                     'indentify gene fusions (int 0-100).')
@@ -170,13 +165,62 @@ def refine_schema():
 
     del args.RefineSchema
 
-    run_refine_schema.main(**vars(args))
+    UnclassifiedCDS.main(**vars(args))
+
+def spurious_loci():
+    
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    
+    parser.add_argument('RefineSchema', nargs='+',
+                        help='')
+
+    parser.add_argument('-s', '--schema', type=str,
+                        required=True, dest='schema',
+                        help='Path to the schema seed.')
+
+    parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the directory to which '
+                             'files will be stored.')
+    
+    parser.add_argument('-a', '--allelecall-directory', type=str,
+                        required=True, dest='allelecall_directory',
+                        help='Path to the directory that contains'
+                             'allele call directory that was run'
+                             'with --no-cleanup.')
+    
+    parser.add_argument('-at', '--alignment_ratio_threshold', type=float,
+                        required=False, dest='alignment_ratio_threshold_gene_fusions',
+                        default=0.9, help='Threshold value for alignment used to '
+                        'indentify gene fusions (float: 0-1).')
+    
+    parser.add_argument('-pt', '--pident_threshold', type=int,
+                    required=False, dest='pident_threshold_gene_fusions',
+                    default=90, help='Threshold value for pident values used to '
+                    'indentify gene fusions (int 0-100).')
+    
+    parser.add_argument('-st', '--size_threshold', type=int,
+                    required=False, dest='size_threshold',
+                    help='Size of the CDS to consider processing.')
+    
+    parser.add_argument('-c', '--cpu', type=int,
+                    required=False, dest='cpu',
+                    default=1, 
+                    help='Number of cpus to run blast instances.')
+
+    args = parser.parse_args()
+
+    del args.RefineSchema
+
+    SpuriousLoci.main(**vars(args))
 
 def main():
 
     module_info = {"DownloadAssemblies": ['Downloads assemblies from the NCBI '
                                        'and the ENA661K database.', download_assemblies],
-                   "RefineSchema": ['Identifies spurious loci from a schema', refine_schema]}
+                   "SpuriousLoci": ['Identifies spurious loci in a schema', spurious_loci],
+                   "UnclassifiedCDS": ['Classifies unclassified and missed classes CDS from a schema', unclassified_cds]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')
