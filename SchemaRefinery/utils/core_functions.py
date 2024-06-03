@@ -11,7 +11,8 @@ try:
                        kmers_functions as kf,
                        iterable_functions as itf,
                        graphical_functions as gf,
-                       pandas_functions as pf)
+                       pandas_functions as pf,
+                       linux_functions as lf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       sequence_functions as sf,
@@ -21,7 +22,8 @@ except ModuleNotFoundError:
                                       kmers_functions as kf,
                                       iterable_functions as itf,
                                       graphical_functions as gf,
-                                      pandas_functions as pf)
+                                      pandas_functions as pf,
+                                      linux_functions as lf)
 
 def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_group_column = False):
     """
@@ -1079,10 +1081,12 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     representative_blast_results = {}
     representative_blast_results_coords_all = {}
     representative_blast_results_coords_pident = {}
+    # Get Path to the blastn executable
+    get_blastn_exec = lf.get_tool_path('blastn')
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blastdb_multiprocessing,
-                                repeat('blastn'),
+                                repeat(get_blastn_exec),
                                 repeat(blast_db),
                                 rep_paths_nuc.values(),
                                 cds_to_blast,
@@ -1195,12 +1199,14 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     for query in rep_paths_prot:
         # For self-score
         self_score_dict[query] = {}
-    # Calculate self-score
+    # Get Path to the blastp executable
+    get_blastp_exec = lf.get_tool_path('blastp')
     i = 1
+    # Calculate self-score
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 rep_paths_prot.keys(),
-                                repeat('blastp'),
+                                repeat(get_blastp_exec),
                                 rep_paths_prot.values(),
                                 repeat(blastp_results_ss_folder)):
             
@@ -1221,7 +1227,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blast_fastas_multiprocessing,
                                 blastp_runs_to_do, 
-                                repeat('blastp'),
+                                repeat(get_blastp_exec),
                                 repeat(blastp_results_folder),
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):

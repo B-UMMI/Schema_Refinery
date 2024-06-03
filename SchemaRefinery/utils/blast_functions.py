@@ -113,7 +113,7 @@ def run_blast_with_args_only(blast_args):
     if len(stderr) > 0:
         print(stderr)
 
-def run_blast_fastas_multiprocessing(id_, blast_type, blast_results,
+def run_blast_fastas_multiprocessing(id_, blast_exec, blast_results,
                                                 file_dict, all_fasta_file):
     """
     This function, runs blast of representatives of the loci vs consolidation of all of the representatives in single file.
@@ -139,7 +139,7 @@ def run_blast_fastas_multiprocessing(id_, blast_type, blast_results,
 
     blast_results_file = os.path.join(blast_results, f"blast_results_{id_}.tsv")
     
-    blast_args = [blast_type, '-query', file_dict[id_],
+    blast_args = [blast_exec, '-query', file_dict[id_],
                   '-subject',
                   all_fasta_file,
                   '-outfmt',
@@ -151,7 +151,7 @@ def run_blast_fastas_multiprocessing(id_, blast_type, blast_results,
 
     return [id_, blast_results_file]
 
-def run_blastdb_multiprocessing(blast_path, blast_db, fasta_file, id_, blast_output,
+def run_blastdb_multiprocessing(blast_exec, blast_db, fasta_file, id_, blast_output,
               max_hsps=None, threads=1, ids_file=None, blast_task=None,
               max_targets=None):
     """
@@ -191,7 +191,7 @@ def run_blastdb_multiprocessing(blast_path, blast_db, fasta_file, id_, blast_out
     """
     blast_results_file = os.path.join(blast_output, f"blast_results_{id_}.tsv")
 
-    blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
+    blast_args = [blast_exec, '-db', blast_db, '-query', fasta_file,
                 '-out', blast_results_file, '-outfmt', 
                 '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
                 '-num_threads', str(threads), '-evalue', '0.001']
@@ -208,10 +208,10 @@ def run_blastdb_multiprocessing(blast_path, blast_db, fasta_file, id_, blast_out
 
     return [id_, blast_results_file]
 
-def run_self_score_multiprocessing(id_, blast_type, file_path, output):
+def run_self_score_multiprocessing(id_, blast_exec, file_path, output):
     blast_results_file = os.path.join(output, f"blast_results_{id_}.tsv")
     
-    blast_args = [blast_type, '-query', file_path,
+    blast_args = [blast_exec, '-query', file_path,
                   '-subject',
                   file_path,
                   '-outfmt',
