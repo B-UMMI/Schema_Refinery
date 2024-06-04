@@ -22,6 +22,10 @@ import urllib.request
 import concurrent.futures
 from itertools import repeat
 
+try:
+    from utils import download_functions as df
+except:
+    from SchemaRefinery.utils import download_functions as df
 
 # set socket timeout for urllib calls
 socket.setdefaulttimeout(30)
@@ -29,39 +33,6 @@ socket.setdefaulttimeout(30)
 
 # url to download assembly_summary_refseq.txt
 assembly_summary_refseq = 'https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_refseq.txt'
-
-
-def download_file(url, file_name, retry):
-    """Accept a URL to download a file.
-
-    Parameters
-    ----------
-    url : str
-        An url to download a file.
-    file_name : str
-        The name of the file to be downloaded.
-    retry : int
-        Maximum number of retries if download fails.
-
-    Returns
-    -------
-    response : str
-        A string indicating that the download failed or
-        an object with the response information for a
-        successful download.
-    """
-    tries = 0
-    while tries < retry:
-        try:
-            response = urllib.request.urlretrieve(url, file_name)
-            break
-        except Exception:
-            response = 'Failed: {0}'.format(file_name)
-            tries += 1
-            print('Retrying {0} ...{1}'.format(file_name.split('/')[-1], tries))
-            time.sleep(1)
-
-    return response
 
 
 def main(input_table, output_directory, file_extension,
@@ -108,7 +79,7 @@ def main(input_table, output_directory, file_extension,
     print('Downloading assembly_summary_refseq...', end='')
     assembly_summary_refseq_local = os.path.join(output_directory,
                                                  'assembly_summary_refseq.txt')
-    download_file(assembly_summary_refseq, assembly_summary_refseq_local, retry)
+    df.download_file(assembly_summary_refseq, assembly_summary_refseq_local, retry)
     print('done.')
 
     # open assembly_summary_refseq table 
@@ -169,7 +140,7 @@ def main(input_table, output_directory, file_extension,
     success = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         # Start the load operations and mark each future with its URL
-        for res in executor.map(download_file, ftp_urls, assemblies_ids, repeat(retry)):
+        for res in executor.map(df.download_file, ftp_urls, assemblies_ids, repeat(retry)):
             if 'Failed' in res:
                 failures.append(res)
             else:

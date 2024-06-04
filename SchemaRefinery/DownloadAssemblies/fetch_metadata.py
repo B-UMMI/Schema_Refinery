@@ -59,8 +59,12 @@ def download_query(internal_id):
 
     Returns
     -------
-
-    return : xml tree object
+    root : object
+        xml tree object
+    internal_id : str
+        internal id of the sample
+    "Failed" : str
+        if errors ocurrs return string "Failed"
     """
     try:
         if "Failed" not in internal_id:
@@ -87,7 +91,6 @@ def get_metadata(xml_root):
 
     Returns
     -------
-
     return : dict
         that contains metadata
     """
@@ -122,7 +125,6 @@ def write_to_file(metadata_df, output_directory):
 
     Returns
     -------
-
     Creates file in the output directory
     """
     metadata_df.to_csv(os.path.join(output_directory, "metadata.tsv"),
@@ -143,7 +145,7 @@ def multi_thread_run(query, retry):
     Returns
     -------
     metadata_dict : dict
-        that contains metadata
+        dict that contains metadata
     """
     rtry = 0
     while rtry < retry:

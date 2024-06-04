@@ -41,9 +41,8 @@ def determine_id_type(identifier):
     Returns
     -------
     match : str
-        The name of the database the identifier belongs to.
-        Returns None if it is not possible to identify the
-        identifier type.
+        The name of the database the identifier belongs to. Returns None if it is not possible 
+        to identify the identifier type.
     """
     match = None
     for db, pat in database_patterns.items():
@@ -67,9 +66,8 @@ def get_esearch_record(identifier, database):
     Returns
     -------
     record : iter
-        Multilevel data structure of Python lists and
-        dictionaries with the query results, including
-        the primary IDs linked to the accession number.
+        Multilevel data structure of Python lists and dictionaries with the query results, 
+        including the primary IDs linked to the accession number.
     """
     handle = Entrez.esearch(db=database, term=identifier)
     record = Entrez.read(handle)
@@ -90,8 +88,7 @@ def get_esummary_record(identifier, database):
     Returns
     -------
     esummary_record : iter
-        Multilevel data structure of Python lists and
-        dictionaries with summary data about the record.
+        Multilevel data structure of Python lists and dictionaries with summary data about the record.
     """
     esummary_handle = Entrez.esummary(db=database, id=identifier, report='full')
     esummary_record = Entrez.read(esummary_handle, validate=False)
@@ -114,10 +111,8 @@ def get_elink_record(identifier, fromdb, todb):
     Returns
     -------
     elink_record : iter
-        Multilevel data structure of Python lists and
-        dictionaries with the query results, including
-        primary IDs from `todb` linked to the input
-        identifier.
+        Multilevel data structure of Python lists and dictionaries with the query results, 
+        including primary IDs from `todb` linked to the input identifier.
     """
     elink_handle = Entrez.elink(dbfrom=fromdb, db=todb, id=identifier)
     elink_record = Entrez.read(elink_handle)
@@ -131,10 +126,8 @@ def get_elink_id(elink_record):
     Parameters
     ----------
     elink_record : iter
-        Multilevel data structure of Python lists and
-        dictionaries with the query results, including
-        primary IDs from `todb` linked to the input
-        identifier.
+        Multilevel data structure of Python lists and dictionaries with the query results,
+        including primary IDs from `todb` linked to the input identifier.
 
     Returns
     -------
@@ -161,11 +154,11 @@ def fetch_sra_accessions(identifiers):
 
     Returns
     -------
-    sra_accessions : list
-        List with SRA accession numbers.
-    sequencing_platforms : list
-        List with the sequencing platform for each
-        SRA record.
+    return : list
+        sra_accessions : list
+            List with SRA accession numbers.
+        sequencing_platforms : list
+            List with the sequencing platform for each SRA record.
     """
     sra_accessions = []
     sequencing_platforms = []
@@ -196,16 +189,15 @@ def fetch_assembly_accessions(identifiers):
 
     Returns
     -------
-    refseq_accessions : list
-        List with RefSeq accession numbers.
-    genbank_accessions : list
-        List with GenBank accession numbers.
-    biosample_ids : list
-        List with primary IDs for BioSample records
-        linked to the Assembly records.
-    biosample_accessions : list
-        List with accession numbers for BioSample records
-        linked to the Assembly records.
+    return : list
+        refseq_accessions : list
+            List with RefSeq accession numbers.
+        genbank_accessions : list
+            List with GenBank accession numbers.
+        biosample_ids : list
+            List with primary IDs for BioSample records linked to the Assembly records.
+        biosample_accessions : list
+            List with accession numbers for BioSample records linked to the Assembly records.
     """
     refseq_accessions = []
     genbank_accessions = []
@@ -244,12 +236,21 @@ def multi_threading(i, retry):
     """
     This functions is called by concurrent.futures in order to increase the
     number of downloads per second.
+
     Parameters
     ----------
     i : str
         Assembly id.
     retry: int
         number of retries per download
+
+    Returns
+    -------
+    return : list
+        i : int
+            Id of iteration of multithreading.
+        identifiers : list
+            List that contains all found identifiers for that biosample.
     """
 
     rtry = 0
@@ -347,10 +348,17 @@ def main(input_file, output_file, email, threads, retry, api_key):
     output_file : str
         string containing output file path.
     email : str
+        email for NCBI usage.
     threads : int
+        number of threads.
     retry : int
+        number of retries to perform in case of failure.
     api_key : str
         string key for api of the NCBI.
+
+    Returns
+    -------
+    Creates a file with linked ids.
     """
 
     # read identifiers
