@@ -69,7 +69,6 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
     stderr : list
         List with the warnings/errors reported by BLAST.
     """
-
     blast_args = [blast_path, '-db', blast_db, '-query', fasta_file,
                   '-out', blast_output, '-outfmt', '6 qseqid sseqid score',
                   '-max_hsps', str(max_hsps), '-num_threads', str(threads),
