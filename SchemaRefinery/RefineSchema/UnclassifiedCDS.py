@@ -13,7 +13,8 @@ try:
                        kmers_functions as kf,
                        iterable_functions as itf,
                        graphical_functions as gf,
-                       pandas_functions as pf)
+                       pandas_functions as pf,
+                       linux_functions as lf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       sequence_functions as sf,
@@ -23,7 +24,8 @@ except ModuleNotFoundError:
                                       kmers_functions as kf,
                                       iterable_functions as itf,
                                       graphical_functions as gf,
-                                      pandas_functions as pf)
+                                      pandas_functions as pf,
+                                      linux_functions as lf)
 
 def create_graphs(file_path, output_path, filename, other_plots = None):
     """

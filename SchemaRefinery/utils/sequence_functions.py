@@ -299,7 +299,7 @@ def hash_sequences(file_path):
     return hash_set
 
 def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, count_seq,
-                              deduplicate = True):
+                              translation_table, deduplicate = True):
     """
     Translates the DNA sequence to protein and verifies if that protein is alredy
     present in the dict, thus ensuring that the dict contains deduplicated sequences,
@@ -340,7 +340,7 @@ def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, cou
                 
             # Translate
             protein_translation = translate_dna(str(sequence),
-                                                    11,
+                                                    translation_table,
                                                     min_len,
                                                     True)
             # Verify if was translated

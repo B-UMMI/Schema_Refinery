@@ -154,3 +154,21 @@ def write_dict_to_tsv(file_path, data):
         for row in zip_longest(*data.values(), fillvalue=''):
             row_str = '\t'.join(map(str, row))
             f.write(row_str + '\n')
+
+def concat_files(source_file, destination_file):
+    """
+    Concatenates the source file to the destination file.
+    
+    Parameters
+    ----------
+    source_file : str
+        The path to the source file.
+    destination_file : str
+        The path to the destination file.
+
+    Returns
+    -------
+    None
+    """
+    with open(destination_file, 'a') as outfile, open(source_file, 'r') as infile:
+        shutil.copyfileobj(infile, outfile)
