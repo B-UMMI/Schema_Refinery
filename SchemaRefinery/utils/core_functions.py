@@ -825,7 +825,13 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             trans_path = os.path.join(groups_trans_folder, os.path.basename(group_path))
             groups_trans[key] = trans_path
             fasta_dict = sf.fetch_fasta_dict(group_path, False)
-            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, trans_path, None, constants[5], False, False)
+            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+                                                            trans_path,
+                                                            None,
+                                                            constants[5],
+                                                            False,
+                                                            constants[6],
+                                                            False)
         
         group_trans_rep_folder = os.path.join(fasta_folder, "cds_groups_translation_reps")
         ff.create_directory(group_trans_rep_folder)
@@ -835,7 +841,13 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             trans_path = os.path.join(group_trans_rep_folder, os.path.basename(group_path))
             groups_trans_reps_paths[key] = trans_path
             fasta_dict = sf.fetch_fasta_dict(group_path, False)
-            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, trans_path, None, constants[5], False, False)
+            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+                                                            trans_path,
+                                                            None,
+                                                            constants[5],
+                                                            False,
+                                                            constants[6],
+                                                            False)
             for id_, sequence in trans_dict.items():
                 reps_trans_dict_cds[id_] = sequence
 
@@ -1673,6 +1685,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                               None,
                                                               constants[5],
                                                               False,
+                                                              constants[6],
                                                               False)
         for allele_id, sequence in translation_dict.items():
             reps_trans_dict_cds[allele_id] = sequence
