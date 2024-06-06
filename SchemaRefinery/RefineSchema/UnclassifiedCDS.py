@@ -147,8 +147,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     frequency_cds = {}
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
         for id_, sequence in not_included_cds.items():
-            cds_not_found.writelines(">"+id_+"\n")
-            cds_not_found.writelines(str(sequence)+"\n")
+            cds_not_found.write(f">{id_}\n{str(sequence)}\n")
             
             hashed_seq = sf.seq_to_hash(str(sequence))
             # if CDS sequence is present in the schema count the number of
@@ -282,20 +281,17 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                   "all_cluster_representatives.fasta")
     # Write files for BLASTn.
     rep_paths_nuc = {}
-    # Master file.
+    # Write master file for the representatives.
     with open(representatives_all_fasta_file, 'w') as all_fasta:
         for cluster_rep_id in clusters:
-
-            all_fasta.writelines(">"+cluster_rep_id+"\n")
-            all_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
+            all_fasta.write(f">{cluster_rep_id}\n{str(not_included_cds[cluster_rep_id])}\n")
 
             rep_fasta_file = os.path.join(representatives_blastn_folder,
                                           f"cluster_rep_{cluster_rep_id}.fasta")
             rep_paths_nuc[cluster_rep_id] = rep_fasta_file
-            # Representative file
+            # Write the representative FASTA file.
             with open(rep_fasta_file, 'w') as rep_fasta:
-                rep_fasta.writelines(">"+cluster_rep_id+"\n")
-                rep_fasta.writelines(str(not_included_cds[cluster_rep_id])+"\n")
+                rep_fasta.write(f">{cluster_rep_id}\n{str(not_included_cds[cluster_rep_id])}\n")
     
     # Create BLAST db for the schema DNA sequences.
     print("\nCreating BLASTn database for the unclassified and missed CDSs...")

@@ -514,7 +514,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
         for i, string in enumerate(strings):
             if i == 1:
                 continue
-            found_key = itf.identify_value_in_dict_lists(string, dict_of_lists)
+            found_key = itf.identify_string_in_dict_lists_regex(string, dict_of_lists, r'\*')
             if found_key:
                 break
         return found_key
@@ -599,20 +599,20 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
                 # For the related_matches.tsv file.
                 if class_ not in ['4c','5'] and retain:
-                    strings = [new_query, class_, new_id_subject]
+                    strings = [str(new_query), class_, str(new_id_subject)]
                     found_key = find_key_for_strings([new_query, class_, new_id_subject], related_clusters)
                     # Add asterisk to the query or subject that was dropped.
                     if class_ in ['1b', '2a', '3a']:
-                        if query == query_or_subject:
-                            strings[0] + '*' 
+                        if new_query == query_or_subject:
+                            strings[0] += '*' 
                         else:
-                            strings[1] + '*' 
+                            strings[2] += '*' 
                     if not found_key:
                         if not related_clusters:
-                            related_clusters[1] = [[new_query, class_, new_id_subject]]
+                            related_clusters[1] = [strings]
                         else:
                             index = len(related_clusters) + 1
-                            related_clusters.setdefault(index, []).append([new_query, class_ , new_id_subject])
+                            related_clusters.setdefault(index, [strings])
                     else:
                         related_clusters[found_key].append(strings)
 
@@ -828,21 +828,21 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 cds = [cds]
             else:
                 cds = cds_to_keep[class_][cds]
+            # Write all of the alleles to the file.
             with open(cds_group_fasta_file, 'w') as fasta_file:
                 for rep_id in cds:
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
                     for cds_id in cds_ids:
-                        fasta_file.writelines(f">{cds_id}\n")
-                        fasta_file.writelines(str(not_included_cds[cds_id])+"\n")
+                        fasta_file.write(f">{cds_id}\n{str(not_included_cds[cds_id])}\n")
+            # Write only the representative to the file.
             with open(cds_group_reps_file, 'w') as fasta_file:
                 for rep_id in cds:
-                    fasta_file.writelines(f">{rep_id}\n")
-                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
+                    fasta_file.write(f">{rep_id}\n{str(not_included_cds[rep_id])}\n")
+            # Write the representative to the master file.
             write_type = 'a' if os.path.exists(master_file_rep) else 'w'
             with open(master_file_rep, write_type) as fasta_file:
                 for rep_id in cds:
-                    fasta_file.writelines(f">{rep_id}\n")
-                    fasta_file.writelines(str(not_included_cds[rep_id])+"\n")
+                    fasta_file.write(f">{rep_id}\n{str(not_included_cds[rep_id])}\n")
 
     def translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants):
         """

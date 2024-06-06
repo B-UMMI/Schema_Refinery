@@ -333,13 +333,13 @@ def identify_string_in_dict(input_str, dictionary):
             return key
     return None
 
-def identify_value_in_dict_lists(target_value, dict_of_lists):
+def identify_string_in_dict_lists_regex(target_value, dict_of_lists, regex=False):
     """
     Identifies if a string is present in any list inside a dictionary.
 
     Parameters
     ----------
-    target_value : any
+    target_string : str
         The value to find.
     dict_of_lists : dict
         A dictionary where the values are lists of lists.
@@ -347,11 +347,11 @@ def identify_value_in_dict_lists(target_value, dict_of_lists):
     Returns
     -------
     key : int or str
-        The key of the entry where the value is present, or False if not found.
+        The key of the entry where the string is present, or False if not found.
     """
     for key, lists in dict_of_lists.items():
         for list_ in lists:
-            if target_value in list_:
+            if target_value in [remove_by_regex(l, regex) for l in list_] if regex else list_:
                 return key
     return False
 
@@ -532,7 +532,7 @@ def add_strings_to_subsets(my_list, my_strings):
                 found = True
                 break
     return found
-
+#Not used
 def find_index(input_list, target_string):
     """
     Find the index of a string in a list.
