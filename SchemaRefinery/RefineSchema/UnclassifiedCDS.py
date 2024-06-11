@@ -335,8 +335,16 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, important_relationships, drop_list, _, _] = cof.process_classes(representative_blast_results,
+    [cds_to_keep, important_relationships, drop_list, _, related_clusters] = cof.process_classes(representative_blast_results,
                                                                                 classes_outcome)
+    
+    related_matches = os.path.join(results_output, "related_matches.tsv")
+    with open(related_matches, 'w') as related_matches_file:
+        for related in related_clusters.values():
+            for r in related:
+                related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
+
+            related_matches_file.write('\n')
 
     cof.report_main_relationships(important_relationships,
                               representative_blast_results,

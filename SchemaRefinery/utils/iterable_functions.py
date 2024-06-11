@@ -343,6 +343,8 @@ def identify_string_in_dict_lists_regex(target_value, dict_of_lists, regex=False
         The value to find.
     dict_of_lists : dict
         A dictionary where the values are lists of lists.
+    regex : str, optional
+        A regex pattern to search for in the lists.
 
     Returns
     -------
@@ -516,6 +518,25 @@ def regex_present(regex_list, string):
     """
     return any(re.search(regex, string) for regex in regex_list)
 
+def search_string_by_regex(pattern, string):
+    """
+    Searches for a regex pattern in a string.
+
+    Parameters
+    ----------
+    pattern : str
+        The regex pattern to search for.
+    string : str
+        The string to search in.
+
+    Returns
+    -------
+    return : str
+        The match object if the pattern is found, original string otherwise.
+    """
+    match = re.search(pattern, string)
+    return match.group(1) if match else string
+
 def add_strings_to_subsets(my_list, my_strings):
     """
     Clustering algorithm that finds a string in a list of strings in
@@ -532,7 +553,7 @@ def add_strings_to_subsets(my_list, my_strings):
                 found = True
                 break
     return found
-#Not used
+#Unused
 def find_index(input_list, target_string):
     """
     Find the index of a string in a list.
