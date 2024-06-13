@@ -505,14 +505,10 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
     Returns
     -------
-    cds_to_keep : dict     
-        Dict of the CDS to keep by each classification.
-    important_relationships : dict
-        Dict that contains as keys the class and values the decisive relatioships
-        between loci/CDS.
-    drop_list : dict
-        Contains the CDS IDs to be removed from further processing for appearing
-        fewer time in genomes than their match.
+    processed_results : dict
+        Dict that contains the processed results.
+    count_results_by_class : dict
+        Dict that contains the count of results by class (how many rep/alelles had of each classification).
     """
 
     # Initialize variables
@@ -649,7 +645,33 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     return processed_results, count_results_by_class
 
 def extract_results(processed_results, count_results_by_class, all_alleles, classes_outcome):
+    """
+    Extracts and organizes results from process_classes.
 
+    Parameters
+    ----------
+    processed_results : dict
+        The processed results data.
+    count_results_by_class : dict
+        A dictionary with counts of results by class.
+    all_alleles : bool
+        A flag indicating whether all alleles are to be considered.
+    classes_outcome : list
+        A list of class outcomes.
+
+    Returns
+    -------
+    cds_to_keep : dict
+        CDS and loci to keep by each classification.
+    important_relationships : dict
+        Important relationships between loci and CDS that were decisive to keep them or not.
+    drop_set : set
+        Set of CDS/loci IDs to be dropped from further processing.
+    all_relationships : dict
+        All relationships between loci and CDS.
+    related_clusters : dict
+        Dict that groups CDS/loci by ID and that contains strings to write in output file.
+    """
     cds_to_keep = {}
     important_relationships = {}
     all_relationships = {}
@@ -684,14 +706,14 @@ def extract_results(processed_results, count_results_by_class, all_alleles, clas
                                                                                                             '/'
                                                                                                             + str(sum(count_results_by_class[f"{results[4][0]}|{results[4][1]}"].values()))])
                                                                      
-    drop_list = set([v[3] for k, v in processed_results.items() if v[3]])
+    drop_set = set([v[3] for k, v in processed_results.items() if v[3]])
 
     for k, v in processed_results.items():
         if v[2][1]:
             important_relationships.setdefault(v[1], []).append(v[2][0])
         all_relationships.setdefault(v[1], []).append(v[2][0])
     
-    return cds_to_keep, important_relationships, drop_list, all_relationships, related_clusters
+    return cds_to_keep, important_relationships, drop_set, all_relationships, related_clusters
 
 def write_blast_summary_results(related_clusters, count_results_by_class, results_output):
     related_matches = os.path.join(results_output, "related_matches.tsv")
@@ -748,7 +770,7 @@ def get_loci_matches(all_relationships, loci_ids, cds_to_keep, schema_loci_short
     return is_matched, is_matched_alleles
 
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
-                          constants, drop_list, loci, groups_paths_old, frequency_in_genomes,
+                          constants, drop_set, loci, groups_paths_old, frequency_in_genomes,
                           only_loci):
     """
     This function wraps up the results for processing of the unclassified CDSs
@@ -768,7 +790,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         Path to were write the FASTA files.
     constants : list
         Contains the constants to be used in this function.
-    drop_list : list
+    drop_set : set
         Contains the CDS IDs to be removed from further processing for appearing
         fewer time in genomes than their match.
     loci : dict
@@ -1096,9 +1118,9 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 loci_cases[class_] = [cds for cds in cds_set if cds in loci]
                 cds_cases[class_] = [cds for cds in cds_set if cds not in loci]
 
-        # Process drop_list in the same way as above
-        loci_cases['dropped'] = [d for d in drop_list if d in loci]
-        cds_cases['dropped'] = [d for d in drop_list if d not in loci]
+        # Process drop_set in the same way as above
+        loci_cases['dropped'] = [d for d in drop_set if d in loci]
+        cds_cases['dropped'] = [d for d in drop_set if d not in loci]
 
     else:
         for class_, cds_set in cds_to_keep.items():
@@ -1131,14 +1153,14 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     else:
         # Write info about the classification results.
         print(f"Out of {len(clusters)} clusters:")
-        print(f"\t{sum(count_cases.values()) + len(drop_list)} CDS representatives had matches with BLASTn"
+        print(f"\t{sum(count_cases.values()) + len(drop_set)} CDS representatives had matches with BLASTn"
             f" which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
 
         # Print the classification results
         for class_, count in count_cases.items():
             print_classification_results(class_, count, cds_to_keep, 0)
 
-        print(f"\t\tOut of those {len(drop_list)} CDSs groups were removed from the analysis.")
+        print(f"\t\tOut of those {len(drop_set)} CDSs groups were removed from the analysis.")
 
         if Retained_not_matched_by_blastn:
             print(f"\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
@@ -1913,7 +1935,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                                 all_alleles)
     [cds_to_keep,
      important_relationships,
-     drop_list, all_relationships,
+     drop_set, all_relationships,
      related_clusters]  = extract_results(processed_results, count_results_by_class, all_alleles, classes_outcome)
 
     write_blast_summary_results(related_clusters, count_results_by_class, results_output)
@@ -1948,7 +1970,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                         all_alleles,
                         results_output,
                         constants,
-                        drop_list,
+                        drop_set,
                         schema_loci,
                         groups_paths,
                         frequency_in_genomes,
