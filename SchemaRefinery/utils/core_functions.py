@@ -390,14 +390,15 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     Parameters
     ----------
     representative_blast_results : dict
-        Dict that contains representatibes BLAST results with all of the additional
-        info.
+        A dictionary where each key is a query identifier and each value is another dictionary.
+        The inner dictionary's keys are subject identifiers, and values are dicts containing
+        as key identifiers of all of the matches, and value the details of the match.
     constants : list
         Contains the constants to be used in this function
         
     Returns
     -------
-    classes_outcome : list
+    classes_outcome : tuple
         List of list that contains class IDS used in the next function
     """
         
@@ -418,7 +419,7 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
 
     # Define classes based on priority
-    classes_outcome = ['1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c','5']
+    classes_outcome = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c','5')
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
@@ -467,6 +468,33 @@ def separate_blastn_results_into_classes(representative_blast_results, constants
     return classes_outcome
 
 def sort_blast_results_by_classes(representative_blast_results, classes_outcome):
+    """
+    Sorts BLAST results by classes based on the alignment score.
+
+    Parameters
+    ----------
+    representative_blast_results : dict
+        A dictionary where each key is a query identifier and each value is another dictionary.
+        The inner dictionary's keys are subject identifiers, and values are dicts containing
+        as key identifiers of all of the matches, and value the details of the match.
+    classes_outcome : tuple
+        A list of possible classes outcomes to sort the BLAST results into.
+
+    Returns
+    -------
+    sorted_blast_dict : dict
+        A dictionary structured similarly to `representative_blast_results`, but sorted such that
+        all results for a given query are grouped by their class as determined by the highest
+        scoring alignment.
+
+    Notes
+    -----
+    This function assumes that each match dict in the values of `representative_blast_results`
+    contains at least one element, which is a dictionary with a 'class' key. It also assumes
+    that the classes in `classes_outcome` cover all possible classes that might appear in the
+    BLAST results. And lastly, it assumes that the highest scoring alignment is the one that
+    should determine the class of the query-subject pair.
+    """
     sorted_blast_dict = {}
     temp_dict = {k: {} for k in classes_outcome}
     
@@ -489,28 +517,43 @@ def sort_blast_results_by_classes(representative_blast_results, classes_outcome)
 
 def process_classes(representative_blast_results, classes_outcome, all_alleles = None):
     """
-    Process the classified representative_blast_results to identify the CDS
-    that are to be kept as potential new loci while also adding the different
-    relationships between these CDS for further processing.
-    
+    Processes BLAST results to determine class-based relationships and counts.
+
+    This function iterates through representative BLAST results to establish relationships
+    between different coding sequences (CDS) and to count occurrences by class. It handles
+    allele replacements, prioritizes classes based on a predefined order, and identifies
+    important relationships between sequences.
+
     Parameters
     ----------
     representative_blast_results : dict
-        Dict that contains representatibes BLAST results with all of the additional
-        info.
-    classes_outcome : list
-        All of the existing classes.
+        A nested dictionary where the first key is the query sequence ID, the second key is
+        the subject sequence ID, and the value is another dictionary containing match details
+        including the class of the match.
+    classes_outcome : tuple
+        A list of class identifiers ordered by priority. This order determines which classes are
+        considered more significant when multiple matches for the same pair of sequences are found.
     all_alleles : dict, optional
-        Dict that contains the cds/loci main ID as key and the value are their alleles.
+        A dictionary mapping sequence IDs to their corresponding allele names. If provided, it is
+        used to replace sequence IDs with allele names in the processing.
 
     Returns
     -------
     processed_results : dict
-        Dict that contains the processed results.
+        A dictionary containing processed results with keys formatted as "query|subject" and values being tuples
+        containing information about the processed sequences, their class, relationships, and additional details.
     count_results_by_class : dict
-        Dict that contains the count of results by class (how many rep/alelles had of each classification).
-    """
+        A dictionary containing counts of results by class, with keys formatted as "query|subject" and values being
+        dictionaries with class identifiers as keys and counts as values.
 
+    Notes
+    -----
+    - The function dynamically adjusts based on the presence of `all_alleles`, affecting how sequence IDs
+    are replaced and processed.
+    - It employs a complex logic to handle different scenarios based on class types and the presence or absence of
+    alleles in the processed results, including handling allele replacements and determining the importance of
+    relationships.
+    """
     # Initialize variables
     count_results_by_class = {}
     processed_results = {}
@@ -555,12 +598,12 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
             if run_next_step:
                 # Set all None to run newly for this query/subject combination
-                processed_results[f"{new_query}|{new_id_subject}"] = [None,
+                processed_results[f"{new_query}|{new_id_subject}"] = (None,
                                                         None,
                                                         None,
                                                         None,
                                                         None,
-                                                        None]
+                                                        None)
                 # Find cases that were already processed or to be dropped
                 retained_cases= itf.flatten_list([v[0] for k, v in processed_results.items() if v[0]])
                 drop_list = [v[3] for k, v in processed_results.items() if v[3]]
@@ -574,12 +617,12 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                         keep_cds = []
                         important_relationship = False
 
-                    processed_results[f"{new_query}|{new_id_subject}"] = [keep_cds,
+                    processed_results[f"{new_query}|{new_id_subject}"] = (keep_cds,
                                                                             class_,
-                                                                            [ids_for_relationship + [['j', 'j']], important_relationship],
+                                                                            (ids_for_relationship + [['j', 'j']], important_relationship),
                                                                             [],
-                                                                            [new_query, new_id_subject],
-                                                                            strings]
+                                                                            (new_query, new_id_subject),
+                                                                            strings)
                     #TODO: find where ids of class 1a where added and elimante them processed_results
                     continue
                 # Process cases where neither query nor subject were processed
@@ -635,12 +678,12 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
                 important_relationship = True if retain else False
 
-                processed_results[f"{new_query}|{new_id_subject}"] = [keep_cds,
+                processed_results[f"{new_query}|{new_id_subject}"] = (keep_cds,
                                                     class_,
-                                                    [ids_for_relationship + [retain], important_relationship],
+                                                    (ids_for_relationship + [retain], important_relationship),
                                                     query_or_subject,
-                                                    [new_query, new_id_subject],
-                                                    strings]
+                                                    (new_query, new_id_subject),
+                                                    strings)
 
     return processed_results, count_results_by_class
 
@@ -716,6 +759,32 @@ def extract_results(processed_results, count_results_by_class, all_alleles, clas
     return cds_to_keep, important_relationships, drop_set, all_relationships, related_clusters
 
 def write_blast_summary_results(related_clusters, count_results_by_class, results_output):
+    """
+    Writes summary results of BLAST analysis to TSV files.
+
+    This function generates two files: 'related_matches.tsv' and 'count_results_by_cluster.tsv'.
+    The 'related_matches.tsv' file contains information about related clusters, while
+    'count_results_by_cluster.tsv' details the count of results by cluster and class, including a total count.
+
+    Parameters
+    ----------
+    related_clusters : dict
+        A dictionary where each key is a cluster identifier and each value is a list of tuples.
+        Each tuple represents a related match with its details.
+    count_results_by_class : dict
+        A dictionary where each key is a clusters identifiers separate by '|' and each value is another dictionary.
+        The inner dictionary's keys are class identifiers, and values are counts of results for that class.
+    results_output : str
+        The path to the directory where the output files will be saved.
+
+    Notes
+    -----
+    - The 'related_matches.tsv' file is formatted such that each related match is written on a new line,
+      with details separated by tabs. A blank line is added after each cluster's matches.
+    - The 'count_results_by_cluster.tsv' file includes the cluster identifier, class identifier, count of results,
+      and total count of results for the cluster, with each piece of information separated by tabs.
+      A blank line is added after each cluster's information.
+    """
     related_matches = os.path.join(results_output, "related_matches.tsv")
     with open(related_matches, 'w') as related_matches_file:
         for related in related_clusters.values():
@@ -1477,8 +1546,10 @@ def report_main_relationships(important_relationships, representative_blast_resu
         Dict that contains as keys the class and values the decisive relatioships
         between loci/CDS.
     representative_blast_results : dict
-        Dict that contains BLAST results of the representatives with all of the additional
-        info.
+        A dictionary where each key is a query identifier and each value is another dictionary.
+        The inner dictionary's keys are subject identifiers, and values are dicts containing
+        as key identifiers of all of the matches, and value the details of the match. it is ordered
+        by class.
     all_alleles : dict
         Dict that contains the loci and joined group as keys and their alleles and 
         elements IDS as values.
@@ -1552,8 +1623,10 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
     cds_to_keep : dict
         Dict of the CDS to keep by each classification.
     representative_blast_results : dict
-        Dict that contains BLAST results of the representatives with all of the additional
-        info.
+        A dictionary where each key is a query identifier and each value is another dictionary.
+        The inner dictionary's keys are subject identifiers, and values are dicts containing
+        as key identifiers of all of the matches, and value the details of the match. it is ordered
+        by class.
     classes_outcome : list
         List of list that contains class IDS used in the next function.
     all_alleles : dict
