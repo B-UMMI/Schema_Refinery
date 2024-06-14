@@ -384,38 +384,57 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
 
 def separate_blastn_results_into_classes(representative_blast_results, constants):
     """
-    Separates one BLASTn dict into various classes and adds them as entry to the
-    representative_blast_results dict
+    Separates BLAST results into predefined classes based on specific criteria.
+
+    This function iterates through BLAST results and classifies each result into a specific class
+    based on criteria such as global alignment percentage, bit score ratio (bsr), and frequency ratios
+    between query and subject CDS in genomes. The classification is done by updating the results
+    dictionary with a new key-value pair indicating the class of each BLAST result.
 
     Parameters
     ----------
     representative_blast_results : dict
-        A dictionary where each key is a query identifier and each value is another dictionary.
-        The inner dictionary's keys are subject identifiers, and values are dicts containing
-        as key identifiers of all of the matches, and value the details of the match.
-    constants : list
-        Contains the constants to be used in this function
-        
+        A nested dictionary where the first level keys are query sequence IDs, the second level keys
+        are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
+        result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
+        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
+    constants : tuple or list
+        A collection of constants used in the classification criteria. Specifically, `constants[1]`
+        is used as a threshold for the percentage identity (pident) in one of the classification conditions.
+
     Returns
     -------
     classes_outcome : tuple
-        List of list that contains class IDS used in the next function
+        A tuple of class identifiers indicating the order of priority for the classes.
+
+    Notes
+    -----
+    - The function modifies `representative_blast_results` in place by adding a 'class' key to each
+      BLASTN result dictionary.
+    - The classification logic is based on a combination of alignment quality metrics and frequency
+      ratios, with specific thresholds and conditions determining the class assignment.
+    - The function assumes that `constants` provides necessary thresholds for classification and
+      that its elements are accessed by index.
     """
-        
     def add_class_to_dict(class_name):
         """
-        Adds class as last item in representative_blast_results dict
-        
+        Adds a class identifier to a BLAST result within the representative_blast_results dictionary.
+
+        This helper function is used to update the BLASTNresult dictionaries with a 'class' key,
+        assigning the specified class identifier based on the classification logic in the outer function.
+
         Parameters
         ----------
         class_name : str
-            Class name, which is a key in cluster_classes to where to add entries.
-            
-        Returns
-        -------
-        Modifies the representative_blast_results dict in the parent function.
+            The class identifier to be added to the BLASTN result. This should be one of the values
+            from the classes_outcome tuple defined in the outer function.
+
+        Notes
+        -----
+        - This function directly modifies the `representative_blast_results` dictionary from the outer
+          scope, specifically adding or updating the 'class' key for a BLASTN result.
+        - It is designed to be used only within the `separate_blastn_results_into_classes` function.
         """
-        
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
 
     # Define classes based on priority
@@ -471,14 +490,20 @@ def sort_blast_results_by_classes(representative_blast_results, classes_outcome)
     """
     Sorts BLAST results by classes based on the alignment score.
 
+    This function organizes BLAST results into a sorted structure according to predefined classes.
+    It ensures that for each query, the results are grouped by the class of the alignment, prioritizing
+    the classes as specified in the `classes_outcome` list.
+
     Parameters
     ----------
     representative_blast_results : dict
         A dictionary where each key is a query identifier and each value is another dictionary.
-        The inner dictionary's keys are subject identifiers, and values are dicts containing
-        as key identifiers of all of the matches, and value the details of the match.
+        The inner dictionary's keys are subject identifiers, and values are lists containing
+        details of the match, where the second element is a dictionary with the key 'class'
+        indicating the class of the alignment.
     classes_outcome : tuple
-        A list of possible classes outcomes to sort the BLAST results into.
+        A list of possible classes outcomes to sort the BLAST results into. The order in this list
+        determines the priority of the classes when organizing the results.
 
     Returns
     -------
@@ -489,11 +514,10 @@ def sort_blast_results_by_classes(representative_blast_results, classes_outcome)
 
     Notes
     -----
-    This function assumes that each match dict in the values of `representative_blast_results`
-    contains at least one element, which is a dictionary with a 'class' key. It also assumes
-    that the classes in `classes_outcome` cover all possible classes that might appear in the
-    BLAST results. And lastly, it assumes that the highest scoring alignment is the one that
-    should determine the class of the query-subject pair.
+    - The function assumes that each match list in the values of `representative_blast_results`
+      contains at least one element, which is a dictionary with a 'class' key.
+    - It creates a temporary dictionary to first group results by class, then consolidates these
+      into the final sorted dictionary to be returned.
     """
     sorted_blast_dict = {}
     temp_dict = {k: {} for k in classes_outcome}
@@ -535,7 +559,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
         considered more significant when multiple matches for the same pair of sequences are found.
     all_alleles : dict, optional
         A dictionary mapping sequence IDs to their corresponding allele names. If provided, it is
-        used to replace sequence IDs with allele names in the processing.
+        used to replace allele IDs with loci/CDS names in the processing.
 
     Returns
     -------
