@@ -83,66 +83,91 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                          representative_blast_results_coords_pident,
                          frequency_in_genomes, loci_ids, add_groups_ids = None):
     """
-    Function to add to BLAST results additional information, it adds:
-    bsr: value between the two CDS.
-    kmers_sim: kmer similarities.
-    kmer_cov: kmer coverage.
-    frequency_in_genomes_query_cds: how many times that query appears in the schema genomes.
-    frequency_in_genomes_subject_cds: how many subject appers in the schema genomes.
-    global_palign_all_max: minimum of how much query or subject covers each other.
-    global_palign_pident_min: minimum of how much query or subject covers each other, takes into
-    account only entries with specific pident value.
-    global_palign_pident_max: maximum of how much query or subject covers each other, takes into
-    account only entries with specific pident value.
-    local_palign_min: minimum of how much query or subject covers each other, takes into
-    account only local alignemnt.
+    Enhances BLAST results with additional metrics and frequencies.
+
+    This function enriches the given BLAST results dictionary with several key metrics and frequencies
+    to provide a more comprehensive analysis of the BLAST hits. It adds metrics such as Blast
+    Score Ratio (BSR), k-mer similarities and coverage, and frequencies of query and subject CDS in
+    schema genomes. It also includes global and local pairwise alignment scores, both in terms of
+    coverage and percentage identity, with the ability to focus on specific percentage identity thresholds.
+
                                   
     Parameters
     ----------                                  
-    representative_blast_results : 
-        Dict that contains representatibes BLAST results.
+    representative_blast_results : dict
+        A dictionary containing BLAST results. Each entry is expected to represent a unique BLAST hit with
+        various metrics.
     reps_kmers_sim : dict
-        Dict that contains values for kmer similarities between CDS.
+        A dictionary mapping pairs of CDS to their k-mer similarity scores.
     bsr_values : dict
-        Dict that contains BSR values between CDS, may be None.
+        A dictionary mapping pairs of CDS to their Blast Score Ratio (BSR) values. Can be None if BSR values
+        are not available.
     representative_blast_results_coords_all : dict
-        Dict that contain the coords for all of the entries.
+        A dictionary containing the coordinates for all BLAST entries, used for calculating global alignment metrics.
     representative_blast_results_coords_pident : dict
-        Dict that contain the coords for all of the entries above certain pident value.
+        A dictionary containing the coordinates for BLAST entries above a certain percentage identity threshold,
+        used for calculating specific global alignment metrics.
     frequency_in_genomes : dict
-        Dict that contains sum of frequency of that representatives cluster in the
-        genomes of the schema.
+        A dictionary summarizing the frequency of each representative cluster within the genomes of the schema,
+        enhancing the context of BLAST results.
     loci_ids : bool
-        If IDs of loci representatives are included in the frequency_in_genomes
-        they are in this format loci1_x.
+        Indicates whether the IDs of loci representatives are included in the `frequency_in_genomes`. If true,
+        IDs follow the format `loci1_x`.
     add_groups_ids : Dict, optional
-        Dict that contains the IDs of the joined groups to add to the results while the values are group
-        members.
+        A dictionary mapping group IDs to their member CDS. This is used to add group information to the BLAST
+        results for enhanced analysis.
 
     Returns
     -------
     No returns, modifies the representative_blast_results dict inside the main
     function.
+
+    Notes
+    -----
+    - The function is designed to work with detailed BLAST results and requires several pre-computed metrics
+    and frequencies as input.
+    - It is crucial for enhancing the analysis of BLAST results, especially in comparative genomics and
+    schema development projects.
     """
     def get_kmer_values(reps_kmers_sim, query, subject):
         """
-        Retrieves kmer values for a given query and subject from the reps_kmers_sim dictionary.
-        
+        Retrieves k-mer similarity and coverage values for a specified query and subject pair.
+
+        This function looks up the k-mer similarity and coverage values between a query and a
+        subject sequence from a precomputed dictionary. It is designed to facilitate the analysis
+        of genomic sequences by providing key metrics that reflect the degree of similarity and the
+        extent of coverage between pairs of sequences. These metrics are crucial for understanding
+        the genetic relationships and variations among sequences.
+
         Parameters
         ----------
         reps_kmers_sim : dict
-            A dictionary containing kmer similarity and coverage values.
+            A dictionary where keys are query sequence IDs and values are dictionaries with subject
+            sequence IDs as keys. Each inner dictionary's values are tuples containing the k-mer
+            similarity and coverage values.
         query : str
-            The query sequence ID.
+            The identifier for the query sequence. This is used to look up the corresponding dictionary
+            of subjects within `reps_kmers_sim`.
         subject : str
-            The subject sequence ID.
-    
+            The identifier for the subject sequence. This is used to retrieve the similarity and coverage
+            values from the dictionary associated with the `query`.
+
         Returns
         -------
         sim : float or str
-            The similarity value if it exists, otherwise returns 0 or '-'.
+            The k-mer similarity value between the query and subject sequences. Returns 0 if no value is
+            found, or '-' if the `reps_kmers_sim` dictionary is empty or not provided.
         cov : float or str
-            The coverage value if it exists, otherwise returns 0 or '-'.
+            The coverage value indicating the extent to which the k-mers of the query sequence are present
+            in the subject sequence. Returns 0 if no value is found, or '-' if the `reps_kmers_sim` dictionary
+            is empty or not provided.
+
+        Notes
+        -----
+        - The function is robust to missing data, providing default values when specific similarity or coverage values
+        are unavailable.
+        - It is a utility function primarily used in genomic analysis workflows, particularly in the context of
+        comparing sequences for similarity and coverage using k-mer based metrics.
         """
         if reps_kmers_sim:
             if subject in reps_kmers_sim[query]:
@@ -157,44 +182,80 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
 
     def get_bsr_value(bsr_values, query, subject):
         """
-        Retrieves BSR value for a given query and subject from the bsr_values dictionary.
-        
+        Fetches the BLAST Score Ratio (BSR) for a specified pair of sequences.
+
+        This function extracts the BSR value for a given pair of sequences identified by their respective
+        query and subject IDs from a pre-populated dictionary. The BSR is a normalized metric used to
+        compare the BLAST scores of different alignments, providing insight into the relative similarity
+        between sequences. If the BSR exceeds 1.0, it is rounded to the nearest whole number to maintain
+        consistency in reporting.
+
         Parameters
         ----------
         bsr_values : dict
-            A dictionary containing BSR values.
+            A dictionary where keys are query sequence IDs and values are dictionaries with subject sequence
+            IDs as keys. Each inner dictionary's values are the BSR values.
         query : str
-            The query sequence ID.
+            The identifier for the query sequence. This is used to select the appropriate dictionary of subject
+            sequences within `bsr_values`.
         subject : str
-            The subject sequence ID.
-            
+            The identifier for the subject sequence. This is used to retrieve the BSR value from the dictionary
+            associated with the `query`.
+
         Returns
         -------
         bsr : float
-            The BSR value if it exists, otherwise returns 0. If BSR value is greater than 1, it is rounded to the nearest integer.
+            The BSR value between the query and subject sequences. Returns 0 if no BSR value is found for the
+            given pair. If the BSR value is greater than 1, it is rounded to the nearest whole number. The BSR
+            value is rounded by 4 decimal places for consistency.
+
+        Notes
+        -----
+        - The BSR value is a crucial metric in bioinformatics for assessing the quality of sequence alignments, with values typically ranging from 0 to 1. Values greater than 1 are considered anomalies and are adjusted accordingly.
+        - This function is essential for workflows involving comparative genomics or sequence alignment analysis, where BSR values provide a standardized measure of sequence similarity.
         """
         bsr = bsr_values[query].get(subject, 0)
         if bsr > 1.0:
             bsr = float(round(bsr))
-        return bsr
+        return round(bsr, 4)
 
     def calculate_total_length(representative_blast_results_coords, query, subject):
         """
-        Calculates total length for a given query and subject.
-        
+        Calculates the total aligned length for each reference sequence in a given query-subject pair.
+
+        This function computes the total length of aligned sequences for each reference sequence associated
+        with a specific query-subject pair. It processes the alignment intervals for each reference sequence,
+        merges overlapping intervals to avoid double counting, and sums up the lengths of these intervals to
+        determine the total aligned length.
+
         Parameters
         ----------
         representative_blast_results_coords : dict
-            A dictionary containing BLAST results coordinates.
+            A nested dictionary where the first level keys are query sequence IDs, the second level keys are
+            subject sequence IDs, and the values are dictionaries mapping reference sequence IDs to lists of
+            alignment intervals.
         query : str
-            The query sequence ID.
+            The identifier for the query sequence. This is used to select the appropriate dictionary of subject
+            sequences within `representative_blast_results_coords`.
         subject : str
-            The subject sequence ID.
-            
+            The identifier for the subject sequence. This is used to retrieve the dictionary of reference sequences
+            and their alignment intervals.
+
         Returns
         -------
         total_length : dict
-            A dictionary with the total length of each reference sequence.
+            A dictionary where keys are reference sequence IDs and values are the total aligned length for that
+            reference sequence. The total aligned length is calculated by merging overlapping intervals and
+            summing the lengths of the resulting intervals.
+
+        Notes
+        -----
+        - The function assumes that alignment intervals are provided as tuples or lists of two elements, where the
+        first element is the start position and the second element is the end position of the interval.
+        - Overlapping intervals for each reference sequence are merged to ensure that the total aligned length is
+        accurately calculated without double counting overlapping regions.
+        - This function is particularly useful in genomic analyses where understanding the extent of alignment
+        coverage is important for interpreting BLAST results.
         """
         total_length = {}
         for ref, intervals in representative_blast_results_coords[query][subject].items():
@@ -208,82 +269,127 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
 
     def calculate_global_palign(total_length, result):
         """
-        Calculates global palign for a given total length and result.
-        
+        Calculates the minimum and maximum global pairwise alignment percentages.
+
+        This function computes the global pairwise alignment (palign) percentages for a query and its subject
+        based on their total aligned lengths and original lengths. It calculates both the minimum and maximum
+        palign values to provide a range of alignment coverage, which can be useful for assessing the quality
+        and extent of the alignment between the query and subject sequences.
+
         Parameters
         ----------
         total_length : dict
-            A dictionary containing the total length of each reference sequence.
+            A dictionary where keys are 'query' and 'subject', and values are the total aligned lengths for the
+            query and subject sequences, respectively.
         result : dict
-            A dictionary containing the result of a BLAST search.
-            
+            A dictionary containing the lengths of the query and subject sequences under the keys 'query_length'
+            and 'subject_length'.
+
         Returns
         -------
         global_palign_min : float
-            The minimum global palign value.
+            The minimum global pairwise alignment percentage, calculated as the smaller of the two ratios: total
+            aligned length of the query to its original length, and total aligned length of the subject to its
+            original length. The value is rounded to 4 decimal places.
         global_palign_max : float
-            The maximum global palign value.
+            The maximum global pairwise alignment percentage, calculated as the larger of the two ratios: total
+            aligned length of the query to its original length, and total aligned length of the subject to its
+            original length. The value is rounded to 4 decimal places.
+
+        Notes
+        -----
+        - The global pairwise alignment percentage is a measure of how much of the original sequences
+        (query and subject) are covered by the alignment. It provides insight into the completeness of the alignment.
+        - This function is particularly useful in bioinformatics for evaluating the quality of sequence alignments,
+        where higher coverage percentages might indicate more reliable alignments.
         """
         global_palign_min = min(total_length['query'] / result['query_length'],
                                 total_length['subject'] / result['subject_length'])
         global_palign_max = max(total_length['query'] / result['query_length'],
                                 total_length['subject'] / result['subject_length'])
-        return global_palign_min, global_palign_max
+        return round(global_palign_min, 4), round(global_palign_max, 4)
 
     def calculate_local_palign(result):
         """
-        Calculates local palign for a given result.
-        
+        Calculates the minimum local pairwise alignment percentage.
+
+        This function computes the local pairwise alignment (palign) percentage for a given BLAST search result
+        by comparing the aligned lengths of the query and subject sequences to their total lengths. It calculates
+        the alignment percentage for both the query and subject, and returns the minimum of these two percentages.
+        This metric is useful for assessing the extent of alignment within the local regions of interest in both 
+        sequences.
+
         Parameters
         ----------
         result : dict
-            A dictionary containing the result of a BLAST search.
-            
+            A dictionary containing the result of a BLAST search, including the start and end positions of the alignment
+            on both the query and subject sequences, as well as their total lengths.
+
         Returns
         -------
         local_palign_min : float
-            The minimum local palign value.
+            The minimum local pairwise alignment percentage, calculated as the smaller of the two ratios: aligned
+            length of the query to its total length, and aligned length of the subject to its total length. The value
+            is rounded to 4 decimal places.
+
+        Notes
+        -----
+        - The local pairwise alignment percentage provides insight into the local similarity between the query and
+        subject sequences, focusing on the aligned regions.
+        - This function is particularly useful in sequence alignment analyses, where understanding the coverage and
+        similarity of local alignments is important.
         """
         local_palign_min = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
                             (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
-        return local_palign_min
+        return round(local_palign_min, 4)
 
-    def update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, loci_ids, add_groups_ids):
+    def update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes,
+                       global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max,
+                       local_palign_min, loci_ids, add_groups_ids):
         """
-        Updates results for a given query and subject.
-        
+        Updates the BLAST results for a specific query and subject pair with new data.
+
+        This function modifies the existing BLAST results dictionary by updating the entries for a given query and
+        subject pair with new information. It handles the addition of various metrics such as BSR, similarity,
+        coverage, frequency in genomes, global and local pairwise alignment percentages, and group IDs. The function
+        also supports the modification of query and subject IDs based on loci information.
+
         Parameters
         ----------
         representative_blast_results : dict
-            A dictionary containing BLAST results.
+            A dictionary containing BLAST results where keys are query IDs, values are dictionaries with subject
+            IDs as keys, and each subject dictionary contains dictionaries of entry IDs with their respective data.
         query : str
             The query sequence ID.
         subject : str
             The subject sequence ID.
         entry_id : str
-            The ID of the entry to update.
+            The ID of the entry to update within the BLAST results.
         bsr, sim, cov : float
-            The BSR, similarity, and coverage values.
+            The BSR, similarity, and coverage values to update.
         frequency_in_genomes : dict
-        global_palign_all_min : float
-            Value of the minimum global palign.
-        global_palign_all_max : float
-            Value of the maximum global palign.
-        global_palign_pident_min
-            Value of the minimum global palign based on Pident threshold.
-        global_palign_pident_max : float
-            Value of the maximum global palign based on Pident threshold.
+            A dictionary containing the frequency of the query and subject in genomes.
+        global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max : float
+            The minimum and maximum global pairwise alignment percentages, including those based on Pident threshold.
         local_palign_min : float
-            The minimum and maximum global palign values, and the minimum local palign value.
+            The minimum local pairwise alignment percentage.
         loci_ids : list
-            A list of loci IDs.
+            A list indicating whether to modify the query and/or subject IDs based on loci information.
         add_groups_ids : dict
-            Dict that contains the IDs of the joined groups to add to the results while the values are group
-            members.
-        
+            A dictionary containing group IDs to be added to the results, where keys are subject IDs and values
+            are the group members.
+
         Returns
         -------
-        No returns, modifies the representative_blast_results dict inside the parent function.
+        None
+            This function does not return any value but modifies the `representative_blast_results` dictionary in place.
+
+        Notes
+        -----
+        - The function assumes the presence of a utility module `itf` with functions for ID manipulation and
+        identification within dictionaries.
+        - It is designed to be flexible, allowing for the update of specific metrics as needed without requiring
+        a complete overhaul of the entry data.
         """
         if loci_ids[0]:
             query_before = query
@@ -318,41 +424,75 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
 
     def remove_results(representative_blast_results, query, subject, entry_id):
         """
-        Removes results for a given query and subject.
-        
+        Removes a specific entry from the BLAST results for a given query and subject pair.
+
+        This function is designed to modify an existing dictionary of BLAST results by removing a specified
+        entry identified by its entry ID for a particular query and subject pair. It directly alters the
+        `representative_blast_results` dictionary, removing the entry corresponding to the provided `entry_id`
+        within the nested structure of query and subject IDs.
+
         Parameters
         ----------
         representative_blast_results : dict
-            A dictionary containing BLAST results.
+            A dictionary containing BLAST results, structured with query IDs as keys, each mapping to a dictionary
+            of subject IDs, which in turn map to dictionaries of entry IDs and their associated data.
         query : str
-            The query sequence ID.
+            The identifier for the query sequence, used to locate the correct subset of results within
+            `representative_blast_results`.
         subject : str
-            The subject sequence ID.
+            The identifier for the subject sequence, used in conjunction with `query` to further narrow down the
+            specific subset of results.
         entry_id : str
-            The ID of the entry to remove.
-        
+            The identifier of the specific entry to be removed from the results.
+
         Returns
         -------
-        No returns, modifies the representative_blast_results dict inside the parent function.
+        None
+            This function does not return any value. It modifies the `representative_blast_results` dictionary in
+            place, removing the specified entry.
+
+        Notes
+        -----
+        - This function is useful for cleaning up BLAST results, allowing for the removal of specific entries that are
+        no longer needed or relevant.
+        - It operates directly on the provided dictionary, requiring careful handling to avoid unintended modifications.
         """
         del representative_blast_results[query][subject][entry_id]
 
     def clean_up_results(representative_blast_results, query, subject):
         """
-        Cleans up results for a given query and subject by removing empty entries.
-        
+        Cleans up BLAST results for a specific query and subject by removing empty entries.
+
+        This function is designed to modify an existing dictionary of BLAST results by checking for and
+        removing any entries that are empty for a given query and subject pair. It aims to streamline the BLAST
+        results by ensuring that only entries with data are retained. The function operates directly on the
+        `representative_blast_results` dictionary, removing entries without returning any value.
+
         Parameters
         ----------
         representative_blast_results : dict
-            A dictionary containing BLAST results.
+            A dictionary containing BLAST results, where keys are query IDs, and values are dictionaries with
+            subject IDs as keys, each mapping to their respective result entries.
         query : str
-            The query sequence ID.
+            The identifier for the query sequence, used to locate the correct subset of results within
+            `representative_blast_results`.
         subject : str
-            The subject sequence ID.
+            The identifier for the subject sequence, used in conjunction with `query` to further narrow down the
+            specific subset of results to be cleaned.
         
         Returns
         -------
-        No returns, modifies the representative_blast_results dict inside the parent function.
+        None
+            This function does not return any value. It modifies the `representative_blast_results` dictionary in
+            place, removing the specified entry.
+
+        Notes
+        -----
+        - The function checks for and removes entries that are empty for the specified query and subject. If the
+        subject entry under a query is empty, it is removed. If this results in the query entry becoming empty,
+        it is also removed.
+        - This cleanup process is essential for maintaining the integrity and usability of BLAST results, especially
+        in large-scale genomic analyses where empty entries can clutter the dataset.
         """
         if not representative_blast_results[query][subject]:
             del representative_blast_results[query][subject]
