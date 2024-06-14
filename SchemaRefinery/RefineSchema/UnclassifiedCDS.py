@@ -227,7 +227,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     print("\nFiltering clusters...")
     # Get frequency of cluster.
-    frequency_cds_cluster = {rep: sum([frequency_cds[entry] for entry in value]) 
+    frequency_in_genomes = {rep: sum([frequency_cds[entry] for entry in value]) 
                              for rep, value in clusters.items()}
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value.
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
@@ -319,7 +319,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                          bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
-                         frequency_cds_cluster,
+                         frequency_in_genomes,
                          [False, False])
 
     print("\nFiltering BLAST results into classes...")
@@ -335,9 +335,17 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    [cds_to_keep, important_relationships, drop_list, _, related_clusters] = cof.process_classes(representative_blast_results,
-                                                                                classes_outcome)
+    processed_results, count_results_by_class, reps_and_alleles_ids = cof.process_classes(representative_blast_results,
+                                                                                classes_outcome,
+                                                                                None)
+    [cds_to_keep,
+     important_relationships,
+     drop_set,
+     all_relationships,
+     related_clusters] = cof.extract_results(processed_results, count_results_by_class, None, frequency_in_genomes, classes_outcome)
     
+    cof.write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
+
     related_matches = os.path.join(results_output, "related_matches.tsv")
     with open(related_matches, 'w') as related_matches_file:
         for related in related_clusters.values():
@@ -373,7 +381,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               clusters,
                                               results_output,
                                               constants,
-                                              drop_list,
+                                              drop_set,
                                               None,
                                               None,
                                               frequency_cds_cluster,
