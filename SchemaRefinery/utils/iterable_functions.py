@@ -574,3 +574,9 @@ def find_index(input_list, target_string):
         return input_list.index(target_string)
     except ValueError:
         return None
+    
+def convert_to_type(value, target_type):
+    try:
+        return target_type(value)
+    except (ValueError, TypeError):
+        return value

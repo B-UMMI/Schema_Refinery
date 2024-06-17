@@ -88,7 +88,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Verify if the dataset is small, if it is, keep minimum genomes in which
     # specific CDS cluster is present to 5 if not to 1% of the dataset size.
     if not constants[2]:
-        count_genomes_path = os.path.join(temp_folder, "1_cds_prediction")
+        count_genomes_path = os.path.join(temp_folder, '1_cds_prediction')
         number_of_genomes = len(os.listdir(count_genomes_path))
         if number_of_genomes <= 20:
             constants[2] = 5
@@ -137,10 +137,10 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Create directories.
     ff.create_directory(output_directory)
 
-    cds_output = os.path.join(output_directory, "1_CDS_processing")
+    cds_output = os.path.join(output_directory, '1_CDS_processing')
     ff.create_directory(cds_output)
     # This file contains unique CDS.
-    cds_not_present_file_path = os.path.join(cds_output, "CDS_not_found.fasta")
+    cds_not_present_file_path = os.path.join(cds_output, 'CDS_not_found.fasta')
     
     # Count the number of CDS present in the schema and write CDS sequence
     # into a FASTA file.
@@ -231,7 +231,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                              for rep, value in clusters.items()}
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value.
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
-                if frequency_cds_cluster[rep] >= constants[2]}
+                if frequency_in_genomes[rep] >= constants[2]}
     print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
           f" out of {total_number_clusters} clusters, {len(clusters)} remained.")
 
@@ -267,18 +267,18 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                       for match_values in reps_kmers_sim[cluster_id]}
 
     # Create directories.
-    blast_output = os.path.join(output_directory, "2_BLAST_processing")
+    blast_output = os.path.join(output_directory, '2_BLAST_processing')
     ff.create_directory(blast_output)
     
-    blastn_output = os.path.join(blast_output, "BLASTn_processing")
+    blastn_output = os.path.join(blast_output, '1_BLASTn_processing')
     ff.create_directory(blastn_output)
     # Create directory and files path where to write FASTAs.
     representatives_blastn_folder = os.path.join(blastn_output,
-                                                "cluster_representatives_fastas")
+                                                'cluster_representatives_fastas')
     ff.create_directory(representatives_blastn_folder)
 
     representatives_all_fasta_file = os.path.join(representatives_blastn_folder,
-                                                  "all_cluster_representatives.fasta")
+                                                  'all_cluster_representatives.fasta')
     # Write files for BLASTn.
     rep_paths_nuc = {}
     # Write master file for the representatives.
@@ -297,7 +297,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     print("\nCreating BLASTn database for the unclassified and missed CDSs...")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
-    blast_db = os.path.join(blastn_output, "blast_db_nuc")
+    blast_db = os.path.join(blastn_output, 'blast_db_nucl', 'blast_nucleotide_db')
     bf.make_blast_db(makeblastdb_exec, representatives_all_fasta_file, blast_db, 'nucl')
 
     # Run the BLASTn and BLASTp
@@ -323,9 +323,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                          [False, False])
 
     print("\nFiltering BLAST results into classes...")
-    results_output = os.path.join(output_directory, "3_Classes_processing")
+    results_output = os.path.join(output_directory, '3_CDS_processing_results')
     ff.create_directory(results_output)
-    report_file_path = os.path.join(results_output, "blast_all_matches.tsv")
+    report_file_path = os.path.join(results_output, 'blast_all_matches.tsv')
     
     # Separate results into different classes.
     classes_outcome = cof.separate_blastn_results_into_classes(representative_blast_results,
@@ -335,30 +335,15 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     print("Processing classes...")
     # Process the results_outcome dict and write individual classes to TSV file.
-    processed_results, count_results_by_class, reps_and_alleles_ids = cof.process_classes(representative_blast_results,
+    processed_results, count_results_by_class, reps_and_alleles_ids, drop_mark = cof.process_classes(representative_blast_results,
                                                                                 classes_outcome,
                                                                                 None)
-    [cds_to_keep,
-     important_relationships,
-     drop_set,
-     all_relationships,
-     related_clusters] = cof.extract_results(processed_results, count_results_by_class, None, frequency_in_genomes, classes_outcome)
+    
+    cds_to_keep, drop_set = cof.extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
+
+    all_relationships, related_clusters = cof.extract_results(processed_results, count_results_by_class, None, frequency_in_genomes, classes_outcome)
     
     cof.write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
-
-    related_matches = os.path.join(results_output, "related_matches.tsv")
-    with open(related_matches, 'w') as related_matches_file:
-        for related in related_clusters.values():
-            for r in related:
-                related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
-
-            related_matches_file.write('\n')
-
-    cof.report_main_relationships(important_relationships,
-                              representative_blast_results,
-                              cds_to_keep['1a'],
-                              False,
-                              results_output)
     
     print("\nAdd remaining cluster that didn't match by BLASTn...")
     # Add cluster not matched by BLASTn
@@ -384,17 +369,19 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               drop_set,
                                               None,
                                               None,
-                                              frequency_cds_cluster,
+                                              frequency_in_genomes,
                                               False)
     
     # Add new frequencies in genomes for joined groups
     new_cluster_freq = {}
     for cluster_id, cluster_members in cds_to_keep['1a'].items():
+        cluster_id = str(cluster_id)
         new_cluster_freq[cluster_id] = 0
         for member in cluster_members:
-            new_cluster_freq[cluster_id] += frequency_cds_cluster[member]
+            new_cluster_freq[(cluster_id)] += frequency_in_genomes[member]
         for member in cluster_members:
-            frequency_cds_cluster[member] = new_cluster_freq[cluster_id]
+            frequency_in_genomes[member] = new_cluster_freq[cluster_id]
+    frequency_in_genomes.update(new_cluster_freq)
 
     print("Create graphs for the BLAST results...")
     cds_size_dicts = {'IDs': cds_size.keys(),
@@ -414,7 +401,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     print("\nReading schema loci short FASTA files...")
     # Create directory
-    results_output = os.path.join(output_directory, "4_Schema_processing")
+    results_output = os.path.join(output_directory, '4_Schema_processing')
     ff.create_directory(results_output)
 
     loci_ids = [True, False]
@@ -424,7 +411,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                   results_output,
                                                   reps_trans_dict_cds,
                                                   cds_to_keep,
-                                                  frequency_cds_cluster,
+                                                  frequency_in_genomes,
                                                   allelecall_directory, 
                                                   master_file_rep,
                                                   loci_ids,
