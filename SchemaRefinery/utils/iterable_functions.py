@@ -576,6 +576,28 @@ def find_index(input_list, target_string):
         return None
     
 def convert_to_type(value, target_type):
+    """
+    Attempts to convert a given value to a specified type.
+
+    This function tries to convert the input `value` to the `target_type`. If the conversion is successful, it returns the converted value. If the conversion fails due to a `ValueError` or `TypeError`, it returns the original value instead.
+
+    Parameters
+    ----------
+    value : Any
+        The value to be converted.
+    target_type : type
+        The type to which `value` should be converted. This should be a type like `int`, `float`, `str`, etc.
+
+    Returns
+    -------
+    return : Any
+        The converted value if the conversion is successful; otherwise, the original value.
+
+    Notes
+    -----
+    - This function is useful for safely attempting type conversions without the risk of raising exceptions.
+    - It can be used in situations where the type of input data is uncertain or varies.
+    """
     try:
         return target_type(value)
     except (ValueError, TypeError):

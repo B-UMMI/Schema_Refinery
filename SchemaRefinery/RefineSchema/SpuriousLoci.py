@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 try:
-    from utils import (core_functions as cof,)
+    from utils import (core_functions as cof)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof)
 
