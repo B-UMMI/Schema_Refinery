@@ -831,7 +831,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
     return processed_results, count_results_by_class, reps_and_alleles_ids, drop_mark
 
-def extract_results(processed_results, count_results_by_class, frequency_in_genomes, classes_outcome):
+def extract_results(processed_results, count_results_by_class, all_alleles, frequency_in_genomes, classes_outcome):
     """
     Extracts and organizes results from process_classes.
 
@@ -841,6 +841,8 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
         The processed results data.
     count_results_by_class : dict
         A dictionary with counts of results by class.
+    all_alleles : dict or None
+        Dictionary mapping loci/CDS IDs to their corresponding allele names.
     classes_outcome : list
         A list of class outcomes.
 
@@ -2220,7 +2222,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                                                         all_alleles)
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
 
-    all_relationships, related_clusters  = extract_results(processed_results, count_results_by_class, frequency_in_genomes, classes_outcome)
+    all_relationships, related_clusters  = extract_results(processed_results, count_results_by_class, all_alleles, frequency_in_genomes, classes_outcome)
 
     write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
 
@@ -2570,7 +2572,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
 
-    all_relationships, related_clusters = extract_results(processed_results, count_results_by_class, frequency_in_genomes, classes_outcome)
+    all_relationships, related_clusters = extract_results(processed_results, count_results_by_class, None, frequency_in_genomes, classes_outcome)
     
     write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
     
