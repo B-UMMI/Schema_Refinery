@@ -886,13 +886,12 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                                                                                                             + [str(frequency_in_genomes[str(results[3][1])])])
 
     for k, v in processed_results.items():
-        all_relationships.setdefault(v[0], []).append(v[1][0])
+        all_relationships.setdefault(v[0], []).append(v[1])
     
     return all_relationships, related_clusters
 
 def write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids,
-                                frequency_in_genomes,
-                                results_output):
+                                frequency_in_genomes, all_loci, results_output):
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -908,10 +907,19 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
     count_results_by_class : dict
         A dictionary where each key is a clusters identifiers separate by '|' and each value is another dictionary.
         The inner dictionary's keys are class identifiers, and values are counts of results for that class.
-    results_output : str
-        The path to the directory where the output files will be saved.
     reps_and_alleles_ids : dict
         A dictionary mapping pairs of query and subject sequences to their unique loci/CDS IDs and alleles IDs.
+    frequency_in_genomes : dict
+        A dictionary mapping sequence identifiers to their frequency in genomes.
+    all_loci : bool
+        A flag indicating whether to include all loci in the output.
+    results_output : str
+        The path to the directory where the output files will be saved.
+    
+    Returns
+    -------
+    None
+        This function does not return any value but writes the summary results to the specified files.
 
     Notes
     -----
@@ -922,9 +930,29 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
       A blank line is added after each cluster's information.
     """
     related_matches = os.path.join(results_output, "related_matches.tsv")
+    reported_cases = {}
+    for key, related in list(related_clusters.items()):
+        for r in list(related):
+            [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
+            if (query, subject) not in itf.flatten_list(reported_cases.values()):
+                reported_cases.setdefault(key, []).append((subject, query))
+            else:
+                index = itf.find_sublist_index([[itf.remove_by_regex(i, r"\*") for i in l[:2]] for l in related_clusters[key]], [subject, query])
+                insert = r[2] if not None else '-'
+                related_clusters[key][index].insert(4, insert)
+                insert = r[3] if not None else '-'
+                related_clusters[key][index].insert(5, insert)
+                related_clusters[key].remove(r)
+        for index, r in enumerate(related_clusters[key]):
+            if len(r) == 6 and all_loci:
+                insert = '-'
+                related_clusters[key][index].insert(4, insert)
+                related_clusters[key][index].insert(5, insert)
+
     with open(related_matches, 'w') as related_matches_file:
-        related_matches_file.write("Query\tSubject\tClass\tClass_count"
-                                   "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject\n")
+        related_matches_file.write("Query\tSubject\tClass\tClass_count" +
+                                    ("\tInverse_class\tInverse_class_count" if all_loci else "") +
+                                    "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject\n")
         for related in related_clusters.values():
             for r in related:
                 related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
@@ -1001,25 +1029,23 @@ def get_loci_matches(all_relationships, loci_ids, cds_to_keep, schema_loci_short
     - The function returns two dictionaries: one for general matches and one specifically for alleles,
     the latter being applicable only when `loci_ids` are provided.
     """
+    is_matched = {}
+    is_matched_alleles = None if not all(loci_ids) else {}
     if not all(loci_ids):
         relationships = itf.flatten_list(all_relationships.values())
-        is_matched = {}
-        is_matched_alleles = None
         for class_, entries in list(cds_to_keep.items()):
             for entry in list(entries):
                 if entry not in schema_loci_short:
+                    id_ = entry
                     if type(entry) == int:
-                        id_ = entry
                         entry = cds_joined_cluster[entry]
                     else:
-                        id_ = entry
                         entry = [entry]
                     is_matched.setdefault(id_, set([itf.remove_by_regex(i[0], '_(\d+)') for i in relationships if i[1] in entry]))
     else:
         relationships = itf.flatten_list(all_relationships.values())
         changed_ids = [[r[0], itf.remove_by_regex(r[1], '_(\d+)')] for r in relationships]
         had_matches = set([itf.remove_by_regex(rep, '_(\d+)') for rep in sorted_blast_dict])
-        is_matched = {}
         is_matched_alleles = {}
         for class_, entries in list(cds_to_keep.items()):
             for entry in list(entries):
@@ -1454,7 +1480,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     cds_name = f"retained_not_matched_by_blastn_{cds}"
                     file_path = os.path.join(cds_outcome_results, cds_name)
                     ff.copy_file(path, file_path)
-
+        write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes)
         master_file_rep = None
         reps_trans_dict_cds = None
     else:
@@ -1763,7 +1789,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
     structure of the input data and the requirements of the subsequent analysis steps.
     """
     def process_clusters(cds_to_keep, representative_blast_results, all_alleles, is_matched,
-                         is_matched_alleles, all_loci, add_group_column, output_path):
+                         is_matched_alleles, add_group_column, output_path):
         """
         Processes the results of cluster analysis, specifically focusing on the classification and
         matching of Coding Sequences (CDS) or loci. It iterates through each class of CDS, excluding
@@ -1787,8 +1813,6 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             A dictionary indicating which CDS/loci have been matched, organized by their identifiers.
         is_matched_alleles : dict
             A dictionary detailing the alleles associated with matched CDS/loci.
-        all_loci : bool
-            A flag that indicates if only loci are present.
         add_group_column : bool
             A flag indicating whether an additional column for group names should be included in the report.
         output_path : str
@@ -1817,7 +1841,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
                 id_, cluster, cluster_type, is_cds = process_cluster(class_, id_,
                                                                     cluster,
                                                                     all_alleles,
-                                                                    cds,)
+                                                                    cds)
                 # Generate a dictionary to be written to the file
                 write_dict = generate_write_dict(id_, cluster, is_cds, is_matched, is_matched_alleles,
                                                  representative_blast_results)
@@ -1845,8 +1869,6 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         cds : dict or str
             Information about the CDS; if it's a single CDS, it contains a string, if it's a joined cluster,
             it contains a dictionary.
-        all_loci : bool
-            A flag indicating if only loci are present.
 
         Returns
         -------
@@ -1961,7 +1983,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             write_dict = {query : {subject: {id_: entry for id_, entry in entries.items()}
                                 for subject, entries in subjects.items() if subject in cluster}
                         for query, subjects in representative_blast_results.items()
-                        if query in queries}
+                        if itf.remove_by_regex(query, '_(\d+)') in queries}
         # For all other normal cases.
         else:
             # Generate the dictionary to be written
@@ -2028,7 +2050,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
     add_group_column = True if not all_loci and all_alleles else False
     # Process and write cluster results
     process_clusters(cds_to_keep, representative_blast_results, all_alleles,
-                    is_matched, is_matched_alleles, all_loci, add_group_column, blast_by_cluster_output)
+                    is_matched, is_matched_alleles, add_group_column, blast_by_cluster_output)
 
     # Process and write class results
     process_classes(classes_outcome, representative_blast_results, blast_results_by_class_output,
@@ -2071,7 +2093,7 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
     based on the provided outcomes.
     - Special handling is given to class '1a', where CDS pairs are clustered and indexed.
     - CDS marked in `drop_mark` and falling under certain classes are added to `drop_set` for exclusion.
-    - The function uses utility functions like `itf.convert_to_type` for type conversion and
+    - The function uses utility functions like `itf.try_convert_to_type` for type conversion and
     `cf.cluster_by_ids` for clustering CDS pairs in class '1a'.
     """
     temp_keep = {}
@@ -2081,7 +2103,7 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
         cds_to_keep[class_] = []
     for ids, result in count_results_by_class.items():
         class_ = next(iter(result))
-        [query, subject] = ids.split('|')
+        [query, subject] = list(map(lambda x: itf.try_convert_to_type(x, int), ids.split('|')))
         if class_ == '1a':
             cds_to_keep.setdefault('1a', []).append([query, subject])
         if not temp_keep.get(query):
@@ -2097,7 +2119,7 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
         if class_ == '1a':
             continue
         if keep in drop_mark and class_ in ['1b', '2a', '3a']:
-            drop_set.add(itf.convert_to_type(keep, int))
+            drop_set.add(itf.try_convert_to_type(keep, int))
         else:
             cds_to_keep.setdefault(class_, []).append(keep)
 
@@ -2271,9 +2293,17 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                                                         all_alleles)
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
 
-    all_relationships, related_clusters  = extract_results(processed_results, count_results_by_class, all_alleles, frequency_in_genomes, classes_outcome)
+    all_relationships, related_clusters  = extract_results(processed_results,
+                                                           count_results_by_class,
+                                                           frequency_in_genomes,
+                                                           classes_outcome)
 
-    write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
+    write_blast_summary_results(related_clusters,
+                                count_results_by_class,
+                                reps_and_alleles_ids,
+                                frequency_in_genomes,
+                                all(loci_ids),
+                                results_output)
 
     # Get all of the CDS that matched with loci
     [is_matched, is_matched_alleles] = get_loci_matches(all_relationships,
@@ -2622,7 +2652,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
 
-    all_relationships, related_clusters = extract_results(processed_results, count_results_by_class, None, frequency_in_genomes, classes_outcome)
+    all_relationships, related_clusters = extract_results(processed_results, count_results_by_class, frequency_in_genomes, classes_outcome)
     
     write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
     
