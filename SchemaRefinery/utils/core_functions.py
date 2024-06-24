@@ -882,8 +882,8 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                                                                                                             [str(count_results_by_class[f"{results[3][0]}|{results[3][1]}"][results[0]])
                                                                                                             + '/'
                                                                                                             + str(sum(count_results_by_class[f"{results[3][0]}|{results[3][1]}"].values()))]
-                                                                                                            + [str(frequency_in_genomes[str(results[3][0])])]
-                                                                                                            + [str(frequency_in_genomes[str(results[3][1])])])
+                                                                                                            + [str(frequency_in_genomes[results[3][0]])]
+                                                                                                            + [str(frequency_in_genomes[results[3][1]])])
 
     for k, v in processed_results.items():
         all_relationships.setdefault(v[0], []).append(v[1])
@@ -967,8 +967,8 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
         for id_, classes in count_results_by_class.items():
             count_results_by_cluster_file.write('\t'.join(id_.split('|')))
             total_count = sum(classes.values())
-            query = id_.split('|')[0]
-            subject = id_.split('|')[1]
+            query = itf.try_convert_to_type(id_.split('|')[0], int)
+            subject = itf.try_convert_to_type(id_.split('|')[1], int)
             for i, items in enumerate(classes.items()):
                 if i == 0:
                     count_results_by_cluster_file.write(f"\t{items[0]}\t{items[1]}\{total_count}"
@@ -1255,8 +1255,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             cds_group_fasta_file = os.path.join(cds_outcome_results_fastas_folder, class_name_cds + '.fasta')    
             cds_group_reps_file = os.path.join(cds_outcome_results_reps_fastas_folder, class_name_cds + '.fasta')
             master_file_rep = os.path.join(fasta_folder, 'master_rep_file.fasta')
-            groups_paths[str(cds)] = cds_group_fasta_file
-            groups_paths_reps[str(cds)] = cds_group_reps_file
+            groups_paths[cds] = cds_group_fasta_file
+            groups_paths_reps[cds] = cds_group_reps_file
             if type(cds) == str:
                 cds = [cds]
             else:
@@ -1364,7 +1364,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                         cluster_members_file.write(cds)
                         cds = [cds]
                     for rep_id in cds:
-                        cluster_members_file.write('\t' + rep_id)
+                        cluster_members_file.write('\t' + str(rep_id))
                         cds_ids = [cds_id for cds_id in clusters[rep_id]]
                         for count, cds_id in enumerate(cds_ids):
                             if count == 0:
@@ -1480,7 +1480,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     cds_name = f"retained_not_matched_by_blastn_{cds}"
                     file_path = os.path.join(cds_outcome_results, cds_name)
                     ff.copy_file(path, file_path)
-        write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes)
         master_file_rep = None
         reps_trans_dict_cds = None
     else:
@@ -2654,7 +2653,12 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     all_relationships, related_clusters = extract_results(processed_results, count_results_by_class, frequency_in_genomes, classes_outcome)
     
-    write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids, frequency_in_genomes, results_output)
+    write_blast_summary_results(related_clusters,
+                                count_results_by_class,
+                                reps_and_alleles_ids,
+                                frequency_in_genomes,
+                                False,
+                                results_output)
     
     print("\nAdd remaining cluster that didn't match by BLASTn...")
     # Add cluster not matched by BLASTn
@@ -2687,7 +2691,6 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Add new frequencies in genomes for joined groups
     new_cluster_freq = {}
     for cluster_id, cluster_members in cds_to_keep['1a'].items():
-        cluster_id = str(cluster_id)
         new_cluster_freq[cluster_id] = 0
         for member in cluster_members:
             new_cluster_freq[(cluster_id)] += frequency_in_genomes[member]
