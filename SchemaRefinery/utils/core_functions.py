@@ -758,11 +758,11 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                 replaced_query = itf.identify_string_in_dict(query, all_alleles)
                 if replaced_query:
                     new_query = replaced_query
-                    strings[0] = new_query if type(new_query) == str else f"{query}({new_query})"
+                    strings[0] = new_query if isinstance(new_query, str) else f"{query}({new_query})"
                 replaced_id_subject = itf.identify_string_in_dict(id_subject, all_alleles)
                 if replaced_id_subject:
                     new_id_subject = replaced_id_subject
-                    strings[1] = new_id_subject if type(new_id_subject) == str else f"{id_subject}({new_id_subject})"
+                    strings[1] = new_id_subject if isinstance(new_id_subject, str) else f"{id_subject}({new_id_subject})"
 
                 current_allele_class_index = classes_outcome.index(class_)
                 # Check if the current loci were already processed
@@ -831,7 +831,8 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
 
     return processed_results, count_results_by_class, reps_and_alleles_ids, drop_mark
 
-def extract_results(processed_results, count_results_by_class, frequency_in_genomes, classes_outcome):
+def extract_results(processed_results, count_results_by_class, frequency_in_genomes,
+                    cds_to_keep, drop_set, classes_outcome):
     """
     Extracts and organizes results from process_classes.
 
@@ -862,11 +863,14 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
     """
     all_relationships = {}
     related_clusters = {}
-
+    recomendations = {}
+    processed_cases = []
     for class_ in classes_outcome:
         all_relationships[class_] = []
 
     to_cluster_list = {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([v[3] for v in processed_results.values() if v[0] not in ['4c','5']]), 1)}
+
+    choice = {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([v[3] for v in processed_results.values() if v[0] in ['1c', '2b', '3b', '4b']]), 1)}
     related_clusters = {}
     for results in processed_results.values():
         if results[0] not in ['4c','5']:
@@ -875,23 +879,94 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
 
             subject_id = results[3][1]
             subject_present = itf.identify_string_in_dict(subject_id, to_cluster_list)
-
+            
+            key = query_present if query_present else subject_present
             if query_present or subject_present:
-                related_clusters.setdefault(query_present if query_present else subject_present, []).append(results[4] 
+                related_clusters.setdefault(key, []).append(results[4] 
                                                                                                             + 
                                                                                                             [str(count_results_by_class[f"{results[3][0]}|{results[3][1]}"][results[0]])
                                                                                                             + '/'
                                                                                                             + str(sum(count_results_by_class[f"{results[3][0]}|{results[3][1]}"].values()))]
                                                                                                             + [str(frequency_in_genomes[results[3][0]])]
                                                                                                             + [str(frequency_in_genomes[results[3][1]])])
+            recomendations.setdefault(key, {})
+            # Add recomendations for user.
+            # Get the IDs of joined cluster.
+            joined_query_id = itf.identify_string_in_dict(query_id, cds_to_keep['1a'])
+            joined_subject_id = itf.identify_string_in_dict(subject_id, cds_to_keep['1a'])
+
+            if_same_joined = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
+
+            if_joined_query = query_id in itf.flatten_list([v for k, v in recomendations[key].items() if 'Joined' in k])
+            if_joined_subject = subject_id in itf.flatten_list([v for k, v in recomendations[key].items() if 'Joined' in k])
+
+            if_query_in_choice = (joined_query_id or query_id) in itf.flatten_list([v for k, v in recomendations[key].items() if 'Choice' in k])
+            if_subject_in_choice = (joined_subject_id or subject_id) in itf.flatten_list([v for k, v in recomendations[key].items() if 'Choice' in k])
+
+            if_query_in_keep = (joined_query_id or query_id) in itf.flatten_list([v for k, v in recomendations[key].items() if 'Keep' in k])
+            if_subject_in_keep = (joined_subject_id or subject_id) in itf.flatten_list([v for k, v in recomendations[key].items() if 'Keep' in k])
+
+            if_query_dropped = (joined_query_id or query_id) in drop_set
+            if_subject_dropped = (joined_subject_id or subject_id) in drop_set
+
+            # If the class is 1a and the pair was not processed yet.
+            if results[0] == '1a' and [query_id, subject_id] not in processed_cases:
+                # Add the inverse pair to the processed cases.
+                processed_cases.append([subject_id, query_id])
+                if isinstance(joined_query_id, int) and 'Joined_' + str(joined_query_id) not in recomendations[key]:
+                    recomendations[key].setdefault('Joined_' + str(joined_query_id), set()).update(cds_to_keep['1a'][joined_query_id])
+                elif isinstance(joined_subject_id, int) and 'Joined_' +  str(joined_subject_id) not in recomendations[key]:
+                    recomendations[key].setdefault('Joined_' + str(joined_subject_id), set()).update(cds_to_keep['1a'][joined_subject_id])
+
+                else:
+                    continue
+            # If the class is 1c, 2b, 3b, 4b and the pair was not processed yet.
+            elif results[0] in ['1c', '2b', '3b', '4b'] and [query_id, subject_id] not in processed_cases:
+                # Add the inverse pair to the processed cases.
+                processed_cases.append([subject_id, query_id])
+                # If query was considered as kept, however, it is moved to choice.
+                if if_query_in_keep:
+                    recomendations[key]['Keep'].remove((joined_query_id or query_id))
+                    if len(recomendations[key]['Keep']) == 0:
+                        recomendations[key].pop('Keep')
+                # If subject was considered as kept, however, it is moved to choice.
+                if if_subject_in_keep:
+                    recomendations[key]['Keep'].remove((joined_subject_id or subject_id))
+                    if len(recomendations[key]['Keep']) == 0:
+                        recomendations[key].pop('Keep')
+                # Find the ID of the choice joined CDSs.
+                choice_query_id = itf.identify_string_in_dict(query_id, choice)
+                choice_subject_id = itf.identify_string_in_dict(subject_id, choice)
+                # If the IDs were not dropped.
+                if not if_query_dropped and not if_subject_dropped and not if_same_joined:
+                    recomendations[key].setdefault('Choice_' + str(choice_query_id), set()).update([joined_query_id or query_id])
+                    recomendations[key].setdefault('Choice_' + str(choice_subject_id), set()).update([joined_subject_id or subject_id])
+            # If the class is 1b, 2a, 3a, 4a.
+            elif results[0] in ['1b', '2a', '3a', '4a'] and [query_id, subject_id] not in processed_cases:
+                processed_cases.append([subject_id, query_id])
+                # If the query was dropped.
+                if query_id in drop_set:
+                    if not if_joined_subject and not if_subject_in_choice:
+                        recomendations[key].setdefault('Keep', set()).add((joined_subject_id or subject_id))
+                    if not if_joined_query and not if_query_in_choice:
+                        recomendations[key].setdefault('Drop', set()).add((joined_query_id or query_id))
+                # If the subject was dropped.
+                elif subject_id in drop_set:
+                    if not if_joined_query and not if_query_in_choice:
+                        recomendations[key].setdefault('Keep', set()).add((joined_query_id or query_id))
+                    if not if_joined_subject and not if_subject_in_choice:
+                        recomendations[key].setdefault('Drop', set()).add((joined_subject_id or subject_id))
 
     for k, v in processed_results.items():
         all_relationships.setdefault(v[0], []).append(v[1])
+
+    sort_order = ['Joined', 'Choice', 'Keep', 'Drop']
+    recomendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recomendations.items()}
     
-    return all_relationships, related_clusters
+    return all_relationships, related_clusters, recomendations
 
 def write_blast_summary_results(related_clusters, count_results_by_class, reps_and_alleles_ids,
-                                frequency_in_genomes, all_loci, results_output):
+                                frequency_in_genomes, recomendations, all_loci, results_output):
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -931,18 +1006,24 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
     """
     related_matches = os.path.join(results_output, "related_matches.tsv")
     reported_cases = {}
-    for key, related in list(related_clusters.items()):
-        for r in list(related):
+    for index, (key, related) in enumerate(list(related_clusters.items()), 1):
+        for index, r in enumerate(list(related)):
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
             if (query, subject) not in itf.flatten_list(reported_cases.values()):
                 reported_cases.setdefault(key, []).append((subject, query))
             else:
-                index = itf.find_sublist_index([[itf.remove_by_regex(i, r"\*") for i in l[:2]] for l in related_clusters[key]], [subject, query])
+                sublist_index = itf.find_sublist_index([[itf.remove_by_regex(i, r"\*") for i in l[:2]] for l in related_clusters[key]], [subject, query])
                 insert = r[2] if not None else '-'
-                related_clusters[key][index].insert(4, insert)
+                related_clusters[key][sublist_index].insert(4, insert)
                 insert = r[3] if not None else '-'
-                related_clusters[key][index].insert(5, insert)
+                related_clusters[key][sublist_index].insert(5, insert)
                 related_clusters[key].remove(r)
+            if index <= (len(recomendations[key])) - 1:
+                if index <= len(related_clusters[key]) - 1:
+                    related_clusters[key][index] += ([itf.flatten_list([[k] + [i for i in v]]) for k , v in recomendations[key].items()][index])
+                else:
+                    related_clusters[key].append(['', '', '', '', '', '', '', ''])
+
         for index, r in enumerate(related_clusters[key]):
             if len(r) == 6 and all_loci:
                 insert = '-'
@@ -1037,7 +1118,7 @@ def get_loci_matches(all_relationships, loci_ids, cds_to_keep, schema_loci_short
             for entry in list(entries):
                 if entry not in schema_loci_short:
                     id_ = entry
-                    if type(entry) == int:
+                    if isinstance(entry, int):
                         entry = cds_joined_cluster[entry]
                     else:
                         entry = [entry]
@@ -1049,7 +1130,7 @@ def get_loci_matches(all_relationships, loci_ids, cds_to_keep, schema_loci_short
         is_matched_alleles = {}
         for class_, entries in list(cds_to_keep.items()):
             for entry in list(entries):
-                if entry not in had_matches and type(entry) != int:
+                if entry not in had_matches and not isinstance(entry, int):
                     id_ = entry
                     entry = [entry]
                     is_matched.setdefault(id_, set([i[0] for i in changed_ids if i[1] in entry]))
@@ -1257,7 +1338,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             master_file_rep = os.path.join(fasta_folder, 'master_rep_file.fasta')
             groups_paths[cds] = cds_group_fasta_file
             groups_paths_reps[cds] = cds_group_reps_file
-            if type(cds) == str:
+            if isinstance(cds,str):
                 cds = [cds]
             else:
                 cds = cds_to_keep[class_][cds]
@@ -1619,7 +1700,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
         if multi_fasta:
             filename = itf.identify_string_in_dict(query_id, multi_fasta)
             if filename:
-                if type(filename) == int:
+                if isinstance(filename, int):
                     filename = 'joined' + str(filename)
                 blasts_to_run.setdefault(filename, set()).update(subjects_ids)
                 seen_entries[filename] = set()
@@ -1904,8 +1985,8 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
             is_cds = False
             cluster_alleles = []
             for entry in cluster:
-                if entry not in all_alleles or type(entry) == int:
-                    if type(entry) == int:
+                if entry not in all_alleles or isinstance(entry, int):
+                    if isinstance(entry, int):
                         cluster = all_alleles[entry]
                     cluster_type = 'CDS_cluster'
                     is_cds = True
@@ -1964,7 +2045,7 @@ def write_processed_results_to_file(cds_to_keep, representative_blast_results,
         # Check if it's a CDS and if it matches loci
         if is_cds and is_matched:
             queries = []
-            if type(id_) == int:
+            if isinstance(id_, int):
                 queries = is_matched[id_]
             else:
                 for c in cluster:
@@ -2292,15 +2373,18 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                                                         all_alleles)
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
 
-    all_relationships, related_clusters  = extract_results(processed_results,
-                                                           count_results_by_class,
+    all_relationships, related_clusters, recomendations  = extract_results(processed_results,
+                                                            count_results_by_class,
                                                            frequency_in_genomes,
+                                                           cds_to_keep,
+                                                           drop_set,
                                                            classes_outcome)
 
     write_blast_summary_results(related_clusters,
                                 count_results_by_class,
                                 reps_and_alleles_ids,
                                 frequency_in_genomes,
+                                recomendations,
                                 all(loci_ids),
                                 results_output)
 
@@ -2657,6 +2741,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                 count_results_by_class,
                                 reps_and_alleles_ids,
                                 frequency_in_genomes,
+                                cds_to_keep,
                                 False,
                                 results_output)
     
