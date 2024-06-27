@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import re
 import itertools
 import pickle
@@ -623,3 +624,65 @@ def try_convert_to_type(value, target_type):
         return target_type(value)
     except (ValueError, TypeError):
         return value
+    
+def repeat_strings_in_a_list(string, times):
+    """
+    Creates a list where a given character is repeated a specified number of times.
+
+    Parameters
+    ----------
+    string : str
+        The character to be repeated.
+    times : int
+        The number of times the character should be repeated.
+
+    Returns
+    -------
+    list of str
+        A list containing the character repeated 'times' times.
+
+    Examples
+    --------
+    >>> repeat_strings_in_a_list('a', 3)
+    ['a', 'a', 'a']
+    """
+    return [string for i in range(times)]
+
+def sort_subdict_by_tuple(dict, order):
+    """
+    Sorts the sub-dictionaries of a given dictionary based on a specified order tuple.
+
+    Parameters
+    ----------
+    dict : dict
+        The input dictionary containing sub-dictionaries as values.
+    order : tuple
+        A tuple specifying the desired order of keys in the sorted sub-dictionaries.
+
+    Returns
+    -------
+    sorted_data : dict
+        A new dictionary with each sub-dictionary sorted according to the specified order.
+
+    Notes
+    -----
+    -This function iterates through each key-value pair in the input dictionary. Each value, 
+    which should be a dictionary itself (sub-dictionary), is sorted based on the order of keys 
+    specified in the 'order' tuple. If a key in the sub-dictionary does not exist in the 'order' tuple, 
+    it is placed at the end of the sorted sub-dictionary. The sorting is stable, meaning that 
+    the original order of keys (for those not in the 'order' tuple) is preserved.
+
+    Examples
+    --------
+    >>> data = {'cds1|cds2': {'1a': 30, '3b': 40}, 'cds3|cds4': {'3b': 20, '1a': 30}}
+    >>> order = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
+    >>> sorted_data = sort_subdict_by_tuple(data, order)
+    >>> sorted_data
+    {'cds1|cds2': OrderedDict([('1a', 30), ('3b', 40)]), 'cds3|cds4': OrderedDict([('1a', 30), ('3b', 20)])}
+    """
+    sorted_data = {}
+    for key, subdict in dict.items():
+        # Sorting the sub-dictionary by the index of its keys in the order tuple
+        sorted_subdict = OrderedDict(sorted(subdict.items(), key=lambda item: order.index(item[0]) if item[0] in order else len(order)))
+        sorted_data[key] = sorted_subdict
+    return sorted_data
