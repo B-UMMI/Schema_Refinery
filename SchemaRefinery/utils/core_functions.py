@@ -930,8 +930,7 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
         if_joined_subject = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
         if_query_in_choice = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
         if_subject_in_choice = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
-        if_query_in_keep = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Keep'])
-        if_subject_in_keep = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Keep'])
+    
         if_query_dropped = (joined_query_id or query_id) in drop_set
         if_subject_dropped = (joined_subject_id or subject_id) in drop_set
 
@@ -941,7 +940,7 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
         # What IDs to addto the Keep, Drop and Choice.
         query_to_write = format_id(joined_query_id or query_id, query_cds_joined_id, run_normal)
         subject_to_write = format_id(joined_subject_id or subject_id, subject_cds_joined_id, run_normal)
-        #TODO teste this code
+        
         query_to_write = query_to_write if not isinstance(joined_query_id, int) else f"Joined_{query_to_write}"
         subject_to_write = subject_to_write if not isinstance(joined_subject_id, int) else f"Joined_{subject_to_write}"
 
@@ -959,14 +958,6 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                     add_to_recommendations('Joined', joined_subject_to_write, joined_subject_id)
 
             elif results[0] in ['1c', '2b', '3b', '4b']:
-                if if_query_in_keep:
-                    recommendations[key]['Keep'].remove(query_to_write)
-                    if len(recommendations[key]['Keep']) == 0:
-                        recommendations[key].pop('Keep')
-                if if_subject_in_keep:
-                    recommendations[key]['Keep'].remove(subject_to_write)
-                    if len(recommendations[key]['Keep']) == 0:
-                        recommendations[key].pop('Keep')
                 if not if_query_dropped and not if_subject_dropped and not if_same_joined:
                     add_to_recommendations('Choice', query_to_write, choice_query_id)
                     add_to_recommendations('Choice', subject_to_write, choice_subject_id)
@@ -976,13 +967,9 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                     add_to_recommendations('Choice', query_to_write, choice_query_id)
                     add_to_recommendations('Choice', subject_to_write, choice_subject_id)
                 if query_id in drop_set:
-                    if not if_joined_subject and not if_subject_in_choice:
-                        add_to_recommendations('Keep', subject_to_write)
                     if not if_joined_query and not if_query_in_choice:
                         add_to_recommendations('Drop', query_to_write)
                 elif subject_id in drop_set:
-                    if not if_joined_query and not if_query_in_choice:
-                        add_to_recommendations('Keep', query_to_write)
                     if not if_joined_subject and not if_subject_in_choice:
                         add_to_recommendations('Drop', subject_to_write)
 
@@ -1052,15 +1039,8 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
                 related.remove(r)
         
         for index, i in enumerate(recommendations[key]):
-            if index <= (len(related_clusters[key]) - 1):
-                related_clusters[key][index] += ([itf.flatten_list([[k] + [i for i in v]]) for k , v in recommendations[key].items()][index])
-            else:
-                related.append(itf.repeat_strings_in_a_list('', 8)
-                               if reverse_matches
-                               else itf.repeat_strings_in_a_list('', 6)
-                               +
-                               ([itf.flatten_list([[k] + [i for i in v]])
-                                 for k , v in recommendations[key].items()][index]))
+            related_clusters[key][index] += ([itf.flatten_list([[k] + [i for i in v]]) for k , v in recommendations[key].items()][index])
+
 
     with open(related_matches, 'w') as related_matches_file:
         related_matches_file.write("Query\tSubject\tClass\tClass_count" +
@@ -1070,7 +1050,7 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
             for r in related:
                 related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
 
-            related_matches_file.write('\n')
+            related_matches_file.write('#\n')
 
     count_results_by_cluster = os.path.join(results_output, "count_results_by_cluster.tsv")
     with open(count_results_by_cluster, 'w') as count_results_by_cluster_file:
