@@ -501,6 +501,39 @@ def remove_by_regex(string, pattern):
     """
     return re.sub(pattern, '', string)
 
+def replace_by_regex(string, pattern, replacement):
+    """
+    Replace all occurrences of a regex pattern within a string with a specified replacement.
+
+    This function uses the `re.sub()` method from Python's built-in `re` (regular expressions) module to find all
+    occurrences of `pattern` in `string` and replace them with `replacement`. The function returns a new string
+    with the modifications applied.
+
+    Parameters
+    ----------
+    string : str
+        The string to search and replace occurrences in.
+    pattern : str
+        The regex pattern to search for within `string`. This pattern can match characters, numbers, symbols,
+        or more complex regex features.
+    replacement : str
+        The string to replace each match of `pattern` in `string` with.
+
+    Returns
+    -------
+    str
+        A new string with all matches of `pattern` replaced by `replacement`.
+
+    Examples
+    --------
+    >>> text = "Hello 123, meet 456."
+    >>> pattern = r"\d+"
+    >>> replacement = "number"
+    >>> replace_by_regex(text, pattern, replacement)
+    'Hello number, meet number.'
+    """
+    return re.sub(pattern, replacement, string)
+
 def regex_present(regex_list, string):
     """
     Check if any regex in a list is found in a string.
