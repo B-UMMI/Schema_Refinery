@@ -23,6 +23,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                        output_directory,
                        None,
                        None,
+                       None,
                        frequency_in_genomes,
                        allelecall_directory,
                        None,
