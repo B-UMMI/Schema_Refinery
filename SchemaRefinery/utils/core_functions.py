@@ -1167,17 +1167,20 @@ def write_blast_summary_results(related_clusters, count_results_by_class, reps_a
 
             for i, items in enumerate(classes.items()):
                 if i == 0:
-                    count_results_by_cluster_file.write(f"\t{items[0]}\t{items[1][0]}/{total_count_origin}"
-                                                        f"\t{items[1][1]}/{total_count_inverse}" if not reverse_matches else ""
-                                                        f"\t{len(reps_and_alleles_ids[id_][0])}" if not reverse_matches else ""
-                                                        f"|{len(reps_and_alleles_ids[inverse_id][0]) if reps_and_alleles_ids.get(inverse_id) else 0}" if not reverse_matches else ""
-                                                        f"|{len(reps_and_alleles_ids[inverse_id][1]) if reps_and_alleles_ids.get(inverse_id) else 0}" if not reverse_matches else ""
-                                                        f"\t{frequency_in_genomes[query]}"
-                                                        f"\t{frequency_in_genomes[subject]}\n")
+                    count_results_by_cluster_file.write('\t'.join([f"\t{items[0]}",
+                                                        f"{items[1][0]}/{total_count_origin}",
+                                                        f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
+                                                        (f"{len(reps_and_alleles_ids[id_][0])}") + 
+                                                        (f"|{len(reps_and_alleles_ids[inverse_id][0]) if reps_and_alleles_ids.get(inverse_id) else 0}" if reverse_matches else "|-"),
+                                                        (f"{len(reps_and_alleles_ids[id_][1])}") +
+                                                        (f"|{len(reps_and_alleles_ids[inverse_id][1]) if reps_and_alleles_ids.get(inverse_id) else 0}" if reverse_matches else "|-"),
+                                                        f"{frequency_in_genomes[query]}",
+                                                        f"{frequency_in_genomes[subject]}\n"]))
                 else:
-                    count_results_by_cluster_file.write(f"\t\t{items[0]}\t{items[1][0]}/{total_count_origin}"
-                                                        f"\t{items[1][1]}/{total_count_inverse}" if reverse_matches else ""
-                                                        "\n")
+                    count_results_by_cluster_file.write('\t'.join([f"\t\t{items[0]}",
+                                                        f"{items[1][0]}/{total_count_origin}",
+                                                        f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
+                                                        "\n"]))
             count_results_by_cluster_file.write('\n')
 
 def get_loci_matches(all_relationships, if_only_loci, cds_to_keep, schema_loci_short, cds_joined_cluster,
@@ -1459,7 +1462,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             master_file_rep = os.path.join(fasta_folder, 'master_rep_file.fasta')
             groups_paths[main_rep] = cds_group_fasta_file
             groups_paths_reps[main_rep] = cds_group_reps_file
-            if isinstance(cds,str):
+            if class_ != '1a':
                 cds = [cds]
             else:
                 cds = cds_to_keep[class_][cds]
@@ -2384,13 +2387,11 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Get all of the schema loci short FASTA files path.
     schema_short_path = os.path.join(schema, 'short')
     schema_loci_short = {loci_path.replace("_short.fasta", ""): os.path.join(schema_short_path, loci_path) 
-                         for loci_path in os.listdir(schema_short_path) 
-                         if loci_path.endswith('.fasta')}
+                         for loci_path in ff.get_paths_in_directory_with_suffix(schema_short_path, '_short.fasta')}
     
     # Get all of the schema loci FASTA files path.
     schema_loci = {loci_path.replace(".fasta", ""): os.path.join(schema, loci_path) 
-                         for loci_path in os.listdir(schema) 
-                         if loci_path.endswith('.fasta')}
+                         for loci_path in ff.get_paths_in_directory_with_suffix(schema, '.fasta')}
 
     # Create a folder for short translations.
     blastp_output =  os.path.join(blast_results, '2_BLASTp_processing')
@@ -2614,7 +2615,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # specific CDS cluster is present to 5 if not to 1% of the dataset size.
     if not constants[2]:
         count_genomes_path = os.path.join(temp_folder, '1_cds_prediction')
-        number_of_genomes = len(os.listdir(count_genomes_path))
+        number_of_genomes = len(ff.get_paths_in_directory_with_suffix(count_genomes_path, '.fasta'))
         if number_of_genomes <= 20:
             constants[2] = 5
         else:
@@ -2875,7 +2876,10 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
 
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
-    
+    # Based on results remove the problematic CDSs cluster that appear more than one time in the same
+    # genome and filter all of the variables.
+    removed_clusters_list = remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_results_by_class_with_inverse,
+                                                            reps_and_alleles_ids, drop_mark, if_cds, proportion)
     cds_to_keep['1a'] = {values[0]: values for key, values in cds_to_keep['1a'].items()}
 
     all_relationships, related_clusters, recommendations = extract_results(processed_results,
