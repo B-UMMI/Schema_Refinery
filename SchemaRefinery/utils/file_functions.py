@@ -78,43 +78,108 @@ def import_df_from_file(file_path, sep):
 
     return df
 
-def get_paths_in_directory(directory):
+def get_paths_in_directory(directory, type_):
     """
-    Get all paths of files in the specified directory.
+    Get all paths of items in the specified directory filtered by type.
     
+    This function lists all items (files, directories, or both) in the given directory
+    and returns their full paths. The items to be listed can be filtered by specifying
+    a type: 'files' for files only, 'directories' for directories only, or 'all' for both.
+
     Parameters
     ----------
     directory : str
-        Path to the directory.
-        
+        The path to the directory from which to retrieve item paths.
+    type_ : str
+        The type of items to include in the output list. Valid options are:
+        - 'files': Include only files.
+        - 'directories': Include only directories.
+        - 'all': Include both files and directories.
+
     Returns
     -------
-    file_paths_dict : list
-        List that contains all of the file paths as values.
+    list
+        A list containing the full paths of the items in the directory, filtered by the specified type.
+
+    Raises
+    ------
+    ValueError
+        If the `type_` parameter is not one of the valid options ('files', 'directories', 'all').
+
+    Examples
+    --------
+    >>> get_paths_in_directory('/path/to/directory', 'files')
+    ['/path/to/directory/file1.txt', '/path/to/directory/file2.jpg']
+
+    >>> get_paths_in_directory('/path/to/directory', 'directories')
+    ['/path/to/directory/subdir1', '/path/to/directory/subdir2']
+
+    >>> get_paths_in_directory('/path/to/directory', 'all')
+    ['/path/to/directory/file1.txt', '/path/to/directory/subdir1']
     """
+    if type_ == 'files':
+        if_type = os.path.isfile
+    elif type_ == 'directories':
+        if_type = os.path.isdir
+    elif type_ == 'all':
+        if_type = os.path.exists
+    else:
+        raise ValueError(f"Invalid type: {type_}")
     # List all files and directories in the specified directory
     all_items = os.listdir(directory)
     
     # Filter out only the paths of files (not directories)
-    file_paths = [os.path.join(directory, item) for item in all_items if os.path.isfile(os.path.join(directory, item))]
+    file_paths = [os.path.join(directory, item) for item in all_items if if_type(os.path.join(directory, item))]
     
     return file_paths
 
-def get_file_paths_dict(directory):
+def get_paths_dict(directory, type_):
     """
-    Get a dictionary where keys are filenames and values are file paths within the directory.
-    
+    Get a dictionary where keys are filenames and values are file paths within the directory,
+    filtered by the specified type: files, directories, or all items.
+
     Parameters
     ----------
     directory : str
-        Path to the directory.
-        
+        The path to the directory from which to retrieve file paths.
+    type_ : str
+        The type of items to include in the output dictionary. Valid options are:
+        - 'files': Include only files.
+        - 'directories': Include only directories.
+        - 'all': Include both files and directories.
+
     Returns
     -------
-    file_paths_dict : dict
-        Dict that contains all of the filenames as keys and file paths as values.
+    dict
+        A dictionary with filenames as keys and their full paths as values. The contents
+        are filtered based on the `type_` parameter.
+
+    Raises
+    ------
+    ValueError
+        If the `type_` parameter is not one of the valid options ('files', 'directories', 'all').
+
+    Examples
+    --------
+    >>> get_paths_dict('/path/to/directory', 'files')
+    {'file1.txt': '/path/to/directory/file1.txt', 'file2.txt': '/path/to/directory/file2.txt'}
+
+    >>> get_paths_dict('/path/to/directory', 'directories')
+    {'subdir1': '/path/to/directory/subdir1', 'subdir2': '/path/to/directory/subdir2'}
+
+    >>> get_paths_dict('/path/to/directory', 'all')
+    {'file1.txt': '/path/to/directory/file1.txt', 'subdir1': '/path/to/directory/subdir1'}
     """
-    file_paths_dict = {}
+
+    if type_ == 'files':
+        if_type = os.path.isfile
+    elif type_ == 'directories':
+        if_type = os.path.isdir
+    elif type_ == 'all':
+        if_type = os.path.exists
+    else:
+        raise ValueError(f"Invalid type: {type_}")
+    paths_dict = {}
     
     # List all files and directories in the specified directory
     all_items = os.listdir(directory)
@@ -124,11 +189,35 @@ def get_file_paths_dict(directory):
         # Construct the file path
         file_path = os.path.join(directory, filename)
         # Check if it's a file (not a directory)
-        if os.path.isfile(file_path):
+        if if_type(file_path):
             # Add to the dictionary
-            file_paths_dict[filename] = file_path
+            paths_dict[filename] = file_path
     
-    return file_paths_dict
+    return paths_dict
+
+def get_paths_in_directory_with_suffix(directory, suffix):
+    """
+    Get all paths of files in the specified directory that end with a given suffix.
+    
+    Parameters
+    ----------
+    directory : str
+        Path to the directory.
+    suffix : str
+        The suffix that the files must end with.
+        
+    Returns
+    -------
+    file_paths : list
+        List that contains all of the file paths with the specified suffix.
+    """
+    # List all files and directories in the specified directory
+    all_items = os.listdir(directory)
+    
+    # Filter out only the paths of files (not directories) that end with the specified suffix
+    file_paths = [os.path.join(directory, item) for item in all_items if os.path.isfile(os.path.join(directory, item)) and item.endswith(suffix)]
+    
+    return file_paths
 
 def write_dict_to_tsv(file_path, data):
     """

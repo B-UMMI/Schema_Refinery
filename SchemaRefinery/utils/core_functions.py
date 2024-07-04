@@ -2605,6 +2605,31 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
+def remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_results_by_class_with_inverse,
+                                    genomes_ids, clusters, reps_and_alleles_ids, drop_mark, if_cds, proportion):
+    count_presence_in_genomes = {}
+    group_alleles_ids = {}
+    # Iterate over each class.
+    for class_, cds_group in list(cds_to_keep.items()):
+        # Iterate over each group in class.
+        for group in cds_group:
+            if class_ == '1a':
+                # Iterate over each representative in joined group.
+                for id_, cds in group.items():
+                    count_presence_in_genomes.setdefault(id_, {})
+                    group_alleles_ids.setdefault(id_, []).append(clusters[cds])
+            else:
+                count_presence_in_genomes.setdefault(group, {})
+                group_alleles_ids.setdefault(group, []).append(clusters[group])
+            # Iterate over each groups alleles.
+            for id_, allele_id in group_alleles_ids.items():
+                allele_id = itf.remove_by_regex(allele_id, r'-.*$')
+                if count_presence_in_genomes[id_].get(allele_id):
+                    count_presence_in_genomes[id_][allele_id] += 1
+                else:
+                    count_presence_in_genomes[id_].setdefault(allele_id, 1)
+ 
+
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
     temp_folder = temp_paths[0]
@@ -2620,7 +2645,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             constants[2] = 5
         else:
             constants[2] = round(number_of_genomes * 0.01)
-        
+    # Get all of the genomes IDs.
+    genomes_ids = ff.get_paths_in_directory_with_suffix(count_genomes_path, '.fasta')
+
     print("Identifying CDS present in the schema...")
     cds_present = os.path.join(temp_folder,"3_cds_preprocess/cds_deduplication/distinct_cds_merged.hashtable")
     # Get dict of CDS and their sequence hashes.
@@ -2879,7 +2906,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Based on results remove the problematic CDSs cluster that appear more than one time in the same
     # genome and filter all of the variables.
     removed_clusters_list = remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_results_by_class_with_inverse,
-                                                            reps_and_alleles_ids, drop_mark, if_cds, proportion)
+                                                            genomes_ids, clusters, reps_and_alleles_ids, drop_mark, True, proportion)
     cds_to_keep['1a'] = {values[0]: values for key, values in cds_to_keep['1a'].items()}
 
     all_relationships, related_clusters, recommendations = extract_results(processed_results,
@@ -2948,7 +2975,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                   [[cds_size_dicts, 'histogram', "Nucleotide Size", 'Size', 'CDS'],
                    [cds_translation_size_dicts, 'histogram','Protein Size' , 'Size', 'CDS']])
     
-    for file in ff.get_paths_in_directory(os.path.join(results_output, 'blast_results_by_class')):
+    for file in ff.get_paths_in_directory(os.path.join(results_output, 'blast_results_by_class'), 'files'):
         create_graphs(file,
                       results_output,
                       f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
