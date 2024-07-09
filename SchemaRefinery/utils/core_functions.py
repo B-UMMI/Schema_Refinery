@@ -763,11 +763,11 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                 replaced_query = itf.identify_string_in_dict(query, all_alleles)
                 if replaced_query:
                     new_query = replaced_query
-                    strings[0] = new_query if isinstance(new_query, str) else f"{query}({new_query})"
+                    strings[0] = new_query
                 replaced_id_subject = itf.identify_string_in_dict(id_subject, all_alleles)
                 if replaced_id_subject:
                     new_id_subject = replaced_id_subject
-                    strings[1] = new_id_subject if isinstance(new_id_subject, str) else f"{id_subject}({new_id_subject})"
+                    strings[1] = new_id_subject
 
                 current_allele_class_index = classes_outcome.index(class_)
                 # Check if the current loci were already processed
@@ -1007,7 +1007,7 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
 
     related_clusters = {}
     for results in processed_results.values():
-        if results[0] in ['4c','5']:
+        if results[0] in ['4c','5', 'Retained_not_matched_by_blastn']:
             continue
 
         query_id, query_present, joined_query_id = process_id(results[3][0], to_cluster_list, cds_to_keep)
@@ -1016,7 +1016,7 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
         key = query_present if query_present else subject_present
 
         related_clusters.setdefault(key, []).append(results[4] 
-                                                    + [f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]][0]}/{sum([i[0] for i in count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values()])}"]
+                                                    + [f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"]
                                                     + [str(frequency_in_genomes[results[3][0]])]
                                                     + [str(frequency_in_genomes[results[3][1]])])
 
@@ -1048,9 +1048,9 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
             processed_cases.append([subject_id, query_id])  # Add the inverse pair to the processed cases
 
             if results[0] == '1a':
-                if isinstance(joined_query_id, int):
+                if joined_query_id is not None:
                     add_to_recommendations('Joined', joined_query_to_write, joined_query_id)
-                if isinstance(joined_subject_id, int):
+                if joined_subject_id is not None:
                     add_to_recommendations('Joined', joined_subject_to_write, joined_subject_id)
 
             elif results[0] in ['1c', '2b', '3b', '4b']:
@@ -1158,7 +1158,6 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class.items():
             query, subject = id_.split('|')
-            inverse_id = f"{subject}|{query}"
             count_results_by_cluster_file.write('\t'.join(id_.split('|')))
             total_count_origin = sum([i[0] for i in classes.values() if i[0] != '-'])
             total_count_inverse = sum([i[1] for i in classes.values() if i[1] != '-'])
@@ -1172,8 +1171,8 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                                                         f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
                                                         (f"{len(group_reps_ids[query])}") + 
                                                         (f"|{len(group_reps_ids[subject])}" if reverse_matches else "|-"),
-                                                        (f"{len(group_alleles_ids[query])}") +
-                                                        (f"|{len(group_alleles_ids[subject])}" if reverse_matches else "|-"),
+                                                        (f"{len(group_alleles_ids[query])}" if reverse_matches else "|-") +
+                                                        (f"|{len(group_alleles_ids[subject])}"),
                                                         f"{frequency_in_genomes[query]}",
                                                         f"{frequency_in_genomes[subject]}\n"]))
                 else:
@@ -1637,11 +1636,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
     else:
         for class_, cds_set in cds_to_keep.items():
+            cds_cases[class_] = cds_set
             if class_ == '1a':
                 count_cases[class_] = len(itf.flatten_list(cds_set.values()))
             else:
                 count_cases[class_] = len(cds_set)
-
+        cds_cases['dropped'] = drop_set
     # Check if loci is not empty
     if loci:
         for i, printout in enumerate([cds_cases, loci_cases]):
@@ -1714,6 +1714,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         for class_, cds_list in cds_to_keep.items():
             write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder, fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters)
 
+        # Create directories and write dict to TSV
+        cds_outcome_results = create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, 0, cds_cases)
         # Translate possible new loci and write to master file
         trans_dict_cds = translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants)
 
@@ -2333,6 +2335,32 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
 
     return cds_to_keep, drop_set
 
+def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps_ids, group_alleles_ids):
+    # Iterate over each class.
+    for class_, cds_group in list(cds_to_keep.items()):
+        # Iterate over each group in class.
+        for group in cds_group:
+            if class_ == '1a':
+                # Iterate over each representative in joined group.
+                for cds in cds_group[group]:
+                    if group_reps_ids.get(cds):
+                        continue
+                    group_reps_ids.setdefault(cds, set()).add(cds)
+                    group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
+            elif group_reps_ids.get(group):
+                continue
+            else:
+                group_reps_ids.setdefault(group, set()).add(group)
+                group_alleles_ids.setdefault(group, set()).update(clusters[group])
+    
+    for id_ in drop_set:
+        if id_ not in group_reps_ids:
+            group_reps_ids.setdefault(id_, set()).add(id_)
+            group_alleles_ids.setdefault(id_, set()).update(clusters[id_])
+
+
+    return group_reps_ids, group_alleles_ids
+
 def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds, 
                    alleles, frequency_in_genomes, allelecall_directory, 
                    master_file, loci_ids, if_only_loci, master_alleles, constants, cpu):
@@ -2383,7 +2411,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Create BLASTn_processing directory
     blastn_output = os.path.join(blast_results, '1_BLASTn_processing')
     ff.create_directory(blastn_output)
-
+    
     # Get all of the schema loci short FASTA files path.
     schema_short_path = os.path.join(schema, 'short')
     schema_loci_short = {os.path.basename(loci_path.replace("_short.fasta", "")): os.path.join(schema_short_path, loci_path) 
@@ -2392,6 +2420,17 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Get all of the schema loci FASTA files path.
     schema_loci = {os.path.basename(loci_path.replace(".fasta", "")): os.path.join(schema, loci_path) 
                          for loci_path in ff.get_paths_in_directory_with_suffix(schema, '.fasta')}
+
+    #Count the number of reps and alleles in the schema.
+    group_reps_ids = {}
+    group_alleles_ids = {}
+    for loci, fasta_path in schema_loci_short.items():
+            fasta_dict = sf.fetch_fasta_dict(fasta_path, False)
+            for id_, fasta in fasta_dict:
+                group_reps_ids.setdafault(loci, set()).add(id_)
+            fasta_dict = sf.fetch_fasta_dict(schema_loci[loci], False)
+            for id_, fasta in fasta_dict:
+                group_alleles_ids.setdafault(loci, set()).add(id_)
 
     # Create a folder for short translations.
     blastp_output =  os.path.join(blast_results, '2_BLASTp_processing')
@@ -2503,8 +2542,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract CDS to keep and drop set.
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
-
-    group_reps_ids, group_alleles_ids = count_number_of_reps_and_alleles(cds_to_keep, all_alleles, drop_set)
+        
+    count_number_of_reps_and_alleles(cds_to_keep, all_alleles, drop_set,
+                                     group_reps_ids, group_alleles_ids)
 
     # Extract the related clusters and recommendations what to do with them.
     all_relationships, related_clusters, recommendations  = extract_results(processed_results,
@@ -2613,15 +2653,40 @@ def remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_r
                                     genomes_ids, clusters, reps_and_alleles_ids, updated_frequency_in_genomes,
                                     drop_set):
     total_genomes = len(genomes_ids)
-    dropped_due_genomes_presence = []
+    dropped_due_genomes_presence = {}
+    presence_in_genomes = {}
+    dropped_due_to_multiple_copies_in_genomes = {}
     
-    for id_, cds_group in list(cds_to_keep['1a'].items()):
-        # Iterate over each group in class.
-        for group in cds_group:
-            if updated_frequency_in_genomes[group] >= total_genomes:
-                dropped_due_genomes_presence.append(group)
+    #Identify NIPHs
+    for class_, cds_group in list(cds_to_keep.items()):
+    # Iterate over each group in class.
+        for group in list(cds_group):
+            drop = False
+            presence_in_genomes[group] = {}
+            if class_ == '1a':
+                # Iterate over each representative in joined group.
+                for cds in cds_group[group]:
+                    for cds_member in clusters[cds]:
+                        if presence_in_genomes[group].get(itf.remove_by_regex(cds_member, r'-protein\d+')):
+                            presence_in_genomes[group][itf.remove_by_regex(cds_member, r'-protein\d+')] += 1
+                            drop = True
+                        else:
+                            presence_in_genomes[group].setdefault(itf.remove_by_regex(cds_member, r'-protein\d+'), 1)
+            else:
+                for cds_member in clusters[group]:
+                    if presence_in_genomes[group].get(itf.remove_by_regex(cds_member, r'-protein\d+')):
+                        presence_in_genomes[group][itf.remove_by_regex(cds_member, r'-protein\d+')] += 1
+                        drop = True
+                    else:
+                        presence_in_genomes[group].setdefault(itf.remove_by_regex(cds_member, r'-protein\d+'), 1)
+            if drop:
+                #Add to dropped_due_to_multiple_copies_in_genomes in which genomes multiple members are present.
+                dropped_due_to_multiple_copies_in_genomes[group] = {key: value for key, value in presence_in_genomes[group].items() if value > 1}
                 drop_set.add(group)
-                cds_to_keep['1a'].pop(group)
+                if class_ == '1a':
+                    cds_to_keep['1a'].pop(group)
+                else:
+                    cds_to_keep[class_].remove(group)
                 #Drop from count_results_by_class.
                 count_results_by_class = {id_strings: values for id_strings, values in count_results_by_class.items() if group not in id_strings}
                 #Drop from count_results_by_class_with_inverse.
@@ -2629,29 +2694,20 @@ def remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_r
                 #Drop from reps_and_alleles_ids.
                 reps_and_alleles_ids = {id_strings: values for id_strings, values in reps_and_alleles_ids.items() if group not in id_strings}
 
-    return dropped_due_genomes_presence
+    # Remove everything else that is present in more than one genome.
+    for id_, cds_group in list(cds_to_keep['1a'].items()):
+        if updated_frequency_in_genomes[id_] >= total_genomes:
+            dropped_due_genomes_presence[id_] = updated_frequency_in_genomes[id_]
+            drop_set.add(id_)
+            cds_to_keep['1a'].pop(id_)
+            #Drop from count_results_by_class.
+            count_results_by_class = {id_strings: values for id_strings, values in count_results_by_class.items() if id_ not in id_strings}
+            #Drop from count_results_by_class_with_inverse.
+            count_results_by_class_with_inverse = {id_strings: values for id_strings, values in count_results_by_class_with_inverse.items() if id_ not in id_strings}
+            #Drop from reps_and_alleles_ids.
+            reps_and_alleles_ids = {id_strings: values for id_strings, values in reps_and_alleles_ids.items() if id_ not in id_strings}
 
-def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set):
-    group_reps_ids = {}
-    group_alleles_ids = {}
-    # Iterate over each class.
-    for class_, cds_group in list(cds_to_keep.items()):
-        # Iterate over each group in class.
-        for group in cds_group:
-            if class_ == '1a':
-                # Iterate over each representative in joined group.
-                for cds in cds_group[group]:
-                    group_reps_ids.setdefault(cds, []).append(cds)
-                    group_alleles_ids.setdefault(cds, []).extend(clusters[cds])
-            else:
-                group_reps_ids.setdefault(group, []).append(group)
-                group_alleles_ids.setdefault(group, []).extend(clusters[group])
-    
-    for id_ in drop_set:
-        group_reps_ids.setdefault(id_, []).append(id_)
-        group_alleles_ids.setdefault(id_, []).extend(clusters[id_])
-
-    return group_reps_ids, group_alleles_ids
+    return dropped_due_genomes_presence, dropped_due_to_multiple_copies_in_genomes, presence_in_genomes
 
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
@@ -2663,7 +2719,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # specific CDS cluster is present to 5 if not to 1% of the dataset size.
     count_genomes_path = os.path.join(temp_folder, '1_cds_prediction')
     if not constants[2]:
-        number_of_genomes = len(ff.get_paths_in_directory_with_suffix(count_genomes_path, ''))
+        number_of_genomes = len(ff.get_paths_in_directory_with_suffix(count_genomes_path, '.fasta'))
         if number_of_genomes <= 20:
             constants[2] = 5
         else:
@@ -2722,21 +2778,31 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # This file contains unique CDS.
     cds_not_present_file_path = os.path.join(cds_output, 'CDS_not_found.fasta')
     
+    #Report on removed NIPHEMs.
+    total_cds = len(not_included_cds)
     # Count the number of CDS present in the schema and write CDS sequence
     # into a FASTA file.
     frequency_cds = {}
+    duplicate_cds_in_genomes = []
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
-        for id_, sequence in not_included_cds.items():
+        for id_, sequence in list(not_included_cds.items()):
             cds_not_found.write(f">{id_}\n{str(sequence)}\n")
             
             hashed_seq = sf.seq_to_hash(str(sequence))
             # if CDS sequence is present in the schema count the number of
-            # genomes that it is found minus 1 (subtract the first CDS genome).
+            # genomes that it is found minus the first (subtract the first CDS genome).
             if hashed_seq in decoded_sequences_ids:
-                frequency_cds[id_] = len(decoded_sequences_ids[hashed_seq]) - 1
+                #Remove NIPHEMs.
+                if len(set(decoded_sequences_ids[hashed_seq][1:])) != len(decoded_sequences_ids[hashed_seq][1:]):
+                    duplicate_cds_in_genomes.append(id_)
+                    del not_included_cds[id_]
+                    continue
+                #Count frequency.
+                frequency_cds[id_] = len(decoded_sequences_ids[hashed_seq][1:])
             else:
                 frequency_cds[id_] = 0
-                
+    print(f"Removed {len(duplicate_cds_in_genomes)}/{total_cds} CDSs that are present more than"
+          " once in the same genome (NIPHEM).")
 
     print("\nTranslate and deduplicate CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
@@ -2819,7 +2885,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
                 if frequency_in_genomes[rep] < len(genomes_ids)}
     if intial_length != len(clusters):
-        print(f"After filtering by CDS frequency in the genomes (< {len(genomes_ids)}),"
+        print(f"After filtering by CDS frequency in the genomes (>= {len(genomes_ids)}),"
               f" out of {intial_length} clusters, {len(clusters)} remained.") 
 
     print("\nRetrieving kmers similiarity and coverage between representatives...")
@@ -2919,7 +2985,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Write all of the BLASTn results to a file.
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
-    print("Processing classes...")
+    print("\nProcessing classes...")
     sorted_blast_dict = sort_blast_results_by_classes(representative_blast_results, classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
     [processed_results,
@@ -2937,6 +3003,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     cds_to_keep['1a'] = {values[0]: values for key, values in cds_to_keep['1a'].items()}
     
     # Add new frequencies in genomes for joined groups
+    #Update the changed clusters frequency from Joined CDSs
     updated_frequency_in_genomes = {}
     new_cluster_freq = {}
     for cluster_id, cluster_members in cds_to_keep['1a'].items():
@@ -2946,21 +3013,41 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
         for member in cluster_members:
             updated_frequency_in_genomes[member] = new_cluster_freq[cluster_id]
     updated_frequency_in_genomes.update(new_cluster_freq)
+    updated_frequency_in_genomes.update(frequency_in_genomes)
 
-    group_reps_ids, group_alleles_ids = count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set)
+
+    group_reps_ids = {}
+    group_alleles_ids = {}
+    count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps_ids, group_alleles_ids)
+    
+    print("\nAdd remaining cluster that didn't match by BLASTn...")
+    # Add cluster not matched by BLASTn
+    cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in representative_blast_results.keys()])
+    print("\nFiltering problematic clusters...")
+    total_clusters = sum([len(clusters) for class_, clusters in cds_to_keep.items()])
     # Based on results remove the problematic CDSs cluster that appear more than one time in the same
     # genome and filter all of the variables.
-    removed_clusters_list = remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_results_by_class_with_inverse,
+    [dropped_due_genomes_presence,
+     dropped_due_to_multiple_copies_in_genomes,
+     presence_in_genomes] = remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_results_by_class_with_inverse,
                                                             genomes_ids, clusters, reps_and_alleles_ids, updated_frequency_in_genomes,
                                                             drop_set)
-
+    
+    if dropped_due_to_multiple_copies_in_genomes:
+        print(f"\tDropped {len(dropped_due_to_multiple_copies_in_genomes)} CDSs clusters due to CDS cluster elements"
+              " being identified as NIPH.")
+    if dropped_due_genomes_presence:
+        print(f"\tDropped {len(dropped_due_genomes_presence)} due to CDS cluster elements"
+              " being present in more genomes that there exists.")
+    
+    print("\nExtracting results...")
     all_relationships, related_clusters, recommendations = extract_results(processed_results,
                                                                           count_results_by_class,
                                                                           frequency_in_genomes,
                                                                           cds_to_keep,
                                                                           drop_set,
                                                                           classes_outcome)
-    
+    print("\nWritting count_results_by_cluster.tsv and related_matches.tsv files...")
     write_blast_summary_results(related_clusters,
                                 count_results_by_class_with_inverse,
                                 group_reps_ids,
@@ -2969,10 +3056,6 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                 recommendations,
                                 True,
                                 results_output)
-    
-    print("\nAdd remaining cluster that didn't match by BLASTn...")
-    # Add cluster not matched by BLASTn
-    cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in representative_blast_results.keys()])
 
     print("\nWritting classes and cluster results to files...")
     write_processed_results_to_file(cds_to_keep,
