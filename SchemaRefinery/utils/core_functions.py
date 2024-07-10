@@ -2504,7 +2504,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Separate results into different classes.
     classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
                                                            constants)
-    report_file_path = os.path.join(results_output, 'blast_all_matches.tsv')
+    blast_results = os.path.join(results_output, 'blast_results')
+    ff.create_directory(blast_results)
+    report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
     # Write all of the BLASTn results to a file.
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w', True)
     
@@ -2523,17 +2525,17 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Extract CDS to keep and drop set.
     cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
         
-    count_number_of_reps_and_alleles(cds_to_keep, all_alleles, drop_set,
-                                     group_reps_ids, group_alleles_ids)
+    count_number_of_reps_and_alleles(cds_to_keep, all_alleles, drop_set, group_reps_ids, group_alleles_ids)
 
     # Extract the related clusters and recommendations what to do with them.
+    print("\nExtracting results...")
     all_relationships, related_clusters, recommendations  = extract_results(processed_results,
                                                                            count_results_by_class,
                                                                            frequency_in_genomes,
                                                                            cds_to_keep,
                                                                            drop_set,
                                                                            classes_outcome)
-
+    print("\nWritting count_results_by_cluster.tsv and related_matches.tsv files...")
     write_blast_summary_results(related_clusters,
                                 count_results_by_class_with_inverse,
                                 group_reps_ids,
@@ -2560,7 +2562,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                     is_matched,
                                     is_matched_alleles,
                                     if_only_loci,
-                                    results_output)
+                                    blast_results)
     
     print("\nWrapping up BLAST results...")
 
@@ -2851,6 +2853,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # into a FASTA file.
     frequency_cds = {}
     duplicate_cds_in_genomes = {}
+
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
         for id_, sequence in list(not_included_cds.items()):
             cds_not_found.write(f">{id_}\n{str(sequence)}\n")
@@ -2861,20 +2864,22 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             if hashed_seq in decoded_sequences_ids:
                 #Remove NIPHEMs.
                 if len(set(decoded_sequences_ids[hashed_seq][1:])) != len(decoded_sequences_ids[hashed_seq][1:]):
-                    duplicate_cds_in_genomes.setdefault(id_, []).append(itf.find_duplicates(decoded_sequences_ids[hashed_seq][1:]))
+                    duplicate_cds_in_genomes.setdefault(id_, []).extend(itf.find_duplicates(decoded_sequences_ids[hashed_seq][1:]))
                     del not_included_cds[id_]
                     continue
                 #Count frequency.
                 frequency_cds[id_] = len(decoded_sequences_ids[hashed_seq][1:])
             else:
                 frequency_cds[id_] = 0
+
     print(f"Removed {len(duplicate_cds_in_genomes)}/{total_cds} CDSs that are present more than"
           " once in the same genome (NIPHEM).")
     print("Writting Identified NIPHEMs files...")
-    niphems_file = os.path.join(cds_output, 'identified_NIPHEMs_CDSs.txt')
+    niphems_file = os.path.join(cds_output, 'identified_NIPHEMs_CDSs.tsv')
+    tab = "\t"
     with open(niphems_file, 'w') as niphems:
         for cds, genomes_id in duplicate_cds_in_genomes.items():
-            niphems.write(f"{cds}\t{'\t'.join(genomes_id)}\n")
+            niphems.write(f"{cds}{tab}{tab.join([str(i) for i in genomes_id])}\n")
 
     print("\nTranslate and deduplicate CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
@@ -3049,7 +3054,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     print("\nFiltering BLAST results into classes...")
     results_output = os.path.join(output_directory, '3_CDS_processing_results')
     ff.create_directory(results_output)
-    report_file_path = os.path.join(results_output, 'blast_all_matches.tsv')
+    blast_results = os.path.join(results_output, 'blast_results')
+    ff.create_directory(blast_results)
+    report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
     
     # Separate results into different classes.
     classes_outcome = separate_blastn_results_into_classes(representative_blast_results,
@@ -3138,7 +3145,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     None,
                                     None,
                                     [False, False],
-                                    results_output)
+                                    blast_results)
     
     print("\nWrapping up BLAST results...")
     [groups_paths,
@@ -3169,7 +3176,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                   [[cds_size_dicts, 'histogram', "Nucleotide Size", 'Size', 'CDS'],
                    [cds_translation_size_dicts, 'histogram','Protein Size' , 'Size', 'CDS']])
     
-    for file in ff.get_paths_in_directory(os.path.join(results_output, 'blast_results_by_class'), 'files'):
+    for file in ff.get_paths_in_directory(os.path.join(blast_results, 'blast_results_by_class'), 'files'):
         create_graphs(file,
                       results_output,
                       f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
