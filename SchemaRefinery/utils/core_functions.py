@@ -1417,7 +1417,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             origin_path = groups_paths_old.pop(cds) if case_id == 0 else loci[cds]
             ff.copy_file(origin_path, file_path)
 
-    def write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder, fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters):
+    def write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder,
+                            fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters):
         """
         Process each class and CDS list in cds_to_keep.
 
@@ -1554,47 +1555,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
         return trans_dict_cds
 
-    def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes):
-        """
-        Write cluster members to file.
-
-        Parameters
-        ----------
-        output_path : str
-            The path where the output will be written.
-        cds_to_keep : dict
-            The dictionary containing the CDSs to keep.
-        clusters : dict
-            The dictionary containing the clusters.
-        frequency_in_genomes : dict
-            Dict that contains sum of frequency of that representatives cluster in the
-            genomes of the schema.
-
-        Returns
-        -------
-        None, writes to file.
-        """
-        cluster_members_output = os.path.join(output_path, 'cluster_members.tsv')
-        with open(cluster_members_output, 'w') as cluster_members_file:
-            cluster_members_file.write('Cluster_ID\tRepresentatives_IDs\tRep_cluster_members\tFrequency_of_rep\n')
-            for class_, cds_list in cds_to_keep.items():
-                for cds in cds_list:
-                    if class_ == '1a':
-                        cluster_members_file.write(str(cds))
-                        cds = cds_to_keep[class_][cds]
-                    else:
-                        cluster_members_file.write(cds)
-                        cds = [cds]
-                    for rep_id in cds:
-                        cluster_members_file.write('\t' + str(rep_id))
-                        cds_ids = [cds_id for cds_id in clusters[rep_id]]
-                        for count, cds_id in enumerate(cds_ids):
-                            if count == 0:
-                                cluster_members_file.write('\t' + cds_id + '\t' + str(frequency_in_genomes[rep_id]) + '\n')
-                            else:
-                                cluster_members_file.write('\t\t' + cds_id + '\n')
-    # Create directories.
-    
+# Create directories.
     fasta_folder = os.path.join(output_path, 'results_fastas')
     ff.create_directory(fasta_folder)
     
@@ -1718,9 +1679,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         cds_outcome_results = create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, 0, cds_cases)
         # Translate possible new loci and write to master file
         trans_dict_cds = translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants)
-
-        # Write cluster members to file
-        write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes)
 
         master_file = os.path.join(fasta_folder, 'master_file.fasta')
 
@@ -2768,6 +2726,56 @@ def remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_r
 
     return dropped_due_genomes_presence, dropped_due_to_multiple_copies_in_genomes, presence_in_genomes
 
+def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes, drop_set,
+                                  dropped_due_genomes_presence, dropped_due_to_multiple_copies_in_genomes):
+    """
+    Write cluster members to file.
+
+    Parameters
+    ----------
+    output_path : str
+        The path where the output will be written.
+    cds_to_keep : dict
+        The dictionary containing the CDSs to keep.
+    clusters : dict
+        The dictionary containing the clusters.
+    frequency_in_genomes : dict
+        Dict that contains sum of frequency of that representatives cluster in the
+        genomes of the schema.
+
+    Returns
+    -------
+    None, writes to file.
+    """
+    write_cds = cds_to_keep
+    write_cds.setdefault('Dropped', drop_set)
+    cluster_members_output = os.path.join(output_path, 'cluster_members.tsv')
+    with open(cluster_members_output, 'w') as cluster_members_file:
+        cluster_members_file.write('Cluster_ID\tRepresentatives_IDs\tRep_cluster_members\tFrequency_of_rep'
+                                   '\tClassification\n')
+        for class_, cds_list in cds_to_keep.items():
+            for cds in cds_list:
+                if class_ == '1a':
+                    cluster_members_file.write(str(cds))
+                    cds = cds_to_keep[class_][cds]
+                else:
+                    cluster_members_file.write(cds)
+                    cds = [cds]
+                for rep_id in cds:
+                    if class_ == 'Dropped':
+                        if rep_id in dropped_due_genomes_presence:
+                            class_ = 'Dropped_due_to_genomes_presence'
+                        elif rep_id in dropped_due_to_multiple_copies_in_genomes:
+                            class_ = 'Dropped_due_NIPHs'
+                    cluster_members_file.write('\t' + str(rep_id))
+                    cds_ids = [cds_id for cds_id in clusters[rep_id]]
+                    for count, cds_id in enumerate(cds_ids):
+                        if count == 0:
+                            cluster_members_file.write('\t' + cds_id + '\t' + str(frequency_in_genomes[rep_id])
+                                                       + '\t' + class_ + '\n')
+                        else:
+                            cluster_members_file.write('\t\t' + cds_id + '\n')
+
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
     temp_folder = temp_paths[0]
@@ -2842,7 +2850,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Count the number of CDS present in the schema and write CDS sequence
     # into a FASTA file.
     frequency_cds = {}
-    duplicate_cds_in_genomes = []
+    duplicate_cds_in_genomes = {}
     with open(cds_not_present_file_path, 'w+') as cds_not_found:
         for id_, sequence in list(not_included_cds.items()):
             cds_not_found.write(f">{id_}\n{str(sequence)}\n")
@@ -2853,7 +2861,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             if hashed_seq in decoded_sequences_ids:
                 #Remove NIPHEMs.
                 if len(set(decoded_sequences_ids[hashed_seq][1:])) != len(decoded_sequences_ids[hashed_seq][1:]):
-                    duplicate_cds_in_genomes.append(id_)
+                    duplicate_cds_in_genomes.setdefault(id_, []).append(itf.find_duplicates(decoded_sequences_ids[hashed_seq][1:]))
                     del not_included_cds[id_]
                     continue
                 #Count frequency.
@@ -2862,6 +2870,11 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                 frequency_cds[id_] = 0
     print(f"Removed {len(duplicate_cds_in_genomes)}/{total_cds} CDSs that are present more than"
           " once in the same genome (NIPHEM).")
+    print("Writting Identified NIPHEMs files...")
+    niphems_file = os.path.join(cds_output, 'identified_NIPHEMs_CDSs.txt')
+    with open(niphems_file, 'w') as niphems:
+        for cds, genomes_id in duplicate_cds_in_genomes.items():
+            niphems.write(f"{cds}\t{'\t'.join(genomes_id)}\n")
 
     print("\nTranslate and deduplicate CDS...")
     # Translate the CDS and find unique proteins using hashes, the CDS with
@@ -3072,8 +3085,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
         for member in cluster_members:
             updated_frequency_in_genomes[member] = new_cluster_freq[cluster_id]
     updated_frequency_in_genomes.update(new_cluster_freq)
+    #Add all the others frequencies.
     updated_frequency_in_genomes.update(frequency_in_genomes)
-
 
     group_reps_ids = {}
     group_alleles_ids = {}
@@ -3141,6 +3154,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               None,
                                               frequency_in_genomes,
                                               False)
+    
+    write_cluster_members_to_file(results_output, cds_to_keep, clusters, frequency_in_genomes,
+                                  drop_set, dropped_due_genomes_presence, dropped_due_to_multiple_copies_in_genomes)
 
     print("Create graphs for the BLAST results...")
     cds_size_dicts = {'IDs': cds_size.keys(),

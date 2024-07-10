@@ -719,3 +719,31 @@ def sort_subdict_by_tuple(dict, order):
         sorted_subdict = OrderedDict(sorted(subdict.items(), key=lambda item: order.index(item[0]) if item[0] in order else len(order)))
         sorted_data[key] = sorted_subdict
     return sorted_data
+
+def find_duplicates(input_list):
+    """
+    Identifies and returns a list of duplicate items from the given list.
+
+    Parameters
+    ----------
+    input_list : list
+        The list from which to find duplicates.
+
+    Returns
+    -------
+    list
+        A list of duplicate items found in the input list.
+
+    Examples
+    --------
+    >>> find_duplicates([1, 2, 3, 2, 4, 5, 1])
+    [1, 2]
+    """
+    seen = set()
+    duplicates = set()
+    for item in input_list:
+        if item in seen:
+            duplicates.add(item)
+        else:
+            seen.add(item)
+    return list(duplicates)
