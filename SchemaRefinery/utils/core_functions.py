@@ -1654,7 +1654,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
             print(f"Out of {len(groups_paths_old) if i==0 else len(loci)} {'CDSs groups' if i == 0 else 'loci'}:")
             print(f"\t{total_loci} {'CDSs' if i == 0 else 'loci'}"
-                f" representatives had matches with BLASTn against the {'CDSs' if i == 0 else 'schema'}.")
+                f" representatives had matches with BLASTn against the {'CDSs' if i == 1 else 'schema'}.")
 
             # Print the classification results
             for class_, group in printout.items():
@@ -1676,7 +1676,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         print(f"\t\tOut of those {len(drop_set)} CDSs groups were removed from the analysis.")
 
         if Retained_not_matched_by_blastn:
-            print(f"\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
+            print(f"\t\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
             
             cds_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
     # Skip the next step to copy or write FASTAS because we are working with the
@@ -2336,6 +2336,29 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
     return cds_to_keep, drop_set
 
 def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps_ids, group_alleles_ids):
+    """
+    Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in the drop set.
+
+    Parameters
+    ----------
+    cds_to_keep : dict
+        Dictionary of CDS clusters to keep, organized by class and group.
+    clusters : dict
+        Dictionary mapping group IDs to their member CDS IDs.
+    drop_set : set
+        Set of group IDs to be excluded from the count.
+    group_reps_ids : dict
+        Dictionary to be updated with representative IDs for each group.
+    group_alleles_ids : dict
+        Dictionary to be updated with allele IDs for each group.
+
+    Returns
+    -------
+    group_reps_ids : dict
+        Dictionary where key is the CDS cluster ID and value is a set of representative IDs.
+    group_alleles_ids : dict
+        Dictionary where key is the CDS cluster ID and value is a set of allele IDs.
+    """
     # Iterate over each class.
     for class_, cds_group in list(cds_to_keep.items()):
         # Iterate over each group in class.
@@ -2357,7 +2380,6 @@ def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps
         if id_ not in group_reps_ids:
             group_reps_ids.setdefault(id_, set()).add(id_)
             group_alleles_ids.setdefault(id_, set()).update(clusters[id_])
-
 
     return group_reps_ids, group_alleles_ids
 
@@ -2426,11 +2448,11 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     group_alleles_ids = {}
     for loci, fasta_path in schema_loci_short.items():
             fasta_dict = sf.fetch_fasta_dict(fasta_path, False)
-            for id_, fasta in fasta_dict:
-                group_reps_ids.setdafault(loci, set()).add(id_)
+            for id_, fasta in fasta_dict.items():
+                group_reps_ids.setdefault(loci, set()).add(id_)
             fasta_dict = sf.fetch_fasta_dict(schema_loci[loci], False)
-            for id_, fasta in fasta_dict:
-                group_alleles_ids.setdafault(loci, set()).add(id_)
+            for id_, fasta in fasta_dict.items():
+                group_alleles_ids.setdefault(loci, set()).add(id_)
 
     # Create a folder for short translations.
     blastp_output =  os.path.join(blast_results, '2_BLASTp_processing')
@@ -2652,6 +2674,43 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 def remove_problematic_cds_clusters(cds_to_keep, count_results_by_class, count_results_by_class_with_inverse,
                                     genomes_ids, clusters, reps_and_alleles_ids, updated_frequency_in_genomes,
                                     drop_set):
+    """
+    Removes problematic CDS clusters based on their presence across genomes and the occurrence of multiple
+    copies within a genome while updating the relevant data structures.
+
+    Parameters
+    ----------
+    cds_to_keep : dict
+        Dictionary of CDS clusters to keep, organized by class and group.
+    count_results_by_class : dict
+        Count of results by class before filtering.
+    count_results_by_class_with_inverse : dict
+        Count of results by class with inverse, before filtering.
+    genomes_ids : list
+        List of genome IDs.
+    clusters : dict
+        Dictionary of clusters with their members.
+    reps_and_alleles_ids : dict
+        Dictionary of representative and alleles IDs.
+    updated_frequency_in_genomes : dict
+        Updated frequency of clusters in genomes.
+    drop_set : set
+        Set of clusters to be dropped.
+
+    Returns
+    -------
+    dropped_due_genomes_presence : dict
+        Dictionary of clusters dropped due to presence in genomes being higher than the number of genomes,
+        the key is CDS cluster ID and values is the frequency in genomes.
+    dropped_due_to_multiple_copies_in_genomes : dict
+        Dictionary of clusters dropped due to CDS cluster members multiple copies in genomes (> 1), the key is 
+        CDS cluster ID and values are the dict where genomes ID is the key and the values the count of 
+        many members of that CDS are present in that genome.
+    presence_count_in_genomes : dict
+        Dictionary of clusters and all the presence count in genomes, the key is CDS cluster ID and values
+        are the dict where genomes ID is the key and the values are the count of many members of that CDS are
+        present in that genome.
+    """
     total_genomes = len(genomes_ids)
     dropped_due_genomes_presence = {}
     presence_in_genomes = {}
