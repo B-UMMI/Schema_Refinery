@@ -1171,7 +1171,7 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                                                         f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
                                                         (f"{len(group_reps_ids[query])}") + 
                                                         (f"|{len(group_reps_ids[subject])}" if reverse_matches else "|-"),
-                                                        (f"{len(group_alleles_ids[query])}" if reverse_matches else "|-") +
+                                                        (f"{len(group_alleles_ids[query])}" if reverse_matches else "-") +
                                                         (f"|{len(group_alleles_ids[subject])}"),
                                                         f"{frequency_in_genomes[query]}",
                                                         f"{frequency_in_genomes[subject]}\n"]))
@@ -2757,6 +2757,15 @@ def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_
                                    '\tClassification\n')
         for class_, cds_list in cds_to_keep.items():
             for cds in cds_list:
+                if class_ == 'Dropped':
+                    if cds in dropped_due_to_multiple_copies_in_genomes:
+                        classification = 'Dropped_due_to_NIPHs'
+                    elif cds in dropped_due_genomes_presence:
+                        classification = 'Dropped_due_to_genomes_presence'
+                    else:
+                        classification = 'Dropped_due_to_frequency_in_genomes'
+                else:
+                    classification = class_
                 if class_ == '1a':
                     cluster_members_file.write(str(cds))
                     cds = cds_to_keep[class_][cds]
@@ -2764,17 +2773,12 @@ def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_
                     cluster_members_file.write(cds)
                     cds = [cds]
                 for rep_id in cds:
-                    if class_ == 'Dropped':
-                        if rep_id in dropped_due_genomes_presence:
-                            class_ = 'Dropped_due_to_genomes_presence'
-                        elif rep_id in dropped_due_to_multiple_copies_in_genomes:
-                            class_ = 'Dropped_due_NIPHs'
                     cluster_members_file.write('\t' + str(rep_id))
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
                     for count, cds_id in enumerate(cds_ids):
                         if count == 0:
                             cluster_members_file.write('\t' + cds_id + '\t' + str(frequency_in_genomes[rep_id])
-                                                       + '\t' + class_ + '\n')
+                                                       + '\t' + classification + '\n')
                         else:
                             cluster_members_file.write('\t\t' + cds_id + '\n')
 
