@@ -121,6 +121,8 @@ def run_blast_fastas_multiprocessing(id_, blast_exec, blast_results,
     ----------
     id : str
         id of the locus that will be blasted against all of the representatives sequences.
+    blast_exec : str
+        Path to the BLAST executable.
     blast_results_all_representatives : str
         Path to the folder were to store blast results.
     representative_file_dict : dict

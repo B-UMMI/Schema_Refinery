@@ -313,7 +313,7 @@ def partially_contains_sublist(main_list, list_of_lists):
     return False
 
 
-def identify_string_in_dict(input_str, dictionary):
+def identify_string_in_dict_get_key(input_str, dictionary):
     """
     Identify the key in the dictionary where the input string is present.
 
@@ -332,6 +332,12 @@ def identify_string_in_dict(input_str, dictionary):
     for key, value in dictionary.items():
         if input_str in value:
             return key
+    return None
+
+def identify_string_in_dict_get_value(search_key, search_dict):
+    for key, value in search_dict.items():
+        if search_key in value:
+            return value
     return None
 
 def identify_string_in_dict_lists_regex(target_value, dict_of_lists, regex=False):

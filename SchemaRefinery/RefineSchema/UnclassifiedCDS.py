@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_gene_fusions, 
         pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence,
-        size_threshold, translation_table, cpu):
+        size_threshold, translation_table, bsr, cpu):
     
     temp_paths = [os.path.join(allelecall_directory, "temp"), 
                       os.path.join(allelecall_directory, "unclassified_sequences.fasta"),
@@ -24,7 +24,8 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                 clustering_sim,
                 clustering_cov,
                 size_threshold,
-                translation_table]
+                translation_table,
+                bsr]
     
     if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
         sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
