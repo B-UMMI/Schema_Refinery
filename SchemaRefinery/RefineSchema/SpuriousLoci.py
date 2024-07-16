@@ -19,6 +19,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
             translation_table,
             bsr]
 
+    run_type = 'loci_vs_loci'
     cof.process_schema(schema,
                        [],
                        output_directory,
@@ -29,6 +30,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                        allelecall_directory,
                        None,
                        loci_ids,
+                       run_type,
                        True,
                        constants,
                        cpu)

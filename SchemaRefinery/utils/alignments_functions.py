@@ -301,7 +301,7 @@ def process_blast_results(blast_results_file, constants_threshold):
 
 def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                                            get_coords, get_self_score, skip_reverse_alignemnts,
-                                           if_loci = None):
+                                           if_alleles = None):
     """
     Reads BLAST results file and extracts the necessary items, based on input
     also fetches the coordinates based on query sequences and self-score contained
@@ -375,7 +375,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     "pident": float(pident)
                     }
             
-            if if_loci:
+            if if_alleles:
                 if itf.remove_by_regex(query, pattern) == itf.remove_by_regex(subject, pattern):
                      # Largest self-score is choosen
                     if float(pident) == 100 and get_self_score and int(score) > self_score:
