@@ -436,9 +436,7 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
         representative_blast_results[query][subject][entry_id].update(update_dict)
 
         if add_groups_ids:
-            id_ = itf.identify_string_in_dict_get_key(subject, add_groups_ids)
-            if not id_:
-                id_ = subject
+            id_ = itf.identify_string_in_dict_get_key(subject, add_groups_ids) or subject
             update_dict = {'cds_group': id_}
             representative_blast_results[query][subject][entry_id].update(update_dict)
 
@@ -2940,10 +2938,14 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
                     cds_id = itf.identify_string_in_dict_get_key(cds_id, cds_original_ids)
                     cds_original_ids[cds_id].append(new_id)
                     index += 1  # Increment the index for the next ID
+
     # Add why CDS was dropped
     for cds_member, cause in dropped_cluster.items():
-        cds_id = itf.identify_string_in_dict_get_key(cds_member, cds_original_ids)
-        cds_original_ids[cds_id].append(cause)
+        cds_id = itf.identify_string_in_dict_get_key(cds_member, cds_original_ids) or cds_member
+        if cds_original_ids.get(cds_id):
+            cds_original_ids[cds_id].append(cause)
+        else:
+            cds_original_ids.setdefault(cds_id, [cause])
 
     # Prepare to write the ID changes to a file
     tab = "\t"
@@ -2955,7 +2957,7 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
         for original_ids, changed_ids in cds_original_ids.items():
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
-    
+
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
     temp_folder = temp_paths[0]
