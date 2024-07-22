@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 import re
 import itertools
 import pickle
@@ -780,3 +780,10 @@ def check_if_all_sets_are_same(sets_list):
             return False
     
     return True
+
+def get_duplicates(input_list):
+    # Count occurrences of each element
+    element_counts = Counter(input_list)
+    # Select elements that appear more than once
+    duplicates = [element for element, count in element_counts.items() if count > 1]
+    return duplicates

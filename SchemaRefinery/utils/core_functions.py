@@ -2619,34 +2619,76 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 
 def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, protein_hashes, not_included_cds, cds_output,
                              bsr_value, dropped_cluster, cpu):
+    """
+    Identifies problematic CDS (Coding DNA Sequences) based on specified criteria and outputs the results.
+
+    Parameters
+    ----------
+    cds_presence_in_genomes : dict
+        A dictionary mapping each genome to the presence data of CDS.
+    cds_translation_dict : dict
+        A dictionary mapping CDS identifiers to their translated protein sequences.
+    protein_hashes : set
+        A set of unique hashes representing protein sequences, used to identify duplicates or problematic sequences.
+    not_included_cds : set
+        A set of CDS identifiers that are not included in the analysis, potentially due to previous filtering.
+    cds_output : str
+        The file path where the results of the analysis will be saved.
+    bsr_value : float
+        The BLAST Score Ratio (BSR) threshold used to determine problematic sequences. Sequences with a BSR below this value may be considered problematic.
+    dropped_cluster : set
+        A set of cluster identifiers that have been dropped from the analysis, potentially due to being identified as problematic.
+    cpu : int
+        The number of CPU cores to be used for parallel processing tasks within the function.
+
+    Returns
+    -------
+    None
+        This function does not return a value but writes the results of the analysis to the specified output file.
+
+    Notes
+    -----
+    This function is part of a larger pipeline for analyzing genomic data, specifically focusing on the identification
+    of problematic CDS based on duplication, absence in certain genomes, or low Bit Score Ratios. The results are used
+    to refine the dataset for further analysis.
+    """
 
     print("Identifying possible NIPHEMs...")
+    # Identify NIPHEMs.
     same_origin_genome = {}
     niphems_presence_in_genome = {}
     only_niphems_in_genomes = {}
+    # Iterate over each CDS and check for NIPHEMs.
     for id_, cds_in_genomes in cds_presence_in_genomes.items():
+        # Remove the protein number from the ID.
         genome_id = itf.remove_by_regex(id_, r'-protein\d+')
         same_origin_genome.setdefault(genome_id, set()).add(id_)
+        # If there are duplicates in genomes.
         if len(cds_in_genomes) != len(set(cds_in_genomes)):
             niphems_presence_in_genome.setdefault(id_, cds_in_genomes)
+            # If all of the genomes contain only NIPHEMs in genomes.
             if itf.check_if_all_elements_are_duplicates(cds_in_genomes):
+                # Save the CDS that are only NIPHEMs in genomes.
                 only_niphems_in_genomes.setdefault(id_, set(cds_in_genomes))
                 dropped_cluster.setdefault(id_, 'Dropped_due_to_being_only_NIPHEM_in_genomes')
+                # Remove the CDS from the dictionaries.
                 del not_included_cds[id_]
                 del cds_translation_dict[id_]
-                
+    # Write the identified NIPHEMs to a file.
     niphems_file = os.path.join(cds_output, 'identified_NIPHEMs_CDSs.tsv')
     tab = "\t"
     with open(niphems_file, 'w') as niphems:
         niphems.write('CDS_ID\tGenome_presence:\n')
         for cds, genomes_id in only_niphems_in_genomes.items():
             niphems.write(f"{cds}{tab}{tab.join([str(i) for i in genomes_id])}\n")
-
+    # Print the results.
     print(f"There were identified {len(niphems_presence_in_genome)} CDSs containing NIPHEMs in genomes "
           f"and {len(only_niphems_in_genomes)} were removed for being present in genomes that only contain NIPHEMs.")
-
+    # Identify CDSs present in the same genome.
     same_origin_genome = {genome_id: [cds for cds in cds_ids if cds_translation_dict.get(cds)] for genome_id, cds_ids in same_origin_genome.items()}
+    # Filter out genomes with only one CDS.
     same_origin_genome = {genome_id: cds_ids for genome_id, cds_ids in same_origin_genome.items() if len(cds_ids) > 1}
+    # Identify which cases to run.
     sequences_to_run = {}
     sequences_to_run_against = {}
     for genome_id, cds_ids in same_origin_genome.items():
@@ -2666,6 +2708,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
     #Write all of the FASTAs.
     sequences_fasta_path = {}
     to_run_against_paths = {}
+    # Write the FASTAs for the CDSs and the CDSs to run against.
     for cds, cds_ids_to_run_against in sequences_to_run_against.items():
         member_file = os.path.join(translation_sequences_folder, f"{cds}.fasta")
         sequences_fasta_path[cds] = member_file
@@ -2679,15 +2722,18 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
             write_type = 'w' if not os.path.exists(member_file) else 'a'
             with open(member_file, write_type) as m_file:
                 m_file.write(f">{member_id}\n{sequences_to_run[member_id]}\n")
-
+    # Run BLASTp to identify possible NIPHs.
     print("Identifying possible NIPHs...")
     self_score_folder = os.path.join(niphs_folder, 'self_score')
     ff.create_directory(self_score_folder)
+    # Get the path to the BLASTp executable.
     get_blastp_exec = lf.get_tool_path('blastp')
     i = 1
+    # Create a dictionary to store the self-score of each CDS.
     self_score_dict_niphs = {}
+    # Get the max length of the IDs.
     max_id_length = len(max(sequences_fasta_path))
-    # Calculate self-score
+    # Calculate self-score.
     print("\nCalculating self-score for possible NIPHs...")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
@@ -2698,17 +2744,18 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
             
             _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, False)
     
-            # Save self-score
+            # Save self-score.
             self_score_dict_niphs[res[0]] = self_score
                             
             print(f"\rRunning BLASTp to calculate self-score for possible NIPHs {res[0]: <{max_id_length}}", end='', flush=True)
             i += 1
-
+    # Run BLASTp to confirm possible NIPHs.
     niphs_blastp_results_folder = os.path.join(niphs_folder, 'niphs_blastp_results')
     ff.create_directory(niphs_blastp_results_folder)
     save_bsr_score = {}
     total_blasts = len(sequences_fasta_path)
     i = 1
+    # Run Blastp and calculate BSR.
     print("\nRunning BLASTp to confirm possible NIPHs...")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blast_fastas_multiprocessing,
@@ -2721,7 +2768,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False, False)
 
 
-        # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
+            # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
                 for subject_id, results in subjects_dict.items():
                     #Highest score
@@ -2733,7 +2780,9 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
 
     #Identify NIPHS
     niphs_in_genomes = {}
+    #Filter the BSR score.
     filtered_save_bsr_score = {query: {subject_id: bsr for subject_id, bsr in subjects_ids.items() if bsr >= bsr_value} for query, subjects_ids in save_bsr_score.items()}
+    #Remove empty dicts.
     itf.remove_empty_dicts_recursive(filtered_save_bsr_score)
     i = 1
     #Get lists of CDSs considered to be NIPHs.
@@ -2756,18 +2805,22 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                 cds_list = itf.identify_string_in_dict_get_value(id_, protein_hashes)
                 add_to_niphs += cds_list
             niphs_in_genomes.setdefault([i for i in presence if i][0], set()).update(add_to_niphs)
-
+    #Write the identified NIPHs to a file.
     niphs_presence_in_genomes = {}
     count_niphs_groups = 1
     count_niphs_cds = 1
     total_niphs = len(niphs_in_genomes)
     niphs_file = os.path.join(cds_output, 'identified_NIPHs_CDSs.tsv')
+    # Iterate over possible NIPHs and write to file.
     for niph_id, cds_ids in list(niphs_in_genomes.items()):
         temp_niph_holder = []
+        # Get the presence of the CDS in the genomes.
         for cds_id in cds_ids:
             niphs_presence_in_genomes[cds_id] = cds_presence_in_genomes[cds_id]
             temp_niph_holder.append(set(cds_presence_in_genomes[cds_id]))
+        # Check if all of the sets are the same.
         if itf.check_if_all_sets_are_same(temp_niph_holder):
+            # Write to file.
             write_type = 'w' if not os.path.exists(niphs_file) else 'a'
             with open(niphs_file, write_type) as niphs:
                 count_niphs_groups += 1
@@ -2779,13 +2832,14 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                     niphs.write(f"{cds_id}{tab}{tab.join([str(i) for i in niphs_presence_in_genomes[cds_id]])}\n")
                     #Remove from cds not included in the schema dict.
                     dropped_cluster.setdefault(cds_id, 'Dropped_to_being_only_NIPH_in_genomes')
+                    #Remove from dictionaries.
                     del not_included_cds[cds_id]
                     del niphs_presence_in_genomes[cds_id]
                     #Remove from translation dict.
                     if cds_translation_dict.get(cds_id):
                         del cds_translation_dict[cds_id]
                 niphs.write("\n")
-
+    # Convert the niphs_in_genomes dict to a list of sets.
     niphs_in_genomes = {key: list(value) for key, value in niphs_in_genomes.items()}
     print(f"There were Identified {total_niphs} groups of CDSs containing NIPHs and {count_niphs_groups}"
           " groups ({count_niphs_cds} CDSs) were removed for being present in genomes that only contain NIPHs.")
@@ -2793,38 +2847,177 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
     return niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes
 
 def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
-                            cds_presence_in_genomes, cds_to_keep):
+                            cds_presence_in_genomes, cds_to_keep, clusters, drop_set, problematic_proportion,
+                            dropped_cluster, cds_output):
+    """
+    Removes loci deemed problematic based on a specified proportion of NIPHS and NIPHEMS present in the genomes.
 
+    Parameters
+    ----------
+    niphems_presence_in_genome : dict
+        A dictionary mapping each genome to its Niphems presence data.
+    niphs_in_genomes : dict
+        A dictionary mapping each genome to its Niphs data.
+    niphs_presence_in_genomes : dict
+        A dictionary mapping each genome to the presence data of Niphs.
+    cds_presence_in_genomes : dict
+        A dictionary mapping each genome to the presence data of CDS (Coding Sequences).
+    cds_to_keep : list
+        A list of CDS identifiers that should be retained.
+    clusters : dict
+        A dictionary mapping cluster identifiers to their respective genomic data.
+    drop_set : set
+        A set of loci identifiers that are considered problematic and should be removed.
+    problematic_proportion : float
+        The proportion threshold above which a locus is considered problematic.
+    dropped_cluster : dict
+        A dictionary mapping cluster identifiers to the reason they were dropped.
+    cds_output : str
+        The file path to save the filtered CDS presence data.
+
+    Returns
+    -------
+    proportion_of_niph_genomes : dict
+        A dictionary mapping each genome to the proportion of NIPHS and NIPHEMS present in it.
+    dropped_due_to_niphs_or_niphems : set
+        A set of loci identifiers that were dropped due to the presence of NIPHS or NIPHEMS.
+    cds_to_keep_all_members : dict
+        A dictionary mapping each group to its member CDS identifiers.
+    cds_to_keep_all_genomes : dict
+        A dictionary mapping each group to the genomes in which it is present.
+
+    Notes
+    -----
+    This function is designed to work with genomic data, specifically focusing on the presence and absence of certain
+    NIPHEMs, NIPHs. It filters out loci based on a defined problematic proportion and updates the genomic data structures
+    accordingly.
+    """
+    # Create file Path.
+    niph_and_niphem_report_file = os.path.join(cds_output, 'potential_paralagous.tsv')
+    # Get all of the NIPHs in the genomes.
+    for key, niphs in list(niphs_in_genomes.items()):
+        # Get ids without the allele identifier.
+        niphs_ids = [niph.split('_')[0] for niph in niphs]
+        id_class_1a = [itf.identify_string_in_dict_get_key(niph_id, cds_to_keep['1a']) for niph_id in niphs_ids]
+        # If all IDs are the same (mantain them).
+        if all(id_class_1a) and len(set(id_class_1a)) == 1:
+            continue
+        elif len(set(niphs_ids)) == 1:
+            continue
+        # If IDs are different (meaning that they were not clustered together or joined).
+        # we remove them and write to file the potential paralogous.
+        else:
+            if any(id_class_1a):
+                # Get indices of all values that are not None
+                indices_not_none = [index for index, value in enumerate(id_class_1a) if value is not None]
+                # Replace the IDs with the joined IDs.
+                for index in indices_not_none:
+                    niphs_ids[index] = id_class_1a[index]
+            niphs_ids = set(niphs_ids)
+            write_type = 'w' if not os.path.exists(niph_and_niphem_report_file) else 'a'
+            with open(niph_and_niphem_report_file, write_type) as niph_and_niphem_report:
+                niph_and_niphem_report.write('\t'.join(niphs_ids) + '\n')
+                del niphs_in_genomes[key]
+                for niph in niphs:
+                    del niphs_presence_in_genomes[niph]
+    # Get all of the genomes that one groups is present in.
     cds_to_keep_all_members = {}
-    cds_to_keep_niph_and_niphem = {}
     cds_to_keep_all_genomes = {}
     for class_, cds_group in list(cds_to_keep.items()):
     # Iterate over each group in class.
         for group in list(cds_group):
             cds_to_keep_all_members.setdefault(group, set())
             cds_to_keep_all_genomes.setdefault(group, set())
+            # If the group is a joined group.
             if class_ == '1a':
                 for cds in cds_group[group]:
                     for cds_allele in clusters[cds]:
-                        cds_to_keep_all_members.add(cds_allele)
-                        cds_to_keep_all_genomes.update(cds_presence_in_genomes[cds_allele])
+                        cds_to_keep_all_members[group].add(cds_allele)
+                        cds_to_keep_all_genomes[group].update(cds_presence_in_genomes[cds_allele])
+            # If the group is not a joined group.
             else:
                 for cds_allele in clusters[group]:
-                    cds_to_keep_all_members.add(cds_allele)
-                    cds_to_keep_all_genomes.update(cds_presence_in_genomes[cds_allele])
+                    cds_to_keep_all_members[group].add(cds_allele)
+                    cds_to_keep_all_genomes[group].update(cds_presence_in_genomes[cds_allele])
+    # Get all of the NIPHs in the genomes to consider.
+    get_niphs_in_genomes = {}
+    get_niphems_in_genomes = {}
+    proportion_of_niph_genomes = {}
+    genomes_that_are_niphs_and_niphems = {}
+    # Process NIPHS.
+    for niphs in niphs_in_genomes.values():
+        intersection_set = None
+        for niph in niphs:
+            # Get the ID without the allele identifier.
+            niph_genome_id = niph.split('_')[0]
+            # Get the ID for the joined IDs.
+            id_class_1a = itf.identify_string_in_dict_get_key(niph_genome_id, cds_to_keep['1a'])
+            # If the ID is not None.
+            if id_class_1a:
+                # Add which genomes are present in the NIPH for that group.
+                get_niphs_in_genomes.setdefault(id_class_1a, []).append(niphs_presence_in_genomes[niph])
+            else:
+                # Add which genomes are present in the NIPH for that group.
+                get_niphs_in_genomes.setdefault(niph_genome_id, []).append(niphs_presence_in_genomes[niph])
+            # Get all of the IDs of the genomes that intersect only in the NIPHs (two similiar alleles present in the same genomes).
+            if not intersection_set:
+                # Get the first set.
+                intersection_set = set(get_niphs_in_genomes[niph])
+            else:
+                # Get the intersection of the sets.
+                intersection_set.intersection_update(get_niphs_in_genomes[niph])
+        # Here id_class_1a or niph_genome_id is the key and mather which one in the order it is since they both are in the same.
+        # joined group or are in the same cluster.
+        genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niph_genome_id, set()).update(intersection_set)
+    # Process NIPHEMs.
+    for niphem in niphems_presence_in_genome:
+        niphem_genome_id = niphem.split('_')[0]
+        id_class_1a = itf.identify_string_in_dict_get_key(niphem_genome_id, cds_to_keep['1a'])
+        # If the ID is not None.
+        if id_class_1a:
+            # Add which genomes are present in duplicate for that allele (two or more of the same genome ID).
+            get_niphems_in_genomes.setdefault(id_class_1a, []).append(itf.get_duplicates(niphems_presence_in_genome[niphem]))
+        else:
+            # Add which genomes have duplicate for that allele (two or more of the same genome ID).
+            get_niphems_in_genomes.setdefault(niphem_genome_id, []).append(itf.get_duplicates(niphems_presence_in_genome[niphem]))
             
-            cds_to_keep_niph_and_niphem.setdefault(group, {})
-            
-            for cds_allele in cds_to_keep_all_members[group]:
-                niphs = itf.identify_string_in_dict_get_valuess(input_str, niphs_in_genomes)
-                niphems = niphems_presence_in_genome.get(cds_allele)
-                if niphs:
-                    cds_to_keep_niph_and_niphem[group].update({f"niphs_{key}": value
-                                                               for key, value
-                                                               in niphs_presence_in_genomes.items()
-                                                               if key in niphs})
-                if niphems:
-                    cds_to_keep_niph_and_niphem[group].update({f"niphems_{key}": niphems})
+        if id_class_1a:
+            ids_of_genomes = get_niphems_in_genomes[id_class_1a]
+        else:
+            ids_of_genomes = get_niphems_in_genomes[niphem_genome_id]
+        
+        # Add identified NIPHEMs to the dict that contains the NIPHs and NIPHEMs.
+        niphem_set = set(ids_of_genomes[0])
+        for ids in niphem_set[:1]:
+            niphem_set.update(ids)
+        # Add the genomes that are NIPHEMs.
+        genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niphem_genome_id, set()).update(niphem_set)
+    # Get the proportion of NIPHs and NIPHEMs in the genomes for each group were they are present.
+    dropped_due_to_niphs_or_niphems = set()
+    for key, genomes in genomes_that_are_niphs_and_niphems.items():
+        # Get the proportion of NIPHs and NIPHEMs in the genomes.
+        proportion = len(genomes) / len(cds_to_keep_all_genomes[key])
+        proportion_of_niph_genomes.setdefault(key, proportion)
+        # If the proportion is greater than the threshold, remove the group.
+        if proportion >= problematic_proportion:
+            if cds_to_keep['1a'].get(key):
+                del cds_to_keep['1a'][key]
+            else:
+                class_ = itf.identify_string_in_dict_get_key(key, {key: value for key, value in cds_to_keep.items() if key != '1a'})
+                cds_to_keep[class_].remove(key)
+
+            dropped_due_to_niphs_or_niphems.add(key)
+            dropped_cluster.setdefault(key, 'Dropped_due_to_NIPHs_and_NIPHEMs')
+            drop_set.add(key)
+    
+    # Write the groups that were removed due to the presence of NIPHs or NIPHEMs.
+    niphems_and_niphs_file = os.path.join(cds_output, 'niphems_and_niphs_groups.tsv')
+    with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
+        niphems_and_niphs.write('Group_ID\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
+        for group, proportion in proportion_of_niph_genomes.items():
+            niphems_and_niphs.write(f"{group}\t{proportion}\t{'Dropped' if group in dropped_due_to_niphs_or_niphems else 'Kept'}\n")
+
+    return proportion_of_niph_genomes, dropped_due_to_niphs_or_niphems, cds_to_keep_all_members, cds_to_keep_all_genomes
 
 def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes, drop_set):
     """
@@ -3139,23 +3332,34 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                 if frequency_in_genomes[rep] >= constants[2]}
     
     cds_original_ids = {}
-    #Replace the IDS of cluster alleles to x_1 and replace all of the alleles in
+    # Replace the IDS of cluster alleles to x_1 and replace all of the alleles in
     # the variables.
     for cluster, members in list(clusters.items()):
         i = 1
         new_members_ids = []
         for member in list(members):
+            # Get the new ID.
             new_id = f"{cluster}_{i}" if i != 1 else member
+            # Add the new ID to the dict.
             cds_original_ids[member] = [new_id]
+            # Replace the old ID with the new ID for frequency_cds.
             frequency_cds[new_id] = frequency_cds.pop(member)
+            # Save the new members IDs.
             new_members_ids.append(new_id)
+            # Replace the old ID with the new ID for the DNA sequences.
             not_included_cds[new_id] = not_included_cds.pop(member)
+            # Replace the old ID with the new ID for the translation sequences.
             cds_translation_dict[new_id] = cds_translation_dict.pop(member)
+            # Replace the old ID with the new ID for the protein hashes.
+            cds_presence_in_genomes[new_id] = cds_presence_in_genomes.pop(member)
+            # Replace the old ID with the new ID for the NIPHEMs dict.
             if niphems_presence_in_genome.get(member):
                 niphems_presence_in_genome[new_id] = niphems_presence_in_genome.pop(member)
+            # Replace the old ID with the new ID for the NIPHs genome dict.
             if niphs_presence_in_genomes.get(member):
                 niphs_presence_in_genomes[new_id] = niphs_presence_in_genomes.pop(member)
             niphs_group_id = itf.identify_string_in_dict_get_key(member, niphs_in_genomes)
+            # Replace the old ID with the new ID for the CDSs that matched as NIPHs.
             if niphs_group_id:
                 niphs_group_member_index = niphs_in_genomes[niphs_group_id].index(member)
                 niphs_in_genomes[niphs_group_id][niphs_group_member_index] = new_id
@@ -3292,7 +3496,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     cds_to_keep['1a'] = {values[0]: values for key, values in cds_to_keep['1a'].items()}
     
     # Add new frequencies in genomes for joined groups
-    #Update the changed clusters frequency from Joined CDSs
+    # Update the changed clusters frequency from Joined CDSs
     updated_frequency_in_genomes = {}
     new_cluster_freq = {}
     for cluster_id, cluster_members in cds_to_keep['1a'].items():
@@ -3314,7 +3518,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in representative_blast_results.keys()])
     print("\nFiltering problematic probable new loci...")
 
-    #remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes)
+    remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
+                                cds_presence_in_genomes, cds_to_keep, clusters, drop_set, dropped_cluster,
+                                cds_output)
 
     print("\nExtracting results...")
     all_relationships, related_clusters, recommendations = extract_results(processed_results,
