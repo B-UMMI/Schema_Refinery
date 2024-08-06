@@ -30,8 +30,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
     if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
         sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
                     "was run using --no-cleanup and --output-unclassified flag.")
-        
-    print("Identifying genes fusions...")
+
     unclassified_cds_output = os.path.join(output_directory, "unclassified_cds")
     cof.classify_cds(schema, unclassified_cds_output, allelecall_directory,
                 constants, temp_paths, cpu)
