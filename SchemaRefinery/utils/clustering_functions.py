@@ -267,3 +267,35 @@ def cluster_by_ids(list_of_ids):
     connected = nx.connected_components(G)
 
     return connected
+
+def cluster_by_ids_bigger_sublists(list_of_ids):
+    """
+    Based on list of list containing pairs or more ids, merges them into larger
+    lists if there are ids common between these sublists.
+    
+    Parameters
+    ----------
+    list_of_ids : list
+        List containing lists with ids.
+    
+    Returns
+    -------
+    connected : list
+        List that contains sublists of ids merged from the initial list.
+    """
+    G = nx.Graph()
+    
+    # Flatten the list of lists into pairs of nodes
+    for sublist in list_of_ids:
+        if len(sublist) == 2:
+            G.add_edge(sublist[0], sublist[1])
+        else:
+            for i in range(len(sublist) - 1):
+                G.add_edge(sublist[i], sublist[i + 1])
+
+    connected = list(nx.connected_components(G))
+
+    # Convert sets to lists
+    connected = [list(component) for component in connected]
+
+    return connected

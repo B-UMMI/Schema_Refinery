@@ -1267,8 +1267,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                           run_type):
     """
     This function wraps up the results for processing of the unclassified CDSs
-    by writing FASTAs files for the possible new loci to include into the schema
-    and creates graphs for each results group.
+    by writing FASTAs files for the possible new loci to include.
     
     Parameters
     ----------
@@ -1344,14 +1343,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             else:
                 print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained.")
 
-    def create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, case_id, cases):
+    def write_ids_by_class(output_path, case_id, cases):
         """
-        Create directories and write dict to TSV.
+        Create directories and write cases IDs to  to TSV.
 
         Parameters
         ----------
-        cds_outcome_results_fastas_folder : str
-            The path to the folder where the results will be stored.
         output_path : str
             The path where the output will be written.
         case_id : int
@@ -1361,18 +1358,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
         Returns
         -------
-        cds_outcome_results : str
-            The path to the results folder.
+        None, writes to TSV file.
         """
-        cds_outcome_results = os.path.join(cds_outcome_results_fastas_folder, f"results_{'CDSs' if case_id == 0 else 'loci'}_fastas")
-        ff.create_directory(cds_outcome_results)
-
         id_folder = os.path.join(output_path, 'results_IDs')
         ff.create_directory(id_folder)
         id_report_path = os.path.join(id_folder, f"{'CDS_Results' if case_id == 0 else 'Loci_Results'}.tsv")
         ff.write_dict_to_tsv(id_report_path, cases)
-
-        return cds_outcome_results
 
     def copy_fasta(class_, cds_list, case_id, cds_outcome_results, groups_paths_old, loci):
         """
@@ -1418,8 +1409,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             origin_path = groups_paths_old.pop(cds) if case_id == 0 else loci[cds]
             ff.copy_file(origin_path, file_path)
 
-    def write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder,
-                            fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters):
+    def write_possible_new_loci(class_, cds_list, cds_outcome_results_fastas_folder, cds_outcome_results_reps_fastas_folder,
+                                fasta_folder, groups_paths, groups_paths_reps, not_included_cds, clusters):
         """
         Process each class and CDS list in cds_to_keep.
 
@@ -1463,6 +1454,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             master_file_rep = os.path.join(fasta_folder, 'master_rep_file.fasta')
             groups_paths[main_rep] = cds_group_fasta_file
             groups_paths_reps[main_rep] = cds_group_reps_file
+            save_ids_index = {}
             if class_ != '1a':
                 cds = [cds]
             else:
@@ -1473,7 +1465,13 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                 for rep_id in cds:
                     cds_ids = [cds_id for cds_id in clusters[rep_id]]
                     for cds_id in cds_ids:
-                        fasta_file.write(f">{main_rep}_{index}\n{str(not_included_cds[cds_id])}\n")
+                        # New ID for the allele.
+                        new_id = f"{main_rep}_{index}"
+                        # Save the new ID to the dictionary where the old ID is the key.
+                        save_ids_index[cds_id] = new_id
+                        # Write the allele to the file.
+                        fasta_file.write(f">{new_id}\n{str(not_included_cds[cds_id])}\n")
+                        # Save the ID for that possible new loci.
                         alleles.setdefault(main_rep, []).append(f"{main_rep}_{index}")
                         index += 1
             index = 1
@@ -1485,18 +1483,19 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     for cds_id in cds_ids:
                         fasta_file.write(f">{main_rep}_{index}\n{str(not_included_cds[cds_id])}\n")
                         index += 1
-            index = 1
+
             # Write only the representative to the files.
             with open(cds_group_reps_file, 'w') as fasta_file:
                 for rep_id in cds:
-                    fasta_file.write(f">{main_rep}_{index}\n{str(not_included_cds[rep_id])}\n")
-                    index += 1
-            index = 1
+                    # Get the right new ID and write the representative to the file.
+                    fasta_file.write(f">{save_ids_index[rep_id]}\n{str(not_included_cds[rep_id])}\n")
+
             # Write the representative to the master file.
             with open(master_file_rep, write_type) as fasta_file:
                 for rep_id in cds:
-                    fasta_file.write(f">{main_rep}_{index}\n{str(not_included_cds[rep_id])}\n")
-                    index += 1
+                    # Get the right new ID and write the representative to the file.
+                    fasta_file.write(f">{save_ids_index[rep_id]}\n{str(not_included_cds[rep_id])}\n")
+
 
     def translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants):
         """
@@ -1515,9 +1514,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
 
         Returns
         -------
+        reps_trans_dict_cds : dict
+            The dictionary containing the translated representatives sequences.
         trans_dict_cds : dict
             The dictionary containing the translated sequences.
         """
+        # Translate the possible new loci.
         groups_trans_folder = os.path.join(fasta_folder, 'cds_groups_translation')
         ff.create_directory(groups_trans_folder)
         groups_trans = {}
@@ -1535,7 +1537,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                                                             False)
             for id_, sequence in trans_dict.items():
                 trans_dict_cds[id_] = sequence
-        
+        # Translate the representative sequences.
         group_trans_rep_folder = os.path.join(fasta_folder, 'cds_groups_translation_reps')
         ff.create_directory(group_trans_rep_folder)
         groups_trans_reps_paths = {}
@@ -1554,15 +1556,15 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             for id_, sequence in trans_dict.items():
                 reps_trans_dict_cds[id_] = sequence
 
-        return trans_dict_cds
+        return reps_trans_dict_cds, trans_dict_cds
 
-# Create directories.
+    # Create directories.
     fasta_folder = os.path.join(output_path, 'results_fastas')
     ff.create_directory(fasta_folder)
-    
-    cds_outcome_results_fastas_folder = os.path.join(fasta_folder, 'results_group_dna_fastas')
-    ff.create_directory(cds_outcome_results_fastas_folder)
+    # Create directories for the FASTA (possible new Loci).
     if not loci:
+        cds_outcome_results_fastas_folder = os.path.join(fasta_folder, 'results_group_dna_fastas')
+        ff.create_directory(cds_outcome_results_fastas_folder)
         cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, 'results_group_dna_reps_fastas')
         ff.create_directory(cds_outcome_results_reps_fastas_folder)
 
@@ -1654,8 +1656,11 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         for case_id, cases in enumerate([cds_cases, loci_cases]):
             if run_type == 'loci_vs_loci' and case_id == 0:
                 continue
-            # Create directories and write dict to TSV
-            cds_outcome_results = create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, case_id, cases)
+            # Create directories and write IDS to TSV
+            cds_outcome_results = os.path.join(fasta_folder, f"results_{'CDSs' if case_id == 0 else 'loci'}_fastas")
+            ff.create_directory(cds_outcome_results)
+            # Write the IDs to TSV by class
+            write_ids_by_class(output_path, case_id, cases)
 
             # Process each class and CDS list in cases
             for class_, cds_list in cases.items():
@@ -1666,27 +1671,28 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                     cds_name = f"retained_not_matched_by_blastn_{cds}"
                     file_path = os.path.join(cds_outcome_results, cds_name)
                     ff.copy_file(path, file_path)
+        # Create variables that are not needed
         master_file = None
+        reps_trans_dict_cds = None
         trans_dict_cds = None
         alleles = None
     else:
         print("Writing FASTA and additional files for possible new loci...")
 
+        # Create directories and write dict to TSV
+        write_ids_by_class(output_path, 0, cds_cases)
         # Process each class and CDS list in cds_to_keep
         for class_, cds_list in cds_to_keep.items():
-            write_fasta_to_keep(class_, cds_list, cds_outcome_results_fastas_folder,
-                                cds_outcome_results_reps_fastas_folder, fasta_folder,
-                                groups_paths, groups_paths_reps, not_included_cds,
-                                clusters)
-
-        # Create directories and write dict to TSV
-        cds_outcome_results = create_directory_and_write_dict(cds_outcome_results_fastas_folder, output_path, 0, cds_cases)
+            write_possible_new_loci(class_, cds_list, cds_outcome_results_fastas_folder,
+                                    cds_outcome_results_reps_fastas_folder, fasta_folder,
+                                    groups_paths, groups_paths_reps, not_included_cds,
+                                    clusters)
         # Translate possible new loci and write to master file
-        trans_dict_cds = translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants)
+        reps_trans_dict_cds, trans_dict_cds = translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants)
 
         master_file = os.path.join(fasta_folder, 'master_file.fasta')
 
-    return groups_paths, trans_dict_cds, master_file, alleles
+    return groups_paths_reps, groups_paths, reps_trans_dict_cds, trans_dict_cds, master_file, alleles
 
 def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                rep_paths_nuc, output_dir, constants, cpu, multi_fasta, run_type):
@@ -2614,7 +2620,8 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, protein_hashes, not_included_cds, cds_output,
                              bsr_value, dropped_cluster, cpu):
     """
-    Identifies problematic CDS (Coding DNA Sequences) based on specified criteria and outputs the results.
+    Identifies problematic CDS (Coding DNA Sequences) based on specified criteria and outputs the results
+    and Remove the instace of CDS from all the dicts.
 
     Parameters
     ----------
@@ -2643,11 +2650,11 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
     Notes
     -----
     This function is part of a larger pipeline for analyzing genomic data, specifically focusing on the identification
-    of problematic CDS based on duplication, absence in certain genomes, or low Bit Score Ratios. The results are used
+    of problematic CDS based on duplication, absence in certain genomes, or low BLAST Score Ratios. The results are used
     to refine the dataset for further analysis.
     """
 
-    print("Identifying possible NIPHEMs...")
+    print("\nIdentifying possible NIPHEMs...")
     # Identify NIPHEMs.
     same_origin_genome = {}
     niphems_presence_in_genome = {}
@@ -2659,15 +2666,28 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
         same_origin_genome.setdefault(genome_id, set()).add(id_)
         # If there are duplicates in genomes.
         if len(cds_in_genomes) != len(set(cds_in_genomes)):
-            niphems_presence_in_genome.setdefault(id_, cds_in_genomes)
             # If all of the genomes contain only NIPHEMs in genomes.
             if itf.check_if_all_elements_are_duplicates(cds_in_genomes):
+                # Remove from same_origin_genomes since these IDs were dropped.
+                same_origin_genome[genome_id].remove(id_)
                 # Save the CDS that are only NIPHEMs in genomes.
                 only_niphems_in_genomes.setdefault(id_, set(cds_in_genomes))
                 dropped_cluster.setdefault(id_, 'Dropped_due_to_being_only_NIPHEM_in_genomes')
                 # Remove the CDS from the dictionaries.
                 del not_included_cds[id_]
-                del cds_translation_dict[id_]
+                # If this CDSs is the representative in translation dict
+                if cds_translation_dict.get(id_):
+                    del cds_translation_dict[id_]
+                #Remove from associated translation hashes dict.
+                translation_hash = itf.identify_string_in_dict_get_key(id_, protein_hashes)
+                protein_hashes[translation_hash].remove(id_)
+                # Remove all reference of the protein if it has no more CDSs associated with it.
+                if len(protein_hashes[translation_hash]) == 0:
+                    del protein_hashes[translation_hash]
+            else:
+                # Add to the dict for further processing when to calculate if to exclude
+                # possible new loci
+                niphems_presence_in_genome.setdefault(id_, cds_in_genomes)
     # Write the identified NIPHEMs to a file.
     niphems_file = os.path.join(cds_output, 'identified_NIPHEMs_CDSs.tsv')
     tab = "\t"
@@ -2678,6 +2698,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
     # Print the results.
     print(f"There were identified {len(niphems_presence_in_genome)} CDSs containing NIPHEMs in genomes "
           f"and {len(only_niphems_in_genomes)} were removed for being present in genomes that only contain NIPHEMs.")
+
     # Identify CDSs present in the same genome.
     same_origin_genome = {genome_id: [cds for cds in cds_ids if cds_translation_dict.get(cds)] for genome_id, cds_ids in same_origin_genome.items()}
     # Filter out genomes with only one CDS.
@@ -2716,8 +2737,9 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
             write_type = 'w' if not os.path.exists(member_file) else 'a'
             with open(member_file, write_type) as m_file:
                 m_file.write(f">{member_id}\n{sequences_to_run[member_id]}\n")
+
     # Run BLASTp to identify possible NIPHs.
-    print("Identifying possible NIPHs...")
+    print("\nIdentifying possible NIPHs...")
     self_score_folder = os.path.join(niphs_folder, 'self_score')
     ff.create_directory(self_score_folder)
     # Get the path to the BLASTp executable.
@@ -2728,7 +2750,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
     # Get the max length of the IDs.
     max_id_length = len(max(sequences_fasta_path))
     # Calculate self-score.
-    print("\nCalculating self-score for possible NIPHs...")
+    print("Calculating self-score for possible NIPHs...")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 sequences_fasta_path.keys(),
@@ -2778,31 +2800,20 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
     filtered_save_bsr_score = {query: {subject_id: bsr for subject_id, bsr in subjects_ids.items() if bsr >= bsr_value} for query, subjects_ids in save_bsr_score.items()}
     #Remove empty dicts.
     itf.remove_empty_dicts_recursive(filtered_save_bsr_score)
-    i = 1
-    #Get lists of CDSs considered to be NIPHs.
-    for query, subjects_ids in filtered_save_bsr_score.items():
-        ids_ = [query] + [subject for subject in subjects_ids.keys()]
-        add_to_niphs = []
-        presence = list(map(itf.identify_string_in_dict_get_key, [i for i in ids_], repeat(niphs_in_genomes)))
-        if not any(presence):
-            ids_ = [query] + [subject for subject in subjects_ids.keys()]
-            #Add CDSs that have same protein sequence as their representative.
-            for id_ in ids_:
-                cds_list = itf.identify_string_in_dict_get_value(id_, protein_hashes)
-                add_to_niphs += cds_list
-            niphs_in_genomes.setdefault(i, set()).update(add_to_niphs)
-            i += 1
-        else:
-            ids_ = [query] + [subject for subject in subjects_ids.keys()]
-            #Add CDSs that have same protein sequence as their representative.
-            for id_ in ids_:
-                cds_list = itf.identify_string_in_dict_get_value(id_, protein_hashes)
-                add_to_niphs += cds_list
-            niphs_in_genomes.setdefault([i for i in presence if i][0], set()).update(add_to_niphs)
+
+    # When some IDs didnt get in the same group
+    to_merge_lists = [[query] + [subject for subject in subjects_ids.keys()] for query, subjects_ids in filtered_save_bsr_score.items()]
+    niphs_in_genomes = {index: set(value) for index, value in enumerate(cf.cluster_by_ids_bigger_sublists(to_merge_lists))}
+
+    for index, niphs in list(niphs_in_genomes.items()):
+        for cds in list(niphs):
+            same_protein_ids = itf.identify_string_in_dict_get_value(cds, protein_hashes)
+            niphs_in_genomes[index].update(same_protein_ids)
+
     #Write the identified NIPHs to a file.
     niphs_presence_in_genomes = {}
-    count_niphs_groups = 1
-    count_niphs_cds = 1
+    count_niphs_groups = 0
+    count_niphs_cds = 0
     total_niphs = len(niphs_in_genomes)
     niphs_file = os.path.join(cds_output, 'identified_NIPHs_CDSs.tsv')
     # Iterate over possible NIPHs and write to file.
@@ -2824,19 +2835,30 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                 for cds_id in cds_ids:
                     count_niphs_cds += 1
                     niphs.write(f"{cds_id}{tab}{tab.join([str(i) for i in niphs_presence_in_genomes[cds_id]])}\n")
-                    #Remove from cds not included in the schema dict.
+                    # Remove from cds not included in the schema dict.
                     dropped_cluster.setdefault(cds_id, 'Dropped_to_being_only_NIPH_in_genomes')
-                    #Remove from dictionaries.
+                    # Remove from dictionaries.
                     del not_included_cds[cds_id]
-                    del niphs_presence_in_genomes[cds_id]
-                    #Remove from translation dict.
+                    # Remove from NIPHEMs dict
+                    if niphems_presence_in_genome.get(cds_id):
+                        del niphems_presence_in_genome[cds_id]
+                    # If this CDSs is the representative in translation dict
                     if cds_translation_dict.get(cds_id):
                         del cds_translation_dict[cds_id]
+                    # Remove from NIPHs
+                    del niphs_presence_in_genomes[cds_id]
+                    #Remove from associated translation hashes dict.
+                    translation_hash = itf.identify_string_in_dict_get_key(cds_id, protein_hashes)
+                    if translation_hash:
+                        protein_hashes[itf.identify_string_in_dict_get_key(cds_id, protein_hashes)].remove(cds_id)
+                        # Remove all hash of the protein if it has no more CDSs associated with it.
+                        if len(protein_hashes[translation_hash]) == 0:
+                            del protein_hashes[translation_hash]
                 niphs.write("\n")
     # Convert the niphs_in_genomes dict to a list of sets.
     niphs_in_genomes = {key: list(value) for key, value in niphs_in_genomes.items()}
     print(f"There were Identified {total_niphs} groups of CDSs containing NIPHs and {count_niphs_groups}"
-          " groups ({count_niphs_cds} CDSs) were removed for being present in genomes that only contain NIPHs.")
+          f" groups ({count_niphs_cds} CDSs) were removed for being present in genomes that only contain NIPHs.")
 
     return niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes
 
@@ -2887,8 +2909,8 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
     accordingly.
     """
     # Create file Path.
-    niph_and_niphem_report_file = os.path.join(results_output, 'potential_paralagous.tsv')
-    # Get all of the NIPHs in the genomes.
+    potential_paralagous = os.path.join(results_output, 'potential_paralagous.tsv')
+    # Pre process NIPHs
     for key, niphs in list(niphs_in_genomes.items()):
         # Get ids without the allele identifier.
         niphs_ids = [niph.split('_')[0] for niph in niphs]
@@ -2908,12 +2930,13 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
                 for index in indices_not_none:
                     niphs_ids[index] = id_class_1a[index]
             niphs_ids = set(niphs_ids)
-            write_type = 'w' if not os.path.exists(niph_and_niphem_report_file) else 'a'
-            with open(niph_and_niphem_report_file, write_type) as niph_and_niphem_report:
+            write_type = 'w' if not os.path.exists(potential_paralagous) else 'a'
+            with open(potential_paralagous, write_type) as niph_and_niphem_report:
                 niph_and_niphem_report.write('\t'.join(niphs_ids) + '\n')
                 del niphs_in_genomes[key]
                 for niph in niphs:
                     del niphs_presence_in_genomes[niph]
+
     # Get all of the genomes that one groups is present in.
     cds_to_keep_all_members = {}
     cds_to_keep_all_genomes = {}
@@ -2933,7 +2956,8 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
                 for cds_allele in clusters[group]:
                     cds_to_keep_all_members[group].add(cds_allele)
                     cds_to_keep_all_genomes[group].update(cds_presence_in_genomes[cds_allele])
-    # Get all of the NIPHs in the genomes to consider.
+
+    # Get all of the NIPHs and NIPHEMs in the genomes to consider.
     get_niphems_in_genomes = {}
     proportion_of_niph_genomes = {}
     genomes_that_are_niphs_and_niphems = {}
@@ -2952,15 +2976,14 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
             else:
                 # Get the intersection of the sets.
                 intersection_set.intersection_update(niphs_presence_in_genomes[niph])
-        # Here id_class_1a or niph_genome_id is the key and mather which one in the order it is since they both are in the same.
+        # Here id_class_1a or niph_genome_id is the key and mather which one in the order it is since they both are in the same
         # joined group or are in the same cluster.
         genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niph_genome_id, set()).update(intersection_set)
 
     # Process NIPHEMs.
-    for niphem in niphems_presence_in_genome:
+    for niphem in list(niphems_presence_in_genome):
         niphem_genome_id = niphem.split('_')[0]
         id_class_1a = itf.identify_string_in_dict_get_key(niphem_genome_id, cds_to_keep['1a'])
-
         # Add which genomes are present in duplicate for that allele (two or more of the same genome ID).
         ids_of_genomes = itf.get_duplicates(niphems_presence_in_genome[niphem])
         get_niphems_in_genomes.setdefault(id_class_1a or niphem_genome_id, []).append(ids_of_genomes)
@@ -2968,9 +2991,13 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
         # Add identified NIPHEMs to the dict that contains the NIPHs and NIPHEMs.
         # Add the genomes that are NIPHEMs.
         genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niphem_genome_id, set()).update(set(ids_of_genomes))
+
     # Get the proportion of NIPHs and NIPHEMs in the genomes for each group were they are present.
     dropped_due_to_niphs_or_niphems = set()
-    for key, genomes in genomes_that_are_niphs_and_niphems.items():
+    for key, genomes in list(genomes_that_are_niphs_and_niphems.items()):
+        # Remove cases that were dropped in classification phase.
+        if key in drop_set:
+            continue
         # Get the proportion of NIPHs and NIPHEMs in the genomes.
         proportion = len(genomes) / len(cds_to_keep_all_genomes[key])
         proportion_of_niph_genomes.setdefault(key, proportion)
@@ -3127,6 +3154,9 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
 
+def find_new_representatives(reps_trans_dict_cds, trans_dict_cds, groups_paths_reps, groups_paths):
+    pass
+
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
     temp_folder = temp_paths[0]
@@ -3157,19 +3187,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     for key, value in list(not_included_cds.items()):
         not_included_cds[itf.replace_by_regex(key, '_', '-')] = not_included_cds.pop(key)
 
-    """
-    print("Identifying CDS identified as missing classes...")
-    missing_classes_fastas = sf.fetch_fasta_dict(missing_classes_fastas, True)
-    print("Filtering missing CDS in the schema...")
-    missing_classes_fastas = {itf.remove_by_regex(key.split('|')[3], '&.*'): value 
-                              for key, value in missing_classes_fastas.items() 
-                              if itf.regex_present(['&ASM', '&ALM', '&NIPH', '&NIPHEM'], key)}
-    # Deduplicate the FASTA dict.
-    missing_classes_fastas = itf.deduplicate_fasta_dict(missing_classes_fastas)
-
-    not_included_cds.update(missing_classes_fastas)
-    """
-    print("Filtering missing CDS in the schema...")
+    print("\nFiltering missing CDS in the schema...")
     # Count CDS size
     cds_size = {}
     for key, sequence in not_included_cds.items():
@@ -3196,10 +3214,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     ff.create_directory(cds_output)
     # This file contains unique CDS.
     cds_not_present_file_path = os.path.join(cds_output, 'CDS_not_found.fasta')
-    
-    #Report on removed NIPHEMs.
-    total_cds = len(not_included_cds)
-    # Count the number of CDS present in the schema and write CDS sequence
+
+    # Count the number of CDS not present in the schema and write CDS sequence
     # into a FASTA file.
     frequency_cds = {}
     cds_presence_in_genomes = {}
@@ -3238,7 +3254,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     # Print additional information about translations and deduplications.
     print(f"\n{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
-
+    
+    print("\nIdentify problematics CDSs...")
     [niphems_presence_in_genome,
      niphs_in_genomes,
      niphs_presence_in_genomes] = identify_problematic_cds(cds_presence_in_genomes,
@@ -3274,30 +3291,26 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                            constants[3], 
                                                            constants[4],
                                                            True)
-    # Print additional information about clustering.
-    total_number_clusters = len(clusters)
-    print(f"{len(cds_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
-    singleton_cluster = len([cluster for cluster in clusters if len(cluster) == 1])
-    print(f"\tOut of those clusters, {singleton_cluster} are singletons")
-    print(f"\tOut of those clusters, {total_number_clusters - singleton_cluster} have more than one CDS.")
-    
+
     # Reformat the clusters output, we are interested only in  the ID of cluster members.
     clusters = {cluster_rep: [value[0] for value in values]
                 for cluster_rep, values in clusters.items()}
     # For protein hashes get only those that have more than one CDS.
     filtered_protein_hashes = {hash_prot: cds_ids for hash_prot, cds_ids in protein_hashes.items()
                       if len(cds_ids) > 1}
-    
     # Add also the unique CDS ID to clusters that have the same protein as representative.
-    for cluster_rep, values in clusters.items():
-        for cds_ids in filtered_protein_hashes.values():
-            # Break since there is only one possible match in protein_hashes.
-            if cluster_rep in cds_ids:
-                clusters[cluster_rep] + cds_ids[1:]
-                break
+    for cluster_rep, values in list(clusters.items()):
+        for cds_id in list(values):
+            protein_hash = itf.identify_string_in_dict_get_key(cds_id, filtered_protein_hashes)
+            if protein_hash:
+                clusters[cluster_rep] += filtered_protein_hashes[protein_hash][1:]
 
+    total_number_clusters = len(clusters)
+    print(f"{len(cds_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
+    singleton_cluster = len([cluster for cluster in clusters if len(cluster) == 1])
+    print(f"\tOut of those clusters, {singleton_cluster} are singletons")
+    print(f"\tOut of those clusters, {total_number_clusters - singleton_cluster} have more than one CDS.")
     print("\nFiltering clusters...")
-
     # Get frequency of cluster.
     frequency_in_genomes = {rep: sum([frequency_cds[entry] for entry in value]) 
                              for rep, value in clusters.items()}
@@ -3306,16 +3319,15 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value.
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
                 if frequency_in_genomes[rep] >= constants[2]}
-    
     cds_original_ids = {}
     # Replace the IDS of cluster alleles to x_1 and replace all of the alleles in
     # the variables.
     for cluster, members in list(clusters.items()):
-        i = 1
+        i = 0
         new_members_ids = []
         for member in list(members):
             # Get the new ID.
-            new_id = f"{cluster}_{i}" if i != 1 else member
+            new_id = f"{cluster}_{i}" if i != 0 else member
             # Add the new ID to the dict.
             cds_original_ids[member] = [new_id]
             # Replace the old ID with the new ID for frequency_cds.
@@ -3324,8 +3336,19 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             new_members_ids.append(new_id)
             # Replace the old ID with the new ID for the DNA sequences.
             not_included_cds[new_id] = not_included_cds.pop(member)
+            # Replace in hashes dict
+            translation_hash = itf.identify_string_in_dict_get_key(member, protein_hashes)
+            index = protein_hashes[translation_hash].index(member)
             # Replace the old ID with the new ID for the translation sequences.
-            cds_translation_dict[new_id] = cds_translation_dict.pop(member)
+            # Since only representatives are in the dict we first check if it is present
+            if cds_translation_dict.get(member):
+                cds_translation_dict[new_id] = cds_translation_dict.pop(member)
+            else: # Add the sequences previousy deduplicated
+                rep_id = protein_hashes[translation_hash][0]
+                cds_translation_dict[new_id] = cds_translation_dict[rep_id]
+
+            # Replace the value at the found index
+            protein_hashes[translation_hash][index] = new_id  # Replace `new_id` with the actual value you want to set
             # Replace the old ID with the new ID for the protein hashes.
             cds_presence_in_genomes[new_id] = cds_presence_in_genomes.pop(member)
             # Replace the old ID with the new ID for the NIPHEMs dict.
@@ -3334,13 +3357,14 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             # Replace the old ID with the new ID for the NIPHs genome dict.
             if niphs_presence_in_genomes.get(member):
                 niphs_presence_in_genomes[new_id] = niphs_presence_in_genomes.pop(member)
-            niphs_group_id = itf.identify_string_in_dict_get_key(member, niphs_in_genomes)
             # Replace the old ID with the new ID for the CDSs that matched as NIPHs.
+            niphs_group_id = itf.identify_string_in_dict_get_key(member, niphs_in_genomes)
             if niphs_group_id:
                 niphs_group_member_index = niphs_in_genomes[niphs_group_id].index(member)
                 niphs_in_genomes[niphs_group_id][niphs_group_member_index] = new_id
             i += 1
         clusters[cluster] = new_members_ids
+    # Join NIPHS and NIPHEMS into the same cluster
 
     print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
           f" out of {total_number_clusters} clusters, {len(clusters)} remained.")
@@ -3455,7 +3479,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Write all of the BLASTn results to a file.
     alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
-    print("\nProcessing classes...")'cds_vs_cds'
+    print("\nProcessing classes...")
     sorted_blast_dict = sort_blast_results_by_classes(representative_blast_results, classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
     [processed_results,
@@ -3534,9 +3558,11 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     dropped_cluster.update({id_ : 'Dropped_due_to_frequency' for id_ in itf.flatten_list([clusters[i] for i in drop_set])})
     update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped_cluster, results_output)
 
-    print("\nWrapping up BLAST results...")
-    [groups_paths,
+    print("\nWritting possible new loci Fastas...")
+    [groups_paths_reps,
+     groups_paths,
      reps_trans_dict_cds,
+     trans_dict_cds,
      master_file,
      alleles] = wrap_up_blast_results(cds_to_keep,
                                               not_included_cds,
@@ -3549,6 +3575,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               frequency_in_genomes,
                                               run_type)
     
+    print("Identifying new representatives for possible new loci...")
+    find_new_representatives(reps_trans_dict_cds, trans_dict_cds, groups_paths_reps, groups_paths)
     write_cluster_members_to_file(results_output, cds_to_keep, clusters, frequency_in_genomes,
                                   drop_set)
 
@@ -3579,7 +3607,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     representative_blast_results = process_schema(schema,
                                                   groups_paths,
                                                   results_output,
-                                                  reps_trans_dict_cds,
+                                                  trans_dict_cds,
                                                   alleles,
                                                   updated_frequency_in_genomes,
                                                   allelecall_directory, 

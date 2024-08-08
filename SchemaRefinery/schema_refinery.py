@@ -256,6 +256,10 @@ def unclassified_cds():
      parser.add_argument('-b', '--bsr', type=float,
           required=False, dest='bsr', default=0.6,
           help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-b', '--problematic_proportion', type=float,
+          required=False, dest='problematic_proportion', default=0.3,
+          help='Proportion of problematic (NIPHS and NIPHEMS) CDSs per loci allowed.')
     
      parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
