@@ -853,7 +853,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark
 
 def extract_results(processed_results, count_results_by_class, frequency_in_genomes,
-                    cds_to_keep, drop_set, classes_outcome):
+                    cds_to_keep, drop_possible_loci, classes_outcome):
     """
     Extracts and organizes results from process_classes.
 
@@ -1027,8 +1027,8 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
         if_query_in_choice = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
         if_subject_in_choice = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
     
-        if_query_dropped = (joined_query_id or query_id) in drop_set
-        if_subject_dropped = (joined_subject_id or subject_id) in drop_set
+        if_query_dropped = (joined_query_id or query_id) in drop_possible_loci
+        if_subject_dropped = (joined_subject_id or subject_id) in drop_possible_loci
 
         choice_query_id = itf.identify_string_in_dict_get_key(query_id, choice)
         choice_subject_id = itf.identify_string_in_dict_get_key(subject_id, choice)
@@ -1071,12 +1071,12 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                 if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]):
                     add_to_recommendations('Choice', query_to_write, choice_query_id)
                     add_to_recommendations('Choice', subject_to_write, choice_subject_id)
-                if query_id in drop_set:
+                if query_id in drop_possible_loci:
                     if not if_joined_query and not if_query_in_choice:
                         add_to_recommendations('Drop', query_to_write)
                         dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
 
-                elif subject_id in drop_set:
+                elif subject_id in drop_possible_loci:
                     if not if_joined_subject and not if_subject_in_choice:
                         add_to_recommendations('Drop', subject_to_write)
                         dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
@@ -1263,7 +1263,7 @@ def get_matches(all_relationships, cds_to_keep, sorted_blast_dict):
     return is_matched, is_matched_alleles
 
 def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path, 
-                          constants, drop_set, loci, groups_paths_old, frequency_in_genomes,
+                          constants, loci, groups_paths_old, cds_cases, loci_cases,
                           run_type):
     """
     This function wraps up the results for processing of the unclassified CDSs
@@ -1282,9 +1282,8 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         Path to were write the FASTA files.
     constants : list
         Contains the constants to be used in this function.
-    drop_set : set
-        Contains the CDS IDs to be removed from further processing for appearing
-        fewer time in genomes than their match.
+    drop_possible_loci : set
+        Possible new loci that were dropped
     loci : dict
         Dict that contains the loci IDs and paths.
     groups_paths_old : dict
@@ -1307,42 +1306,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
     master_file_rep : str or None
         Path to the master file that contains all of the representative sequences.
     """
-    def print_classification_results(class_, count, printout, i):
-        """
-        Prints the classification results based on the class type.
-
-        Parameters
-        ----------
-        class_ : str
-            The class type.
-        count : int
-            The count of groups.
-        printout : dict
-            The dictionary containing printout information.
-        i : int
-            An index used to determine the printout message.
-
-        Returns
-        -------
-        None, prints in stdout
-        """
-        if count > 0:
-            if class_ in ['2b', '4b']:
-                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained"
-                    " but it is recommended to verify them as they may be contained or contain partially inside"
-                    " their BLAST match.")
-            elif class_ == '1a':
-                print(f"\t\tOut of those groups, {count} {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
-                    f" and are contained in {len(printout['1a'])} joined groups that were retained.")
-            elif class_ == 'dropped':
-                if run_type == 'loci_vs_loci':
-                    print(f"\t\tOut of those {count} loci are recommended to be removed.")
-                else:
-                    print(f"\t\tOut of those {count} {'CDSs groups' if i== 0 else 'loci'}"
-                        f" {'were removed from the analysis' if i == 0 else 'are recommended to be replaced with their matched CDS in the schema.'}")
-            else:
-                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained.")
-
     def write_ids_by_class(output_path, case_id, cases):
         """
         Create directories and write cases IDs to  to TSV.
@@ -1463,14 +1426,12 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             # Write all of the alleles to the files.
             with open(cds_group_fasta_file, 'w') as fasta_file:
                 for rep_id in cds:
-                    cds_ids = [cds_id for cds_id in clusters[rep_id]]
+                    cds_ids = clusters[rep_id]
                     for cds_id in cds_ids:
-                        # New ID for the allele.
-                        new_id = f"{main_rep}_{index}"
                         # Save the new ID to the dictionary where the old ID is the key.
-                        save_ids_index[cds_id] = new_id
+                        save_ids_index[cds_id] = cds_id
                         # Write the allele to the file.
-                        fasta_file.write(f">{new_id}\n{str(not_included_cds[cds_id])}\n")
+                        fasta_file.write(f">{cds_id}\n{str(not_included_cds[cds_id])}\n")
                         # Save the ID for that possible new loci.
                         alleles.setdefault(main_rep, []).append(f"{main_rep}_{index}")
                         index += 1
@@ -1487,15 +1448,18 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             # Write only the representative to the files.
             with open(cds_group_reps_file, 'w') as fasta_file:
                 for rep_id in cds:
+                    # New Rep Id
+                    rep_id = clusters[rep_id][0]
                     # Get the right new ID and write the representative to the file.
-                    fasta_file.write(f">{save_ids_index[rep_id]}\n{str(not_included_cds[rep_id])}\n")
+                    fasta_file.write(f">{save_ids_index[rep_id]}\n{str(not_included_cds[save_ids_index[rep_id]])}\n")
 
             # Write the representative to the master file.
             with open(master_file_rep, write_type) as fasta_file:
                 for rep_id in cds:
+                    # New Rep Id
+                    rep_id = clusters[rep_id][0]
                     # Get the right new ID and write the representative to the file.
-                    fasta_file.write(f">{save_ids_index[rep_id]}\n{str(not_included_cds[rep_id])}\n")
-
+                    fasta_file.write(f">{save_ids_index[rep_id]}\n{str(not_included_cds[save_ids_index[rep_id]])}\n")
 
     def translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants):
         """
@@ -1556,7 +1520,7 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
             for id_, sequence in trans_dict.items():
                 reps_trans_dict_cds[id_] = sequence
 
-        return reps_trans_dict_cds, trans_dict_cds
+        return reps_trans_dict_cds, trans_dict_cds, groups_trans_reps_paths, groups_trans
 
     # Create directories.
     fasta_folder = os.path.join(output_path, 'results_fastas')
@@ -1568,81 +1532,6 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
         cds_outcome_results_reps_fastas_folder = os.path.join(fasta_folder, 'results_group_dna_reps_fastas')
         ff.create_directory(cds_outcome_results_reps_fastas_folder)
 
-
-    # If 'Retained_not_matched_by_blastn' exists in cds_to_keep, remove it and store it separately
-    Retained_not_matched_by_blastn = cds_to_keep.pop('Retained_not_matched_by_blastn', None)
-
-    # Display info about the results obtained from processing the classes.
-    # Get the total number of CDS reps considered for classification.
-    count_cases = {}
-    loci_cases = {}
-    cds_cases = {}
-    if loci:
-        # Iterate over classes and their associated CDS sets
-        for class_, cds_set in cds_to_keep.items():
-            # Initialize dictionaries for class '1a'
-            if class_ == '1a':
-                loci_cases['1a'] = {}
-                cds_cases['1a'] = {}
-                # Iterate over groups and their associated CDS in class '1a'
-                for group, cds in cds_set.items():
-                    # Separate CDS into those in loci and those not in loci
-                    loci_cases['1a'][group] = [c for c in cds if c in loci]
-                    cds_cases['1a'][group] = [c for c in cds if c not in loci]
-            else:
-                # For other classes, separate CDS into those in loci and those not in loci
-                loci_cases[class_] = [cds for cds in cds_set if cds in loci]
-                cds_cases[class_] = [cds for cds in cds_set if cds not in loci]
-
-        # Process drop_set in the same way as above
-        loci_cases['dropped'] = [d for d in drop_set if d in loci]
-        cds_cases['dropped'] = [d for d in drop_set if d not in loci]
-
-    else:
-        for class_, cds_set in cds_to_keep.items():
-            cds_cases[class_] = cds_set
-            if class_ == '1a':
-                count_cases[class_] = len(itf.flatten_list(cds_set.values()))
-            else:
-                count_cases[class_] = len(cds_set)
-        cds_cases['dropped'] = drop_set
-    # Check if loci is not empty
-    if loci:
-        for i, printout in enumerate([cds_cases, loci_cases]):
-            if run_type == 'loci_vs_loci' and i == 0:
-                continue
-            total_loci = len(itf.flatten_list([i 
-                                               for class_, i
-                                               in printout.items()
-                                               if class_ != '1a'])) + len(itf.flatten_list(cds_to_keep['1a'].values()))
-
-            print(f"Out of {len(groups_paths_old) if i==0 else len(loci)} {'CDSs groups' if i == 0 else 'loci'}:")
-            print(f"\t{total_loci} {'CDSs' if i == 0 else 'loci'}"
-                f" representatives had matches with BLASTn against the {'CDSs' if i == 1 else 'schema'}.")
-
-            # Print the classification results
-            for class_, group in printout.items():
-                print_classification_results(class_ ,len(group) if class_ != '1a' else len(itf.flatten_list(group.values())) ,printout, i)
-
-            if i == 0:
-                print(f"\t{len(groups_paths_old) - len(itf.flatten_list(printout.values()))}"
-                    " didn't have any BLASTn matches so they were retained.\n")
-    else:
-        # Write info about the classification results.
-        print(f"Out of {len(clusters)} clusters:")
-        print(f"\t{sum(count_cases.values()) + len(drop_set)} CDS representatives had matches with BLASTn"
-            f" which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
-
-        # Print the classification results
-        for class_, count in count_cases.items():
-            print_classification_results(class_, count, cds_to_keep, 0)
-
-        print(f"\t\tOut of those {len(drop_set)} CDSs groups were removed from the analysis.")
-
-        if Retained_not_matched_by_blastn:
-            print(f"\t\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
-            
-            cds_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
     # Skip the next step to copy or write FASTAS because we are working with the
     # schema only.
 
@@ -1688,11 +1577,11 @@ def wrap_up_blast_results(cds_to_keep, not_included_cds, clusters, output_path,
                                     groups_paths, groups_paths_reps, not_included_cds,
                                     clusters)
         # Translate possible new loci and write to master file
-        reps_trans_dict_cds, trans_dict_cds = translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants)
+        reps_trans_dict_cds, trans_dict_cds, groups_trans_reps_paths, groups_trans = translate_possible_new_loci(fasta_folder, groups_paths, groups_paths_reps, constants)
 
         master_file = os.path.join(fasta_folder, 'master_file.fasta')
 
-    return groups_paths_reps, groups_paths, reps_trans_dict_cds, trans_dict_cds, master_file, alleles
+    return groups_paths_reps, groups_paths, groups_trans_reps_paths, groups_trans, reps_trans_dict_cds, trans_dict_cds, master_file, alleles
 
 def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                rep_paths_nuc, output_dir, constants, cpu, multi_fasta, run_type):
@@ -1766,7 +1655,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                                 ):
 
             filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-                res[1], constants[1], True, False, True, True)
+                res[1], constants[1], True, False, True, False, False)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
             representative_blast_results_coords_all.update(alignment_coords_all)
@@ -1875,7 +1764,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                                 rep_paths_prot.values(),
                                 repeat(blastp_results_ss_folder)):
             
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True, True)
+            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True, True, False)
     
             # Save self-score
             self_score_dict[res[0]] = self_score
@@ -1898,7 +1787,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
             
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, False, False)
 
             # Since BLAST may find several local aligments choose the largest one to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
@@ -2239,7 +2128,7 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
     cds_to_keep : dict
         A dictionary with class identifiers as keys and lists of CDS identifiers or pairs of identifiers
         to be kept in each class.
-    drop_set : set
+    drop_possible_loci : set
         A set of CDS identifiers that are determined to be dropped based on their classification and
         presence in `drop_mark`.
 
@@ -2249,13 +2138,13 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
     - It then iterates through `count_results_by_class` to assign CDS to the most appropriate class
     based on the provided outcomes.
     - Special handling is given to class '1a', where CDS pairs are clustered and indexed.
-    - CDS marked in `drop_mark` and falling under certain classes are added to `drop_set` for exclusion.
+    - CDS marked in `drop_mark` and falling under certain classes are added to `drop_possible_loci` for exclusion.
     - The function uses utility functions like `itf.try_convert_to_type` for type conversion and
     `cf.cluster_by_ids` for clustering CDS pairs in class '1a'.
     """
     temp_keep = {}
     cds_to_keep = {class_: [] for class_ in classes_outcome}
-    drop_set = set()
+    drop_possible_loci = set()
     for ids, result in count_results_by_class.items():
         class_ = next(iter(result))
         [query, subject] = list(map(lambda x: itf.try_convert_to_type(x, int), ids.split('|')))
@@ -2274,15 +2163,15 @@ def extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark):
         if class_ == '1a':
             continue
         if keep in drop_mark and class_ in ['1b', '2a', '3a']:
-            drop_set.add(itf.try_convert_to_type(keep, int))
+            drop_possible_loci.add(itf.try_convert_to_type(keep, int))
         else:
             cds_to_keep.setdefault(class_, []).append(keep)
 
     cds_to_keep['1a'] = {i: list(values) for i, values in enumerate(cf.cluster_by_ids(cds_to_keep['1a']), 1)}
 
-    return cds_to_keep, drop_set
+    return cds_to_keep, drop_possible_loci
 
-def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps_ids, group_alleles_ids):
+def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_possible_loci, group_reps_ids, group_alleles_ids):
     """
     Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in the drop set.
 
@@ -2292,7 +2181,7 @@ def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps
         Dictionary of CDS clusters to keep, organized by class and group.
     clusters : dict
         Dictionary mapping group IDs to their member CDS IDs.
-    drop_set : set
+    drop_possible_loci : set
         Set of group IDs to be excluded from the count.
     group_reps_ids : dict
         Dictionary to be updated with representative IDs for each group.
@@ -2323,7 +2212,7 @@ def count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps
                 group_reps_ids.setdefault(group, set()).add(group)
                 group_alleles_ids.setdefault(group, set()).update(clusters[group])
     
-    for id_ in drop_set:
+    for id_ in drop_possible_loci:
         if id_ not in group_reps_ids:
             group_reps_ids.setdefault(id_, set()).add(id_)
             group_alleles_ids.setdefault(id_, set()).update(clusters[id_])
@@ -2514,9 +2403,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Sort the count_results_by_class dict by the classes_outcome tuple.
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract CDS to keep and drop set.
-    cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
+    cds_to_keep, drop_possible_loci = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
         
-    count_number_of_reps_and_alleles(cds_to_keep, all_alleles, drop_set, group_reps_ids, group_alleles_ids)
+    count_number_of_reps_and_alleles(cds_to_keep, all_alleles, drop_possible_loci, group_reps_ids, group_alleles_ids)
 
     # Extract the related clusters and recommendations what to do with them.
     print("\nExtracting results...")
@@ -2524,7 +2413,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                                            count_results_by_class,
                                                                            frequency_in_genomes,
                                                                            cds_to_keep,
-                                                                           drop_set,
+                                                                           drop_possible_loci,
                                                                            classes_outcome)
     print("\nWritting count_results_by_cluster.tsv and related_matches.tsv files...")
     write_blast_summary_results(related_clusters,
@@ -2550,17 +2439,19 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                     run_type,
                                     blast_results)
     
-    print("\nWrapping up BLAST results...")
 
+    cds_cases, loci_cases = print_classifications_results(cds_to_keep, drop_possible_loci, False, all_alleles, False, run_type)
+
+    print("\nWrapping up BLAST results...")
     wrap_up_blast_results(cds_to_keep,
                         None,
                         all_alleles,
                         results_output,
                         constants,
-                        drop_set,
                         schema_loci,
                         groups_paths,
-                        frequency_in_genomes,
+                        cds_cases,
+                        loci_cases,
                         run_type)
 
     return sorted_blast_dict
@@ -2618,7 +2509,7 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
 def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, protein_hashes, not_included_cds, cds_output,
-                             bsr_value, dropped_cluster, cpu):
+                             bsr_value, dropped_cds, cpu):
     """
     Identifies problematic CDS (Coding DNA Sequences) based on specified criteria and outputs the results
     and Remove the instace of CDS from all the dicts.
@@ -2637,7 +2528,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
         The file path where the results of the analysis will be saved.
     bsr_value : float
         The BLAST Score Ratio (BSR) threshold used to determine problematic sequences. Sequences with a BSR below this value may be considered problematic.
-    dropped_cluster : set
+    dropped_cds : set
         A set of cluster identifiers that have been dropped from the analysis, potentially due to being identified as problematic.
     cpu : int
         The number of CPU cores to be used for parallel processing tasks within the function.
@@ -2672,18 +2563,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                 same_origin_genome[genome_id].remove(id_)
                 # Save the CDS that are only NIPHEMs in genomes.
                 only_niphems_in_genomes.setdefault(id_, set(cds_in_genomes))
-                dropped_cluster.setdefault(id_, 'Dropped_due_to_being_only_NIPHEM_in_genomes')
-                # Remove the CDS from the dictionaries.
-                del not_included_cds[id_]
-                # If this CDSs is the representative in translation dict
-                if cds_translation_dict.get(id_):
-                    del cds_translation_dict[id_]
-                #Remove from associated translation hashes dict.
-                translation_hash = itf.identify_string_in_dict_get_key(id_, protein_hashes)
-                protein_hashes[translation_hash].remove(id_)
-                # Remove all reference of the protein if it has no more CDSs associated with it.
-                if len(protein_hashes[translation_hash]) == 0:
-                    del protein_hashes[translation_hash]
+                dropped_cds.setdefault(id_, 'Dropped_due_to_being_only_NIPHEM_in_genomes')
             else:
                 # Add to the dict for further processing when to calculate if to exclude
                 # possible new loci
@@ -2758,7 +2638,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                                 sequences_fasta_path.values(),
                                 repeat(self_score_folder)):
             
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, False)
+            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, False)
     
             # Save self-score.
             self_score_dict_niphs[res[0]] = self_score
@@ -2781,7 +2661,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                                 repeat(sequences_fasta_path),
                                 to_run_against_paths.values()):
             
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False, False)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, False, True, False, False)
 
 
             # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
@@ -2829,6 +2709,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
             write_type = 'w' if not os.path.exists(niphs_file) else 'a'
             with open(niphs_file, write_type) as niphs:
                 count_niphs_groups += 1
+                # Remove from niphs_in_genomes
                 del niphs_in_genomes[niph_id]
                 if write_type == 'w':
                     niphs.write('CDS_ID\tGenome_presence:\n')
@@ -2836,24 +2717,7 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
                     count_niphs_cds += 1
                     niphs.write(f"{cds_id}{tab}{tab.join([str(i) for i in niphs_presence_in_genomes[cds_id]])}\n")
                     # Remove from cds not included in the schema dict.
-                    dropped_cluster.setdefault(cds_id, 'Dropped_to_being_only_NIPH_in_genomes')
-                    # Remove from dictionaries.
-                    del not_included_cds[cds_id]
-                    # Remove from NIPHEMs dict
-                    if niphems_presence_in_genome.get(cds_id):
-                        del niphems_presence_in_genome[cds_id]
-                    # If this CDSs is the representative in translation dict
-                    if cds_translation_dict.get(cds_id):
-                        del cds_translation_dict[cds_id]
-                    # Remove from NIPHs
-                    del niphs_presence_in_genomes[cds_id]
-                    #Remove from associated translation hashes dict.
-                    translation_hash = itf.identify_string_in_dict_get_key(cds_id, protein_hashes)
-                    if translation_hash:
-                        protein_hashes[itf.identify_string_in_dict_get_key(cds_id, protein_hashes)].remove(cds_id)
-                        # Remove all hash of the protein if it has no more CDSs associated with it.
-                        if len(protein_hashes[translation_hash]) == 0:
-                            del protein_hashes[translation_hash]
+                    dropped_cds.setdefault(cds_id, 'Dropped_to_being_only_NIPH_in_genomes')
                 niphs.write("\n")
     # Convert the niphs_in_genomes dict to a list of sets.
     niphs_in_genomes = {key: list(value) for key, value in niphs_in_genomes.items()}
@@ -2862,9 +2726,10 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
 
     return niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes
 
-def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
-                            cds_presence_in_genomes, cds_to_keep, clusters, drop_set, problematic_proportion,
-                            dropped_cluster, results_output):
+def identify_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
+                            cds_presence_in_genomes, cds_to_keep, clusters, problematic_proportion,
+                            dropped_cds, not_included_cds, cds_translation_dict, protein_hashes,
+                            drop_possible_loci, cds_original_ids, results_output):
     """
     Removes loci deemed problematic based on a specified proportion of NIPHS and NIPHEMS present in the genomes.
 
@@ -2882,12 +2747,8 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
         A list of CDS identifiers that should be retained.
     clusters : dict
         A dictionary mapping cluster identifiers to their respective genomic data.
-    drop_set : set
-        A set of loci identifiers that are considered problematic and should be removed.
     problematic_proportion : float
         The proportion threshold above which a locus is considered problematic.
-    dropped_cluster : dict
-        A dictionary mapping cluster identifiers to the reason they were dropped.
     cds_output : str
         The file path to save the filtered CDS presence data.
 
@@ -2910,10 +2771,15 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
     """
     # Create file Path.
     potential_paralagous = os.path.join(results_output, 'potential_paralagous.tsv')
+    potential_paralagous_new_loci = []
     # Pre process NIPHs
     for key, niphs in list(niphs_in_genomes.items()):
-        # Get ids without the allele identifier.
-        niphs_ids = [niph.split('_')[0] for niph in niphs]
+        # Get ids without the allele identifier of CDSs NIPHs that were not removed.
+        niphs_ids = [niph.split('_')[0] for niph in niphs if niph not in dropped_cds]
+        # If there are no pairs of NIPHs
+        if len(niphs_ids) < 2 :
+            continue
+        possible_loci_ids = niphs_ids
         id_class_1a = [itf.identify_string_in_dict_get_key(niph_id, cds_to_keep['1a']) for niph_id in niphs_ids]
         # If all IDs are the same (mantain them).
         if all(id_class_1a) and len(set(id_class_1a)) == 1:
@@ -2928,14 +2794,9 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
                 indices_not_none = [index for index, value in enumerate(id_class_1a) if value is not None]
                 # Replace the IDs with the joined IDs.
                 for index in indices_not_none:
-                    niphs_ids[index] = id_class_1a[index]
-            niphs_ids = set(niphs_ids)
-            write_type = 'w' if not os.path.exists(potential_paralagous) else 'a'
-            with open(potential_paralagous, write_type) as niph_and_niphem_report:
-                niph_and_niphem_report.write('\t'.join(niphs_ids) + '\n')
-                del niphs_in_genomes[key]
-                for niph in niphs:
-                    del niphs_presence_in_genomes[niph]
+                    possible_loci_ids[index] = id_class_1a[index]
+            
+            potential_paralagous_new_loci.append(set(possible_loci_ids))
 
     # Get all of the genomes that one groups is present in.
     cds_to_keep_all_members = {}
@@ -2964,7 +2825,11 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
     # Process NIPHS.
     for niphs in niphs_in_genomes.values():
         intersection_set = None
+        if len([niph for niph in niphs if niph not in dropped_cds]) < 2:
+            continue
         for niph in niphs:
+            if niph in dropped_cds:
+                continue
             # Get the ID without the allele identifier.
             niph_genome_id = niph.split('_')[0]
             # Get the ID for the joined IDs.
@@ -2978,10 +2843,13 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
                 intersection_set.intersection_update(niphs_presence_in_genomes[niph])
         # Here id_class_1a or niph_genome_id is the key and mather which one in the order it is since they both are in the same
         # joined group or are in the same cluster.
-        genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niph_genome_id, set()).update(intersection_set)
+        if intersection_set:
+            genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niph_genome_id, set()).update(intersection_set)
 
     # Process NIPHEMs.
     for niphem in list(niphems_presence_in_genome):
+        if niphem in dropped_cds:
+            continue
         niphem_genome_id = niphem.split('_')[0]
         id_class_1a = itf.identify_string_in_dict_get_key(niphem_genome_id, cds_to_keep['1a'])
         # Add which genomes are present in duplicate for that allele (two or more of the same genome ID).
@@ -2995,24 +2863,23 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
     # Get the proportion of NIPHs and NIPHEMs in the genomes for each group were they are present.
     dropped_due_to_niphs_or_niphems = set()
     for key, genomes in list(genomes_that_are_niphs_and_niphems.items()):
-        # Remove cases that were dropped in classification phase.
-        if key in drop_set:
-            continue
         # Get the proportion of NIPHs and NIPHEMs in the genomes.
         proportion = len(genomes) / len(cds_to_keep_all_genomes[key])
         proportion_of_niph_genomes.setdefault(key, proportion)
         # If the proportion is greater than the threshold, remove the group.
         if proportion >= problematic_proportion:
-            if cds_to_keep['1a'].get(key):
-                del cds_to_keep['1a'][key]
-            else:
-                class_ = itf.identify_string_in_dict_get_key(key, {key: value for key, value in cds_to_keep.items() if key != '1a'})
-                cds_to_keep[class_].remove(key)
-
+            # Save cases to drop
             dropped_due_to_niphs_or_niphems.add(key)
-            dropped_cluster.setdefault(key, 'Dropped_due_to_NIPHs_and_NIPHEMs')
-            drop_set.add(key)
+            drop_possible_loci.add(key)
     
+    # Write paralogous loci
+    write_type = 'w'
+    with open(potential_paralagous, write_type) as potential_paralagous_report:
+        for paralagous_group in potential_paralagous_new_loci:
+            paralagous_group = [group for group in paralagous_group if group not in drop_possible_loci]
+            if len(paralagous_group) >= 2:
+                potential_paralagous_report.write('\t'.join(paralagous_group) + '\n')
+
     # Write the groups that were removed due to the presence of NIPHs or NIPHEMs.
     niphems_and_niphs_file = os.path.join(results_output, 'niphems_and_niphs_groups.tsv')
     with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
@@ -3022,7 +2889,7 @@ def remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_
 
     return proportion_of_niph_genomes, dropped_due_to_niphs_or_niphems, cds_to_keep_all_members, cds_to_keep_all_genomes
 
-def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes, drop_set):
+def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_in_genomes, drop_possible_loci):
     """
     Write cluster members to file.
 
@@ -3043,7 +2910,7 @@ def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_
     None, writes to file.
     """
     write_cds = cds_to_keep
-    write_cds.setdefault('Dropped', drop_set)
+    write_cds.setdefault('Dropped', drop_possible_loci)
     cluster_members_output = os.path.join(output_path, 'cluster_members.tsv')
     with open(cluster_members_output, 'w') as cluster_members_file:
         cluster_members_file.write('Cluster_ID\tRepresentatives_IDs\tRep_cluster_members\tFrequency_of_rep'
@@ -3067,7 +2934,8 @@ def write_cluster_members_to_file(output_path, cds_to_keep, clusters, frequency_
                         else:
                             cluster_members_file.write('\t\t' + cds_id + '\n')
 
-def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped_cluster, results_output):
+def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped_cds,
+                                not_included_cds, results_output):
     """
     Update the IDs based on clustering and joining operations and save the changes.
 
@@ -3083,8 +2951,10 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
         A dictionary mapping representative IDs to their cluster members.
     cds_original_ids : dict
         A dictionary mapping original IDs to their new IDs after processing.
-    dropped_cluster : dict
-    A dictionary mapping all of the dropped CDSs to the cause of drop.
+    dropped_cds : dict
+        A dictionary mapping all of the dropped CDSs to the cause of drop.
+    not_included_cds : dict
+        Dict that contains DNA sequences for each CDS.
     results_output : str
         The directory path where the ID changes file will be saved.
 
@@ -3110,7 +2980,7 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
     # Iterate through each class and its CDS group
     for class_, cds_group in cds_to_keep.items():
         for cds in cds_group:
-            main_rep = cds  # The main representative ID for the CDS group
+            main_rep = cds # The main representative ID for the CDS group
             
             # If the class is not '1a', treat the CDS as a single-element list
             if class_ != '1a':
@@ -3122,26 +2992,38 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
             index = 1  # Initialize an index for creating new IDs
             
             # Iterate through each representative ID in the CDS group
-            for rep_id in cds:
+            for rep_id in list(cds):
                 # Get all CDS IDs in the cluster for the representative ID
-                cds_ids = [cds_id for cds_id in clusters[rep_id]]
-                
+                cds_ids = clusters[rep_id]
+                # Delete clusters with old IDs
+                del clusters[rep_id]
+                # Create new rep ID
                 # Iterate through each CDS ID in the cluster
-                for cds_id in cds_ids:
+                for cds_id in list(cds_ids):
+                    # Skip cases
+                    if cds_id in dropped_cds:
+                        continue
+                    if not clusters.get(rep_id):
+                        clusters[rep_id] = []
                     # Create a new ID using the main representative ID and the index
                     new_id = f"{main_rep}_{index}"
                     # Update the original ID with the new ID in cds_original_ids
-                    cds_id = itf.identify_string_in_dict_get_key(cds_id, cds_original_ids)
-                    cds_original_ids[cds_id].append(new_id)
+                    cds_id_first = itf.identify_string_in_dict_get_key(cds_id, cds_original_ids)
+                    cds_id_second = itf.identify_string_in_dict_get_value(cds_id, cds_original_ids)[-1]
+                    # Replace in FASTA dict
+                    not_included_cds[new_id] = not_included_cds.pop(cds_id_second)
+                    # Add new cluster ID
+                    clusters[rep_id].append(new_id)
+                    cds_original_ids[cds_id_first].append(new_id)
                     index += 1  # Increment the index for the next ID
 
     # Add why CDS was dropped
-    for cds_member, cause in dropped_cluster.items():
+    for cds_member, cause in dropped_cds.items():
         cds_id = itf.identify_string_in_dict_get_key(cds_member, cds_original_ids) or cds_member
         if cds_original_ids.get(cds_id):
             cds_original_ids[cds_id].append(cause)
         else:
-            cds_original_ids.setdefault(cds_id, [cause])
+            cds_original_ids.setdefault(cds_id, ['\t', '\t,', cause])
 
     # Prepare to write the ID changes to a file
     tab = "\t"
@@ -3154,8 +3036,336 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
 
-def find_new_representatives(reps_trans_dict_cds, trans_dict_cds, groups_paths_reps, groups_paths):
-    pass
+def find_new_representatives(groups_trans_reps_paths, groups_trans, cpu, bsr_value, results_output):
+    
+    blast_dir = os.path.join(results_output, 'BLAST_find_new_representatives')
+    ff.create_directory(blast_dir)
+
+    # Get the path to the BLASTp executable.
+    get_blastp_exec = lf.get_tool_path('blastp')
+    # Create a folder to store the results of the BLASTp self-score calculations.
+    self_score_folder = os.path.join(blast_dir, 'self_score')
+    ff.create_directory(self_score_folder)
+    # Get the max length of the IDs.
+    max_id_length = len(max(groups_trans))
+    i = 1
+    self_score_dict_reps = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_self_score_multiprocessing,
+                                groups_trans_reps_paths.keys(),
+                                repeat(get_blastp_exec),
+                                groups_trans_reps_paths.values(),
+                                repeat(self_score_folder)):
+            
+            _, self_scores, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, False, False, True)
+    
+            # Save self-score.
+            self_score_dict_reps.update(self_scores)
+                            
+            print(f"\rRunning BLASTp to calculate self-score to identify new representatives {res[0]: <{max_id_length}}", end='', flush=True)
+            i += 1
+
+    save_bsr_score = {}
+    total_blasts = len(groups_trans)
+    i = 1
+    # Run Blastp and calculate BSR.
+    print("\nRunning BLASTp to confirm possible NIPHs...")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blast_fastas_multiprocessing,
+                                groups_trans, 
+                                repeat(get_blastp_exec),
+                                repeat(blast_dir),
+                                repeat(groups_trans_reps_paths),
+                                groups_trans.values()):
+            
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, False, False)
+
+
+            # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
+            for query, subjects_dict in filtered_alignments_dict.items():
+                for subject_id, results in subjects_dict.items():
+                    #Highest score (First one)
+                    subject_score = next(iter(results.values()))['score']
+                    save_bsr_score.setdefault(query, {}).update({subject_id: bf.compute_bsr(subject_score, self_score_dict_reps[query])})
+
+            print(f"\rRunning BLASTp to confirm identified NIPHs: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
+            i += 1
+
+    # Filter the cases by BSR value in inverse order (lowest at the top).
+    flattened = [
+    (query, subject_id, bsr)
+    for query, subjects_ids in save_bsr_score.items()
+    for subject_id, bsr in subjects_ids.items()
+    ]
+
+    sorted_flattened = sorted(flattened, key=lambda x: x[2], reverse=True)
+
+    sorted_save_bsr_score = {}
+    for query, subject_id, bsr in sorted_flattened:
+        if query not in sorted_save_bsr_score:
+            sorted_save_bsr_score[query] = {}
+        sorted_save_bsr_score[query][subject_id] = bsr
+
+    new_reps_ids = {}
+    for rep, alleles in sorted_save_bsr_score.items():
+        for allele, bsr in alleles.items():
+            # Identify possible new reps base on bsr value
+            if 0.1 - bsr_value >= bsr >= bsr_value:
+                if not new_reps_ids.get(allele):
+                    new_reps_ids.setdefault(allele, bsr)
+            # If that allele is a rep, however, it has a higher BSR than it is needed to be rep.
+            # We need only the cases where all of the matches are in 0.1 - bsr_value >= bsr >= bsr_value.
+            elif new_reps_ids.get(allele):
+                del new_reps_ids[allele]
+
+    return new_reps_ids
+
+def remove_dropped_cds_from_analysis(dropped_cds, not_included_cds, niphems_presence_in_genome,
+                                     cds_translation_dict, niphs_presence_in_genomes, protein_hashes,
+                                     niphs_in_genomes):
+    """
+    Removes dropped CDS from the analysis based on the provided parameters.
+
+    Parameters
+    ----------
+    dropped_cds : dict
+        Dictionary containing dropped CDS with their reasons.
+    not_included_cds : dict
+        Dictionary of CDS that are not included in the analysis.
+    niphems_presence_in_genome : dict
+        Dictionary indicating the presence of NIPHEMs in the genome.
+    cds_translation_dict : dict
+        Dictionary mapping CDS to their translations.
+    niphs_presence_in_genomes : dict
+        Dictionary indicating the presence of NIPHs in genomes.
+    protein_hashes : dict
+        Dictionary mapping protein hashes to their associated CDS.
+    niphs_in_genomes : dict
+        Dictionary indicating the presence of NIPHs in genomes.
+
+    Returns
+    -------
+    None
+    """
+    for dropped_id, reason in list(dropped_cds.items()):
+        if cds_translation_dict.get(dropped_id):
+            for similiar_protein_id in itf.identify_string_in_dict_get_value(dropped_id, protein_hashes):
+                dropped_cds[similiar_protein_id] = reason
+
+    for dropped_id, reason in list(dropped_cds.items()):
+        #Remove from associated translation hashes dict.
+        translation_hash = itf.identify_string_in_dict_get_key(dropped_id, protein_hashes)
+        if translation_hash:
+            dropped_cds[dropped_id] = reason
+            niph_group_id = itf.identify_string_in_dict_get_key(dropped_id, niphs_in_genomes)
+            if niph_group_id:
+                niphs_in_genomes[niph_group_id].remove(dropped_id)
+                if len(niphs_in_genomes[niph_group_id]) < 2:
+                    del niphs_in_genomes[niph_group_id]
+            if not_included_cds.get(dropped_id):
+                del not_included_cds[dropped_id]
+            # Remove from NIPHEMs dict
+            if niphems_presence_in_genome.get(dropped_id):
+                del niphems_presence_in_genome[dropped_id]
+            # If this CDSs is the representative in translation dict
+            if cds_translation_dict.get(dropped_id):
+                del cds_translation_dict[dropped_id]
+            # Remove from NIPHs
+            if niphs_presence_in_genomes.get(dropped_id):
+                del niphs_presence_in_genomes[dropped_id]
+            protein_hashes[itf.identify_string_in_dict_get_key(dropped_id, protein_hashes)].remove(dropped_id)
+            # Remove all hash of the protein if it has no more CDSs associated with it.
+            if len(protein_hashes[translation_hash]) == 0:
+                del protein_hashes[translation_hash]
+
+def add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, cds_to_keep,
+                           clusters, reason, processed_drop):
+    """
+    Adds CDS to the dropped CDS list based on the provided parameters.
+
+    Parameters
+    ----------
+    drop_possible_loci : list
+        List of possible loci dropped.
+    dropped_cds : dict
+        Dictionary to store dropped CDS with their reasons.
+    cds_to_keep : dict
+        Dictionary containing CDS to keep, classified by their class type.
+    clusters : dict
+        Dictionary containing clusters of CDS.
+    cds_original_ids : dict
+        Dictionary containing original IDs of CDS.
+    reason : str
+        Reason for dropping the CDS.
+    processed_drop : list
+        List of already processed drop IDs.
+
+    Returns
+    -------
+    None
+    """
+
+    for drop_id in drop_possible_loci:
+        if drop_id in processed_drop:
+            continue
+        else:
+            processed_drop.append(drop_id)
+            
+        if itf.identify_string_in_dict_get_key(drop_id, cds_to_keep['1a']):
+            del cds_to_keep['1a'][drop_id]
+        else:
+            class_ = itf.identify_string_in_dict_get_key(drop_id, {key: value for key, value in cds_to_keep.items() if key != '1a'})
+            if class_:
+                cds_to_keep[class_].remove(drop_id)
+
+        dropped_1a = itf.identify_string_in_dict_get_value(drop_id, cds_to_keep['1a'])
+        if dropped_1a:
+            for rep_id in dropped_1a:
+                for cds_id in clusters[rep_id]:
+                    dropped_cds[cds_id] = reason
+        else:
+            for cds_id in clusters[drop_id]:
+                dropped_cds[cds_id] = reason
+
+def print_classifications_results(cds_to_keep, drop_possible_loci, groups_paths_old, clusters, loci, run_type):
+    """
+    Prints the classification results based on the provided parameters.
+
+    Parameters
+    ----------
+    cds_to_keep : dict
+        Dictionary containing CDS to keep, classified by their class type.
+    drop_possible_loci : list
+        List of possible loci dropped.
+    groups_paths_old : dict
+        The dictionary containing the old paths to the groups.
+        Can be None.
+    clusters : dict
+        The dictionary containing the clusters.
+    loci : bool
+        If True, the analysis is based on loci.
+    run_type : str
+        The type of run, e.g., 'loci_vs_loci'.
+
+    Returns
+    -------
+    cds_cases: dict
+        Dictionary with CDS cases classified by their class type.
+    loci_cases: dict
+        Dictionary with loci cases classified by their class type.
+    """
+    def print_results(class_, count, printout, i):
+        """
+        Prints the classification results based on the class type.
+
+        Parameters
+        ----------
+        class_ : str
+            The class type.
+        count : int
+            The count of groups.
+        printout : dict
+            The dictionary containing printout information.
+        i : int
+            An index used to determine the printout message.
+
+        Returns
+        -------
+        None, prints in stdout
+        """
+        if count > 0:
+            if class_ in ['2b', '4b']:
+                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained"
+                    " but it is recommended to verify them as they may be contained or contain partially inside"
+                    " their BLAST match.")
+            elif class_ == '1a':
+                print(f"\t\tOut of those groups, {count} {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
+                    f" and are contained in {len(printout['1a'])} joined groups that were retained.")
+            elif class_ == 'dropped':
+                if run_type == 'loci_vs_loci':
+                    print(f"\t\tOut of those {count} loci are recommended to be removed.")
+                else:
+                    print(f"\t\tOut of those {count} {'CDSs groups' if i== 0 else 'loci'}"
+                        f" {'were removed from the analysis' if i == 0 else 'are recommended to be replaced with their matched CDS in the schema.'}")
+            else:
+                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained.")
+
+    # If 'Retained_not_matched_by_blastn' exists in cds_to_keep, remove it and store it separately
+    Retained_not_matched_by_blastn = cds_to_keep.pop('Retained_not_matched_by_blastn', None)
+
+    # Display info about the results obtained from processing the classes.
+    # Get the total number of CDS reps considered for classification.
+    count_cases = {}
+    loci_cases = {}
+    cds_cases = {}
+    if loci:
+        # Iterate over classes and their associated CDS sets
+        for class_, cds_set in cds_to_keep.items():
+            # Initialize dictionaries for class '1a'
+            if class_ == '1a':
+                loci_cases['1a'] = {}
+                cds_cases['1a'] = {}
+                # Iterate over groups and their associated CDS in class '1a'
+                for group, cds in cds_set.items():
+                    # Separate CDS into those in loci and those not in loci
+                    loci_cases['1a'][group] = [c for c in cds if c in loci]
+                    cds_cases['1a'][group] = [c for c in cds if c not in loci]
+            else:
+                # For other classes, separate CDS into those in loci and those not in loci
+                loci_cases[class_] = [cds for cds in cds_set if cds in loci]
+                cds_cases[class_] = [cds for cds in cds_set if cds not in loci]
+
+        # Process drop_possible_loci in the same way as above
+        loci_cases['dropped'] = [d for d in drop_possible_loci if d in loci]
+        cds_cases['dropped'] = [d for d in drop_possible_loci if d not in loci]
+
+    else:
+        for class_, cds_set in cds_to_keep.items():
+            cds_cases[class_] = cds_set
+            if class_ == '1a':
+                count_cases[class_] = len(itf.flatten_list(cds_set.values()))
+            else:
+                count_cases[class_] = len(cds_set)
+        cds_cases['dropped'] = drop_possible_loci
+    # Check if loci is not empty
+    if loci:
+        for i, printout in enumerate([cds_cases, loci_cases]):
+            if run_type == 'loci_vs_loci' and i == 0:
+                continue
+            total_loci = len(itf.flatten_list([i 
+                                               for class_, i
+                                               in printout.items()
+                                               if class_ != '1a'])) + len(itf.flatten_list(cds_to_keep['1a'].values()))
+
+            print(f"Out of {len(groups_paths_old) if i==0 else len(loci)} {'CDSs groups' if i == 0 else 'loci'}:")
+            print(f"\t{total_loci} {'CDSs' if i == 0 else 'loci'}"
+                f" representatives had matches with BLASTn against the {'CDSs' if i == 1 else 'schema'}.")
+
+            # Print the classification results
+            for class_, group in printout.items():
+                print_results(class_ ,len(group) if class_ != '1a' else len(itf.flatten_list(group.values())) ,printout, i)
+
+            if i == 0:
+                print(f"\t{len(groups_paths_old) - len(itf.flatten_list(printout.values()))}"
+                    " didn't have any BLASTn matches so they were retained.\n")
+    else:
+        # Write info about the classification results.
+        print(f"Out of {len(clusters)} clusters:")
+        print(f"\t{sum(count_cases.values()) + len(drop_possible_loci)} CDS representatives had matches with BLASTn"
+            f" which resulted in {len(itf.flatten_list(cds_to_keep.values()))} groups")
+
+        # Print the classification results
+        for class_, count in count_cases.items():
+            print_results(class_, count, cds_to_keep, 0)
+
+        print(f"\t\tOut of those {len(drop_possible_loci)} CDSs groups were removed from the analysis.")
+
+        if Retained_not_matched_by_blastn:
+            print(f"\t\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
+            
+            cds_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
+
+    return cds_cases, loci_cases
 
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
@@ -3193,14 +3403,14 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     for key, sequence in not_included_cds.items():
         cds_size.setdefault(key, len(str(sequence)))
 
-    dropped_cluster = {}
+    dropped_cds = {}
     total_cds = len(not_included_cds)
     print(f"\nIdentified {total_cds} valid CDS not present in the schema.")
     # Filter by size.
     if constants[5]:
         for key, values in list(not_included_cds.items()):
             if len(values) < constants[5]:
-                dropped_cluster.setdefault(key, 'Dropped_due_to_genome_size')
+                dropped_cds.setdefault(key, 'Dropped_due_to_genome_size')
                 del not_included_cds[key]
         print(f"{len(not_included_cds)}/{total_cds} have size greater or equal to {constants[5]} bp.")
     else:
@@ -3264,7 +3474,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                            not_included_cds,
                                                            cds_output,
                                                            constants[7],
-                                                           dropped_cluster,
+                                                           dropped_cds,
                                                            cpu)
 
     print("\nExtracting minimizers for the translated sequences and clustering...")
@@ -3273,10 +3483,29 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     clusters = {}
     reps_sequences = {}
 
+    # Remove dropped_cds
+    for key, protein in list(cds_translation_dict.items()):
+        if key in dropped_cds:
+            protein_hash = itf.identify_string_in_dict_get_key(key, protein_hashes)
+            same_protein_id = protein_hashes[protein_hash]
+            if key == same_protein_id[0]:
+                protein_hashes[protein_hash].remove(key)
+                if not protein_hashes[protein_hash]:
+                    del protein_hashes[protein_hash]
+                    continue
+                new_id = protein_hashes[protein_hash][0]
+                cds_translation_dict[new_id] = cds_translation_dict.pop(key)
+            else:
+                protein_hashes[protein_hash].remove(key)
+                
+        
+    cds_translation_dict = {k: v for k, v in cds_translation_dict.items() if k not in dropped_cds}
+
     # Sort by size of proteins.
     cds_translation_dict = {k: v for k, v in sorted(cds_translation_dict.items(),
                                                     key=lambda x: len(x[1]),
                                                     reverse=True)}
+
     # Cluster by minimizers.
     [clusters, reps_sequences, 
      reps_groups, prot_len_dict] = cf.minimizer_clustering(cds_translation_dict,
@@ -3315,25 +3544,72 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     frequency_in_genomes = {rep: sum([frequency_cds[entry] for entry in value]) 
                              for rep, value in clusters.items()}
     # Add reason for filtering out CDS.
-    dropped_cluster.update({cds_id: 'Dropped_due_to_cluster_frequency_filtering' for cds_id in itf.flatten_list([clusters[rep] for rep in clusters if frequency_in_genomes[rep] < constants[2]])})
+    dropped_cds.update({cds_id: 'Dropped_due_to_cluster_frequency_filtering' for cds_id in itf.flatten_list([clusters[rep] for rep in clusters if frequency_in_genomes[rep] < constants[2]])})
+
     # Filter cluster by the total sum of CDS that are present in the genomes, based on input value.
     clusters = {rep: cluster_member for rep, cluster_member in clusters.items() 
                 if frequency_in_genomes[rep] >= constants[2]}
+
+    print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
+           f" out of {total_number_clusters} clusters, {len(clusters)} remained.")
+     
+    intial_length = len(clusters)
+    
+    if intial_length != len(clusters):
+         print(f"After filtering by CDS frequency in the genomes (>= {len(genomes_ids)}),"
+               f" out of {intial_length} clusters, {len(clusters)} remained.") 
+     
+    print("\nRetrieving kmers similiarity and coverage between representatives...")
+    reps_kmers_sim = {}
+    # Get the representatives protein sequence.
+    reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in cds_translation_dict.items()
+                             if rep_id in clusters}
+    # Sort the representative translation dict from largest to smallest.
+    reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
+                                                     key=lambda x: len(x[1]),
+                                                     reverse=True)}
+    # recalculate the sim and cov between reps, get all of the values, so threshold
+    # is set to 0.
+    for cluster_id in reps_translation_dict:
+        kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id],
+                                                5,
+                                                5,
+                                                1,
+                                                True,
+                                                True))
+        
+        reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep,
+                                                               reps_groups,
+                                                               0,
+                                                               0,
+                                                               prot_len_dict,
+                                                               cluster_id,
+                                                               5)
+   
+        reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
+                                      for match_values in reps_kmers_sim[cluster_id]}
+    print("\nReplacing CDSs IDs with the cluster representative ID...")
     cds_original_ids = {}
     # Replace the IDS of cluster alleles to x_1 and replace all of the alleles in
     # the variables.
     for cluster, members in list(clusters.items()):
-        i = 0
+        i = 1
         new_members_ids = []
         for member in list(members):
             # Get the new ID.
-            new_id = f"{cluster}_{i}" if i != 0 else member
+            new_id = f"{cluster}_{i}"
             # Add the new ID to the dict.
             cds_original_ids[member] = [new_id]
             # Replace the old ID with the new ID for frequency_cds.
             frequency_cds[new_id] = frequency_cds.pop(member)
+            # Dropped cds
+            dropped_id = itf.identify_string_in_dict_get_key(member, dropped_cds)
+            if dropped_id:
+                dropped_cds[new_id] = dropped_cds.pop(dropped_id)
             # Save the new members IDs.
             new_members_ids.append(new_id)
+            # Replace in reps_kmer_sim
+            reps_kmers_sim[new_id] = reps_kmers_sim.pop(member)
             # Replace the old ID with the new ID for the DNA sequences.
             not_included_cds[new_id] = not_included_cds.pop(member)
             # Replace in hashes dict
@@ -3364,46 +3640,6 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                 niphs_in_genomes[niphs_group_id][niphs_group_member_index] = new_id
             i += 1
         clusters[cluster] = new_members_ids
-    # Join NIPHS and NIPHEMS into the same cluster
-
-    print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
-          f" out of {total_number_clusters} clusters, {len(clusters)} remained.")
-    
-    intial_length = len(clusters)
-
-    if intial_length != len(clusters):
-        print(f"After filtering by CDS frequency in the genomes (>= {len(genomes_ids)}),"
-              f" out of {intial_length} clusters, {len(clusters)} remained.") 
-    
-    print("\nRetrieving kmers similiarity and coverage between representatives...")
-    reps_kmers_sim = {}
-    # Get the representatives protein sequence.
-    reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in cds_translation_dict.items()
-                             if rep_id in clusters}
-    # Sort the representative translation dict from largest to smallest.
-    reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
-                                                     key=lambda x: len(x[1]),
-                                                     reverse=True)}
-    # recalculate the sim and cov between reps, get all of the values, so threshold
-    # is set to 0.
-    for cluster_id in reps_translation_dict:
-        kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id],
-                                                5,
-                                                5,
-                                                1,
-                                                True,
-                                                True))
-        
-        reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep,
-                                                               reps_groups,
-                                                               0,
-                                                               0,
-                                                               prot_len_dict,
-                                                               cluster_id,
-                                                               5)
-
-        reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
-                                      for match_values in reps_kmers_sim[cluster_id]}
 
     # Create directories.
     blast_output = os.path.join(output_directory, '2_BLAST_processing')
@@ -3422,10 +3658,11 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     rep_paths_nuc = {}
     # Write master file for the representatives.
     with open(representatives_all_fasta_file, 'w') as all_fasta:
-        for cluster_rep_id, members in clusters.items():
+        for members in clusters.values():
             for member in members:
                 all_fasta.write(f">{member}\n{str(not_included_cds[member])}\n")
 
+            cluster_rep_id = members[0]
             rep_fasta_file = os.path.join(representatives_blastn_folder,
                                           f"cluster_rep_{cluster_rep_id}.fasta")
             rep_paths_nuc[cluster_rep_id] = rep_fasta_file
@@ -3463,7 +3700,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
                          frequency_in_genomes,
-                         [False, True],
+                         [True, True],
                          clusters)
 
     print("\nFiltering BLAST results into classes...")
@@ -3492,7 +3729,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
 
-    cds_to_keep, drop_set = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
+    cds_to_keep, drop_possible_loci = extract_cds_to_keep(classes_outcome, count_results_by_class, drop_mark)
 
     cds_to_keep['1a'] = {values[0]: values for key, values in cds_to_keep['1a'].items()}
     
@@ -3512,26 +3749,44 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     group_reps_ids = {}
     group_alleles_ids = {}
-    count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_set, group_reps_ids, group_alleles_ids)
+    count_number_of_reps_and_alleles(cds_to_keep, clusters, drop_possible_loci, group_reps_ids, group_alleles_ids)
     
     print("\nAdd remaining cluster that didn't match by BLASTn...")
     # Add cluster not matched by BLASTn
-    cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in representative_blast_results.keys()])
+    all_matched_clusters = itf.flatten_list([v for v in {key: value for key, value in cds_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in cds_to_keep['1a'].values()])
+    cds_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in clusters.keys() if cluster not in all_matched_clusters])
+
+    processed_drop = []
+    # Add Ids of the dropped cases due to frequency during classification
+    add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, cds_to_keep, clusters,
+                               'Dropped_due_to_smaller_genome_presence_than_matched_cluster', processed_drop)
+
     print("\nFiltering problematic probable new loci...")
 
     [proportion_of_niph_genomes,
      dropped_due_to_niphs_or_niphems,
      cds_to_keep_all_members,
-     cds_to_keep_all_genomes] = remove_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
-                                                        cds_presence_in_genomes, cds_to_keep, clusters, drop_set, constants[8], 
-                                                        dropped_cluster, results_output)
+     cds_to_keep_all_genomes] = identify_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
+                                                      cds_presence_in_genomes, cds_to_keep, clusters, constants[8], 
+                                                      dropped_cds, not_included_cds, cds_translation_dict, protein_hashes,
+                                                      drop_possible_loci, cds_original_ids, results_output)
+    
+    # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
+    # classification
+    add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, cds_to_keep, clusters,
+                               'Dropped_due_high_presence_of_NIPHs_and_NIPHEMs_in_genomes', processed_drop)
+
+    # Remove from all releveant dicts
+    remove_dropped_cds_from_analysis(dropped_cds, not_included_cds, niphems_presence_in_genome,
+                                     cds_translation_dict, niphs_presence_in_genomes, protein_hashes,
+                                     niphs_in_genomes)
 
     print("\nExtracting results...")
     all_relationships, related_clusters, recommendations = extract_results(processed_results,
                                                                           count_results_by_class,
                                                                           frequency_in_genomes,
                                                                           cds_to_keep,
-                                                                          drop_set,
+                                                                          drop_possible_loci,
                                                                           classes_outcome)
     print("\nWritting count_results_by_cluster.tsv and related_matches.tsv files...")
     write_blast_summary_results(related_clusters,
@@ -3555,12 +3810,17 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     blast_results)
     
     print("\nUpdating IDs and saving changes...")
-    dropped_cluster.update({id_ : 'Dropped_due_to_frequency' for id_ in itf.flatten_list([clusters[i] for i in drop_set])})
-    update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped_cluster, results_output)
+    
+    update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped_cds,
+                                not_included_cds, results_output)
+
+    cds_cases, loci_cases = print_classifications_results(cds_to_keep, drop_possible_loci, False, clusters, False, run_type)
 
     print("\nWritting possible new loci Fastas...")
     [groups_paths_reps,
      groups_paths,
+     groups_trans_reps_paths,
+     groups_trans,
      reps_trans_dict_cds,
      trans_dict_cds,
      master_file,
@@ -3569,16 +3829,18 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               clusters,
                                               results_output,
                                               constants,
-                                              drop_set,
                                               None,
                                               None,
-                                              frequency_in_genomes,
+                                              cds_cases,
+                                              loci_cases,
                                               run_type)
     
     print("Identifying new representatives for possible new loci...")
-    find_new_representatives(reps_trans_dict_cds, trans_dict_cds, groups_paths_reps, groups_paths)
+    new_reps_ids = find_new_representatives(groups_trans_reps_paths, groups_trans, cpu, constants[7], results_output)
+
+    print("Writting members file...")
     write_cluster_members_to_file(results_output, cds_to_keep, clusters, frequency_in_genomes,
-                                  drop_set)
+                                  drop_possible_loci)
 
     print("Create graphs for the BLAST results...")
     cds_size_dicts = {'IDs': cds_size.keys(),

@@ -1,7 +1,7 @@
 import subprocess
 import os
 
-def make_blast_db(makeblastdb_exec ,input_fasta, output_path, db_type):
+def make_blast_db(makeblastdb_exec, input_fasta, output_path, db_type):
     """
     Create a BLAST database.
 

@@ -170,7 +170,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     for protid, protein in sorted_sequences.items():
         minimizers = kf.determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
-                                             position=position,guarantee_tip=True)
+                                             position=position, guarantee_tip=True)
         
         distinct_minimizers = set([minimizer[0] for minimizer in minimizers])
         
