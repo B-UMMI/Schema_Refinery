@@ -9,7 +9,7 @@ except:
                                        iterable_functions as itf)
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
-                           prot_len_dict, protid, window_size):
+                           prot_len_dict, protid, window_size, size_threshold):
     """
     Determine the clusters a sequence can be added to.
 
@@ -77,13 +77,19 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     selected_reps = [(*representative,rep_coverage_all[representative[0]]) 
                      for representative in selected_reps 
                      if rep_coverage_all[representative[0]] >= clustering_cov]
-        
+    
+    if size_threshold:
+        max_limit = prot_len_dict[protid] + prot_len_dict[protid] * size_threshold
+        min_limit = prot_len_dict[protid] - prot_len_dict[protid] * size_threshold
+    
+        selected_reps = [ values for values in selected_reps if max_limit >= prot_len_dict[values[0]] >= min_limit]
             
     return selected_reps
     
 def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                          offset, clusters, reps_sequences, reps_groups,
-                         seq_num_cluster, clustering_sim, clustering_cov, grow):
+                         seq_num_cluster, clustering_sim, clustering_cov, grow,
+                         size_threshold):
     """
     Cluster sequences based on shared distinct minimizers.
 
@@ -178,7 +184,8 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                                                reps_groups,
                                                clustering_sim, clustering_cov,
                                                prot_len_dict, protid, 
-                                               window_size)
+                                               window_size.
+                                               size_threshold)
         
         top = (len(selected_reps)
                if len(selected_reps) < seq_num_cluster

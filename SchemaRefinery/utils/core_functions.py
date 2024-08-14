@@ -3036,7 +3036,38 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
 
-def find_new_representatives(groups_trans_reps_paths, groups_trans, cpu, bsr_value, results_output):
+def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths_reps,
+                             cpu, bsr_value, not_included_cds, cds_translation_dict, results_output):
+
+    def run_blast_for_bsr(groups_trans, groups_trans_reps_paths, blast_dir, iteration, cpu):
+        print(f"\nRunning BLASTp to confirm possible: Iteration {iteration}...")
+
+        save_bsr_score = {}
+        total_blasts = len(groups_trans)
+        i = 1
+        # Run Blastp and calculate BSR.
+        with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+            for res in executor.map(bf.run_blast_fastas_multiprocessing,
+                                    groups_trans, 
+                                    repeat(get_blastp_exec),
+                                    repeat(blast_dir),
+                                    repeat(groups_trans_reps_paths),
+                                    groups_trans.values()):
+                
+                filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, False, False)
+
+
+                # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
+                for query, subjects_dict in filtered_alignments_dict.items():
+                    for subject_id, results in subjects_dict.items():
+                        #Highest score (First one)
+                        subject_score = next(iter(results.values()))['score']
+                        save_bsr_score.setdefault(query, {}).update({subject_id: bf.compute_bsr(subject_score, self_score_dict_reps[query])})
+
+                print(f"\rRunning BLASTp to confirm identified NIPHs: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
+                i += 1
+
+        return save_bsr_score
     
     blast_dir = os.path.join(results_output, 'BLAST_find_new_representatives')
     ff.create_directory(blast_dir)
@@ -3065,58 +3096,64 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, cpu, bsr_val
             print(f"\rRunning BLASTp to calculate self-score to identify new representatives {res[0]: <{max_id_length}}", end='', flush=True)
             i += 1
 
-    save_bsr_score = {}
-    total_blasts = len(groups_trans)
-    i = 1
-    # Run Blastp and calculate BSR.
-    print("\nRunning BLASTp to confirm possible NIPHs...")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blast_fastas_multiprocessing,
-                                groups_trans, 
-                                repeat(get_blastp_exec),
-                                repeat(blast_dir),
-                                repeat(groups_trans_reps_paths),
-                                groups_trans.values()):
-            
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, False, False)
+    iteration = 1
+    continue_to_run_blasts = True
+    temp_group_paths = groups_trans
+    temp_groups_trans_reps_paths = groups_trans_reps_paths
+    while continue_to_run_blasts:
+        save_bsr_score = run_blast_for_bsr(temp_group_paths, temp_groups_trans_reps_paths, blast_dir, iteration, cpu)
 
+        if not save_bsr_score:
+            continue_to_run_blasts = False
+        else:
+            iteration += 1
 
-            # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                for subject_id, results in subjects_dict.items():
-                    #Highest score (First one)
-                    subject_score = next(iter(results.values()))['score']
-                    save_bsr_score.setdefault(query, {}).update({subject_id: bf.compute_bsr(subject_score, self_score_dict_reps[query])})
+        # Filter the cases by BSR value in inverse order (lowest at the top).
+        flattened = [
+        (query, subject_id, bsr)
+        for query, subjects_ids in save_bsr_score.items()
+        for subject_id, bsr in subjects_ids.items()
+        ]
 
-            print(f"\rRunning BLASTp to confirm identified NIPHs: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
-            i += 1
+        sorted_flattened = sorted(flattened, key=lambda x: x[2], reverse=True)
 
-    # Filter the cases by BSR value in inverse order (lowest at the top).
-    flattened = [
-    (query, subject_id, bsr)
-    for query, subjects_ids in save_bsr_score.items()
-    for subject_id, bsr in subjects_ids.items()
-    ]
+        sorted_save_bsr_score = {}
+        for query, subject_id, bsr in sorted_flattened:
+            if query not in sorted_save_bsr_score:
+                sorted_save_bsr_score[query] = {}
+            sorted_save_bsr_score[query][subject_id] = bsr
 
-    sorted_flattened = sorted(flattened, key=lambda x: x[2], reverse=True)
+        new_reps_ids = {}
+        del_matched_ids = {}
+        for rep, alleles in sorted_save_bsr_score.items():
+            loci = rep.split('_')[0]
 
-    sorted_save_bsr_score = {}
-    for query, subject_id, bsr in sorted_flattened:
-        if query not in sorted_save_bsr_score:
-            sorted_save_bsr_score[query] = {}
-        sorted_save_bsr_score[query][subject_id] = bsr
+            new_reps_ids.setdefault(loci, {})
+            del_matched_ids.setdefault(loci, {})
 
-    new_reps_ids = {}
-    for rep, alleles in sorted_save_bsr_score.items():
-        for allele, bsr in alleles.items():
-            # Identify possible new reps base on bsr value
-            if 0.1 - bsr_value >= bsr >= bsr_value:
-                if not new_reps_ids.get(allele):
-                    new_reps_ids.setdefault(allele, bsr)
-            # If that allele is a rep, however, it has a higher BSR than it is needed to be rep.
-            # We need only the cases where all of the matches are in 0.1 - bsr_value >= bsr >= bsr_value.
-            elif new_reps_ids.get(allele):
-                del new_reps_ids[allele]
+            for allele, bsr in alleles.items():
+                # Identify possible new reps base on bsr value
+                if 0.1 - bsr_value >= bsr >= bsr_value:
+                    if not new_reps_ids[loci].get(allele):
+                        new_reps_ids[loci].setdefault(allele, bsr)
+                # We need only the cases where all of the matches are in 0.1 - bsr_value >= bsr >= bsr_value.
+                elif del_matched_ids[loci].get(allele):
+                    del_matched_ids[loci].setdefault(allele, bsr)
+
+        # Remove the cases that are not in the range of bsr value to add as representative for other representatives.
+        for loci, alleles in del_matched_ids.items():
+            for allele in alleles:
+                if new_reps_ids[loci].get(allele):
+                    del new_reps_ids[loci][allele]
+        # Clean the dict
+        itf.remove_empty_dicts_recursive(new_reps_ids)
+    
+        for loci, alleles in new_reps_ids.items():
+            allele = alleles[0]
+            with open(groups_paths_reps[loci], 'a') as fasta_file:
+                fasta_file.write(f">{allele}\n{str(not_included_cds[allele])}\n")
+            with open(groups_paths_reps[loci], 'a') as fasta_file:
+                fasta_file.write(f">{allele}\n{str(cds_translation_dict[allele])}\n")
 
     return new_reps_ids
 
@@ -3519,7 +3556,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                            1,
                                                            constants[3], 
                                                            constants[4],
-                                                           True)
+                                                           True,
+                                                           0.2)
 
     # Reformat the clusters output, we are interested only in  the ID of cluster members.
     clusters = {cluster_rep: [value[0] for value in values]
@@ -3584,7 +3622,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                                0,
                                                                prot_len_dict,
                                                                cluster_id,
-                                                               5)
+                                                               5,
+                                                               False)
    
         reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
                                       for match_values in reps_kmers_sim[cluster_id]}
@@ -3609,7 +3648,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             # Save the new members IDs.
             new_members_ids.append(new_id)
             # Replace in reps_kmer_sim
-            reps_kmers_sim[new_id] = reps_kmers_sim.pop(member)
+            reps_kmers_sim[cluster][new_id] = reps_kmers_sim[cluster].pop(member)
             # Replace the old ID with the new ID for the DNA sequences.
             not_included_cds[new_id] = not_included_cds.pop(member)
             # Replace in hashes dict
@@ -3836,7 +3875,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               run_type)
     
     print("Identifying new representatives for possible new loci...")
-    new_reps_ids = find_new_representatives(groups_trans_reps_paths, groups_trans, cpu, constants[7], results_output)
+    new_reps_ids = find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths_reps,
+                                            cpu, constants[7], not_included_cds, cds_translation_dict,
+                                            results_output)
 
     print("Writting members file...")
     write_cluster_members_to_file(results_output, cds_to_keep, clusters, frequency_in_genomes,
