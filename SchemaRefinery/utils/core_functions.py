@@ -1,5 +1,6 @@
 import os
 import concurrent.futures
+import copy
 from itertools import repeat
 
 try:
@@ -1655,7 +1656,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                                 ):
 
             filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-                res[1], constants[1], True, False, True, False, False)
+                res[1], constants[1], True, False, True, True, False)
             # Save the BLASTn results
             representative_blast_results.update(filtered_alignments_dict)
             representative_blast_results_coords_all.update(alignment_coords_all)
@@ -1787,7 +1788,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
             
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, False, False)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
 
             # Since BLAST may find several local aligments choose the largest one to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
@@ -3098,15 +3099,13 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
 
     iteration = 1
     continue_to_run_blasts = True
-    temp_group_paths = groups_trans
-    temp_groups_trans_reps_paths = groups_trans_reps_paths
+    temp_group_paths = copy.deepcopy(groups_trans)
+    temp_groups_trans_reps_paths = copy.deepcopy(groups_trans_reps_paths)
+    # Loop till there are no more possible new reps cases.
     while continue_to_run_blasts:
-        save_bsr_score = run_blast_for_bsr(temp_group_paths, temp_groups_trans_reps_paths, blast_dir, iteration, cpu)
-
-        if not save_bsr_score:
-            continue_to_run_blasts = False
-        else:
-            iteration += 1
+        iterations_folder = os.path.join(blast_dir, f"iteration_{iteration}")
+        ff.create_directory(iterations_folder)
+        save_bsr_score = run_blast_for_bsr(temp_group_paths, temp_groups_trans_reps_paths, iterations_folder, iteration, cpu)
 
         # Filter the cases by BSR value in inverse order (lowest at the top).
         flattened = [
@@ -3123,6 +3122,8 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
                 sorted_save_bsr_score[query] = {}
             sorted_save_bsr_score[query][subject_id] = bsr
 
+        # Identify cases that are in new reps threshold and cases that are in 
+        # normal allele threshold
         new_reps_ids = {}
         del_matched_ids = {}
         for rep, alleles in sorted_save_bsr_score.items():
@@ -3133,11 +3134,11 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
 
             for allele, bsr in alleles.items():
                 # Identify possible new reps base on bsr value
-                if 0.1 - bsr_value >= bsr >= bsr_value:
+                if  bsr_value + 0.1 >= bsr:
                     if not new_reps_ids[loci].get(allele):
                         new_reps_ids[loci].setdefault(allele, bsr)
-                # We need only the cases where all of the matches are in 0.1 - bsr_value >= bsr >= bsr_value.
-                elif del_matched_ids[loci].get(allele):
+                # We need only the cases where all of the matches are normal.
+                else:
                     del_matched_ids[loci].setdefault(allele, bsr)
 
         # Remove the cases that are not in the range of bsr value to add as representative for other representatives.
@@ -3145,15 +3146,38 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
             for allele in alleles:
                 if new_reps_ids[loci].get(allele):
                     del new_reps_ids[loci][allele]
+
         # Clean the dict
-        itf.remove_empty_dicts_recursive(new_reps_ids)
-    
+        itf.remove_empty_dicts_recursive(new_reps_ids)   
+        # Add one possible reps (not adding all because some may be for the same protein)
         for loci, alleles in new_reps_ids.items():
-            allele = alleles[0]
+            translation = sf.read_fasta_file_dict(groups_trans[loci])
+            rep_translation = sf.read_fasta_file_dict(groups_trans[loci])
+            allele = next(iter(alleles))
+            alleles.pop(allele)
+            # Skip alleles that are already reps (cases occur when rep x_1 matches with allele x_2
+            # and allele x_2 is rep that cant match with itself.)
+            if allele in rep_translation:
+                continue
+            print(f"Representative for {loci} is {allele}")
             with open(groups_paths_reps[loci], 'a') as fasta_file:
                 fasta_file.write(f">{allele}\n{str(not_included_cds[allele])}\n")
-            with open(groups_paths_reps[loci], 'a') as fasta_file:
-                fasta_file.write(f">{allele}\n{str(cds_translation_dict[allele])}\n")
+            with open(groups_trans_reps_paths[loci], 'a') as fasta_file:
+                fasta_file.write(f">{allele}\n{str(translation[allele].seq)}\n")
+
+        # Clean the dict
+        itf.remove_empty_dicts_recursive(new_reps_ids)
+        # What BLASTp to do again to confirm other possible reps
+        temp_group_paths = {}
+        temp_groups_trans_reps_paths = {}
+        for loci, alleles in new_reps_ids.items():
+            temp_group_paths.update({loci: groups_trans[loci]})
+            temp_groups_trans_reps_paths.update({loci: groups_trans_reps_paths[loci]})
+    
+        if not temp_group_paths:
+            continue_to_run_blasts = False
+        else:
+            iteration += 1
 
     return new_reps_ids
 
@@ -3534,8 +3558,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                 cds_translation_dict[new_id] = cds_translation_dict.pop(key)
             else:
                 protein_hashes[protein_hash].remove(key)
-                
-        
+
     cds_translation_dict = {k: v for k, v in cds_translation_dict.items() if k not in dropped_cds}
 
     # Sort by size of proteins.
@@ -3577,6 +3600,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     singleton_cluster = len([cluster for cluster in clusters if len(cluster) == 1])
     print(f"\tOut of those clusters, {singleton_cluster} are singletons")
     print(f"\tOut of those clusters, {total_number_clusters - singleton_cluster} have more than one CDS.")
+    
     print("\nFiltering clusters...")
     # Get frequency of cluster.
     frequency_in_genomes = {rep: sum([frequency_cds[entry] for entry in value]) 
@@ -3595,13 +3619,13 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     if intial_length != len(clusters):
          print(f"After filtering by CDS frequency in the genomes (>= {len(genomes_ids)}),"
-               f" out of {intial_length} clusters, {len(clusters)} remained.") 
-     
+               f" out of {intial_length} clusters, {len(clusters)} remained.")
+
     print("\nRetrieving kmers similiarity and coverage between representatives...")
     reps_kmers_sim = {}
     # Get the representatives protein sequence.
     reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in cds_translation_dict.items()
-                             if rep_id in clusters}
+                             if rep_id.split('_')[0] in clusters}
     # Sort the representative translation dict from largest to smallest.
     reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(),
                                                      key=lambda x: len(x[1]),
@@ -3624,9 +3648,10 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                                cluster_id,
                                                                5,
                                                                False)
-   
+    
         reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:]
                                       for match_values in reps_kmers_sim[cluster_id]}
+
     print("\nReplacing CDSs IDs with the cluster representative ID...")
     cds_original_ids = {}
     # Replace the IDS of cluster alleles to x_1 and replace all of the alleles in
@@ -3647,12 +3672,14 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                 dropped_cds[new_id] = dropped_cds.pop(dropped_id)
             # Save the new members IDs.
             new_members_ids.append(new_id)
-            # Replace in reps_kmer_sim
-            reps_kmers_sim[cluster][new_id] = reps_kmers_sim[cluster].pop(member)
             # Replace the old ID with the new ID for the DNA sequences.
             not_included_cds[new_id] = not_included_cds.pop(member)
             # Replace in hashes dict
             translation_hash = itf.identify_string_in_dict_get_key(member, protein_hashes)
+            # Replace in prot_len_dict
+            if prot_len_dict.get(member):
+                prot_len_dict[new_id] = prot_len_dict.pop(member)
+
             index = protein_hashes[translation_hash].index(member)
             # Replace the old ID with the new ID for the translation sequences.
             # Since only representatives are in the dict we first check if it is present
@@ -3679,6 +3706,15 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                 niphs_in_genomes[niphs_group_id][niphs_group_member_index] = new_id
             i += 1
         clusters[cluster] = new_members_ids
+    # Change IDs in reps_kmers_sim
+    for cluster_id, elements_id in list(reps_kmers_sim.items()):
+        cluster_rep_id = f"{cluster_id}_1"
+        reps_kmers_sim.setdefault(cluster_rep_id, {})
+        for element_id, kmers in elements_id.items():
+            if cds_original_ids.get(element_id):
+                new_id = cds_original_ids[element_id][0]
+            reps_kmers_sim[cluster_rep_id].setdefault(new_id, kmers)
+        del reps_kmers_sim[cluster_id]
 
     # Create directories.
     blast_output = os.path.join(output_directory, '2_BLAST_processing')

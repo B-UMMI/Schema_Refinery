@@ -184,7 +184,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                                                reps_groups,
                                                clustering_sim, clustering_cov,
                                                prot_len_dict, protid, 
-                                               window_size.
+                                               window_size,
                                                size_threshold)
         
         top = (len(selected_reps)
