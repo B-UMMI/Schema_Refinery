@@ -3040,9 +3040,11 @@ def update_ids_and_save_changes(cds_to_keep, clusters, cds_original_ids, dropped
 def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths_reps,
                              cpu, bsr_value, not_included_cds, cds_translation_dict, results_output):
 
-    def run_blast_for_bsr(groups_trans, groups_trans_reps_paths, blast_dir, iteration, cpu):
-        print(f"\nRunning BLASTp to confirm possible: Iteration {iteration}...")
-
+    def run_blast_for_bsr(groups_trans, groups_trans_reps_paths, iterations_folder, cpu):
+        print('\n')
+        # Create a folder to store the results of the BLASTp self-score calculations.
+        blastp_folder = os.path.join(iterations_folder, 'BLASTp')
+        ff.create_directory(blastp_folder)
         save_bsr_score = {}
         total_blasts = len(groups_trans)
         i = 1
@@ -3051,7 +3053,7 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
             for res in executor.map(bf.run_blast_fastas_multiprocessing,
                                     groups_trans, 
                                     repeat(get_blastp_exec),
-                                    repeat(blast_dir),
+                                    repeat(blastp_folder),
                                     repeat(groups_trans_reps_paths),
                                     groups_trans.values()):
                 
@@ -3070,32 +3072,36 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
 
         return save_bsr_score
     
+    def self_score_calc(temp_groups_trans_reps_paths, iterations_folder, cpu):
+        # Create a folder to store the results of the BLASTp self-score calculations.
+        self_score_folder = os.path.join(iterations_folder, 'self_score')
+        ff.create_directory(self_score_folder)
+
+        i = 1
+        self_score_dict_reps = {}
+        with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+            for res in executor.map(bf.run_self_score_multiprocessing,
+                                    temp_groups_trans_reps_paths.keys(),
+                                    repeat(get_blastp_exec),
+                                    temp_groups_trans_reps_paths.values(),
+                                    repeat(self_score_folder)):
+                
+                _, self_scores, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, False, False, True)
+        
+                # Save self-score.
+                self_score_dict_reps.update(self_scores)
+                                
+                print(f"\rRunning BLASTp to calculate self-score to identify new representatives {res[0]: <{max_id_length}}", end='', flush=True)
+                i += 1
+        return self_score_dict_reps
+
     blast_dir = os.path.join(results_output, 'BLAST_find_new_representatives')
     ff.create_directory(blast_dir)
 
     # Get the path to the BLASTp executable.
     get_blastp_exec = lf.get_tool_path('blastp')
-    # Create a folder to store the results of the BLASTp self-score calculations.
-    self_score_folder = os.path.join(blast_dir, 'self_score')
-    ff.create_directory(self_score_folder)
     # Get the max length of the IDs.
     max_id_length = len(max(groups_trans))
-    i = 1
-    self_score_dict_reps = {}
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_self_score_multiprocessing,
-                                groups_trans_reps_paths.keys(),
-                                repeat(get_blastp_exec),
-                                groups_trans_reps_paths.values(),
-                                repeat(self_score_folder)):
-            
-            _, self_scores, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, False, False, True)
-    
-            # Save self-score.
-            self_score_dict_reps.update(self_scores)
-                            
-            print(f"\rRunning BLASTp to calculate self-score to identify new representatives {res[0]: <{max_id_length}}", end='', flush=True)
-            i += 1
 
     iteration = 1
     continue_to_run_blasts = True
@@ -3103,9 +3109,11 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
     temp_groups_trans_reps_paths = copy.deepcopy(groups_trans_reps_paths)
     # Loop till there are no more possible new reps cases.
     while continue_to_run_blasts:
+        print(f"\nRunning BLASTp to identify new representatives: Iteration {iteration}...")
         iterations_folder = os.path.join(blast_dir, f"iteration_{iteration}")
         ff.create_directory(iterations_folder)
-        save_bsr_score = run_blast_for_bsr(temp_group_paths, temp_groups_trans_reps_paths, iterations_folder, iteration, cpu)
+        self_score_dict_reps = self_score_calc(temp_groups_trans_reps_paths, iterations_folder, cpu)
+        save_bsr_score = run_blast_for_bsr(temp_group_paths, temp_groups_trans_reps_paths, iterations_folder, cpu)
 
         # Filter the cases by BSR value in inverse order (lowest at the top).
         flattened = [
@@ -3150,20 +3158,21 @@ def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths
         # Clean the dict
         itf.remove_empty_dicts_recursive(new_reps_ids)   
         # Add one possible reps (not adding all because some may be for the same protein)
-        for loci, alleles in new_reps_ids.items():
+        for loci, alleles in list(new_reps_ids.items()):
             translation = sf.read_fasta_file_dict(groups_trans[loci])
-            rep_translation = sf.read_fasta_file_dict(groups_trans[loci])
-            allele = next(iter(alleles))
-            alleles.pop(allele)
-            # Skip alleles that are already reps (cases occur when rep x_1 matches with allele x_2
-            # and allele x_2 is rep that cant match with itself.)
-            if allele in rep_translation:
-                continue
-            print(f"Representative for {loci} is {allele}")
-            with open(groups_paths_reps[loci], 'a') as fasta_file:
-                fasta_file.write(f">{allele}\n{str(not_included_cds[allele])}\n")
-            with open(groups_trans_reps_paths[loci], 'a') as fasta_file:
-                fasta_file.write(f">{allele}\n{str(translation[allele].seq)}\n")
+            rep_translation = sf.read_fasta_file_dict(groups_trans_reps_paths[loci])
+            for allele in list(alleles):
+                if allele in rep_translation:
+                    del new_reps_ids[loci][allele]
+                    continue
+                elif allele not in rep_translation:
+                    del new_reps_ids[loci][allele]
+                    print(f"Representative for {loci} is {allele}")
+                    with open(groups_paths_reps[loci], 'a') as fasta_file:
+                        fasta_file.write(f">{allele}\n{str(not_included_cds[allele])}\n")
+                    with open(groups_trans_reps_paths[loci], 'a') as fasta_file:
+                        fasta_file.write(f">{allele}\n{str(translation[allele].seq)}\n")
+                    break
 
         # Clean the dict
         itf.remove_empty_dicts_recursive(new_reps_ids)
