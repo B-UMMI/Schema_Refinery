@@ -1,3 +1,4 @@
+from collections import OrderedDict, Counter
 import re
 import itertools
 import pickle
@@ -312,7 +313,7 @@ def partially_contains_sublist(main_list, list_of_lists):
     return False
 
 
-def identify_string_in_dict(input_str, dictionary):
+def identify_string_in_dict_get_key(input_str, dictionary):
     """
     Identify the key in the dictionary where the input string is present.
 
@@ -333,25 +334,33 @@ def identify_string_in_dict(input_str, dictionary):
             return key
     return None
 
-def identify_value_in_dict_lists(target_value, dict_of_lists):
+def identify_string_in_dict_get_value(search_key, search_dict):
+    for key, value in search_dict.items():
+        if search_key in value:
+            return value
+    return None
+
+def identify_string_in_dict_lists_regex(target_value, dict_of_lists, regex=False):
     """
     Identifies if a string is present in any list inside a dictionary.
 
     Parameters
     ----------
-    target_value : any
+    target_string : str
         The value to find.
     dict_of_lists : dict
         A dictionary where the values are lists of lists.
+    regex : str, optional
+        A regex pattern to search for in the lists.
 
     Returns
     -------
     key : int or str
-        The key of the entry where the value is present, or False if not found.
+        The key of the entry where the string is present, or False if not found.
     """
     for key, lists in dict_of_lists.items():
         for list_ in lists:
-            if target_value in list_:
+            if target_value in [remove_by_regex(l, regex) for l in list_] if regex else list_:
                 return key
     return False
 
@@ -498,6 +507,39 @@ def remove_by_regex(string, pattern):
     """
     return re.sub(pattern, '', string)
 
+def replace_by_regex(string, pattern, replacement):
+    """
+    Replace all occurrences of a regex pattern within a string with a specified replacement.
+
+    This function uses the `re.sub()` method from Python's built-in `re` (regular expressions) module to find all
+    occurrences of `pattern` in `string` and replace them with `replacement`. The function returns a new string
+    with the modifications applied.
+
+    Parameters
+    ----------
+    string : str
+        The string to search and replace occurrences in.
+    pattern : str
+        The regex pattern to search for within `string`. This pattern can match characters, numbers, symbols,
+        or more complex regex features.
+    replacement : str
+        The string to replace each match of `pattern` in `string` with.
+
+    Returns
+    -------
+    str
+        A new string with all matches of `pattern` replaced by `replacement`.
+
+    Examples
+    --------
+    >>> text = "Hello 123, meet 456."
+    >>> pattern = r"\d+"
+    >>> replacement = "number"
+    >>> replace_by_regex(text, pattern, replacement)
+    'Hello number, meet number.'
+    """
+    return re.sub(pattern, replacement, string)
+
 def regex_present(regex_list, string):
     """
     Check if any regex in a list is found in a string.
@@ -516,6 +558,25 @@ def regex_present(regex_list, string):
     """
     return any(re.search(regex, string) for regex in regex_list)
 
+def search_string_by_regex(pattern, string):
+    """
+    Searches for a regex pattern in a string.
+
+    Parameters
+    ----------
+    pattern : str
+        The regex pattern to search for.
+    string : str
+        The string to search in.
+
+    Returns
+    -------
+    return : str
+        The match object if the pattern is found, original string otherwise.
+    """
+    match = re.search(pattern, string)
+    return match.group(1) if match else string
+
 def add_strings_to_subsets(my_list, my_strings):
     """
     Clustering algorithm that finds a string in a list of strings in
@@ -532,7 +593,7 @@ def add_strings_to_subsets(my_list, my_strings):
                 found = True
                 break
     return found
-
+#Unused
 def find_index(input_list, target_string):
     """
     Find the index of a string in a list.
@@ -553,3 +614,176 @@ def find_index(input_list, target_string):
         return input_list.index(target_string)
     except ValueError:
         return None
+
+def find_sublist_index(input_list_of_lists, target_value):
+    """
+    Finds the index of the sublist that contains the target value within a list of lists.
+
+    Parameters
+    ----------
+    input_list_of_lists : list of list
+        The list of lists to search.
+    target_value : any
+        The value to find.
+
+    Returns
+    -------
+    return : int or None
+        The index of the sublist containing the element, or None if the string is not found in any sublist.
+    """
+    try:
+        return input_list_of_lists.index(target_value)
+    except ValueError:
+        return None
+
+def try_convert_to_type(value, target_type):
+    """
+    Attempts to convert a given value to a specified type.
+
+    This function tries to convert the input `value` to the `target_type`. If the conversion is successful, it returns the converted value. If the conversion fails due to a `ValueError` or `TypeError`, it returns the original value instead.
+
+    Parameters
+    ----------
+    value : Any
+        The value to be converted.
+    target_type : type
+        The type to which `value` should be converted. This should be a type like `int`, `float`, `str`, etc.
+
+    Returns
+    -------
+    return : Any
+        The converted value if the conversion is successful; otherwise, the original value.
+
+    Notes
+    -----
+    - This function is useful for safely attempting type conversions without the risk of raising exceptions.
+    - It can be used in situations where the type of input data is uncertain or varies.
+    """
+    try:
+        return target_type(value)
+    except (ValueError, TypeError):
+        return value
+#Unused
+def repeat_strings_in_a_list(string, times):
+    """
+    Creates a list where a given character is repeated a specified number of times.
+
+    Parameters
+    ----------
+    string : str
+        The character to be repeated.
+    times : int
+        The number of times the character should be repeated.
+
+    Returns
+    -------
+    list of str
+        A list containing the character repeated 'times' times.
+
+    Examples
+    --------
+    >>> repeat_strings_in_a_list('a', 3)
+    ['a', 'a', 'a']
+    """
+    return [string for i in range(times)]
+
+def sort_subdict_by_tuple(dict, order):
+    """
+    Sorts the sub-dictionaries of a given dictionary based on a specified order tuple.
+
+    Parameters
+    ----------
+    dict : dict
+        The input dictionary containing sub-dictionaries as values.
+    order : tuple
+        A tuple specifying the desired order of keys in the sorted sub-dictionaries.
+
+    Returns
+    -------
+    sorted_data : dict
+        A new dictionary with each sub-dictionary sorted according to the specified order.
+
+    Notes
+    -----
+    -This function iterates through each key-value pair in the input dictionary. Each value, 
+    which should be a dictionary itself (sub-dictionary), is sorted based on the order of keys 
+    specified in the 'order' tuple. If a key in the sub-dictionary does not exist in the 'order' tuple, 
+    it is placed at the end of the sorted sub-dictionary. The sorting is stable, meaning that 
+    the original order of keys (for those not in the 'order' tuple) is preserved.
+
+    Examples
+    --------
+    >>> data = {'cds1|cds2': {'1a': 30, '3b': 40}, 'cds3|cds4': {'3b': 20, '1a': 30}}
+    >>> order = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
+    >>> sorted_data = sort_subdict_by_tuple(data, order)
+    >>> sorted_data
+    {'cds1|cds2': OrderedDict([('1a', 30), ('3b', 40)]), 'cds3|cds4': OrderedDict([('1a', 30), ('3b', 20)])}
+    """
+    sorted_data = {}
+    for key, subdict in dict.items():
+        # Sorting the sub-dictionary by the index of its keys in the order tuple
+        sorted_subdict = OrderedDict(sorted(subdict.items(), key=lambda item: order.index(item[0]) if item[0] in order else len(order)))
+        sorted_data[key] = sorted_subdict
+    return sorted_data
+
+def check_if_all_elements_are_duplicates(input_list):
+    # Count occurrences of each element
+    element_counts = {}
+    for element in input_list:
+        if element in element_counts:
+            element_counts[element] += 1
+        else:
+            element_counts[element] = 1
+    
+    # Check if every element occurs more than once
+    for count in element_counts.values():
+        if count == 1:
+            return False
+    return True if element_counts else False
+
+def check_if_all_sets_are_same(sets_list):
+    """
+    Checks if all sets within a list are identical.
+
+    This function evaluates whether all sets in a given list are exactly the same. It first checks if the list is empty or contains only one set, in which case it returns True, as there are no differing sets to compare. Then, it uses the first set in the list as a reference to compare against all other sets in the list. If any set differs from the first set, the function returns False. Otherwise, if all sets are identical to the first set, it returns True.
+
+    Parameters
+    ----------
+    sets_list : list
+        A list of sets to be checked for identity.
+
+    Returns
+    -------
+    bool
+        True if all sets in the list are identical, False otherwise.
+
+    Examples
+    --------
+    >>> sets_list = [{1, 2, 3}, {1, 2, 3}, {1, 2, 3}]
+    >>> check_if_all_sets_are_same(sets_list)
+    True
+
+    >>> sets_list2 = [{1, 2, 3}, {4, 5, 6}, {1, 2, 3}]
+    >>> check_if_all_sets_are_same(sets_list2)
+    False
+    """
+    # Check if the list is empty or has only one set
+    if len(sets_list) <= 1:
+        return True
+    
+    # Use the first set as a reference
+    reference_set = sets_list[0]
+    
+    # Compare each set with the reference set
+    for s in sets_list[1:]:
+        if s != reference_set:
+            return False
+    
+    return True
+
+def get_duplicates(input_list):
+    # Count occurrences of each element
+    element_counts = Counter(input_list)
+    # Select elements that appear more than once
+    duplicates = [element for element, count in element_counts.items() if count > 1]
+    return duplicates

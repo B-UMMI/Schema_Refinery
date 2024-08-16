@@ -20,18 +20,18 @@ from functools import reduce
 import pandas as pd
 
 try:
-    from SchemaAnnotation import proteome_fetcher as pf
-    from SchemaAnnotation import proteome_splitter as ps
-    from SchemaAnnotation import proteome_matcher as pm
-    from SchemaAnnotation import genbank_annotations as ga
-    from SchemaAnnotation import match_schemas as ms
+    from SchemaAnnotation import (proteome_fetcher as pf,
+                                  proteome_splitter as ps,
+                                  proteome_matcher as pm,
+                                  genbank_annotations as ga,
+                                  match_schemas as ms)
     from utils import file_functions as ff
 except ModuleNotFoundError:
-    from SchemaRefinery.SchemaAnnotation import proteome_fetcher as pf
-    from SchemaRefinery.SchemaAnnotation import proteome_splitter as ps
-    from SchemaRefinery.SchemaAnnotation import proteome_matcher as pm
-    from SchemaRefinery.SchemaAnnotation import genbank_annotations as ga
-    from SchemaRefinery.SchemaAnnotation import match_schemas as ms
+    from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
+                                                proteome_splitter as ps,
+                                                proteome_matcher as pm,
+                                                enbank_annotations as ga,
+                                                match_schemas as ms)
     from SchemaRefinery.utils import file_functions as ff
 
 

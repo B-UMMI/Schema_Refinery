@@ -301,7 +301,7 @@ def process_blast_results(blast_results_file, constants_threshold):
 
 def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                                            get_coords, get_self_score, skip_reverse_alignemnts,
-                                           if_loci = None):
+                                           if_alleles, multiple_reps):
     """
     Reads BLAST results file and extracts the necessary items, based on input
     also fetches the coordinates based on query sequences and self-score contained
@@ -316,14 +316,15 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
     get_coords : bool
         If to fetch coordinates for the BLAST match.
     get_self_score : bool
-        If to get self-score from BLAST results (Note: if there are multiple 
-        queries from which we can get self-score it returns the largest self-score. 
-        Also to note, for self-score to be fecth the query must be also
-        in the subjects database).
+        If to get self-score from BLAST results (Note: for self-score
+        to be fetch the query must be also in the subjects database).
     skip_reverse_alignemnts : bool
         If to skip inverse alignments.
-    if_loci : bool, optional
-        If True, the function will process only loci instead of CDSs.
+    if_alleles : bool
+        If True, the function will process alleles to fetch self-score
+    multiple_reps : bool
+        If True, the function will process multiple representatives to fetch self-score
+        else will fetch the highest self-score.   
 
     Returns
     -------
@@ -334,13 +335,25 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
     alignment_coords : dict
         Contains the coordinates for the query/subject pair, the coordinates are
         in reference to the query.
+    alignment_coords_pident : dict
+        Contains the coordinates for the query/subject pair, the coordinates are
+        in reference to the query and filtered by pident threshold.
+    
+    Notes
+    -----
+    -The alignments dicts (alignments_dict, alignment_coords, alignment_coords_pident) will have the following structure:
+    alignments_dict = {query: {subject: {1: {alignment1}, 2: {alignment2}, ...}, ...}, ...}
+    where query will be the allele identifier e.g loci1_1 so for the same loci the may be
+    various query entries.
+    - The self_score will be the highest self-score found in the BLAST results file or
+    a dictionary containing the self-score for each representative present.
     """
 
     alignments_dict = {}
     alignment_coords_pident = {}
     alignment_coords_all = {}
     pattern = '_(\d+)'
-    self_score = 0
+    self_scores = 0 if not multiple_reps else {}
     with open(blast_results_file, "r") as f:
         lines = f.readlines()
         i = 1
@@ -375,17 +388,33 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                     "pident": float(pident)
                     }
             
-            if if_loci:
+            if if_alleles:
                 if itf.remove_by_regex(query, pattern) == itf.remove_by_regex(subject, pattern):
+                    if not multiple_reps:
+                        self_score = 0
+                    else:
+                        self_scores.setdefault(query, 0)
+                        self_score = self_scores[query]
                      # Largest self-score is choosen
                     if float(pident) == 100 and get_self_score and int(score) > self_score:
-                        self_score = int(score)
+                        if multiple_reps:
+                            self_scores[query] = int(score)
+                        else:
+                            self_scores = int(score)
                     continue
             # Skip if entry matched itself and get self-score if needed
             elif query == subject:
+                if not multiple_reps:
+                    self_score = 0
+                else:
+                    self_scores.setdefault(query, 0)
+                    self_score = self_scores[query]
                 # Largest self-score is choosen
                 if float(pident) == 100 and get_self_score and int(score) > self_score:
-                    self_score = int(score)
+                    if multiple_reps:
+                        self_scores[query] = int(score)
+                    else:
+                        self_scores = int(score)
                 continue
             
             if skip_reverse_alignemnts:
@@ -427,7 +456,7 @@ def get_alignments_dict_from_blast_results(blast_results_file, pident_threshold,
                         alignment_coords_pident[query][subject]['query'].append([int(query_start),int(query_end)])
                         alignment_coords_pident[query][subject]['subject'].append([int(subject_start),int(subject_end)])
             
-    return alignments_dict, self_score, alignment_coords_all, alignment_coords_pident
+    return alignments_dict, self_scores, alignment_coords_all, alignment_coords_pident
 
 def remove_inverse_alignments(alignments_dict, all_representatives_alignments_dict):
     """

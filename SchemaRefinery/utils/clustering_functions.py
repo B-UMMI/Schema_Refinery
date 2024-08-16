@@ -9,7 +9,7 @@ except:
                                        iterable_functions as itf)
 
 def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
-                           prot_len_dict, protid, window_size):
+                           prot_len_dict, protid, window_size, size_threshold):
     """
     Determine the clusters a sequence can be added to.
 
@@ -77,13 +77,19 @@ def select_representatives(kmers, reps_groups, clustering_sim, clustering_cov,
     selected_reps = [(*representative,rep_coverage_all[representative[0]]) 
                      for representative in selected_reps 
                      if rep_coverage_all[representative[0]] >= clustering_cov]
-        
+    
+    if size_threshold:
+        max_limit = prot_len_dict[protid] + prot_len_dict[protid] * size_threshold
+        min_limit = prot_len_dict[protid] - prot_len_dict[protid] * size_threshold
+    
+        selected_reps = [ values for values in selected_reps if max_limit >= prot_len_dict[values[0]] >= min_limit]
             
     return selected_reps
     
 def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                          offset, clusters, reps_sequences, reps_groups,
-                         seq_num_cluster, clustering_sim, clustering_cov, grow):
+                         seq_num_cluster, clustering_sim, clustering_cov, grow,
+                         size_threshold):
     """
     Cluster sequences based on shared distinct minimizers.
 
@@ -170,7 +176,7 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
     for protid, protein in sorted_sequences.items():
         minimizers = kf.determine_minimizers(protein, window_size,
                                              word_size, offset=offset,
-                                             position=position,guarantee_tip=True)
+                                             position=position, guarantee_tip=True)
         
         distinct_minimizers = set([minimizer[0] for minimizer in minimizers])
         
@@ -178,7 +184,8 @@ def minimizer_clustering(sorted_sequences, word_size, window_size, position,
                                                reps_groups,
                                                clustering_sim, clustering_cov,
                                                prot_len_dict, protid, 
-                                               window_size)
+                                               window_size,
+                                               size_threshold)
         
         top = (len(selected_reps)
                if len(selected_reps) < seq_num_cluster
@@ -265,5 +272,37 @@ def cluster_by_ids(list_of_ids):
     G.add_edges_from(list_of_ids)
 
     connected = nx.connected_components(G)
+
+    return connected
+
+def cluster_by_ids_bigger_sublists(list_of_ids):
+    """
+    Based on list of list containing pairs or more ids, merges them into larger
+    lists if there are ids common between these sublists.
+    
+    Parameters
+    ----------
+    list_of_ids : list
+        List containing lists with ids.
+    
+    Returns
+    -------
+    connected : list
+        List that contains sublists of ids merged from the initial list.
+    """
+    G = nx.Graph()
+    
+    # Flatten the list of lists into pairs of nodes
+    for sublist in list_of_ids:
+        if len(sublist) == 2:
+            G.add_edge(sublist[0], sublist[1])
+        else:
+            for i in range(len(sublist) - 1):
+                G.add_edge(sublist[i], sublist[i + 1])
+
+    connected = list(nx.connected_components(G))
+
+    # Convert sets to lists
+    connected = [list(component) for component in connected]
 
     return connected

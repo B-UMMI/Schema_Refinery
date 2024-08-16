@@ -230,12 +230,12 @@ def unclassified_cds():
                     default=90, help='Threshold value for pident values used to '
                     'indentify gene fusions (int 0-100).')
     
-     parser.add_argument('-cs', '--clustering-sim', type=int,
+     parser.add_argument('-cs', '--clustering-sim', type=float,
                     required=False, dest='clustering_sim',
                     default=0.9, help='Similiriaty value for'
                     'kmers representatives (float: 0-1).')
     
-     parser.add_argument('-cc', '--clustering-cov', type=int,
+     parser.add_argument('-cc', '--clustering-cov', type=float,
                     required=False, dest='clustering_cov',
                     default=0.9, help='Coverage value for'
                     'kmers representatives (float: 0-1).')
@@ -245,13 +245,21 @@ def unclassified_cds():
                     help='The minimum number of genomes specific cluster'
                     'cluster of CDS must be present in order to be considered.')
     
-     parser.add_argument('-st', '--size_threshold', type=int,
+     parser.add_argument('-st', '--size_threshold', type=float,
                     required=False, dest='size_threshold',
                     help='Size of the CDS to consider processing.')
     
      parser.add_argument('-tb', '--translation_table', type=int,
-          required=False, dest='size_threshold', default=11,
-          help='Size of the CDS to consider processing.')
+          required=False, dest='translation_table', default=11,
+          help='Translation table to use for the CDS translation.')
+     
+     parser.add_argument('-b', '--bsr', type=float,
+          required=False, dest='bsr', default=0.6,
+          help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-b', '--problematic_proportion', type=float,
+          required=False, dest='problematic_proportion', default=0.3,
+          help='Proportion of problematic (NIPHS and NIPHEMS) CDSs per loci allowed.')
     
      parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
@@ -297,13 +305,17 @@ def spurious_loci():
                     default=90, help='Threshold value for pident values used to '
                     'indentify gene fusions (int 0-100).')
     
-     parser.add_argument('-st', '--size_threshold', type=int,
+     parser.add_argument('-st', '--size_threshold', type=float,
                     required=False, dest='size_threshold',
                     help='Size of the CDS to consider processing.')
     
      parser.add_argument('-tb', '--translation_table', type=int,
-               required=False, dest='size_threshold', default=11,
-               help='Size of the CDS to consider processing.')
+          required=False, dest='translation_table', default=11,
+          help='Translation table to use for the CDS translation.')
+     
+     parser.add_argument('-b', '--bsr', type=float,
+          required=False, dest='bsr', default=0.6,
+          help='BSR value to consider alleles as the same locus.')
     
      parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
