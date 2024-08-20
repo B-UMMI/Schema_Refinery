@@ -7,7 +7,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof)
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold, 
-        pident_threshold, size_threshold, translation_table, bsr, cpu):
+        pident_threshold, size_threshold, translation_table, bsr, size_ratio, cpu):
     frequency_in_genomes = {}
     loci_ids = [True, True]
     constants = [alignment_ratio_threshold, 
@@ -17,7 +17,9 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
             None,
             size_threshold,
             translation_table,
-            bsr]
+            bsr,
+            None,
+            size_ratio]
 
     run_type = 'loci_vs_loci'
     cof.process_schema(schema,

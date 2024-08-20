@@ -245,7 +245,7 @@ def unclassified_cds():
                     help='The minimum number of genomes specific cluster'
                     'cluster of CDS must be present in order to be considered.')
     
-     parser.add_argument('-st', '--size_threshold', type=float,
+     parser.add_argument('-st', '--size_threshold', type=int,
                     required=False, dest='size_threshold',
                     help='Size of the CDS to consider processing.')
     
@@ -256,6 +256,10 @@ def unclassified_cds():
      parser.add_argument('-b', '--bsr', type=float,
           required=False, dest='bsr', default=0.6,
           help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-sr', '--size_ratio', type=float,
+          required=False, dest='size_ratio', default=0.8,
+          help='Size ratio to consider alleles as the same locus.')
      
      parser.add_argument('-b', '--problematic_proportion', type=float,
           required=False, dest='problematic_proportion', default=0.3,
@@ -305,7 +309,7 @@ def spurious_loci():
                     default=90, help='Threshold value for pident values used to '
                     'indentify gene fusions (int 0-100).')
     
-     parser.add_argument('-st', '--size_threshold', type=float,
+     parser.add_argument('-st', '--size_threshold', type=int,
                     required=False, dest='size_threshold',
                     help='Size of the CDS to consider processing.')
     
@@ -316,6 +320,10 @@ def spurious_loci():
      parser.add_argument('-b', '--bsr', type=float,
           required=False, dest='bsr', default=0.6,
           help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-sr', '--size_ratio', type=float,
+          required=False, dest='size_ratio', default=0.8,
+          help='Size ratio to consider alleles as the same locus.')
     
      parser.add_argument('-c', '--cpu', type=int,
                     required=False, dest='cpu',
