@@ -1907,11 +1907,12 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
                 else:
                     id_ = None
                 # Process the cluster and get the necessary details
-                id_, cluster, cluster_type = process_cluster(class_, id_,
-                                                                    cluster,
-                                                                    all_alleles,
-                                                                    alleles,
-                                                                    cds)
+                id_, cluster, cluster_type = process_cluster(class_, 
+                                                             id_,
+                                                             cluster,
+                                                             all_alleles,
+                                                             alleles,
+                                                             cds)
                 # Generate a dictionary to be written to the file
                 write_dict = generate_write_dict(id_, cluster, is_matched, is_matched_alleles,
                                                  representative_blast_results)
@@ -3029,9 +3030,12 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
         cds_id = itf.identify_string_in_dict_get_key(cds_member, cds_original_ids) or cds_member
         # Append the cause of dropping to the original ID
         if cds_original_ids.get(cds_id):
-            cds_original_ids[cds_id].append(cause)
+            if len(cds_original_ids[cds_id]) == 2:
+                cds_original_ids[cds_id].extend(['', cause])
+            else:
+                cds_original_ids[cds_id].append(cause)
         else:
-            cds_original_ids.setdefault(cds_id, [cause])
+            cds_original_ids.setdefault(cds_id, ['','',cause])
 
     # Prepare to write the ID changes to a file
     tab = "\t"
@@ -3039,7 +3043,7 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
     
     # Open the file and write the header and ID changes
     with open(id_changes_file, 'w') as id_changes:
-        id_changes.write('Original_ID\tID_after_clustering\tID_after_joining\n')
+        id_changes.write('Original_ID\tID_after_clustering\tID_after_joining\tDrop_reason\n')
         for original_ids, changed_ids in cds_original_ids.items():
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
@@ -3952,7 +3956,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     representative_blast_results,
                                     classes_outcome,
                                     None,
-                                    None,
+                                    clusters,
                                     None,
                                     None,
                                     [False, False],
