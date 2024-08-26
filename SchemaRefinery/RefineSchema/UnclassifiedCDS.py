@@ -137,6 +137,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                            cds_output,
                                                            constants[7],
                                                            dropped_cds,
+                                                           constants[9],
                                                            cpu)
 
     print("\nExtracting minimizers for the translated sequences and clustering...")

@@ -249,9 +249,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
 
     cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
                                                               drop_possible_loci,
-                                                              False,
+                                                              groups_paths,
                                                               all_alleles,
-                                                              True,
+                                                              schema_loci,
                                                               run_type)
 
     print("\nWrapping up BLAST results...")

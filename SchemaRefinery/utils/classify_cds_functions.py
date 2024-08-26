@@ -21,7 +21,7 @@ except ModuleNotFoundError:
                                       linux_functions as lf,)
 
 def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, protein_hashes, not_included_cds, cds_output,
-                             bsr_value, dropped_cds, cpu):
+                             bsr_value, dropped_cds, size_threshold, cpu):
     """
     Identifies problematic CDS (Coding DNA Sequences) based on specified criteria and outputs the results
     and Remove the instace of CDS from all the dicts.
@@ -103,6 +103,17 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
             if cds_translation_dict.get(cds):
                 sequences_to_run.setdefault(cds, cds_translation_dict[cds])
                 sequences_to_run_against.setdefault(cds, [cds_id for cds_id in cds_ids if (cds_id != cds and cds_translation_dict.get(cds_id))])
+    # Filter out the sequences that are from the same genome however don't have similiar protein size.
+    for cds, cds_ids_to_run_against in list(sequences_to_run_against.items()):
+        cds_protein_len = len(cds_translation_dict[cds])
+        min_len = cds_protein_len - size_threshold * cds_protein_len
+        max_len = cds_protein_len + size_threshold * cds_protein_len
+        for member_id in list(cds_ids_to_run_against):
+            member_protein_len = len(cds_translation_dict[member_id])
+            if not max_len >= member_protein_len >= min_len:
+                sequences_to_run_against[cds].remove(member_id)
+    # Remove empty dicts.
+    itf.remove_empty_dicts_recursive(sequences_to_run_against)
 
     #Create folders.
     niphs_folder = os.path.join(cds_output, 'NIPHs_and_NIPHEMs_processing')
