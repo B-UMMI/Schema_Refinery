@@ -188,7 +188,8 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     cof.alignment_dict_to_file(representative_blast_results, report_file_path, 'w', True)
     
     print("\nProcessing classes...")
-    sorted_blast_dict = cof.sort_blast_results_by_classes(representative_blast_results, classes_outcome)
+    sorted_blast_dict = cof.sort_blast_results_by_classes(representative_blast_results,
+                                                          classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
     [processed_results,
      count_results_by_class,
@@ -198,11 +199,18 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                 classes_outcome,
                                 all_alleles)
     # Sort the count_results_by_class dict by the classes_outcome tuple.
-    count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
+    count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class,
+                                                       classes_outcome)
     # Extract CDS to keep and drop set.
-    clusters_to_keep, drop_possible_loci = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
+    clusters_to_keep, drop_possible_loci = cof.extract_clusters_to_keep(classes_outcome,
+                                                                        count_results_by_class,
+                                                                        drop_mark)
         
-    cof.count_number_of_reps_and_alleles(clusters_to_keep, all_alleles, drop_possible_loci, group_reps_ids, group_alleles_ids)
+    cof.count_number_of_reps_and_alleles(clusters_to_keep,
+                                         all_alleles,
+                                         drop_possible_loci,
+                                         group_reps_ids,
+                                         group_alleles_ids)
 
     # Extract the related clusters and recommendations what to do with them.
     print("\nExtracting results...")
@@ -223,7 +231,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                 results_output)
 
     # Get all of the CDS that matched with loci
-    [is_matched, is_matched_alleles] = cof.get_matches(all_relationships, clusters_to_keep, sorted_blast_dict)
+    [is_matched, is_matched_alleles] = cof.get_matches(all_relationships,
+                                                       clusters_to_keep,
+                                                       sorted_blast_dict)
 
     print("\nWritting classes and cluster results to files...")
     cof.write_processed_results_to_file(clusters_to_keep,
@@ -237,7 +247,12 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                     blast_results)
     
 
-    cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep, drop_possible_loci, False, all_alleles, False, run_type)
+    cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
+                                                              drop_possible_loci,
+                                                              False,
+                                                              all_alleles,
+                                                              False,
+                                                              run_type)
 
     print("\nWrapping up BLAST results...")
     cof.wrap_up_blast_results(clusters_to_keep,

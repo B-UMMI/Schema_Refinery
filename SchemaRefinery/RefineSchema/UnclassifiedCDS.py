@@ -13,7 +13,7 @@ try:
                        kmers_functions as kf,
                        blast_functions as bf,
                        linux_functions as lf,
-                       classify_cds_functions as ccf,)
+                       classify_cds_functions as ccf)
 
     from RefineSchema import (UnclassifiedCDS as uc)
 except ModuleNotFoundError:
@@ -27,7 +27,7 @@ except ModuleNotFoundError:
                                         linux_functions as lf,
                                         classify_cds_functions as ccf)
     
-    from RefineSchema import (UnclassifiedCDS as uc)
+    from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
@@ -254,10 +254,18 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                       for match_values in reps_kmers_sim[cluster_id]}
 
     print("\nReplacing CDSs IDs with the cluster representative ID...")
-    cds_original_ids = ccf.replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_cds,
-                                                prot_len_dict, cds_translation_dict, protein_hashes,
-                                                cds_presence_in_genomes, niphems_presence_in_genome,
-                                                niphs_presence_in_genomes, niphs_in_genomes, reps_kmers_sim)
+    cds_original_ids = ccf.replace_ids_in_clusters(clusters,
+                                                   frequency_cds,
+                                                   dropped_cds,
+                                                   not_included_cds,
+                                                    prot_len_dict,
+                                                    cds_translation_dict,
+                                                    protein_hashes,
+                                                    cds_presence_in_genomes,
+                                                    niphems_presence_in_genome,
+                                                    niphs_presence_in_genomes,
+                                                    niphs_in_genomes,
+                                                    reps_kmers_sim)
 
     # Create directories.
     blast_output = os.path.join(output_directory, '2_BLAST_processing')
@@ -335,7 +343,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     cof.alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
     print("\nProcessing classes...")
-    sorted_blast_dict = cof.sort_blast_results_by_classes(representative_blast_results, classes_outcome)
+    sorted_blast_dict = cof.sort_blast_results_by_classes(representative_blast_results,
+                                                          classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
     [processed_results,
      count_results_by_class,
@@ -367,7 +376,11 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     group_reps_ids = {}
     group_alleles_ids = {}
-    cof.count_number_of_reps_and_alleles(clusters_to_keep, clusters, drop_possible_loci, group_reps_ids, group_alleles_ids)
+    cof.count_number_of_reps_and_alleles(clusters_to_keep,
+                                         clusters,
+                                         drop_possible_loci,
+                                         group_reps_ids,
+                                         group_alleles_ids)
     
     print("\nAdd remaining cluster that didn't match by BLASTn...")
     # Add cluster not matched by BLASTn
@@ -376,7 +389,10 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     processed_drop = []
     # Add Ids of the dropped cases due to frequency during classification
-    ccf.add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, clusters_to_keep, clusters,
+    ccf.add_cds_to_dropped_cds(drop_possible_loci,
+                               dropped_cds,
+                               clusters_to_keep,
+                               clusters,
                                'Dropped_due_to_smaller_genome_presence_than_matched_cluster', processed_drop)
 
     print("\nFiltering problematic probable new loci...")
@@ -384,19 +400,33 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     [proportion_of_niph_genomes,
      dropped_due_to_niphs_or_niphems,
      clusters_to_keep_all_members,
-     clusters_to_keep_all_genomes] = ccf.identify_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niphs_presence_in_genomes,
-                                                      cds_presence_in_genomes, clusters_to_keep, clusters, constants[8], 
-                                                      dropped_cds, drop_possible_loci, results_output)
+     clusters_to_keep_all_genomes] = ccf.identify_problematic_loci(niphems_presence_in_genome,
+                                                                   niphs_in_genomes,
+                                                                   niphs_presence_in_genomes,
+                                                                    cds_presence_in_genomes,
+                                                                    clusters_to_keep,
+                                                                    clusters,
+                                                                    constants[8], 
+                                                                    dropped_cds,
+                                                                    drop_possible_loci,
+                                                                    results_output)
     
     # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
     # classification
-    ccf.add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, clusters_to_keep, clusters,
+    ccf.add_cds_to_dropped_cds(drop_possible_loci,
+                               dropped_cds,
+                               clusters_to_keep,
+                               clusters,
                                'Dropped_due_high_presence_of_NIPHs_and_NIPHEMs_in_genomes', processed_drop)
 
     # Remove from all releveant dicts
-    ccf.remove_dropped_cds_from_analysis(dropped_cds, not_included_cds, niphems_presence_in_genome,
-                                     cds_translation_dict, niphs_presence_in_genomes, protein_hashes,
-                                     niphs_in_genomes)
+    ccf.remove_dropped_cds_from_analysis(dropped_cds,
+                                         not_included_cds,
+                                         niphems_presence_in_genome,
+                                         cds_translation_dict,
+                                         niphs_presence_in_genomes,
+                                         protein_hashes,
+                                         niphs_in_genomes)
 
     print("\nExtracting results...")
     all_relationships, related_clusters, recommendations = cof.extract_results(processed_results,
@@ -428,10 +458,19 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     print("\nUpdating IDs and saving changes...")
     
-    ccf.update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dropped_cds,
-                                not_included_cds, results_output)
+    ccf.update_ids_and_save_changes(clusters_to_keep,
+                                    clusters,
+                                    cds_original_ids,
+                                    dropped_cds,
+                                    not_included_cds,
+                                    results_output)
 
-    cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep, drop_possible_loci, False, clusters, False, run_type)
+    cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
+                                                              drop_possible_loci,
+                                                              False,
+                                                              clusters,
+                                                              False,
+                                                              run_type)
 
     print("\nWritting possible new loci Fastas...")
     [groups_paths_reps,
@@ -453,12 +492,19 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                               run_type)
     
     print("Identifying new representatives for possible new loci...")
-    ccf.find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths_reps,
-                            cpu, not_included_cds, constants, results_output)
+    ccf.find_new_representatives(groups_trans_reps_paths,
+                                 groups_trans,
+                                 groups_paths_reps,
+                                cpu,
+                                not_included_cds,
+                                constants,
+                                results_output)
 
     print("Writting members file...")
-    ccf.write_cluster_members_to_file(results_output, clusters_to_keep, clusters, frequency_in_genomes,
-                                  drop_possible_loci)
+    ccf.write_cluster_members_to_file(results_output,
+                                      clusters_to_keep,
+                                      clusters, frequency_in_genomes,
+                                    drop_possible_loci)
 
     print("Create graphs for the BLAST results...")
     cds_size_dicts = {'IDs': cds_size.keys(),
@@ -484,7 +530,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     allele_ids = [True, True]
     run_type = 'loci_vs_cds' # Set run type as loci_vs_cds
     # Run Blasts for the found loci against schema short
-    representative_blast_results = uc.process_schema(schema,
+    representative_blast_results = sl.process_schema(schema,
                                                   groups_paths,
                                                   results_output,
                                                   trans_dict_cds,
@@ -523,5 +569,9 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                     "was run using --no-cleanup and --output-unclassified flag.")
 
     unclassified_cds_output = os.path.join(output_directory, "unclassified_cds")
-    classify_cds(schema, unclassified_cds_output, allelecall_directory,
-                constants, temp_paths, cpu)
+    classify_cds(schema,
+                 unclassified_cds_output,
+                 allelecall_directory,
+                constants,
+                temp_paths,
+                cpu)
