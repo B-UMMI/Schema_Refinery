@@ -1565,6 +1565,8 @@ def wrap_up_blast_results(clusters_to_keep, not_included_cds, clusters, output_p
         master_file = None
         reps_trans_dict_cds = None
         trans_dict_cds = None
+        groups_trans_reps_paths = None
+        groups_trans = None
         alleles = None
     else:
         print("Writing FASTA and additional files for possible new loci...")
