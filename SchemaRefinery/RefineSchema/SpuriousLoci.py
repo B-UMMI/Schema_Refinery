@@ -251,7 +251,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                               drop_possible_loci,
                                                               False,
                                                               all_alleles,
-                                                              False,
+                                                              True,
                                                               run_type)
 
     print("\nWrapping up BLAST results...")
