@@ -183,9 +183,6 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                            constants)
     blast_results = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
-    report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
-    # Write all of the BLASTn results to a file.
-    cof.alignment_dict_to_file(representative_blast_results, report_file_path, 'w', True)
     
     print("\nProcessing classes...")
     sorted_blast_dict = cof.sort_blast_results_by_classes(representative_blast_results,
@@ -236,6 +233,10 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                        sorted_blast_dict)
 
     print("\nWritting classes and cluster results to files...")
+    report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
+    # Write all of the BLASTn results to a file.
+    cof.alignment_dict_to_file(representative_blast_results, report_file_path, 'w', True)
+
     cof.write_processed_results_to_file(clusters_to_keep,
                                     sorted_blast_dict,
                                     classes_outcome,

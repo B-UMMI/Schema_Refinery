@@ -335,13 +335,11 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     ff.create_directory(results_output)
     blast_results = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
-    report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
+
     
     # Separate results into different classes.
     classes_outcome = cof.separate_blastn_results_into_classes(representative_blast_results,
                                                            constants)
-    # Write all of the BLASTn results to a file.
-    cof.alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
     
     print("\nProcessing classes...")
     sorted_blast_dict = cof.sort_blast_results_by_classes(representative_blast_results,
@@ -445,8 +443,12 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                 recommendations,
                                 True,
                                 results_output)
-
+    
     print("\nWritting classes and cluster results to files...")
+    report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
+    # Write all of the BLASTn results to a file.
+    cof.alignment_dict_to_file(representative_blast_results, report_file_path, 'w')
+
     cof.write_processed_results_to_file(clusters_to_keep,
                                     representative_blast_results,
                                     classes_outcome,
@@ -454,7 +456,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     clusters,
                                     None,
                                     None,
-                                    [False, False],
+                                    False,
                                     blast_results)
     
     print("\nUpdating IDs and saving changes...")
@@ -465,6 +467,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     dropped_cds,
                                     not_included_cds,
                                     results_output)
+
 
     cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
                                                               drop_possible_loci,
@@ -531,19 +534,19 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     allele_ids = [True, True]
     run_type = 'loci_vs_cds' # Set run type as loci_vs_cds
     # Run Blasts for the found loci against schema short
-    representative_blast_results = sl.process_schema(schema,
-                                                  groups_paths,
-                                                  results_output,
-                                                  trans_dict_cds,
-                                                  alleles,
-                                                  updated_frequency_in_genomes,
-                                                  allelecall_directory, 
-                                                  master_file,
-                                                  allele_ids,
-                                                  run_type,
-                                                  False,
-                                                  constants,
-                                                  cpu)
+    sl.process_schema(schema,
+                    groups_paths,
+                    results_output,
+                    trans_dict_cds,
+                    alleles,
+                    updated_frequency_in_genomes,
+                    allelecall_directory, 
+                    master_file,
+                    allele_ids,
+                    run_type,
+                    False,
+                    constants,
+                    cpu)
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_gene_fusions, 
         pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence,
