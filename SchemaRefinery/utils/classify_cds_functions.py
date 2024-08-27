@@ -556,7 +556,7 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
                 cds_original_ids[cds_id].append(cause)
         else:
             cds_original_ids.setdefault(cds_id, ['','',cause])
-
+            
     # Prepare to write the ID changes to a file
     tab = "\t"
     id_changes_file = os.path.join(results_output, 'cds_id_changes.tsv')
