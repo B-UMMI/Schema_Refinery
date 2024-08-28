@@ -16,7 +16,7 @@ try:
                        classify_cds_functions as ccf,
                        adapt_loci as al)
 
-    from RefineSchema import (UnclassifiedCDS as uc)
+    from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,

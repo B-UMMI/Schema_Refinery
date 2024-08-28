@@ -1668,7 +1668,7 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
                         for subject, entries in subjects.items() if subject.split('_')[0] in cluster
                     }
                     for query, subjects in representative_blast_results.items()
-                    if query in queries
+                    if query.split('_')[0] in queries
                 }
             else:
                 write_dict = {
