@@ -1,9 +1,15 @@
 import os
 import shutil
 import pandas as pd
-from itertools import zip_longest
+import csv
+from itertools import zip_longest, islice
 
-def create_directory(dir:str):
+try:
+    from utils import (iterable_functions as itf)
+except ModuleNotFoundError:
+    from utils import (iterable_functions as itf)
+
+def create_directory(dir):
     """
     Creates directory based on input dir path.
 
@@ -18,8 +24,11 @@ def create_directory(dir:str):
         Creates directory at desired dir path.
     """
 
-    if not os.path.isdir(dir):
-        os.mkdir(dir)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+        return True
+    else:
+        return False
 
 def check_and_delete_file(file:str):
     """
@@ -261,3 +270,118 @@ def concat_files(source_file, destination_file):
     """
     with open(destination_file, 'a') as outfile, open(source_file, 'r') as infile:
         shutil.copyfileobj(infile, outfile)
+        
+def file_basename(file_path):
+    """
+    Get the file name from a file path.
+    
+    Parameters
+    ----------
+    file_path : str
+        The path to the file.
+    
+    Returns
+    -------
+    str
+        The file name extracted from the file path.
+    """
+    return os.path.basename(file_path)
+
+def join_paths(parent_path, child_paths):
+	"""Create path by joining a parent directory and a list of child paths."""
+	joined_paths = os.path.join(parent_path, *child_paths)
+
+	return joined_paths
+
+def read_lines(input_file, strip=True, num_lines=None):
+	"""Read lines in a file.
+
+	Parameters
+	----------
+	input_file : str
+		Path to the input file.
+	strip : bool
+		Specify if lines should be stripped of leading
+		and trailing white spaces and new line characters.
+
+	Returns
+	-------
+	lines : list
+		List with the lines read from the input file.
+	"""
+	with open(input_file, 'r') as infile:
+		if num_lines is None:
+			lines = [line for line in infile.readlines()]
+		else:
+			lines = list(islice(infile, num_lines))
+
+	if strip is True:
+		lines = [line.strip() for line in lines]
+
+	return lines
+
+
+def write_lines(lines, output_file, joiner='\n', write_mode='w'):
+	"""Write a list of strings to a file.
+
+	Parameters
+	----------
+	lines : list
+		List with the lines/strings to write to the output
+		file.
+	output_file : str
+		Path to the output file.
+	joiner : str
+		Character used to join lines.
+	write_mode : str
+		Specify write mode ('w' creates file if it does not
+		exist and truncates and over-writes existing file,
+		'a' creates file if it does not exist and appends to
+		the end of file if it exists).
+	"""
+	joined_lines = itf.join_list(lines, joiner)
+
+	write_to_file(joined_lines, output_file, write_mode, '\n')
+
+def write_to_file(text, output_file, write_mode, end_char):
+	"""Write a single string to a file.
+
+	Parameters
+	----------
+	text : str
+		A single string to write to the output file.
+	output_file : str
+		Path to the output file.
+	write_mode : str
+		Specify write mode ('w' creates file if it does not
+		exist and truncates and over-writes existing file,
+		'a' creates file if it does not exist and appends to
+		the end of file if it exists.).
+	end_char : str
+		Character added to the end of the file.
+	"""
+	with open(output_file, write_mode) as out:
+		out.write(text+end_char)
+  
+def read_tabular(input_file, delimiter='\t'):
+	"""Read a tabular (TSV) file.
+
+	Parameters
+	----------
+	input_file : str
+		Path to a tabular file.
+	delimiter : str
+		Delimiter used to separate file fields.
+
+	Returns
+	-------
+	lines : list
+		A list with a sublist per line in the input file.
+		Each sublist has the fields that were separated by
+		the defined delimiter.
+	"""
+	with open(input_file, 'r') as infile:
+		reader = csv.reader(infile, delimiter=delimiter)
+		lines = [line for line in reader]
+
+	return lines

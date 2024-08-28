@@ -13,9 +13,10 @@ try:
                        kmers_functions as kf,
                        blast_functions as bf,
                        linux_functions as lf,
-                       classify_cds_functions as ccf)
+                       classify_cds_functions as ccf,
+                       adapt_loci as al)
 
-    from RefineSchema import (UnclassifiedCDS as uc)
+    from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
@@ -25,7 +26,8 @@ except ModuleNotFoundError:
                                         kmers_functions as kf,
                                         blast_functions as bf,
                                         linux_functions as lf,
-                                        classify_cds_functions as ccf)
+                                        classify_cds_functions as ccf,
+                                        adapt_loci as al)
     
     from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 
@@ -476,34 +478,28 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                               False,
                                                               run_type)
 
-    print("\nWritting possible new loci Fastas...")
-    [groups_paths_reps,
-     groups_paths,
-     groups_trans_reps_paths,
-     groups_trans,
-     reps_trans_dict_cds,
-     trans_dict_cds,
-     master_file,
-     alleles] = cof.wrap_up_blast_results(clusters_to_keep,
-                                              not_included_cds,
-                                              clusters,
-                                              results_output,
-                                              constants,
-                                              None,
-                                              None,
-                                              cds_cases,
-                                              loci_cases,
-                                              run_type)
+    print("\nWritting possible new loci Fastas and identifying new representatives for possible new loci...")
+    fastas_folder = os.path.join(results_output, "fastas")
+    ff.create_directory(fastas_folder)
+    temp_fastas_paths = cof.write_temp_loci(clusters_to_keep,
+                                          not_included_cds,
+                                          clusters,
+                                          fastas_folder)
     
-    print("Identifying new representatives for possible new loci...")
-    ccf.find_new_representatives(groups_trans_reps_paths,
-                                 groups_trans,
-                                 groups_paths_reps,
-                                cpu,
-                                not_included_cds,
-                                constants,
-                                results_output)
+    # Write the possible new loci path to txt file.
+    possible_new_loci_file = os.path.join(fastas_folder, 'possible_new_loci.txt')
+    with open(possible_new_loci_file, 'w') as loci_file:
+        for loci_path in temp_fastas_paths.values():
+            loci_file.write(f"{loci_path}\n")
+    new_loci_folder = os.path.join(fastas_folder, 'new_possible_loci_fastas')
+    ff.create_directory(new_loci_folder)
 
+    al.main(possible_new_loci_file, new_loci_folder, cpu, constants[7], constants[6])
+    
+    alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci = ccf.process_new_loci(fastas_folder, constants)
+    
+    possible_new_loci = {ff.get_file_name(new_loci_path).split('_')[0]: new_loci_path for new_loci_path in possible_new_loci}
+    
     print("Writting members file...")
     ccf.write_cluster_members_to_file(results_output,
                                       clusters_to_keep,
@@ -535,13 +531,13 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     run_type = 'loci_vs_cds' # Set run type as loci_vs_cds
     # Run Blasts for the found loci against schema short
     sl.process_schema(schema,
-                    groups_paths,
+                    possible_new_loci,
                     results_output,
-                    trans_dict_cds,
+                    translation_dict_possible_new_loci,
                     alleles,
                     updated_frequency_in_genomes,
                     allelecall_directory, 
-                    master_file,
+                    master_file_path,
                     allele_ids,
                     run_type,
                     False,

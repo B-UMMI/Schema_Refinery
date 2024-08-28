@@ -128,6 +128,58 @@ def translate_sequence(dna_str, table_id, cds=True):
 
     return protseq
 
+
+def determine_duplicated_seqs(sequences):
+	"""Create mapping between sequences and sequence identifiers.
+
+	Parameters
+	----------
+	sequences : dict
+		Dictionary with sequence identifiers as keys and
+		sequences as values.
+
+	Returns
+	-------
+	equal_seqs : dict
+		Dictionary with sequences as keys and sequence
+		identifiers that are associated with each
+		sequence as values.
+	"""
+	equal_seqs = {}
+	for seqid, seq in sequences.items():
+		# if protein sequence was already added as key
+		if seq in equal_seqs:
+			# append new protid
+			equal_seqs[seq].append(seqid)
+		# else add new protein sequence as key and protid
+		# as value
+		else:
+			equal_seqs[seq] = [seqid]
+
+	return equal_seqs
+
+def determine_longest(seqids, sequences):
+	"""Find the longest sequence in a set of sequences.
+
+	Parameters
+	----------
+	seqids : list
+		List with sequence identifiers.
+	sequences : dict
+		Dictionary with sequence identifiers as keys
+		and sequences as values.
+
+	Returns
+	-------
+	chosen : str
+		Sequence identifier of the longest sequence.
+	"""
+	seqids_tups = [(seqid, sequences[seqid]) for seqid in seqids]
+	sorted_tups = sorted(seqids_tups, key=lambda x: len(x[1]), reverse=True)
+	chosen = sorted_tups[0][0]
+
+	return chosen
+
 def translate_dna_aux(dna_sequence, method, table_id, cds=True):
     """
     Translate a DNA sequence to a protein sequence using specified method.
@@ -298,6 +350,106 @@ def hash_sequences(file_path):
 
     return hash_set
 
+def hash_sequence(input_string, hash_type='sha256'):
+	"""Compute hash of an input string.
+
+	Parameters
+	----------
+	input_string : str
+		Input string to hash.
+	hash_type : str
+		Hash type/function that will be used to compute the
+		hash (any of the hash functions available in the
+		hashlib module).
+
+	Returns
+	-------
+	hashed_string : str
+		String representation of the HASH object
+		in hexadecimal digits.
+	"""
+	# get hash function object from hashlib
+	hashing_function = getattr(hashlib, hash_type)
+
+	# default encoding is UTF-8
+	hashed_string = hashing_function(input_string.encode()).hexdigest()
+
+	return hashed_string
+
+def sequence_lengths(fasta_file, hashed=False):
+	"""Determine length of sequences in a FASTA file.
+
+	Read Fasta file and create dictionary with mapping
+	between sequence identifiers and sequence lengths.
+
+	Parameters
+	----------
+	fasta_file : str
+		Path to a FASTA file.
+	hashed : bool
+		If False, sequence headers are used as
+		keys. If True, sequence hashes will be
+		used as keys.
+
+	Returns
+	-------
+	lengths : dict
+		Dictionary with sequence identifiers as keys and
+		sequence lengths as values.
+	"""
+	records = sequence_generator(fasta_file)
+	if hashed is False:
+		lengths = {rec.id: len(rec.seq) for rec in records}
+	else:
+		lengths = {hash_sequence(str(rec.seq)): len(rec.seq) for rec in records}
+
+	return lengths
+
+def fasta_stats(fasta_file):
+	"""Determine the number of sequences in a FASTA file and length stats.
+
+	Parameters
+	----------
+	fasta_file : str
+		Path to a FASTA file.
+
+	Returns
+	-------
+	fasta_file : str
+		Path to the FASTA file.
+	total_seqs: int
+		Total number of records in the FASTA file.
+	mean_length: float
+		Mean sequence length.
+	"""
+	seq_lengths = sequence_lengths(fasta_file)
+	min_length = min(seq_lengths.values())
+	max_length = max(seq_lengths.values())
+	mean_length = sum(seq_lengths.values())/len(seq_lengths)
+	total_seqs = len(seq_lengths)
+
+	return [fasta_file, total_seqs, min_length, max_length, mean_length]
+
+def import_sequences(input_file):
+	"""Import sequences from a FASTA file.
+
+	Parameters
+	----------
+	input_file : str
+		Path to a FASTA file.
+
+	Returns
+	-------
+	records_dict : dict
+		Dictionary with sequence identifiers as keys and
+		sequences as values.
+	"""
+	records = sequence_generator(input_file)
+	# Only want record identifier and sequence, no need to use SeqIO.to_dict
+	records_dict = {rec.id: str(rec.seq.upper()) for rec in records}
+
+	return records_dict
+
 def translate_seq_deduplicate(seq_dict, path_to_write, untras_path, min_len, count_seq,
                               translation_table, deduplicate = True):
     """
@@ -429,3 +581,63 @@ def deduplicate_fasta_dict(fasta_dict):
             del fasta_dict[key]
 
     return fasta_dict
+
+def sequence_generator(input_file):
+	"""Create a SeqRecord iterator.
+
+	Parameters
+	----------
+	input_file : str
+		Path to a Fasta file.
+
+	Returns
+	-------
+	records : Bio.SeqIO.FastaIO.FastaIterator
+		SeqRecord iterator.
+	"""
+	# Useful to create the generator
+	# Need to exhaust the generator to avoid high memory usage
+	records = SeqIO.parse(input_file, 'fasta')
+
+	return records
+
+def fasta_str_record(record_template, record_data):
+	"""Create the string representation of a FASTA record.
+
+	Parameters
+	----------
+	record_template : str
+		String template to construct the FASTA record.
+	record_data : list
+		List with the elements to add to the string.
+
+	Returns
+	-------
+	record : str
+		String representation of the FASTA record.
+	"""
+	record = record_template.format(*record_data)
+
+	return record
+
+
+def fasta_lines(template, records_data):
+	"""Create a list with FASTA records.
+
+	Parameters
+	----------
+	template : str
+		String template to construct the FASTA record.
+	records_data : list
+		A list with one sublist per FASTA record.
+		Each sublist contains the elements to insert
+		inside the template placeholders.
+
+	Returns
+	-------
+	seqs_lines : list
+		A list with strings representing FASTA records.
+	"""
+	seqs_lines = [fasta_str_record(template, arg) for arg in records_data]
+
+	return seqs_lines

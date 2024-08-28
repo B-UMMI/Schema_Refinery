@@ -192,7 +192,8 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
      count_results_by_class,
      count_results_by_class_with_inverse,
      reps_and_alleles_ids,
-     drop_mark] = cof.process_classes(sorted_blast_dict,
+     drop_mark,
+     all_relationships] = cof.process_classes(sorted_blast_dict,
                                 classes_outcome,
                                 all_alleles)
     # Sort the count_results_by_class dict by the classes_outcome tuple.
@@ -211,7 +212,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
 
     # Extract the related clusters and recommendations what to do with them.
     print("\nExtracting results...")
-    all_relationships, related_clusters, recommendations  = cof.extract_results(processed_results,
+    related_clusters, recommendations  = cof.extract_results(processed_results,
                                                                            count_results_by_class,
                                                                            frequency_in_genomes,
                                                                            clusters_to_keep,
@@ -254,18 +255,6 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                               all_alleles,
                                                               schema_loci,
                                                               run_type)
-
-    print("\nWrapping up BLAST results...")
-    cof.wrap_up_blast_results(clusters_to_keep,
-                        None,
-                        all_alleles,
-                        results_output,
-                        constants,
-                        schema_loci,
-                        groups_paths,
-                        cds_cases,
-                        loci_cases,
-                        run_type)
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold, 
         pident_threshold, size_threshold, translation_table, bsr, size_ratio, cpu):
