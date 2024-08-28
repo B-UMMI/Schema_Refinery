@@ -787,3 +787,23 @@ def get_duplicates(input_list):
     # Select elements that appear more than once
     duplicates = [element for element, count in element_counts.items() if count > 1]
     return duplicates
+
+def join_list(lst, delimiter):
+	"""Join all elements in a list into a single string.
+
+	Parameters
+	----------
+	lst : list
+		List with elements to be joined.
+	delimiter : str
+		Character used to join list elements.
+
+	Returns
+	-------
+	joined_list : str
+		A single string with all elements in the input
+		list joined by the character chosen as link.
+	"""
+	joined_list = delimiter.join(lst)
+
+	return joined_list

@@ -956,7 +956,7 @@ def process_new_loci(fastas_folder, constants):
     alleles = {}
     translation_dict_possible_new_loci = {}
     for new_loci in possible_new_loci.values():
-        loci_id = ff.get_file_name(new_loci).split('.')[0]
+        loci_id = ff.file_basename(new_loci).split('.')[0]
         alleles.setdefault(loci_id, {})
         fasta_dict = sf.fetch_fasta_dict(new_loci, False)
         os.remove(new_loci)
@@ -987,7 +987,7 @@ def process_new_loci(fastas_folder, constants):
 
     for new_loci_reps in possible_new_loci_short.values():
         loci_id = ff.get_file_name(new_loci_reps).split('_')[0]
-        fasta_dict = sf.fetch_fasta_dict(new_loci_reps, False)
+        fasta_dict = sf.file_basename(new_loci_reps, False)
         os.remove(new_loci_reps)
         for allele_id, sequence in fasta_dict.items():
             new_allele_id = f"{loci_id}_{allele_id}"
