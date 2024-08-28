@@ -261,3 +261,19 @@ def concat_files(source_file, destination_file):
     """
     with open(destination_file, 'a') as outfile, open(source_file, 'r') as infile:
         shutil.copyfileobj(infile, outfile)
+        
+def get_file_name(file_path):
+    """
+    Get the file name from a file path.
+    
+    Parameters
+    ----------
+    file_path : str
+        The path to the file.
+    
+    Returns
+    -------
+    str
+        The file name extracted from the file path.
+    """
+    return os.path.basename(file_path)

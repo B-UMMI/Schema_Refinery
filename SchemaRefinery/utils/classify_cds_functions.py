@@ -943,3 +943,58 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
         del reps_kmers_sim[cluster_id]
 
     return cds_original_ids
+
+def process_new_loci(fastas_folder, constants):
+    new_loci_folder = os.path.join(fastas_folder, 'new_possible_loci_fastas')
+    possible_new_loci = {fastafile: os.path.join(new_loci_folder, fastafile) for fastafile in os.listdir(new_loci_folder) if fastafile.endswith('.fasta')}
+    possible_new_loci_short_dir = os.path.join(new_loci_folder, 'short')
+    possible_new_loci_short = {fastafile: os.path.join(possible_new_loci_short_dir, fastafile) for fastafile in os.listdir(possible_new_loci_short_dir) if fastafile.endswith('.fasta')}
+    master_file_path = os.path.join(fastas_folder, 'master.fasta')
+    possible_new_loci_translation_folder = os.path.join(fastas_folder, 'possible_new_loci_translation_folder')
+    ff.create_directory(possible_new_loci_translation_folder)
+
+    alleles = {}
+    translation_dict_possible_new_loci = {}
+    for new_loci in possible_new_loci.values():
+        loci_id = ff.get_file_name(new_loci).split('.')[0]
+        alleles.setdefault(loci_id, {})
+        fasta_dict = sf.fetch_fasta_dict(new_loci, False)
+        os.remove(new_loci)
+        for allele_id, sequence in fasta_dict.items():
+            new_allele_id = f"{loci_id}_{allele_id}"
+            alleles.setdefault(loci_id, {}).update({new_allele_id: str(sequence)})
+            write_type = 'a' if os.path.exists(new_loci) else 'w'
+            with open(new_loci, write_type) as new_loci_file:
+                new_loci_file.write(f">{new_allele_id}\n{str(sequence)}\n")
+
+            write_type = 'a' if os.path.exists(master_file_path) else 'w'
+            with open(master_file_path, write_type) as master_file:
+                master_file.write(f">{new_allele_id}\n{str(sequence)}\n")
+        
+        fasta_dict = sf.fetch_fasta_dict(new_loci, False)
+
+        trans_path_file = os.path.join(possible_new_loci_translation_folder, f"{loci_id}.fasta")
+
+        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+                                                        trans_path_file,
+                                                        None,
+                                                        constants[5],
+                                                        False,
+                                                        constants[6],
+                                                        False)
+        
+        translation_dict_possible_new_loci.update(trans_dict)
+
+    for new_loci_reps in possible_new_loci_short.values():
+        loci_id = ff.get_file_name(new_loci_reps).split('_')[0]
+        fasta_dict = sf.fetch_fasta_dict(new_loci_reps, False)
+        os.remove(new_loci_reps)
+        for allele_id, sequence in fasta_dict.items():
+            new_allele_id = f"{loci_id}_{allele_id}"
+            alleles.setdefault(loci_id, {}).update({new_allele_id: sequence})
+            write_type = 'a' if os.path.exists(new_loci_reps) else 'w'
+            with open(new_loci_reps, write_type) as new_loci_reps_file:
+                new_loci_reps_file.write(f">{new_allele_id}\n{str(sequence)}\n")
+                
+    return alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci
+    

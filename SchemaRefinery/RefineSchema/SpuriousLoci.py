@@ -255,18 +255,6 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                                                               schema_loci,
                                                               run_type)
 
-    print("\nWrapping up BLAST results...")
-    cof.wrap_up_blast_results(clusters_to_keep,
-                        None,
-                        all_alleles,
-                        results_output,
-                        constants,
-                        schema_loci,
-                        groups_paths,
-                        cds_cases,
-                        loci_cases,
-                        run_type)
-
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold, 
         pident_threshold, size_threshold, translation_table, bsr, size_ratio, cpu):
     frequency_in_genomes = {}
