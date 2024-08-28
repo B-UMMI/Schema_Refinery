@@ -748,12 +748,14 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
     count_results_by_class_with_inverse = {}
     reps_and_alleles_ids = {}
     processed_results = {}
+    all_relationships = {class_: [] for class_ in classes_outcome}
     drop_mark = []
     inverse_match = []
     # Process the CDS to find what CDS to retain while also adding the relationships between different CDS
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
-            class_ = matches[1]['class'] 
+            class_ = matches[1]['class']
+            all_relationships[class_].append([query, id_subject])
             ids_for_relationship = [query, id_subject]
             new_query = query
             new_id_subject = id_subject
@@ -852,7 +854,7 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
                                                     (new_query, new_id_subject),
                                                     strings)
 
-    return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark
+    return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark, all_relationships
 
 def extract_results(processed_results, count_results_by_class, frequency_in_genomes,
                     clusters_to_keep, drop_possible_loci, classes_outcome):
@@ -997,7 +999,6 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
         else:  # For keep or drop categories
             recommendations[key].setdefault(category, set()).add(id_to_write)
 
-    all_relationships = {class_: [] for class_ in classes_outcome} # All relationships between loci and CDS
     related_clusters = {} # To keep track of the related clusters
     recommendations = {} # To keep track of the recommendations
     dropped_match = {} # To keep track of the dropped matches
@@ -1092,13 +1093,10 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                         add_to_recommendations('Choice', dropped[2], match_[3])
             
 
-    for k, v in processed_results.items():
-        all_relationships.setdefault(v[0], []).append(v[1])
-
     sort_order = ['Joined', 'Choice', 'Keep', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
-    return all_relationships, related_clusters, recommendations
+    return related_clusters, recommendations
 
 def write_blast_summary_results(related_clusters, count_results_by_class, group_reps_ids, group_alleles_ids,
                                 frequency_in_genomes, recommendations, reverse_matches, results_output):
@@ -1248,19 +1246,21 @@ def get_matches(all_relationships, clusters_to_keep, sorted_blast_dict):
     is_matched_alleles = {}
 
     relationships = itf.flatten_list(all_relationships.values())
-    changed_ids = [[r[0], itf.remove_by_regex(r[1], '_(\d+)')] for r in relationships]
-    had_matches = set([itf.remove_by_regex(rep, '_(\d+)') for rep in sorted_blast_dict])
+    changed_ids = [[r[0], r[1].split('_')[0]] for r in relationships]
+    had_matches = set([rep.split('_')[0] for rep in sorted_blast_dict])
     is_matched_alleles = {}
     for class_, entries in list(clusters_to_keep.items()):
         for entry in list(entries):
             if entry not in had_matches and not class_ == '1a':
+                if entry == 'ERR5260641-protein1729':
+                    print(entry)
                 id_ = entry
                 entry = [entry]
                 is_matched.setdefault(id_, set([i[0] for i in changed_ids if i[1] in entry]))
                 is_matched_alleles.setdefault(id_, set([i[1] 
                                                         for i in relationships 
                                                         if i[0] in is_matched[id_] 
-                                                        and itf.remove_by_regex(i[1], '_(\d+)') in entry]))
+                                                        and i[1].split('_')[0] in entry]))
     return is_matched, is_matched_alleles
 
 def write_temp_loci(clusters_to_keep, not_included_cds, clusters, output_path):
@@ -1627,7 +1627,7 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
     blast_results_by_class_output = os.path.join(output_path, 'blast_results_by_class')
     ff.create_directory(blast_results_by_class_output)
 
-    add_group_column = not all_loci and all_alleles
+    add_group_column = True if 'loci_vs_cds' else False
 
     # Process clusters
     for class_, cds in clusters_to_keep.items():
@@ -1644,9 +1644,9 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
                 cluster_id = cluster
                 cluster = [cluster]
                 cluster_type = 'retained'
-
+            
+            is_cds = False
             if all_alleles:
-                is_cds = False
                 cluster_alleles = []
                 for entry in cluster:
                     if alleles.get(entry):
@@ -1659,25 +1659,26 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
                 if not is_cds:
                     cluster = cluster_alleles
 
-            if is_matched and cluster_id in is_matched:
-                queries = is_matched[cluster_id]
-                cluster = is_matched_alleles[cluster_id]
-                write_dict = {
-                    query: {
-                        subject: {id_: entry for id_, entry in entries.items()}
-                        for subject, entries in subjects.items() if subject.split('_')[0] in cluster
-                    }
-                    for query, subjects in representative_blast_results.items()
-                    if query.split('_')[0] in queries
-                }
-            else:
-                write_dict = {
+
+            write_dict = {
                     query: {
                         subject: {id_: entry for id_, entry in entries.items()}
                         for subject, entries in subjects.items()
                     }
                     for query, subjects in representative_blast_results.items()
                     if query.split('_')[0] in cluster
+                }
+            
+            if is_cds and class_ != '1a':
+                queries = is_matched[cluster_id]
+                cluster = is_matched_alleles[cluster_id]
+                write_dict = {
+                    query: {
+                        subject: {id_: entry for id_, entry in entries.items()}
+                        for subject, entries in subjects.items() if subject in cluster
+                    }
+                    for query, subjects in representative_blast_results.items()
+                    if query in queries
                 }
 
             report_file_path = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{cluster_id}.tsv")
