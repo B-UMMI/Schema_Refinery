@@ -351,7 +351,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
      count_results_by_class,
      count_results_by_class_with_inverse,
      reps_and_alleles_ids,
-     drop_mark] = cof.process_classes(sorted_blast_dict,
+     drop_mark,
+     all_relationships] = cof.process_classes(sorted_blast_dict,
                                 classes_outcome,
                                 clusters)
 
@@ -430,7 +431,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                          niphs_in_genomes)
 
     print("\nExtracting results...")
-    all_relationships, related_clusters, recommendations = cof.extract_results(processed_results,
+    related_clusters, recommendations = cof.extract_results(processed_results,
                                                                           count_results_by_class,
                                                                           frequency_in_genomes,
                                                                           clusters_to_keep,
@@ -498,7 +499,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     
     alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci = ccf.process_new_loci(fastas_folder, constants)
     
-    possible_new_loci = {ff.get_file_name(new_loci_path).split('_')[0]: new_loci_path for new_loci_path in possible_new_loci}
+    possible_new_loci = {ff.file_basename(new_loci_path).split('_')[0]: new_loci_path for new_loci_path in possible_new_loci}
     
     print("Writting members file...")
     ccf.write_cluster_members_to_file(results_output,

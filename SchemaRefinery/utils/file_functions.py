@@ -7,7 +7,7 @@ from itertools import zip_longest, islice
 try:
     from utils import (iterable_functions as itf)
 except ModuleNotFoundError:
-    from utils import (iterable_functions as itf)
+    from SchemaRefinery.utils import (iterable_functions as itf)
 
 def create_directory(dir):
     """
@@ -271,7 +271,7 @@ def concat_files(source_file, destination_file):
     with open(destination_file, 'a') as outfile, open(source_file, 'r') as infile:
         shutil.copyfileobj(infile, outfile)
         
-def file_basename(file_path):
+def file_basename(file_path, file_extension=True):
     """
     Get the file name from a file path.
     
@@ -285,7 +285,10 @@ def file_basename(file_path):
     str
         The file name extracted from the file path.
     """
-    return os.path.basename(file_path)
+    if not file_extension:
+        return os.path.basename(file_path).split('.')[0]
+    else:
+        return os.path.basename(file_path)
 
 def join_paths(parent_path, child_paths):
 	"""Create path by joining a parent directory and a list of child paths."""
