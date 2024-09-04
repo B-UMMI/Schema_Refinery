@@ -927,7 +927,7 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
                 niphs_presence_in_genomes[new_id] = niphs_presence_in_genomes.pop(member)
             # Replace the old ID with the new ID for the CDSs that matched as NIPHs.
             niphs_group_id = itf.identify_string_in_dict_get_key(member, niphs_in_genomes)
-            if niphs_group_id:
+            if niphs_group_id or niphs_group_id == 0:
                 niphs_group_member_index = niphs_in_genomes[niphs_group_id].index(member)
                 niphs_in_genomes[niphs_group_id][niphs_group_member_index] = new_id
             i += 1
@@ -986,8 +986,8 @@ def process_new_loci(fastas_folder, constants):
         translation_dict_possible_new_loci.update(trans_dict)
 
     for new_loci_reps in possible_new_loci_short.values():
-        loci_id = ff.get_file_name(new_loci_reps).split('_')[0]
-        fasta_dict = sf.file_basename(new_loci_reps, False)
+        loci_id = ff.file_basename(new_loci_reps).split('_')[0]
+        fasta_dict = sf.fetch_fasta_dict(new_loci_reps, False)
         os.remove(new_loci_reps)
         for allele_id, sequence in fasta_dict.items():
             new_allele_id = f"{loci_id}_{allele_id}"
