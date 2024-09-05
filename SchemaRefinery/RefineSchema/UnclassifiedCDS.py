@@ -102,8 +102,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
             # if CDS sequence is present in the schema count the number of
             # genomes that it is found minus the first (subtract the first CDS genome).
             if hashed_seq in decoded_sequences_ids:
-                #Count frequency.
-                frequency_cds[id_] = len(decoded_sequences_ids[hashed_seq][1:])
+                #Count frequency of only presence, do not include the total cds in the genomes.
+                frequency_cds[id_] = len(set(decoded_sequences_ids[hashed_seq][1:]))
                 cds_presence_in_genomes.setdefault(id_, decoded_sequences_ids[hashed_seq][1:])
             else:
                 frequency_cds[id_] = 0
