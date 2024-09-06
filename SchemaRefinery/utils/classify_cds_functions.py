@@ -71,8 +71,6 @@ def identify_problematic_cds(cds_presence_in_genomes, cds_translation_dict, prot
         if len(cds_in_genomes) != len(set(cds_in_genomes)):
             # If all of the genomes contain only NIPHEMs in genomes.
             if itf.check_if_all_elements_are_duplicates(cds_in_genomes):
-                # Remove from same_origin_genomes since these IDs were dropped.
-                same_origin_genome[genome_id].remove(id_)
                 # Save the CDS that are only NIPHEMs in genomes.
                 only_niphems_in_genomes.setdefault(id_, set(cds_in_genomes))
                 dropped_cds.setdefault(id_, 'Dropped_due_to_being_only_NIPHEM_in_genomes')
@@ -366,7 +364,6 @@ def identify_problematic_loci(niphems_presence_in_genome, niphs_in_genomes, niph
             else:
                 # Get the intersection of the sets.
                 intersection_set.intersection_update(niphs_presence_in_genomes[niph])
-        # Here id_class_1a or niph_genome_id is the key and mather which one in the order it is since they both are in the same
         # joined group or are in the same cluster.
         if intersection_set:
             genomes_that_are_niphs_and_niphems.setdefault(id_class_1a or niph_genome_id, set()).update(intersection_set)

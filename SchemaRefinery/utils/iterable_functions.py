@@ -807,3 +807,29 @@ def join_list(lst, delimiter):
 	joined_list = delimiter.join(lst)
 
 	return joined_list
+#Unused
+def get_common_elements_in_lists(list_of_lists):
+    """
+    Finds common elements between various lists.
+    
+    Parameters
+	----------
+    list_of_lists : list
+        Contains a list of lists
+
+	Returns
+	-------
+    return : list
+        Returns a list that contains the intersection of all elements
+        inside the list of lists
+    """
+    intersection_set = None
+    for list in list_of_lists:
+        if not intersection_set:
+            # Get the first set.
+            intersection_set = set(list)
+        else:
+            # Get the intersection of the sets.
+            intersection_set.intersection_update(list)
+
+    return list(intersection_set)
