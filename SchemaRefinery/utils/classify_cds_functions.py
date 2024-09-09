@@ -765,10 +765,10 @@ def remove_dropped_cds_from_analysis(dropped_cds, not_included_cds, niphems_pres
     for dropped_id, reason in list(dropped_cds.items()):
         #Remove from associated translation hashes dict.
         translation_hash = itf.identify_string_in_dict_get_key(dropped_id, protein_hashes)
-        if translation_hash:
+        if translation_hash is not None:
             dropped_cds[dropped_id] = reason
             niph_group_id = itf.identify_string_in_dict_get_key(dropped_id, niphs_in_genomes)
-            if niph_group_id:
+            if niph_group_id is not None:
                 niphs_in_genomes[niph_group_id].remove(dropped_id)
                 if len(niphs_in_genomes[niph_group_id]) < 2:
                     del niphs_in_genomes[niph_group_id]
@@ -829,7 +829,7 @@ def add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, clusters_to_keep,
                 clusters_to_keep[class_].remove(drop_id)
 
         dropped_1a = itf.identify_string_in_dict_get_value(drop_id, clusters_to_keep['1a'])
-        if dropped_1a:
+        if dropped_1a is not None:
             for rep_id in dropped_1a:
                 for cds_id in clusters[rep_id]:
                     dropped_cds[cds_id] = reason
@@ -891,7 +891,7 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
             frequency_cds[new_id] = frequency_cds.pop(member)
             # Dropped cds
             dropped_id = itf.identify_string_in_dict_get_key(member, dropped_cds)
-            if dropped_id:
+            if dropped_id is not None:
                 dropped_cds[new_id] = dropped_cds.pop(dropped_id)
             # Save the new members IDs.
             new_members_ids.append(new_id)
@@ -924,7 +924,7 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
                 niphs_presence_in_genomes[new_id] = niphs_presence_in_genomes.pop(member)
             # Replace the old ID with the new ID for the CDSs that matched as NIPHs.
             niphs_group_id = itf.identify_string_in_dict_get_key(member, niphs_in_genomes)
-            if niphs_group_id or niphs_group_id == 0:
+            if niphs_group_id is not None:
                 niphs_group_member_index = niphs_in_genomes[niphs_group_id].index(member)
                 niphs_in_genomes[niphs_group_id][niphs_group_member_index] = new_id
             i += 1

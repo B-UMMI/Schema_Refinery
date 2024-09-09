@@ -196,7 +196,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     for cluster_rep, values in list(clusters.items()):
         for cds_id in list(values):
             protein_hash = itf.identify_string_in_dict_get_key(cds_id, filtered_protein_hashes)
-            if protein_hash:
+            if protein_hash is not None:
                 clusters[cluster_rep] += filtered_protein_hashes[protein_hash][1:]
 
     total_number_clusters = len(clusters)
