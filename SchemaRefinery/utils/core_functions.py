@@ -763,11 +763,11 @@ def process_classes(representative_blast_results, classes_outcome, all_alleles =
             strings = [str(query), str(id_subject), class_]
             if all_alleles:
                 replaced_query = itf.identify_string_in_dict_get_key(query, all_alleles)
-                if replaced_query:
+                if replaced_query is not None:
                     new_query = replaced_query
                     strings[0] = new_query
                 replaced_id_subject = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
-                if replaced_id_subject:
+                if replaced_id_subject is not None:
                     new_id_subject = replaced_id_subject
                     strings[1] = new_id_subject
 
@@ -1488,7 +1488,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     for query_id, subjects_ids in blastp_runs_to_do.items():
         
         filename = itf.identify_string_in_dict_get_key(query_id, multi_fasta)
-        if filename:
+        if filename is not None:
             blasts_to_run.setdefault(filename, set()).update(subjects_ids)
             seen_entries[filename] = set()
         else:
