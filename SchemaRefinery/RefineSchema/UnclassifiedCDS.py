@@ -4,6 +4,8 @@
 import os
 import sys
 
+from SchemaRefinery.RefineSchema import adapt_loci as al
+
 try:
     from utils import (core_functions as cof,
                        file_functions as ff,
@@ -13,8 +15,7 @@ try:
                        kmers_functions as kf,
                        blast_functions as bf,
                        linux_functions as lf,
-                       classify_cds_functions as ccf,
-                       adapt_loci as al)
+                       classify_cds_functions as ccf)
 
     from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 except ModuleNotFoundError:
@@ -26,8 +27,7 @@ except ModuleNotFoundError:
                                         kmers_functions as kf,
                                         blast_functions as bf,
                                         linux_functions as lf,
-                                        classify_cds_functions as ccf,
-                                        adapt_loci as al)
+                                        classify_cds_functions as ccf)
     
     from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 
@@ -128,19 +128,6 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
 
     # Print additional information about translations and deduplications.
     print(f"\n{len(cds_translation_dict)}/{len(not_included_cds)} unique protein translations.")
-    
-    print("\nIdentify problematics CDSs...")
-    [niphems_presence_in_genome,
-     niphs_in_genomes,
-     niphs_presence_in_genomes] = ccf.identify_problematic_cds(cds_presence_in_genomes,
-                                                           cds_translation_dict,
-                                                           protein_hashes,
-                                                           not_included_cds,
-                                                           cds_output,
-                                                           constants[7],
-                                                           dropped_cds,
-                                                           constants[9],
-                                                           cpu)
 
     print("\nExtracting minimizers for the translated sequences and clustering...")
     # Create variables to store clustering info.
@@ -265,9 +252,6 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                     cds_translation_dict,
                                                     protein_hashes,
                                                     cds_presence_in_genomes,
-                                                    niphems_presence_in_genome,
-                                                    niphs_presence_in_genomes,
-                                                    niphs_in_genomes,
                                                     reps_kmers_sim)
 
     # Create directories.
@@ -398,20 +382,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                'Dropped_due_to_smaller_genome_presence_than_matched_cluster', processed_drop)
 
     print("\nFiltering problematic probable new loci...")
-
-    [proportion_of_niph_genomes,
-     dropped_due_to_niphs_or_niphems,
-     clusters_to_keep_all_members,
-     clusters_to_keep_all_genomes] = ccf.identify_problematic_loci(niphems_presence_in_genome,
-                                                                   niphs_in_genomes,
-                                                                   niphs_presence_in_genomes,
-                                                                    cds_presence_in_genomes,
-                                                                    clusters_to_keep,
-                                                                    clusters,
-                                                                    constants[8], 
-                                                                    dropped_cds,
-                                                                    drop_possible_loci,
-                                                                    results_output)
+    problematic_loci, drop_possible_loci = ccf.identify_problematic_new_loci(clusters_to_keep, clusters, cds_present, not_included_cds, constants, output_directory)
     
     # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
     # classification
@@ -424,11 +395,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     # Remove from all releveant dicts
     ccf.remove_dropped_cds_from_analysis(dropped_cds,
                                          not_included_cds,
-                                         niphems_presence_in_genome,
                                          cds_translation_dict,
-                                         niphs_presence_in_genomes,
-                                         protein_hashes,
-                                         niphs_in_genomes)
+                                         protein_hashes,)
 
     print("\nExtracting results...")
     related_clusters, recommendations = cof.extract_results(processed_results,
@@ -478,29 +446,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                               clusters,
                                                               False,
                                                               run_type)
+    
 
-    print("\nWritting possible new loci Fastas and identifying new representatives for possible new loci...")
-    fastas_folder = os.path.join(results_output, "fastas")
-    ff.create_directory(fastas_folder)
-    temp_fastas_paths = cof.write_temp_loci(clusters_to_keep,
-                                          not_included_cds,
-                                          clusters,
-                                          fastas_folder)
-    
-    # Write the possible new loci path to txt file.
-    possible_new_loci_file = os.path.join(fastas_folder, 'possible_new_loci.txt')
-    with open(possible_new_loci_file, 'w') as loci_file:
-        for loci_path in temp_fastas_paths.values():
-            loci_file.write(f"{loci_path}\n")
-    new_loci_folder = os.path.join(fastas_folder, 'new_possible_loci_fastas')
-    ff.create_directory(new_loci_folder)
-
-    al.main(possible_new_loci_file, new_loci_folder, cpu, constants[7], constants[6])
-    
-    alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci = ccf.process_new_loci(fastas_folder, constants)
-    
-    possible_new_loci = {ff.file_basename(new_loci_path).split('_')[0]: new_loci_path for new_loci_path in possible_new_loci}
-    
     print("Writting members file...")
     ccf.write_cluster_members_to_file(results_output,
                                       clusters_to_keep,
@@ -522,28 +469,6 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
         cof.create_graphs(file,
                       results_output,
                       f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
-
-    print("\nReading schema loci short FASTA files...")
-    # Create directory
-    results_output = os.path.join(output_directory, '4_Schema_processing')
-    ff.create_directory(results_output)
-
-    allele_ids = [True, True]
-    run_type = 'loci_vs_cds' # Set run type as loci_vs_cds
-    # Run Blasts for the found loci against schema short
-    sl.process_schema(schema,
-                    possible_new_loci,
-                    results_output,
-                    translation_dict_possible_new_loci,
-                    alleles,
-                    updated_frequency_in_genomes,
-                    allelecall_directory, 
-                    master_file_path,
-                    allele_ids,
-                    run_type,
-                    False,
-                    constants,
-                    cpu)
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_gene_fusions, 
         pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence,

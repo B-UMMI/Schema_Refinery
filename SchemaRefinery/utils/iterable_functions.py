@@ -833,3 +833,26 @@ def get_common_elements_in_lists(list_of_lists):
             intersection_set.intersection_update(list)
 
     return list(intersection_set)
+
+def get_duplicates(input_list):
+    seen = set()
+    duplicates = []
+    for elem in input_list:
+        if elem in seen:
+            duplicates.append(elem)
+        else:
+            seen.add(elem)
+    return duplicates
+
+def get_shared_elements(dict):
+    
+    # Flatten all lists into a single list
+    all_elements = [elem for sublist in dict.values() for elem in sublist]
+    
+    # Count occurrences of each element
+    element_counts = Counter(all_elements)
+    
+    # Get elements that appear at least twice
+    shared_elements = [elem for elem, count in element_counts.items() if count >= 2]
+    
+    return shared_elements
