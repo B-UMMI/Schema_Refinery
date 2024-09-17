@@ -1099,7 +1099,7 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
     return related_clusters, recommendations
 
 def write_blast_summary_results(related_clusters, count_results_by_class, group_reps_ids, group_alleles_ids,
-                                frequency_in_genomes, recommendations, reverse_matches, results_output):
+                                frequency_in_genomes, recommendations, reverse_matches, classes_outcome, results_output):
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -1139,6 +1139,7 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
       and total count of results for the cluster, with each piece of information separated by tabs.
       A blank line is added after each cluster's information.
     """
+    # Add the reverse matches to the related clusters
     reported_cases = {}
     for key, related in list(related_clusters.items()):
         for index, r in enumerate(list(related)):
@@ -1146,6 +1147,16 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                 r.insert(4, '-')
                 r.insert(5, '-')
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
+            
+            # Add the total count of the representatives and allelesidentify_problematic_new_loci
+            representatives_count_query = len(group_reps_ids[query])
+            representatives_count_subject = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
+            allele_count_query = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
+            allele_count_subject = f"{len(group_alleles_ids[subject])}"
+            representatives_count = f"{representatives_count_query}|{representatives_count_subject}"
+            allele_count = f"{allele_count_query}|{allele_count_subject}"
+            
+            r.extend([representatives_count, allele_count])
             if (query, subject) not in itf.flatten_list(reported_cases.values()):
                 reported_cases.setdefault(key, []).append((subject, query))
             elif reverse_matches:
@@ -1155,26 +1166,39 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                 insert = r[3] if not None else '-'
                 related[sublist_index][5] = insert
                 related.remove(r)
-        
-        for index, i in enumerate(recommendations[key]):
-            related_clusters[key][index] += ([itf.flatten_list([[k] + [i for i in v]]) for k , v in recommendations[key].items()][index])
+
+    # Write the recommendations to the output file
+    recommendations_file = os.path.join(results_output, "recommendations.tsv")
+    with open(recommendations_file, 'w') as recommendations_report_file:
+        recommendations_report_file.write("Cluster\tRecommendation\tID\n")
+        for key, recommendation in recommendations.items():
+            for category, ids in recommendation.items():
+                category = category.split('_')[0] if 'Choice' in category else category
+                recommendations_report_file.write(f"{key}\t{category}\t{','.join(ids)}\n")
+            recommendations_report_file.write("#\n")
+
     # Write the results to the output files
     related_matches = os.path.join(results_output, "related_matches.tsv")
     with open(related_matches, 'w') as related_matches_file:
         related_matches_file.write("Query\tSubject\tClass\tClass_count" +
                                     ("\tInverse_class\tInverse_class_count" if reverse_matches else "") +
-                                    "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject\n")
+                                    "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject"
+                                    "\tRepresentatives_count\tAlelles_count\n")
         for related in related_clusters.values():
             for r in related:
                 related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
 
             related_matches_file.write('#\n')
-
+    # Write the count results to the output file
+    tab = '\t'
     count_results_by_cluster = os.path.join(results_output, "count_results_by_cluster.tsv")
     with open(count_results_by_cluster, 'w') as count_results_by_cluster_file:
-        count_results_by_cluster_file.write("Query\tSubject\tClass\tClass_count\tInverse_class_count"
+        count_results_by_cluster_file.write("Query"
+                                            "\tSubject"
+                                            f"\t{tab.join(classes_outcome)}"
                                             "\tRepresentatives_count"
-                                            "\tAlelles_count\tFrequency_in_genomes_query"
+                                            "\tAlelles_count"
+                                            "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class.items():
             query, subject = id_.split('|')
@@ -1183,24 +1207,28 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
             total_count_inverse = sum([i[1] for i in classes.values() if i[1] != '-'])
             query = itf.try_convert_to_type(id_.split('|')[0], int)
             subject = itf.try_convert_to_type(id_.split('|')[1], int)
+            
+            representatives_count_query = len(group_reps_ids[query])
+            representatives_count_subject = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
+            allele_count_query = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
+            allele_count_subject = f"{len(group_alleles_ids[subject])}"
+            representatives_count = f"{representatives_count_query}|{representatives_count_subject}"
+            allele_count = f"{allele_count_query}|{allele_count_subject}"
+            
+            query_frequency = frequency_in_genomes[query]
+            subject_frequency = frequency_in_genomes[subject]
 
-            for i, items in enumerate(classes.items()):
-                if i == 0:
-                    count_results_by_cluster_file.write('\t'.join([f"\t{items[0]}",
-                                                        f"{items[1][0]}/{total_count_origin}",
-                                                        f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
-                                                        (f"{len(group_reps_ids[query])}") + 
-                                                        (f"|{len(group_reps_ids[subject])}" if reverse_matches else "|-"),
-                                                        (f"{len(group_alleles_ids[query])}" if reverse_matches else "-") +
-                                                        (f"|{len(group_alleles_ids[subject])}"),
-                                                        f"{frequency_in_genomes[query]}",
-                                                        f"{frequency_in_genomes[subject]}\n"]))
+            for class_outcome in classes_outcome:
+                class_value = classes.get(class_outcome, '-')
+                if class_value == '-':
+                    count_results_by_cluster_file.write(f"\t{class_value}")
                 else:
-                    count_results_by_cluster_file.write('\t'.join([f"\t\t{items[0]}",
-                                                        f"{items[1][0]}/{total_count_origin}",
-                                                        f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
-                                                        "\n"]))
-            count_results_by_cluster_file.write('\n')
+                    query_class_count = class_value[0] if class_value[0] != '-' else '-'
+                    subject_class_count = class_value[1] if class_value[1] != '-' else '-'
+                    count_results_by_cluster_file.write(f"\t{query_class_count}|{total_count_origin}|{subject_class_count}|{total_count_inverse}")
+
+            count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\n")
+            count_results_by_cluster_file.write('\n#')
 
 def get_matches(all_relationships, clusters_to_keep, sorted_blast_dict):
     """
@@ -1537,9 +1565,6 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     # If there is need to calculate self-score
     print("\nCalculate self-score for the CDSs...")
     self_score_dict = {}
-    for query in rep_paths_prot:
-        # For self-score
-        self_score_dict[query] = {}
     # Get Path to the blastp executable
     get_blastp_exec = lf.get_tool_path('blastp')
     i = 1
@@ -2002,3 +2027,70 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
             clusters_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
 
     return cds_cases, loci_cases
+
+def process_new_loci(fastas_folder, allelecall_directory, constants):
+    new_loci_folder = os.path.join(fastas_folder, 'new_possible_loci_fastas')
+    possible_new_loci = {fastafile: os.path.join(new_loci_folder, fastafile) for fastafile in os.listdir(new_loci_folder) if fastafile.endswith('.fasta')}
+    possible_new_loci_short_dir = os.path.join(new_loci_folder, 'short')
+    possible_new_loci_short = {fastafile: os.path.join(possible_new_loci_short_dir, fastafile) for fastafile in os.listdir(possible_new_loci_short_dir) if fastafile.endswith('.fasta')}
+    master_file_path = os.path.join(fastas_folder, 'master.fasta')
+    possible_new_loci_translation_folder = os.path.join(fastas_folder, 'possible_new_loci_translation_folder')
+    ff.create_directory(possible_new_loci_translation_folder)
+
+    alleles = {}
+    translation_dict_possible_new_loci = {}
+    frequency_in_genomes = {}
+    temp_frequency_in_genomes = {}
+    cds_present = os.path.join(allelecall_directory, "temp")
+    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
+    for new_loci in possible_new_loci.values():
+        loci_id = ff.file_basename(new_loci).split('.')[0]
+        alleles.setdefault(loci_id, {})
+        fasta_dict = sf.fetch_fasta_dict(new_loci, False)
+        os.remove(new_loci)
+        for allele_id, sequence in fasta_dict.items():
+            new_allele_id = f"{loci_id}_{allele_id}"
+            alleles.setdefault(loci_id, {}).update({new_allele_id: str(sequence)})
+            write_type = 'a' if os.path.exists(new_loci) else 'w'
+            with open(new_loci, write_type) as new_loci_file:
+                new_loci_file.write(f">{new_allele_id}\n{str(sequence)}\n")
+
+            write_type = 'a' if os.path.exists(master_file_path) else 'w'
+            with open(master_file_path, write_type) as master_file:
+                master_file.write(f">{new_allele_id}\n{str(sequence)}\n")
+                
+            hashed_seq = sf.seq_to_hash(str(sequence))
+            # if CDS sequence is present in the schema count the number of
+            # genomes that it is found minus the first (subtract the first CDS genome).
+            if hashed_seq in decoded_sequences_ids:
+                #Count frequency of only presence, do not include the total cds in the genomes.
+                temp_frequency_in_genomes.setdefault(loci_id, []).append(len(set(decoded_sequences_ids[hashed_seq][1:])))
+                
+        frequency_in_genomes.setdefault(loci_id, sum(temp_frequency_in_genomes[loci_id]))
+        
+        fasta_dict = sf.fetch_fasta_dict(new_loci, False)
+
+        trans_path_file = os.path.join(possible_new_loci_translation_folder, f"{loci_id}.fasta")
+
+        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+                                                        trans_path_file,
+                                                        None,
+                                                        constants[5],
+                                                        False,
+                                                        constants[6],
+                                                        False)
+        
+        translation_dict_possible_new_loci.update(trans_dict)
+
+    for new_loci_reps in possible_new_loci_short.values():
+        loci_id = ff.file_basename(new_loci_reps).split('_')[0]
+        fasta_dict = sf.fetch_fasta_dict(new_loci_reps, False)
+        os.remove(new_loci_reps)
+        for allele_id, sequence in fasta_dict.items():
+            new_allele_id = f"{loci_id}_{allele_id}"
+            alleles.setdefault(loci_id, {}).update({new_allele_id: sequence})
+            write_type = 'a' if os.path.exists(new_loci_reps) else 'w'
+            with open(new_loci_reps, write_type) as new_loci_reps_file:
+                new_loci_reps_file.write(f">{new_allele_id}\n{str(sequence)}\n")
+                
+    return alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci, frequency_in_genomes

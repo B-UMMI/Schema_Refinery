@@ -27,7 +27,8 @@ except ModuleNotFoundError:
      from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
      from SchemaRefinery.utils import parameter_validation as pv
      from SchemaRefinery.RefineSchema import (UnclassifiedCDS,
-                                             SpuriousLoci)
+                                             SpuriousLoci,
+                                             AdaptLoci)
 
 
 def download_assemblies():
@@ -336,6 +337,82 @@ def spurious_loci():
 
      SpuriousLoci.main(**vars(args))
 
+def adapt_loci():
+
+     parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+     parser.add_argument('-i', '--input_file', type=str,
+                    required=True, dest='input_file',
+                    help='TSV file with the loci path to be adapted.')
+     
+     parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the directory to which '
+                             'files will be stored.')
+     
+     parser.add_argument('-c', '--cpu', type=int,
+                    required=False, dest='cpu_cores',
+                    default=1, 
+                    help='Number of cpus to run blast instances.')
+     
+     parser.add_argument('-b', '--bsr', type=float,
+          required=False, dest='blast_score_ratio', default=0.6,
+          help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-tb', '--translation_table', type=int,
+          required=False, dest='translation_table', default=11,
+          help='Translation table to use for the CDS translation.')
+     
+     args = parser.parse_args()
+
+     del args.RefineSchema
+
+     AdaptLoci.main(**vars(args))
+
+def identify_paralagous_loci():
+
+     parser = argparse.ArgumentParser(description=__doc__,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+     
+     
+     parser.add_argument('-s', '--schema_directory', type=str,
+                    required=True, dest='schema_directory',
+                    help='Folder that contains the schema to identify paralogous loci.')
+     
+     parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the directory to which '
+                             'files will be stored.')
+     
+     parser.add_argument('-c', '--cpu', type=int,
+                    required=False, dest='cpu_cores',
+                    default=1, 
+                    help='Number of cpus to run blast instances.')
+     
+     parser.add_argument('-b', '--bsr', type=float,
+          required=False, dest='blast_score_ratio', default=0.6,
+          help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-tb', '--translation_table', type=int,
+          required=False, dest='translation_table', default=11,
+          help='Translation table to use for the CDS translation.')
+     
+     parser.add_argument('-st', '--size_threshold', type=float,
+                         required=False, dest='size_threshold', default=0.2,
+                         help="Size threshold to consider two paralogous loci as similar.")
+     
+     parser.add_argument('-m', '--mode', type=str,
+          required=False, dest='mode', options=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
+          default='alleles_vs_alleles',
+          help='Mode to run the module.')
+     
+     args = parser.parse_args()
+
+     del args.RefineSchema
+
+     adapt_loci.main(**vars(args))
+
 def main():
 
      module_info = {'DownloadAssemblies': ["Downloads assemblies from the NCBI "
@@ -346,7 +423,8 @@ def main():
                                              schema_annotation],
                          'SpuriousLoci': ["Identifies spurious loci in a schema.", spurious_loci],
                          'UnclassifiedCDS': ["Classifies unclassified and"
-                                             "missed classes CDS from a schema.", unclassified_cds]}
+                                             "missed classes CDS from a schema.", unclassified_cds],
+                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci]}
 
      if len(sys.argv) == 1 or sys.argv[1] not in module_info:
           print('USAGE: SchemaRefinery [module] -h \n')

@@ -16,9 +16,8 @@ except ModuleNotFoundError:
                        iterable_functions as itf,
                        linux_functions as lf)
 
-def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds, 
-                   alleles, frequency_in_genomes, allelecall_directory, 
-                   master_file, allele_ids, run_type, master_alleles, constants, cpu):
+def process_schema(schema, results_output, fastas_folder,
+                   allelecall_directory, run_type, constants, cpu):
     """
     This function processes data related to the schema seed, importing, translating
     and BLASTing against the unclassified CDS clusters representatives groups to
@@ -54,7 +53,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     constants : list
         Contains the constants to be used in this function.
     cpu : int
-        Number of CPUs to use during multi processing.
+        Number of CPUs to use during multi processing.master_alleles
 
     Returns
     -------
@@ -63,6 +62,13 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
         info.
 
     """
+    if run_type == 'loci_vs_cds':
+        [alleles, master_file_path, possible_new_loci,
+         translation_dict_possible_new_loci, frequency_in_genomes] = cof.process_new_loci(fastas_folder, allelecall_directory, constants)
+        reps_trans_dict_cds = translation_dict_possible_new_loci
+        master_file = master_file_path
+    
+    process_schema = True if run_type == 'loci_vs_loci' else False
     blast_results = os.path.join(results_output, '1_BLAST_processing')
     ff.create_directory(blast_results)
     # Create BLASTn_processing directoryrun_type
@@ -109,7 +115,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     len_short_folder = len(schema_loci_short)
     all_alleles = {}
     if not master_file:
-        filename = 'master_file' if master_alleles else 'master_rep_file'
+        filename = 'master_file' if process_schema else 'master_rep_file'
         master_file_folder = os.path.join(blastn_output, filename)
         ff.create_directory(master_file_folder)
         master_file = os.path.join(master_file_folder, f"{filename}.fasta")
@@ -119,9 +125,9 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
     # Create varible to store proteins sequences if it doesn't exist.
     reps_trans_dict_cds = {} if not reps_trans_dict_cds else reps_trans_dict_cds
     # If to BLAST against reps or all of the alleles.
-    schema_loci if master_alleles else schema_loci_short
+    schema_loci if process_schema else schema_loci_short
     for loci, loci_path in schema_loci.items():
-        print(f"\rTranslated{'' if master_alleles else ' short'} loci FASTA: {i}/{len_short_folder}", end='', flush=True)
+        print(f"\rTranslated{'' if process_schema else ' short'} loci FASTA: {i}/{len_short_folder}", end='', flush=True)
         i += 1
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         
@@ -145,7 +151,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
             reps_trans_dict_cds[allele_id] = sequence
 
     # Create BLAST db for the schema DNA sequences.
-    print(f"\nCreate BLAST db for the {'schema' if master_alleles else 'unclassified'} DNA sequences...")
+    print(f"\nCreate BLAST db for the {'schema' if process_schema else 'unclassified'} DNA sequences...")
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
     blast_db = os.path.join(blastn_output, 'blast_db_nucl')
     ff.create_directory(blast_db)
@@ -165,7 +171,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
                      cpu,
                      all_alleles,
                      run_type)
-
+    allele_ids = [True, True]
     cof.add_items_to_results(representative_blast_results,
                          None,
                          bsr_values,
@@ -251,7 +257,7 @@ def process_schema(schema, groups_paths, results_output, reps_trans_dict_cds,
 
     cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
                                                               drop_possible_loci,
-                                                              groups_paths,
+                                                              possible_new_loci,
                                                               all_alleles,
                                                               schema_loci,
                                                               run_type)
