@@ -256,7 +256,8 @@ def cluster_based_on_ids(processed_representatives_dict):
 def cluster_by_ids(list_of_ids):
     """
     Based on list of list containing pairs or more ids, merges them into larger
-    lists if there are ids common between these sublists.
+    lists if there are ids common between these sublists. This function mantains
+    the order of appearance in list_of_ids.
     
     Parameters
     ----------
@@ -271,7 +272,19 @@ def cluster_by_ids(list_of_ids):
     G = nx.Graph()
     G.add_edges_from(list_of_ids)
 
-    connected = nx.connected_components(G)
+    connected_components = list(nx.connected_components(G))
+
+    # Create a mapping from node to its first appearance index in the input list
+    node_order = {}
+    for index, node in enumerate(itf.flatten_list(list_of_ids)):
+        if node not in node_order:
+            node_order[node] = index
+
+    # Sort connected components based on the first appearance of any node in the component
+    connected_components.sort(key=lambda component: min(node_order[node] for node in component))
+
+    # Convert sets to lists to maintain order
+    connected = [sorted(list(component), key=lambda node: node_order[node]) for component in connected_components]
 
     return connected
 

@@ -1099,7 +1099,7 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
     return related_clusters, recommendations
 
 def write_blast_summary_results(related_clusters, count_results_by_class, group_reps_ids, group_alleles_ids,
-                                frequency_in_genomes, recommendations, reverse_matches, results_output):
+                                frequency_in_genomes, recommendations, reverse_matches, classes_outcome, results_output):
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -1139,6 +1139,7 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
       and total count of results for the cluster, with each piece of information separated by tabs.
       A blank line is added after each cluster's information.
     """
+    # Add the reverse matches to the related clusters
     reported_cases = {}
     for key, related in list(related_clusters.items()):
         for index, r in enumerate(list(related)):
@@ -1146,6 +1147,16 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                 r.insert(4, '-')
                 r.insert(5, '-')
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
+            
+            # Add the total count of the representatives and allelesidentify_problematic_new_loci
+            representatives_count_query = len(group_reps_ids[query])
+            representatives_count_subject = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
+            allele_count_query = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
+            allele_count_subject = f"{len(group_alleles_ids[subject])}"
+            representatives_count = f"{representatives_count_query}|{representatives_count_subject}"
+            allele_count = f"{allele_count_query}|{allele_count_subject}"
+            
+            r.extend([representatives_count, allele_count])
             if (query, subject) not in itf.flatten_list(reported_cases.values()):
                 reported_cases.setdefault(key, []).append((subject, query))
             elif reverse_matches:
@@ -1155,26 +1166,39 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                 insert = r[3] if not None else '-'
                 related[sublist_index][5] = insert
                 related.remove(r)
-        
-        for index, i in enumerate(recommendations[key]):
-            related_clusters[key][index] += ([itf.flatten_list([[k] + [i for i in v]]) for k , v in recommendations[key].items()][index])
+
+    # Write the recommendations to the output file
+    recommendations_file = os.path.join(results_output, "recommendations.tsv")
+    with open(recommendations_file, 'w') as recommendations_report_file:
+        recommendations_report_file.write("Cluster\tRecommendation\tID\n")
+        for key, recommendation in recommendations.items():
+            for category, ids in recommendation.items():
+                category = category.split('_')[0] if 'Choice' in category else category
+                recommendations_report_file.write(f"{key}\t{category}\t{','.join(ids)}\n")
+            recommendations_report_file.write("#\n")
+
     # Write the results to the output files
     related_matches = os.path.join(results_output, "related_matches.tsv")
     with open(related_matches, 'w') as related_matches_file:
         related_matches_file.write("Query\tSubject\tClass\tClass_count" +
                                     ("\tInverse_class\tInverse_class_count" if reverse_matches else "") +
-                                    "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject\n")
+                                    "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject"
+                                    "\tRepresentatives_count\tAlelles_count\n")
         for related in related_clusters.values():
             for r in related:
                 related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
 
             related_matches_file.write('#\n')
-
+    # Write the count results to the output file
+    tab = '\t'
     count_results_by_cluster = os.path.join(results_output, "count_results_by_cluster.tsv")
     with open(count_results_by_cluster, 'w') as count_results_by_cluster_file:
-        count_results_by_cluster_file.write("Query\tSubject\tClass\tClass_count\tInverse_class_count"
+        count_results_by_cluster_file.write("Query"
+                                            "\tSubject"
+                                            f"\t{tab.join(classes_outcome)}"
                                             "\tRepresentatives_count"
-                                            "\tAlelles_count\tFrequency_in_genomes_query"
+                                            "\tAlelles_count"
+                                            "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class.items():
             query, subject = id_.split('|')
@@ -1183,24 +1207,28 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
             total_count_inverse = sum([i[1] for i in classes.values() if i[1] != '-'])
             query = itf.try_convert_to_type(id_.split('|')[0], int)
             subject = itf.try_convert_to_type(id_.split('|')[1], int)
+            
+            representatives_count_query = len(group_reps_ids[query])
+            representatives_count_subject = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
+            allele_count_query = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
+            allele_count_subject = f"{len(group_alleles_ids[subject])}"
+            representatives_count = f"{representatives_count_query}|{representatives_count_subject}"
+            allele_count = f"{allele_count_query}|{allele_count_subject}"
+            
+            query_frequency = frequency_in_genomes[query]
+            subject_frequency = frequency_in_genomes[subject]
 
-            for i, items in enumerate(classes.items()):
-                if i == 0:
-                    count_results_by_cluster_file.write('\t'.join([f"\t{items[0]}",
-                                                        f"{items[1][0]}/{total_count_origin}",
-                                                        f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
-                                                        (f"{len(group_reps_ids[query])}") + 
-                                                        (f"|{len(group_reps_ids[subject])}" if reverse_matches else "|-"),
-                                                        (f"{len(group_alleles_ids[query])}" if reverse_matches else "-") +
-                                                        (f"|{len(group_alleles_ids[subject])}"),
-                                                        f"{frequency_in_genomes[query]}",
-                                                        f"{frequency_in_genomes[subject]}\n"]))
+            for class_outcome in classes_outcome:
+                class_value = classes.get(class_outcome, '-')
+                if class_value == '-':
+                    count_results_by_cluster_file.write(f"\t{class_value}")
                 else:
-                    count_results_by_cluster_file.write('\t'.join([f"\t\t{items[0]}",
-                                                        f"{items[1][0]}/{total_count_origin}",
-                                                        f"{items[1][1]}/{total_count_inverse}" if reverse_matches else "-",
-                                                        "\n"]))
-            count_results_by_cluster_file.write('\n')
+                    query_class_count = class_value[0] if class_value[0] != '-' else '-'
+                    subject_class_count = class_value[1] if class_value[1] != '-' else '-'
+                    count_results_by_cluster_file.write(f"\t{query_class_count}|{total_count_origin}|{subject_class_count}|{total_count_inverse}")
+
+            count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\n")
+            count_results_by_cluster_file.write('\n#')
 
 def get_matches(all_relationships, clusters_to_keep, sorted_blast_dict):
     """
