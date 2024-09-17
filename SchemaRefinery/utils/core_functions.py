@@ -1537,9 +1537,6 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     # If there is need to calculate self-score
     print("\nCalculate self-score for the CDSs...")
     self_score_dict = {}
-    for query in rep_paths_prot:
-        # For self-score
-        self_score_dict[query] = {}
     # Get Path to the blastp executable
     get_blastp_exec = lf.get_tool_path('blastp')
     i = 1

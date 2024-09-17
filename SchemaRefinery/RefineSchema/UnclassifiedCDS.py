@@ -4,7 +4,7 @@
 import os
 import sys
 
-from SchemaRefinery.RefineSchema import adapt_loci as al
+from SchemaRefinery.RefineSchema import AdaptLoci as al
 
 try:
     from utils import (core_functions as cof,

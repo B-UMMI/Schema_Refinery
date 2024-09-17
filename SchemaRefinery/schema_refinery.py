@@ -28,7 +28,7 @@ except ModuleNotFoundError:
      from SchemaRefinery.utils import parameter_validation as pv
      from SchemaRefinery.RefineSchema import (UnclassifiedCDS,
                                              SpuriousLoci,
-                                             adapt_loci)
+                                             AdaptLoci)
 
 
 def download_assemblies():
@@ -338,6 +338,7 @@ def spurious_loci():
      SpuriousLoci.main(**vars(args))
 
 def adapt_loci():
+
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -362,6 +363,49 @@ def adapt_loci():
      parser.add_argument('-tb', '--translation_table', type=int,
           required=False, dest='translation_table', default=11,
           help='Translation table to use for the CDS translation.')
+     
+     args = parser.parse_args()
+
+     del args.RefineSchema
+
+     AdaptLoci.main(**vars(args))
+
+def identify_paralagous_loci():
+
+     parser = argparse.ArgumentParser(description=__doc__,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+     
+     
+     parser.add_argument('-s', '--schema_directory', type=str,
+                    required=True, dest='schema_directory',
+                    help='Folder that contains the schema to identify paralogous loci.')
+     
+     parser.add_argument('-o', '--output-directory', type=str,
+                        required=True, dest='output_directory',
+                        help='Path to the directory to which '
+                             'files will be stored.')
+     
+     parser.add_argument('-c', '--cpu', type=int,
+                    required=False, dest='cpu_cores',
+                    default=1, 
+                    help='Number of cpus to run blast instances.')
+     
+     parser.add_argument('-b', '--bsr', type=float,
+          required=False, dest='blast_score_ratio', default=0.6,
+          help='BSR value to consider alleles as the same locus.')
+     
+     parser.add_argument('-tb', '--translation_table', type=int,
+          required=False, dest='translation_table', default=11,
+          help='Translation table to use for the CDS translation.')
+     
+     parser.add_argument('-st', '--size_threshold', type=float,
+                         required=False, dest='size_threshold', default=0.2,
+                         help="Size threshold to consider two paralogous loci as similar.")
+     
+     parser.add_argument('-m', '--mode', type=str,
+          required=False, dest='mode', options=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
+          default='alleles_vs_alleles',
+          help='Mode to run the module.')
      
      args = parser.parse_args()
 
