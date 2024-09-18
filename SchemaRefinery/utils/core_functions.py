@@ -1053,32 +1053,37 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
             reverse_results = processed_results[reverse_id] if processed_results.get(reverse_id) else None
             if reverse_results and classes_outcome.index(results[0]) > classes_outcome.index(reverse_results[0]):
                 results = reverse_results
-
+            # Process the joined cases
             if results[0] == '1a':
+                # If it is part of a joined cluster, add to the recommendations
                 if joined_query_id is not None:
                     add_to_recommendations('Joined', joined_query_to_write, joined_query_id)
                 if joined_subject_id is not None:
                     add_to_recommendations('Joined', joined_subject_to_write, joined_subject_id)
-
+            # Process the choice cases
             elif results[0] in ['1c', '2b', '3b', '4b']:
+                # If it is not dropped and not the same joined cluster, add to the recommendations
                 if not if_query_dropped and not if_subject_dropped and not if_same_joined:
                     add_to_recommendations('Choice', query_to_write, choice_query_id)
                     add_to_recommendations('Choice', subject_to_write, choice_subject_id)
-                elif if_query_dropped:
-                    add_to_recommendations('Choice', subject_to_write, choice_subject_id)
-                    matched_with_dropped.setdefault(key, []).append([query_to_write, subject_to_write, query_to_write, choice_query_id])
-                elif if_subject_dropped:
-                    add_to_recommendations('Choice', query_to_write, choice_query_id)
-                    matched_with_dropped.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write, choice_query_id])
+                # elif if_query_dropped:
+                #     add_to_recommendations('Choice', subject_to_write, choice_subject_id)
+                #     matched_with_dropped.setdefault(key, []).append([query_to_write, subject_to_write, query_to_write, choice_query_id])
+                # elif if_subject_dropped:
+                #     add_to_recommendations('Choice', query_to_write, choice_query_id)
+                #     matched_with_dropped.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write, choice_query_id])
+            # Process cases where some ID is dropped
             elif results[0] in ['1b', '2a', '3a', '4a']:
+                # If it is part of a joined cluster and it gets dropped, add to the recommendations
                 if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]):
                     add_to_recommendations('Choice', query_to_write, choice_query_id)
                     add_to_recommendations('Choice', subject_to_write, choice_subject_id)
+                # If it is not part of a joined cluster and it gets dropped, add to the recommendations
                 if query_id in drop_possible_loci:
                     if not if_joined_query and not if_query_in_choice:
                         add_to_recommendations('Drop', query_to_write)
                         dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
-
+                # If it is not part of a joined cluster and it gets dropped, add to the recommendations
                 elif subject_id in drop_possible_loci:
                     if not if_joined_subject and not if_subject_in_choice:
                         add_to_recommendations('Drop', subject_to_write)

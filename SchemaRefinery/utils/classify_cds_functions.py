@@ -20,14 +20,44 @@ except ModuleNotFoundError:
                                       iterable_functions as itf,
                                       linux_functions as lf,)
 
-def identify_problematic_new_loci(clusters_to_keep, clusters, cds_present, not_included_cds, constants, output_path):
+def identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters, cds_present,
+                                  not_included_cds, constants, output_path):
+    """
+    Identify problematic new loci based on the presence of NIPHs and NIPHEMs.
+
+    Parameters
+    ----------
+    drop_possible_loci : set
+        A set to store the IDs of clusters that should be dropped.
+    clusters_to_keep : dict
+        A dictionary where keys are class labels and values are dictionaries with cluster IDs as keys 
+        and lists of cluster members as values, for key 1a the values are dicts with joined cluster
+        ID as key and list as value.
+    clusters : dict
+        A dictionary where keys are cluster IDs and values are lists of allele IDs.
+    cds_present : str
+        Path to the distinct.hashtable file.
+    not_included_cds : dict
+        A dictionary where keys are allele IDs and values are sequences not included in the the schema.
+    constants : list
+        A list of constants used in the function. The 9th element (index 8) is the threshold for 
+        problematic proportion.
+    output_path : str
+        The path to the directory where the output file will be saved.
+
+    Returns
+    -------
+    problematic_loci : dict
+        A dictionary where keys are cluster IDs and values are the proportion of problematic genomes.
+    drop_possible_loci : set
+        The updated set of cluster IDs that should be dropped.
+    """
     decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
     niphems_in_possible_new_loci = {}
     niphs_in_possible_new_loci = {}
     temp_niphs_in_possible_new_loci = {}
     total_possible_new_loci_genome_presence = {}
     problematic_loci = {}
-    drop_possible_loci = set()
     for class_, cluster_keep in clusters_to_keep.items():
         for cluster_id in cluster_keep:
             niphems_in_possible_new_loci.setdefault(cluster_id, [])
@@ -120,6 +150,51 @@ def write_cluster_members_to_file(output_path, clusters_to_keep, clusters, frequ
                         else:
                             cluster_members_file.write('\t\t' + cds_id + '\n')
 
+def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output):
+    """
+    Write the dropped possible new loci to a file with the reasons for dropping them.
+
+    Parameters
+    ----------
+    drop_possible_loci : set
+        A set of possible new loci IDs that should be dropped.
+    dropped_cds : dict
+        A dictionary where keys are CDS (Coding Sequences) IDs and values are the reasons for dropping them.
+    results_output : str
+        The path to the directory where the output file will be saved.
+
+    Returns
+    -------
+    None
+    """
+    drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
+    locus_drop_reason = {cds.split('_')[0]: reason for cds, reason in dropped_cds.items() if '_' in cds}
+    with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
+        drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
+        for locus in drop_possible_loci:
+            drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")
+
+def write_dropped_cds_to_file(dropped_cds, results_output):
+    """
+    Write dropped CDS to file.
+
+    Parameters
+    ----------
+    dropped_cds : dict
+        The dictionary containing the dropped CDSs.
+    results_output : str
+        The path where the output will be written.
+
+    Returns
+    -------
+    None, writes to file.
+    """
+    dropped_cds_output = os.path.join(results_output, 'dropped_cds.tsv')
+    with open(dropped_cds_output, 'w') as dropped_cds_file:
+        dropped_cds_file.write('CDS_ID\tReason_for_dropping\n')
+        for cds_id, reason in dropped_cds.items():
+            dropped_cds_file.write(f"{cds_id}\t{reason}\n")
+
 def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dropped_cds,
                                 not_included_cds, results_output):
     """
@@ -202,19 +277,6 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
                     clusters[rep_id].append(new_id)
                     cds_original_ids[cds_id_first].append(new_id)
                     index += 1  # Increment the index for the next ID
-
-    # Add why CDS was dropped
-    for cds_member, cause in dropped_cds.items():
-        # Get the original ID for the CDS member
-        cds_id = itf.identify_string_in_dict_get_key(cds_member, cds_original_ids) or cds_member
-        # Append the cause of dropping to the original ID
-        if cds_original_ids.get(cds_id):
-            if len(cds_original_ids[cds_id]) == 2:
-                cds_original_ids[cds_id].extend(['', cause])
-            else:
-                cds_original_ids[cds_id].append(cause)
-        else:
-            cds_original_ids.setdefault(cds_id, ['','',cause])
             
     # Prepare to write the ID changes to a file
     tab = "\t"
@@ -222,175 +284,10 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
     
     # Open the file and write the header and ID changes
     with open(id_changes_file, 'w') as id_changes:
-        id_changes.write('Original_ID\tID_after_clustering\tID_after_joining\tDrop_reason\n')
+        id_changes.write('Original_ID\tID_after_clustering\tID_after_joining\n')
         for original_ids, changed_ids in cds_original_ids.items():
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
-
-def find_new_representatives(groups_trans_reps_paths, groups_trans, groups_paths_reps,
-                             cpu, not_included_cds, constants, results_output):
-
-    def run_blast_for_bsr(groups_trans, groups_trans_reps_paths, iterations_folder, cpu):
-        print('\n')
-        # Create a folder to store the results of the BLASTp self-score calculations.
-        blastp_folder = os.path.join(iterations_folder, 'BLASTp')
-        ff.create_directory(blastp_folder)
-        save_bsr_score = {}
-        total_blasts = len(groups_trans)
-        i = 1
-        # Run Blastp and calculate BSR.
-        with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-            for res in executor.map(bf.run_blast_fastas_multiprocessing,
-                                    groups_trans, 
-                                    repeat(get_blastp_exec),
-                                    repeat(blastp_folder),
-                                    repeat(groups_trans_reps_paths),
-                                    groups_trans.values()):
-                
-                filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, False, False)
-
-
-                # Since BLAST may find several local aligments choose the first one (highest one) to calculate BSR.
-                for query, subjects_dict in filtered_alignments_dict.items():
-                    for subject_id, results in subjects_dict.items():
-                        #Highest score (First one)
-                        subject_score = next(iter(results.values()))['score']
-                        save_bsr_score.setdefault(query, {}).update({subject_id: bf.compute_bsr(subject_score, self_score_dict_reps[query])})
-
-                print(f"\rRunning BLASTp to confirm identified NIPHs: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
-                i += 1
-
-        return save_bsr_score
-    
-    def self_score_calc(temp_groups_trans_reps_paths, iterations_folder, cpu):
-        # Create a folder to store the results of the BLASTp self-score calculations.
-        self_score_folder = os.path.join(iterations_folder, 'self_score')
-        ff.create_directory(self_score_folder)
-
-        i = 1
-        self_score_dict_reps = {}
-        with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-            for res in executor.map(bf.run_self_score_multiprocessing,
-                                    temp_groups_trans_reps_paths.keys(),
-                                    repeat(get_blastp_exec),
-                                    temp_groups_trans_reps_paths.values(),
-                                    repeat(self_score_folder)):
-                
-                _, self_scores, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, False, False, True)
-        
-                # Save self-score.
-                self_score_dict_reps.update(self_scores)
-                                
-                print(f"\rRunning BLASTp to calculate self-score to identify new representatives {res[0]: <{max_id_length}}", end='', flush=True)
-                i += 1
-        return self_score_dict_reps
-
-
-    bsr_value = constants[7]
-    bsr_value_upper_rep = bsr_value + 0.1 if bsr_value <= 0.9 else 1
-    blast_dir = os.path.join(results_output, 'BLAST_find_new_representatives')
-    ff.create_directory(blast_dir)
-
-    # Get the path to the BLASTp executable.
-    get_blastp_exec = lf.get_tool_path('blastp')
-    # Get the max length of the IDs.
-    max_id_length = len(max(groups_trans))
-
-    iteration = 1
-    continue_to_run_blasts = True
-    temp_group_paths = copy.deepcopy(groups_trans)
-    temp_groups_trans_reps_paths = copy.deepcopy(groups_trans_reps_paths)
-    # Loop till there are no more possible new reps cases.
-    while continue_to_run_blasts:
-        print(f"\nRunning BLASTp to identify new representatives: Iteration {iteration}...")
-        # Create a folder to store the results of the BLASTp self-score calculations and BLASTp.
-        iterations_folder = os.path.join(blast_dir, f"iteration_{iteration}")
-        ff.create_directory(iterations_folder)
-        # Run BLASTp to calculate self-score for the representatives.
-        self_score_dict_reps = self_score_calc(temp_groups_trans_reps_paths, iterations_folder, cpu)
-        # Run BLASTp to confirm possible new representatives.
-        save_bsr_score = run_blast_for_bsr(temp_group_paths, temp_groups_trans_reps_paths, iterations_folder, cpu)
-
-        # Filter the cases by BSR value in inverse order (lowest at the top).
-        flattened = [
-        (query, subject_id, bsr)
-        for query, subjects_ids in save_bsr_score.items()
-        for subject_id, bsr in subjects_ids.items()
-        ]
-        # Sort the cases by BSR value.
-        sorted_flattened = sorted(flattened, key=lambda x: x[2], reverse=True)
-        # Save the cases in a dict.
-        sorted_save_bsr_score = {}
-        for query, subject_id, bsr in sorted_flattened:
-            if query not in sorted_save_bsr_score:
-                sorted_save_bsr_score[query] = {}
-            sorted_save_bsr_score[query][subject_id] = bsr
-
-        # Identify cases that are in new reps threshold and cases that are in 
-        # normal allele threshold
-        new_reps_ids = {}
-        del_matched_ids = {}
-        for rep, alleles in sorted_save_bsr_score.items():
-            loci = rep.split('_')[0]
-
-            new_reps_ids.setdefault(loci, {})
-            del_matched_ids.setdefault(loci, {})
-
-            for allele, bsr in alleles.items():
-                # Identify possible new reps base on bsr value
-                if bsr_value_upper_rep >= bsr:
-                    if not new_reps_ids[loci].get(allele):
-                        new_reps_ids[loci].setdefault(allele, bsr)
-                # We need only the cases where all of the matches are normal.
-                else:
-                    del_matched_ids[loci].setdefault(allele, bsr)
-
-        # Remove the cases that are not in the range of bsr value to add as representative for other representatives.
-        for loci, alleles in del_matched_ids.items():
-            for allele in alleles:
-                if new_reps_ids[loci].get(allele):
-                    del new_reps_ids[loci][allele]
-
-        # Clean the dict
-        itf.remove_empty_dicts_recursive(new_reps_ids)   
-        # Add one possible reps (not adding all because some may be for the same protein)
-        for loci, alleles in list(new_reps_ids.items()):
-            # Fetch translations of the alleles.
-            translation = sf.read_fasta_file_dict(groups_trans[loci])
-            # Fetch translation for the representatives.
-            rep_translation = sf.read_fasta_file_dict(groups_trans_reps_paths[loci])
-            for allele in list(alleles):
-                # If the allele is already a representative, remove it.
-                if allele in rep_translation:
-                    del new_reps_ids[loci][allele]
-                    continue
-                # If the allele is not in the representatives, add it.
-                elif allele not in rep_translation:
-                    del new_reps_ids[loci][allele]
-                    print(f"Representative for {loci} is {allele}")
-                    with open(groups_paths_reps[loci], 'a') as fasta_file:
-                        fasta_file.write(f">{allele}\n{str(not_included_cds[allele])}\n")
-                    with open(groups_trans_reps_paths[loci], 'a') as fasta_file:
-                        fasta_file.write(f">{allele}\n{str(translation[allele].seq)}\n")
-                    # Since we want only one representative for each iteration
-                    # because if we add all at the same time we may add several representatives
-                    # that represent the same proteins.
-                    break
-
-        # Clean the dict
-        itf.remove_empty_dicts_recursive(new_reps_ids)
-        # What BLASTp to do again to confirm other possible reps
-        temp_group_paths = {}
-        temp_groups_trans_reps_paths = {}
-        # Add new temp paths for loci to run again.
-        for loci, alleles in new_reps_ids.items():
-            temp_group_paths.update({loci: groups_trans[loci]})
-            temp_groups_trans_reps_paths.update({loci: groups_trans_reps_paths[loci]})
-        # If there are no more possible new reps to add.
-        if not temp_group_paths:
-            continue_to_run_blasts = False
-        else:
-            iteration += 1
 
 def remove_dropped_cds_from_analysis(dropped_cds, not_included_cds,
                                      cds_translation_dict, protein_hashes):
@@ -403,16 +300,10 @@ def remove_dropped_cds_from_analysis(dropped_cds, not_included_cds,
         Dictionary containing dropped CDS with their reasons.
     not_included_cds : dict
         Dictionary of CDS that are not included in the analysis.
-    niphems_presence_in_genome : dict
-        Dictionary indicating the presence of NIPHEMs in the genome.
     cds_translation_dict : dict
         Dictionary mapping CDS to their translations.
-    niphs_presence_in_genomes : dict
-        Dictionary indicating the presence of NIPHs in genomes.
     protein_hashes : dict
         Dictionary mapping protein hashes to their associated CDS.
-    niphs_in_genomes : dict
-        Dictionary indicating the presence of NIPHs in genomes.
 
     Returns
     -------
@@ -453,8 +344,6 @@ def add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, clusters_to_keep,
         Dictionary containing CDS to keep, classified by their class type.
     clusters : dict
         Dictionary containing clusters of CDS.
-    cds_original_ids : dict
-        Dictionary containing original IDs of CDS.
     reason : str
         Reason for dropping the CDS.
     processed_drop : list
@@ -511,12 +400,6 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
         Dictionary mapping protein hashes to lists of CDS IDs.
     cds_presence_in_genomes : dict
         Dictionary mapping CDS IDs to their presence in genomes.
-    niphems_presence_in_genome : dict
-        Dictionary mapping NIPHEM IDs to their presence in genomes.
-    niphs_presence_in_genomes : dict
-        Dictionary mapping NIPH IDs to their presence in genomes.
-    niphs_in_genomes : dict
-        Dictionary mapping NIPH group IDs to lists of CDS IDs.
     reps_kmers_sim : dict
         Dictionary mapping representative cluster IDs to their k-mer similarities.
 
@@ -578,5 +461,3 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
         del reps_kmers_sim[cluster_id]
 
     return cds_original_ids
-
-    

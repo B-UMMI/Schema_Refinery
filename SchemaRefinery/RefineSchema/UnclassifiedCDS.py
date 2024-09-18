@@ -382,7 +382,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                'Dropped_due_to_smaller_genome_presence_than_matched_cluster', processed_drop)
 
     print("\nFiltering problematic probable new loci...")
-    problematic_loci, drop_possible_loci = ccf.identify_problematic_new_loci(clusters_to_keep, clusters, cds_present, not_included_cds, constants, results_output)
+    problematic_loci, drop_possible_loci = ccf.identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters, cds_present, not_included_cds, constants, results_output)
     
     # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
     # classification
@@ -440,6 +440,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     not_included_cds,
                                     results_output)
 
+    ccf.write_dropped_cds_to_file(dropped_cds, results_output)
+    
+    ccf.write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output)
 
     cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
                                                               drop_possible_loci,
