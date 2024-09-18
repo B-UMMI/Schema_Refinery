@@ -381,8 +381,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                clusters,
                                'Dropped_due_to_smaller_genome_presence_than_matched_cluster', processed_drop)
 
-    print("\nFiltering problematic probable new loci...")
-    problematic_loci, drop_possible_loci = ccf.identify_problematic_new_loci(clusters_to_keep, clusters, cds_present, not_included_cds, constants, results_output)
+    print("\nFiltering problematic possible new loci based on NIPHS and NIPHEMS presence and"
+          " writting results to niphems_and_niphs_groups.tsv...")
+    drop_possible_loci = ccf.identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters, cds_present, not_included_cds, constants, results_output)
     
     # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
     # classification
@@ -405,7 +406,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                                           clusters_to_keep,
                                                                           drop_possible_loci,
                                                                           classes_outcome)
-    print("\nWritting count_results_by_cluster.tsv and related_matches.tsv files...")
+    print("\nWritting count_results_by_cluster.tsv, related_matches.tsv files"
+          " and recommendations.tsv...")
     cof.write_blast_summary_results(related_clusters,
                                 count_results_by_class_with_inverse,
                                 group_reps_ids,
@@ -428,26 +430,27 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                     clusters,
                                     None,
                                     None,
-                                    False,
                                     blast_results)
     
-    print("\nUpdating IDs and saving changes...")
-    
+    print("\nUpdating IDs and saving changes in cds_id_changes.tsv...")
     ccf.update_ids_and_save_changes(clusters_to_keep,
                                     clusters,
                                     cds_original_ids,
                                     dropped_cds,
                                     not_included_cds,
                                     results_output)
+    print("\nWritting dropped CDSs to file...")
+    ccf.write_dropped_cds_to_file(dropped_cds, results_output)
+    print("\nWritting dropped possible new loci to file...")
+    ccf.write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output)
 
+    cof.print_classifications_results(clusters_to_keep,
+                                        drop_possible_loci,
+                                        False,
+                                        clusters,
+                                        False,
+                                        run_type)
 
-    cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
-                                                              drop_possible_loci,
-                                                              False,
-                                                              clusters,
-                                                              False,
-                                                              run_type)
-    
 
     print("Writting members file...")
     ccf.write_cluster_members_to_file(results_output,
