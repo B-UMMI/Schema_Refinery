@@ -1621,7 +1621,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
 
 def write_processed_results_to_file(clusters_to_keep, representative_blast_results,
                                     classes_outcome, all_alleles, alleles, is_matched,
-                                    is_matched_alleles, all_loci, output_path):
+                                    is_matched_alleles, output_path):
     """
     Write processed results to files in specified output directories.
 
@@ -1641,8 +1641,6 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
         Dictionary indicating if clusters are matched.
     is_matched_alleles : dict
         Dictionary containing matched alleles information.
-    all_loci : bool
-        Boolean indicating if all loci should be processed.
     output_path : str
         Path to the output directory where results will be written.
 
@@ -1915,10 +1913,7 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
 
     Returns
     -------
-    cds_cases: dict
-        Dictionary with CDS cases classified by their class type.
-    loci_cases: dict
-        Dictionary with loci cases classified by their class type.
+    None, prints in stdout
     """
     def print_results(class_, count, printout, i):
         """
@@ -2030,8 +2025,6 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
             print(f"\t\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
             
             clusters_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
-
-    return cds_cases, loci_cases
 
 def process_new_loci(fastas_folder, allelecall_directory, constants):
     new_loci_folder = os.path.join(fastas_folder, 'new_possible_loci_fastas')

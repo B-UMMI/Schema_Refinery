@@ -47,17 +47,15 @@ def identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters
 
     Returns
     -------
-    problematic_loci : dict
-        A dictionary where keys are cluster IDs and values are the proportion of problematic genomes.
     drop_possible_loci : set
         The updated set of cluster IDs that should be dropped.
     """
-    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
-    niphems_in_possible_new_loci = {}
-    niphs_in_possible_new_loci = {}
-    temp_niphs_in_possible_new_loci = {}
-    total_possible_new_loci_genome_presence = {}
-    problematic_loci = {}
+    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present) # Dict to store the decoded sequences.
+    niphems_in_possible_new_loci = {} # Dict to store the NIPHEMs in each possible new loci.
+    niphs_in_possible_new_loci = {} # Dict to store the NIPHs in each possible new loci.
+    temp_niphs_in_possible_new_loci = {} # Temp dict to store the NIPHs in each possible new loci.
+    total_possible_new_loci_genome_presence = {} # Dict to store the total number of genomes in each possible new loci.
+    problematic_loci = {} # Dict to store the proportion of problematic genomes in each possible new loci.
     for class_, cluster_keep in clusters_to_keep.items():
         for cluster_id in cluster_keep:
             niphems_in_possible_new_loci.setdefault(cluster_id, [])
@@ -103,7 +101,7 @@ def identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters
         for group, proportion in problematic_loci.items():
             niphems_and_niphs.write(f"{group}\t{proportion}\t{'Dropped' if group in drop_possible_loci else 'Kept'}\n")
             
-    return problematic_loci, drop_possible_loci
+    return drop_possible_loci
 
 def write_cluster_members_to_file(output_path, clusters_to_keep, clusters, frequency_in_genomes, drop_possible_loci):
     """
