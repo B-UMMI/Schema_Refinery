@@ -1324,7 +1324,7 @@ def write_temp_loci(clusters_to_keep, not_included_cds, clusters, output_path):
     frequency_in_genomes : dict
         Dict that contains sum of frequency of that representatives cluster in the
         genomes of the schema.
-    run_type : list
+    run_mode : str
         What type of run to make.
 
     Returns
@@ -1404,7 +1404,7 @@ def write_temp_loci(clusters_to_keep, not_included_cds, clusters, output_path):
     return temp_fastas_paths
 
 def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
-               rep_paths_nuc, output_dir, constants, cpu, multi_fasta, run_type):
+               rep_paths_nuc, output_dir, constants, cpu, multi_fasta, run_mode):
     """
     This functions runs both BLASTn and Subsequently BLASTp based on results of
     BLASTn.
@@ -1428,8 +1428,8 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     multi_fasta : dict
        A dictionary used when the input FASTA files contain multiple CDSs, to ensure correct BLASTn
        execution.
-    run_type : str
-        A flag indicating what type of run to perform, can be cds_vs_cds, loci_vs_cds or loci_vs_loci.
+    run_mode : str
+        A flag indicating what mode of run to perform, can be cds_vs_cds, loci_vs_cds or loci_vs_loci.
         
     Returns
     -------
@@ -1446,8 +1446,8 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
         processed in this function.
     """
     
-    print("\nRunning BLASTn between cluster representatives vs cluster alleles..." if run_type == 'cds_vs_cds' else
-          "\nRunning BLASTn between Schema representatives CDS clusters..." if run_type == 'loci_vs_cds' else
+    print("\nRunning BLASTn between cluster representatives vs cluster alleles..." if run_mode == 'cds_vs_cds' else
+          "\nRunning BLASTn between Schema representatives CDS clusters..." if run_mode == 'loci_vs_cds' else
           "\nRunning BLASTn between loci representatives against schema loci...")
     # BLASTn folder
     blastn_output = os.path.join(output_dir, '1_BLASTn_processing')
@@ -1591,8 +1591,8 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     # Print newline
     print('\n')  
     
-    print("Running BLASTp for representatives against cluster alleles..." if run_type == 'cds_vs_cds'
-          else "Running BLASTp of schema representatives against cluster alleles..." if run_type == 'loci_vs_cds'
+    print("Running BLASTp for representatives against cluster alleles..." if run_mode == 'cds_vs_cds'
+          else "Running BLASTp of schema representatives against cluster alleles..." if run_mode == 'loci_vs_cds'
           else "Running BLASTp for schema representatives against schema alleles")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
     i = 1
@@ -1891,7 +1891,7 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
-def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_paths_old, clusters, loci, run_type):
+def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_paths_old, clusters, loci, run_mode):
     """
     Prints the classification results based on the provided parameters.
 
@@ -1908,8 +1908,8 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
         The dictionary containing the clusters.
     loci : bool
         If True, the analysis is based on loci.
-    run_type : str
-        The type of run, e.g., 'loci_vs_loci'.
+    run_mode : str
+        The mode of run, e.g., 'loci_vs_loci'.
 
     Returns
     -------
@@ -1943,7 +1943,7 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
                 print(f"\t\tOut of those groups, {count} {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
                     f" and are contained in {len(printout['1a'])} joined groups that were retained.")
             elif class_ == 'dropped':
-                if run_type == 'loci_vs_loci':
+                if run_mode == 'loci_vs_loci':
                     print(f"\t\tOut of those {count} loci are recommended to be removed.")
                 else:
                     print(f"\t\tOut of those {count} {'CDSs groups' if i== 0 else 'loci'}"
@@ -1991,7 +1991,7 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
     # Check if loci is not empty
     if loci:
         for i, printout in enumerate([cds_cases, loci_cases]):
-            if run_type == 'loci_vs_loci' and i == 0:
+            if run_mode == 'loci_vs_loci' and i == 0:
                 continue
             total_loci = len(itf.flatten_list([i 
                                                for class_, i
@@ -2092,3 +2092,28 @@ def process_new_loci(fastas_folder, allelecall_directory, constants):
                 new_loci_reps_file.write(f">{new_allele_id}\n{str(sequence)}\n")
                 
     return alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci, frequency_in_genomes
+
+def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, mode, results_output):
+    """
+    Write the dropped possible new loci to a file with the reasons for dropping them.
+
+    Parameters
+    ----------
+    drop_possible_loci : set
+        A set of possible new loci IDs that should be dropped.
+    dropped_cds : dict
+        A dictionary where keys are CDS (Coding Sequences) IDs and values are the reasons for dropping them.
+    results_output : str
+        The path to the directory where the output file will be saved.
+
+    Returns
+    -------
+    None
+    """
+    drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
+    locus_drop_reason = {cds.split('_')[0]: reason 
+                         for cds, reason in dropped_cds.items() if '_' in cds} if mode == 'loci_vs_cds' else dropped_cds
+    with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
+        drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
+        for locus in drop_possible_loci:
+            drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")

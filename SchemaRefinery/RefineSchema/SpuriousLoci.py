@@ -17,7 +17,7 @@ except ModuleNotFoundError:
                        linux_functions as lf)
 
 def process_schema(schema, results_output, fastas_folder,
-                   allelecall_directory, run_type, constants, cpu):
+                   allelecall_directory, run_mode, constants, cpu):
     """
     This function processes data related to the schema seed, importing, translating
     and BLASTing against the unclassified CDS clusters representatives groups to
@@ -45,7 +45,7 @@ def process_schema(schema, results_output, fastas_folder,
     allele_ids : list
         List containg two bools, each representing query and subject, True
         if they are contain alleles False otherwise.
-    run_type : str
+    run_mode : str
         A flag indicating what type of run to perform, can be cds_vs_cds, loci_vs_cds or loci_vs_loci.
     master_alleles : bool
         If True, the function will process all of the alleles of the loci, if False only the
@@ -62,13 +62,13 @@ def process_schema(schema, results_output, fastas_folder,
         info.
 
     """
-    if run_type == 'loci_vs_cds':
+    if run_mode == 'loci_vs_cds':
         [alleles, master_file_path, possible_new_loci,
          translation_dict_possible_new_loci, frequency_in_genomes] = cof.process_new_loci(fastas_folder, allelecall_directory, constants)
         reps_trans_dict_cds = translation_dict_possible_new_loci
         master_file = master_file_path
     
-    process_schema = True if run_type == 'loci_vs_loci' else False
+    process_schema = True if run_mode == 'loci_vs_loci' else False
     blast_results = os.path.join(results_output, '1_BLAST_processing')
     ff.create_directory(blast_results)
     # Create BLASTn_processing directoryrun_type
@@ -170,7 +170,7 @@ def process_schema(schema, results_output, fastas_folder,
                      constants,
                      cpu,
                      all_alleles,
-                     run_type)
+                     run_mode)
     allele_ids = [True, True]
     cof.add_items_to_results(representative_blast_results,
                          None,
@@ -224,14 +224,15 @@ def process_schema(schema, results_output, fastas_folder,
                                                                            clusters_to_keep,
                                                                            drop_possible_loci,
                                                                            classes_outcome)
-    print("\nWritting count_results_by_cluster.tsv and related_matches.tsv files...")
+    print("\nWritting count_results_by_cluster.tsv, related_matches.tsv files"
+          " and recommendations.tsv...")
     cof.write_blast_summary_results(related_clusters,
                                 count_results_by_class_with_inverse,
                                 group_reps_ids,
                                 group_alleles_ids,
                                 frequency_in_genomes,
                                 recommendations,
-                                run_type,
+                                run_mode,
                                 results_output)
 
     # Get all of the CDS that matched with loci
@@ -251,16 +252,19 @@ def process_schema(schema, results_output, fastas_folder,
                                     alleles,
                                     is_matched,
                                     is_matched_alleles,
-                                    run_type,
+                                    run_mode,
                                     blast_results)
     
+    print("\nWritting dropped possible new loci to file...")
+    dropped_cds = {dropped_loci: 'Dropped_due_to_smaller_genome_presence_than_matched_cluster' for dropped_loci in drop_possible_loci}
+    cof.write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output)
 
-    cds_cases, loci_cases = cof.print_classifications_results(clusters_to_keep,
-                                                              drop_possible_loci,
-                                                              possible_new_loci,
-                                                              all_alleles,
-                                                              schema_loci,
-                                                              run_type)
+    cof.print_classifications_results(clusters_to_keep,
+                                        drop_possible_loci,
+                                        possible_new_loci,
+                                        all_alleles,
+                                        schema_loci,
+                                        run_mode)
 
 def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold, 
         pident_threshold, size_threshold, translation_table, bsr, size_ratio, cpu):
@@ -277,7 +281,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
             None,
             size_ratio]
 
-    run_type = 'loci_vs_loci'
+    run_mode = 'loci_vs_loci'
     process_schema(schema,
                        [],
                        output_directory,
@@ -288,7 +292,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                        allelecall_directory,
                        None,
                        loci_ids,
-                       run_type,
+                       run_mode,
                        True,
                        constants,
                        cpu)

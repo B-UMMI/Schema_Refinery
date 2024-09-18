@@ -148,30 +148,6 @@ def write_cluster_members_to_file(output_path, clusters_to_keep, clusters, frequ
                         else:
                             cluster_members_file.write('\t\t' + cds_id + '\n')
 
-def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output):
-    """
-    Write the dropped possible new loci to a file with the reasons for dropping them.
-
-    Parameters
-    ----------
-    drop_possible_loci : set
-        A set of possible new loci IDs that should be dropped.
-    dropped_cds : dict
-        A dictionary where keys are CDS (Coding Sequences) IDs and values are the reasons for dropping them.
-    results_output : str
-        The path to the directory where the output file will be saved.
-
-    Returns
-    -------
-    None
-    """
-    drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
-    locus_drop_reason = {cds.split('_')[0]: reason for cds, reason in dropped_cds.items() if '_' in cds}
-    with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
-        drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
-        for locus in drop_possible_loci:
-            drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")
-
 def write_dropped_cds_to_file(dropped_cds, results_output):
     """
     Write dropped CDS to file.
