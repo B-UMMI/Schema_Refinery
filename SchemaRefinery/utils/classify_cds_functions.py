@@ -103,51 +103,6 @@ def identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters
             
     return drop_possible_loci
 
-def write_cluster_members_to_file(output_path, clusters_to_keep, clusters, frequency_in_genomes, drop_possible_loci):
-    """
-    Write cluster members to file.
-
-    Parameters
-    ----------
-    output_path : str
-        The path where the output will be written.
-    clusters_to_keep : dict
-        The dictionary containing the CDSs to keep.
-    clusters : dict
-        The dictionary containing the clusters.
-    frequency_in_genomes : dict
-        Dict that contains sum of frequency of that representatives cluster in the
-        genomes of the schema.
-
-    Returns
-    -------
-    None, writes to file.
-    """
-    write_cds = clusters_to_keep
-    write_cds.setdefault('Dropped', drop_possible_loci)
-    cluster_members_output = os.path.join(output_path, 'cluster_members.tsv')
-    with open(cluster_members_output, 'w') as cluster_members_file:
-        cluster_members_file.write('Cluster_ID\tRepresentatives_IDs\tRep_cluster_members\tFrequency_of_rep'
-                                   '\tClassification\n')
-        for class_, cds_list in clusters_to_keep.items():
-            for cds in cds_list:
-                classification = class_
-                if class_ == '1a':
-                    cluster_members_file.write(str(cds))
-                    cds = clusters_to_keep[class_][cds]
-                else:
-                    cluster_members_file.write(cds)
-                    cds = [cds]
-                for rep_id in cds:
-                    cluster_members_file.write('\t' + str(rep_id))
-                    cds_ids = [cds_id for cds_id in clusters[rep_id]]
-                    for count, cds_id in enumerate(cds_ids):
-                        if count == 0:
-                            cluster_members_file.write('\t' + cds_id + '\t' + str(frequency_in_genomes[rep_id])
-                                                       + '\t' + classification + '\n')
-                        else:
-                            cluster_members_file.write('\t\t' + cds_id + '\n')
-
 def write_dropped_cds_to_file(dropped_cds, results_output):
     """
     Write dropped CDS to file.

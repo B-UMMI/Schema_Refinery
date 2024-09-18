@@ -258,7 +258,7 @@ def process_schema(schema, results_output, fastas_folder,
     print("\nWritting dropped possible new loci to file...")
     dropped_cds = {dropped_loci: 'Dropped_due_to_smaller_genome_presence_than_matched_cluster' for dropped_loci in drop_possible_loci}
     cof.write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output)
-
+    
     cof.print_classifications_results(clusters_to_keep,
                                         drop_possible_loci,
                                         possible_new_loci,

@@ -406,6 +406,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                                           clusters_to_keep,
                                                                           drop_possible_loci,
                                                                           classes_outcome)
+
     print("\nWritting count_results_by_cluster.tsv, related_matches.tsv files"
           " and recommendations.tsv...")
     cof.write_blast_summary_results(related_clusters,
@@ -454,12 +455,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                         False,
                                         run_mode)
 
-
-    print("\nWritting members file...")
-    ccf.write_cluster_members_to_file(results_output,
-                                      clusters_to_keep,
-                                      clusters, frequency_in_genomes,
-                                    drop_possible_loci)
+    print("\nWritting temp loci file...")
+    cof.write_temp_loci(clusters_to_keep, not_included_cds, clusters, results_output)
 
     print("\nCreate graphs for the BLAST results...")
     cds_size_dicts = {'IDs': cds_size.keys(),

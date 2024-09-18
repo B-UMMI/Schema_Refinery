@@ -2112,7 +2112,7 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, mod
     """
     drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
     locus_drop_reason = {cds.split('_')[0]: reason 
-                         for cds, reason in dropped_cds.items() if '_' in cds} if mode == 'loci_vs_cds' else dropped_cds
+                         for cds, reason in dropped_cds.items() if '_' in cds} if mode == 'cds_vs_cds' else dropped_cds
     with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
         drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
         for locus in drop_possible_loci:
