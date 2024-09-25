@@ -107,6 +107,8 @@ def run_blast(blast_path, blast_db, fasta_file, blast_output,
 								  stderr=subprocess.PIPE)
 
 	stdout, stderr = blast_process.communicate()
+ 
+	print(stderr)
 
 	# Exit if it is not possible to create BLAST db
 	if len(stderr) > 0:

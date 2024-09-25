@@ -53,13 +53,13 @@ def process_schema(schema, results_output, possible_new_loci,
         [alleles,
          master_file_path,
          possible_new_loci,
-         reps_translation_dict_cds,
-         frequency_in_genomes] = cof.process_new_loci(possible_new_loci, allelecall_directory, constants)
+         all_translation_dict,
+         frequency_in_genomes] = cof.process_new_loci(possible_new_loci, allelecall_directory, constants, results_output)
     else:
         alleles = None
         master_file_path = None
         possible_new_loci = None
-        reps_translation_dict_cds = {}
+        all_translation_dict = {}
         frequency_in_genomes = {}
     
     process_schema = True if run_mode == 'loci_vs_loci' else False
@@ -140,7 +140,7 @@ def process_schema(schema, results_output, possible_new_loci,
                                                               constants[6],
                                                               False)
         for allele_id, sequence in translation_dict.items():
-            reps_translation_dict_cds[allele_id] = sequence
+            all_translation_dict[allele_id] = sequence
 
     # Create BLAST db for the schema DNA sequences.
     print(f"\nCreate BLAST db for the {'schema' if process_schema else 'unclassified'} DNA sequences...")
@@ -156,7 +156,7 @@ def process_schema(schema, results_output, possible_new_loci,
      bsr_values,
      _] = cof.run_blasts(blast_db_nuc,
                      schema_loci_short,
-                     reps_translation_dict_cds,
+                     all_translation_dict,
                      schema_loci_short,
                      blast_results,
                      constants,
