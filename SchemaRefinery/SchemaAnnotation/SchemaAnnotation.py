@@ -30,7 +30,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
                                                 proteome_splitter as ps,
                                                 proteome_matcher as pm,
-                                                enbank_annotations as ga,
+                                                genbank_annotations as ga,
                                                 match_schemas as ms)
     from SchemaRefinery.utils import file_functions as ff
 

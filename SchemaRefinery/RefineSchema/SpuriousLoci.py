@@ -31,7 +31,7 @@ def process_schema(schema, results_output, fastas_folder,
         Dict that contains the path to the FASTA file for each group.
     results_output : str
         Path were to write the results of this function.
-    reps_trans_dict_cds : dict
+    reps_translation_dict_cds : dict
         Dict that contains the translations for each CDS.
     alleles : dict or None
         Alleles of each group.
@@ -40,7 +40,7 @@ def process_schema(schema, results_output, fastas_folder,
         genomes of the schema.
     allelecall_directory : str
         Path to the allele call directory.
-    master_file : str
+    master_file_path : str
         Path to the master file containing retained CDS.
     allele_ids : list
         List containg two bools, each representing query and subject, True
@@ -65,8 +65,7 @@ def process_schema(schema, results_output, fastas_folder,
     if run_mode == 'loci_vs_cds':
         [alleles, master_file_path, possible_new_loci,
          translation_dict_possible_new_loci, frequency_in_genomes] = cof.process_new_loci(fastas_folder, allelecall_directory, constants)
-        reps_trans_dict_cds = translation_dict_possible_new_loci
-        master_file = master_file_path
+        reps_translation_dict_cds = translation_dict_possible_new_loci
     
     process_schema = True if run_mode == 'loci_vs_loci' else False
     blast_results = os.path.join(results_output, '1_BLAST_processing')
@@ -114,16 +113,16 @@ def process_schema(schema, results_output, fastas_folder,
     i = 1
     len_short_folder = len(schema_loci_short)
     all_alleles = {}
-    if not master_file:
+    if not master_file_path:
         filename = 'master_file' if process_schema else 'master_rep_file'
         master_file_folder = os.path.join(blastn_output, filename)
         ff.create_directory(master_file_folder)
-        master_file = os.path.join(master_file_folder, f"{filename}.fasta")
+        master_file_path = os.path.join(master_file_folder, f"{filename}.fasta")
         write_to_master = True
     else:
         write_to_master = False
     # Create varible to store proteins sequences if it doesn't exist.
-    reps_trans_dict_cds = {} if not reps_trans_dict_cds else reps_trans_dict_cds
+    reps_translation_dict_cds = {} if not reps_translation_dict_cds else reps_translation_dict_cds
     # If to BLAST against reps or all of the alleles.
     schema_loci if process_schema else schema_loci_short
     for loci, loci_path in schema_loci.items():
@@ -135,8 +134,8 @@ def process_schema(schema, results_output, fastas_folder,
             all_alleles.setdefault(loci, []).append(allele_id)
 
             if write_to_master:
-                write_type = 'w' if not os.path.exists(master_file) else 'a'
-                with open(master_file, write_type) as m_file:
+                write_type = 'w' if not os.path.exists(master_file_path) else 'a'
+                with open(master_file_path, write_type) as m_file:
                     m_file.write(f">{allele_id}\n{sequence}\n")
 
         loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
@@ -148,7 +147,7 @@ def process_schema(schema, results_output, fastas_folder,
                                                               constants[6],
                                                               False)
         for allele_id, sequence in translation_dict.items():
-            reps_trans_dict_cds[allele_id] = sequence
+            reps_translation_dict_cds[allele_id] = sequence
 
     # Create BLAST db for the schema DNA sequences.
     print(f"\nCreate BLAST db for the {'schema' if process_schema else 'unclassified'} DNA sequences...")
@@ -156,7 +155,7 @@ def process_schema(schema, results_output, fastas_folder,
     blast_db = os.path.join(blastn_output, 'blast_db_nucl')
     ff.create_directory(blast_db)
     blast_db_nuc = os.path.join(blast_db, 'Blast_db_nucleotide')
-    bf.make_blast_db(makeblastdb_exec, master_file, blast_db_nuc, 'nucl')
+    bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_nuc, 'nucl')
 
     [representative_blast_results,
      representative_blast_results_coords_all,
@@ -164,7 +163,7 @@ def process_schema(schema, results_output, fastas_folder,
      bsr_values,
      _] = cof.run_blasts(blast_db_nuc,
                      schema_loci_short,
-                     reps_trans_dict_cds,
+                     reps_translation_dict_cds,
                      schema_loci_short,
                      blast_results,
                      constants,

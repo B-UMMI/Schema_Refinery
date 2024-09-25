@@ -27,14 +27,15 @@ except ModuleNotFoundError:
 def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio,
                              translation_table, size_threshold, mode):
     # Identify all of the fastas in the schema directory
-    fasta_files_dict = {loci: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(short_folder, loci))}
+    fasta_files_dict = {loci.split('.')[0]: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, loci))}
     # Identify all of the fastas short in the schema directory
     short_folder = os.path.join(schema_directory, 'short')
-    fasta_files_short_dict = {loci: os.path.join(short_folder, loci) for loci in os.listdir(short_folder) if os.path.isfile(os.path.join(short_folder, loci))}
+    fasta_files_short_dict = {loci.split('.')[0]: os.path.join(short_folder, loci) for loci in os.listdir(short_folder) if os.path.isfile(os.path.join(short_folder, loci))}
     
-    
-    blast_folder = os.path.join(output_directory, 'blast')
-    translation_folder = os.path.join(output_directory, 'translation')
+    blast_folder = os.path.join(output_directory, 'Blast')
+    ff.create_directory(blast_folder)
+    translation_folder = os.path.join(output_directory, 'Translation')
+    ff.create_directory(translation_folder)
     len_short_folder = len(fasta_files_dict)
     master_file_path = os.path.join(blast_folder, 'master_file.fasta')
     query_paths_dict = {}
@@ -43,7 +44,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     for loci in fasta_files_dict:
         subject_fasta = fasta_files_dict[loci] if mode == 'alleles_vs_alleles' or mode == 'reps_vs_alleles' else fasta_files_short_dict[loci]
         query_fasta = fasta_files_dict[loci] if mode == 'alleles_vs_alleles' else fasta_files_short_dict[loci]
-        query_fasta_translation = os.path.join(translation_folder, f"{loci}_translation.fasta")
+        query_fasta_translation = os.path.join(translation_folder, f"{loci}-translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
         print(f"\rTranslated loci FASTA: {i}/{len_short_folder}", end='', flush=True)
@@ -74,11 +75,12 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     blast_exec = lf.get_tool_path('blastp')
     # Self-score folder
     blastp_results_ss_folder = os.path.join(blast_folder, 'blastp_results_ss')
+    ff.create_directory(blastp_results_ss_folder)
 
     self_score_dict = {}
     i = 1
     # Calculate self-score
-    print("Calculating self-score for each loci:")
+    print("\nCalculating self-score for each loci:")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 query_paths_dict.keys(),
@@ -100,26 +102,27 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     # Get makeblastdb executable
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
     # Path to the blast database folder
-    blast_db = os.path.join(blast_folder, 'blast_db_prot')
+    blast_db = os.path.join(blast_folder, 'Blast_db_prot')
     ff.create_directory(blast_db)
     # Path to the blast database files
     blast_db_prot = os.path.join(blast_db, 'Blast_db_protein')
-    # Create the blast database
-    bf.make_blast_db(makeblastdb_exec, master_file, blast_db_prot, 'prot')
+    bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_prot, 'prot')
     # Blast output folder
-    blast_output_folder = os.path.join(blast_folder, 'blast_output')
+    blast_output_folder = os.path.join(blast_folder, 'Blast_output')
+    ff.create_directory(blast_output_folder)
 
     bsr_values = {}
     best_bsr_values = {}
     total_blasts = len(query_paths_dict)
     i = 1
-    print(f"Running BLASTp for each loci {'alleles' if mode == 'alleles_vs_alleles' else 'representatives'}"
-          f" vs  {'representatives' if mode == 'reps_vs_reps' else 'alleles'}:")
+    print(f"\nRunning BLASTp for each loci {'alleles' if mode == 'alleles_vs_alleles' else 'representatives'}"
+          f" vs {'representatives' if mode == 'reps_vs_reps' else 'alleles'}:")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
-        for res in executor.map(bf.run_blast, 
+        for res in executor.map(bf.run_blastdb_multiprocessing, 
                                 itertools.repeat(blast_exec),
-                                itertools.repeat(blast_db_prot), 
-                                query_paths_dict.values(), 
+                                itertools.repeat(blast_db_prot),
+                                query_paths_dict.values(),
+                                query_paths_dict.keys(),
                                 itertools.repeat(blast_output_folder)):
             
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
@@ -172,13 +175,13 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
                 
     
     paralagous_list = cf.cluster_by_ids(paralagous_list)
-    
-    with open(paralagous_loci_report, 'a') as report_file:
+    paralagous_loci_report_cluster_by_id = os.path.join(output_directory, 'paralagous_loci_report_cluster_by_id.tsv')
+    with open(paralagous_loci_report_cluster_by_id, 'a') as report_file:
         for cluster in paralagous_list:
             report_file.write(f"{cluster}\n")
             
     paralagous_list_mode_check = cf.cluster_by_ids(paralagous_list_mode_check)
-    
-    with open(paralagous_loci_report, 'a') as report_file:
+    paralagous_loci_report_mode = os.path.join(output_directory, 'paralagous_loci_report_mode.tsv')
+    with open(paralagous_loci_report_mode, 'a') as report_file:
         for cluster in paralagous_list_mode_check:
             report_file.write(f"{cluster}\n")

@@ -1096,7 +1096,6 @@ def extract_results(processed_results, count_results_by_class, frequency_in_geno
                 for match_ in  matches:
                     if match_[2] in dropped:
                         add_to_recommendations('Choice', dropped[2], match_[3])
-            
 
     sort_order = ['Joined', 'Choice', 'Keep', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
@@ -1144,6 +1143,17 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
       and total count of results for the cluster, with each piece of information separated by tabs.
       A blank line is added after each cluster's information.
     """
+    
+    # Write the recommendations to the output file
+    recommendations_file = os.path.join(results_output, "recommendations.tsv")
+    with open(recommendations_file, 'w') as recommendations_report_file:
+        recommendations_report_file.write("Cluster\tRecommendation\tID\n")
+        for key, recommendation in recommendations.items():
+            for category, ids in recommendation.items():
+                category = category.split('_')[0] if 'Choice' in category else category
+                recommendations_report_file.write(f"{key}\t{category}\t{','.join(ids)}\n")
+            recommendations_report_file.write("#\n")
+            
     # Add the reverse matches to the related clusters
     reported_cases = {}
     for key, related in list(related_clusters.items()):
@@ -1171,16 +1181,6 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
                 insert = r[3] if not None else '-'
                 related[sublist_index][5] = insert
                 related.remove(r)
-
-    # Write the recommendations to the output file
-    recommendations_file = os.path.join(results_output, "recommendations.tsv")
-    with open(recommendations_file, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Cluster\tRecommendation\tID\n")
-        for key, recommendation in recommendations.items():
-            for category, ids in recommendation.items():
-                category = category.split('_')[0] if 'Choice' in category else category
-                recommendations_report_file.write(f"{key}\t{category}\t{','.join(ids)}\n")
-            recommendations_report_file.write("#\n")
 
     # Write the results to the output files
     related_matches = os.path.join(results_output, "related_matches.tsv")
@@ -1400,6 +1400,11 @@ def write_temp_loci(clusters_to_keep, not_included_cds, clusters, output_path):
         write_possible_new_loci(class_, cds_list, temp_fastas,
                                 temp_fastas_paths, not_included_cds,
                                 clusters)
+        
+    fastas_path_txt = os.path.join(output_path, "temp_fastas_path.txt")
+    with open(fastas_path_txt, 'w') as fastas_path:
+        for path in temp_fastas_paths.values():
+            fastas_path.write(path + '\n')
 
     return temp_fastas_paths
 
@@ -2026,13 +2031,12 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
             
             clusters_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
 
-def process_new_loci(fastas_folder, allelecall_directory, constants):
-    new_loci_folder = os.path.join(fastas_folder, 'new_possible_loci_fastas')
-    possible_new_loci = {fastafile: os.path.join(new_loci_folder, fastafile) for fastafile in os.listdir(new_loci_folder) if fastafile.endswith('.fasta')}
-    possible_new_loci_short_dir = os.path.join(new_loci_folder, 'short')
+def process_new_loci(schema_folder, allelecall_directory, constants):
+    possible_new_loci = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
+    possible_new_loci_short_dir = os.path.join(schema_folder, 'short')
     possible_new_loci_short = {fastafile: os.path.join(possible_new_loci_short_dir, fastafile) for fastafile in os.listdir(possible_new_loci_short_dir) if fastafile.endswith('.fasta')}
-    master_file_path = os.path.join(fastas_folder, 'master.fasta')
-    possible_new_loci_translation_folder = os.path.join(fastas_folder, 'possible_new_loci_translation_folder')
+    master_file_path = os.path.join(schema_folder, 'master.fasta')
+    possible_new_loci_translation_folder = os.path.join(schema_folder, 'possible_new_loci_translation_folder')
     ff.create_directory(possible_new_loci_translation_folder)
 
     alleles = {}
