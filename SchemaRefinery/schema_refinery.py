@@ -14,21 +14,23 @@ Code documentation
 import sys
 import argparse
 
-from RefineSchema import SpuriousLoci
-
 try:
      from DownloadAssemblies import DownloadAssemblies
      from SchemaAnnotation import SchemaAnnotation
      from utils import parameter_validation as pv
      from RefineSchema import (UnclassifiedCDS,
-                                   SpuriousLoci)
+                                   SpuriousLoci,
+                                   AdaptLoci,
+                                   IdentifyParalagousLoci)
+     
 except ModuleNotFoundError:
      from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
      from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
      from SchemaRefinery.utils import parameter_validation as pv
      from SchemaRefinery.RefineSchema import (UnclassifiedCDS,
                                              SpuriousLoci,
-                                             AdaptLoci)
+                                             AdaptLoci,
+                                             IdentifyParalagousLoci)
 
 
 def download_assemblies():
@@ -102,8 +104,6 @@ def download_assemblies():
                         help='Text file with a list of accession numbers for the NCBI Assembly database.')
 
      args = parser.parse_args()
-
-     del args.DownloadAssemblies
 
      DownloadAssemblies.main(args)
 
@@ -194,8 +194,6 @@ def schema_annotation():
 
      args = parser.parse_args()
 
-     del args.SchemaAnnotation
-
      SchemaAnnotation.main(args)
 
 def unclassified_cds():
@@ -273,8 +271,6 @@ def unclassified_cds():
 
      args = parser.parse_args()
 
-     del args.RefineSchema
-
      UnclassifiedCDS.main(**vars(args))
 
 def spurious_loci():
@@ -333,8 +329,6 @@ def spurious_loci():
 
      args = parser.parse_args()
 
-     del args.RefineSchema
-
      SpuriousLoci.main(**vars(args))
 
 def adapt_loci():
@@ -365,8 +359,6 @@ def adapt_loci():
           help='Translation table to use for the CDS translation.')
      
      args = parser.parse_args()
-
-     del args.RefineSchema
 
      AdaptLoci.main(**vars(args))
 
@@ -403,15 +395,13 @@ def identify_paralagous_loci():
                          help="Size threshold to consider two paralogous loci as similar.")
      
      parser.add_argument('-m', '--mode', type=str,
-          required=False, dest='mode', options=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
+          required=False, dest='mode', choices=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
           default='alleles_vs_alleles',
           help='Mode to run the module.')
      
      args = parser.parse_args()
 
-     del args.RefineSchema
-
-     adapt_loci.main(**vars(args))
+     IdentifyParalagousLoci.identify_paralagous_loci(**vars(args))
 
 def main():
 
@@ -424,7 +414,8 @@ def main():
                          'SpuriousLoci': ["Identifies spurious loci in a schema.", spurious_loci],
                          'UnclassifiedCDS': ["Classifies unclassified and"
                                              "missed classes CDS from a schema.", unclassified_cds],
-                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci]}
+                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
+                         'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralagous_loci]}
 
      if len(sys.argv) == 1 or sys.argv[1] not in module_info:
           print('USAGE: SchemaRefinery [module] -h \n')
@@ -434,6 +425,7 @@ def main():
           sys.exit(0)
 
      module = sys.argv[1]
+     sys.argv.remove(module)
      module_info[module][1]()
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 
 def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type):
 	"""Create a BLAST database.
@@ -39,7 +40,6 @@ def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type):
 									  stderr=subprocess.PIPE)
 
 	stdout, stderr = makedb_process.communicate()
-
 
 def run_blast(blast_path, blast_db, fasta_file, blast_output,
 			  max_hsps=1, threads=1, ids_file=None, blast_task=None,

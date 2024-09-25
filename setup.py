@@ -10,7 +10,11 @@ Code documentation
 ------------------
 """
 
-from setuptools import setup
+from setuptools import setup, find_namespace_packages
+
+packages = find_namespace_packages(
+  exclude=[]
+)
 
 with open('README.rst',encoding='utf-8') as readme_file:
     readme = readme_file.read()
@@ -47,11 +51,7 @@ setup(
     version='0.2.0',
     zip_safe=False,
 
-    packages = ['SchemaRefinery',
-                'SchemaRefinery.SchemaAnnotation',
-                'SchemaRefinery.DownloadAssemblies',
-                'SchemaRefinery.RefineSchema',
-                'SchemaRefinery.utils'],
+    packages = packages,
 
     entry_points={'console_scripts': ["SchemaRefinery = SchemaRefinery.schema_refinery:main",
                                     "SR = SchemaRefinery.schema_refinery:main"]}

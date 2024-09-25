@@ -289,9 +289,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
     blast_db = os.path.join(blastn_output, 'blast_db_nucl', 'blast_nucleotide_db')
     bf.make_blast_db(makeblastdb_exec, representatives_all_fasta_file, blast_db, 'nucl')
-
+    print("\nRunning BLASTn...")
     # Run the BLASTn and BLASTp
-    run_type = 'cds_vs_cds' # Set run type as cds_vs_cds
+    run_mode = 'cds_vs_cds' # Set run mode as cds_vs_cds
     [representative_blast_results,
      representative_blast_results_coords_all,
      representative_blast_results_coords_pident,
@@ -304,7 +304,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                         constants,
                         cpu,
                         clusters,
-                        run_type)
+                        run_mode)
     
     # Add various results to the dict
     cof.add_items_to_results(representative_blast_results,
@@ -406,6 +406,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
                                                                           clusters_to_keep,
                                                                           drop_possible_loci,
                                                                           classes_outcome)
+
     print("\nWritting count_results_by_cluster.tsv, related_matches.tsv files"
           " and recommendations.tsv...")
     cof.write_blast_summary_results(related_clusters,
@@ -442,23 +443,22 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     print("\nWritting dropped CDSs to file...")
     ccf.write_dropped_cds_to_file(dropped_cds, results_output)
     print("\nWritting dropped possible new loci to file...")
-    ccf.write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output)
+    cof.write_dropped_possible_new_loci_to_file(drop_possible_loci,
+                                                dropped_cds,
+                                                run_mode,
+                                                results_output)
 
     cof.print_classifications_results(clusters_to_keep,
                                         drop_possible_loci,
                                         False,
                                         clusters,
                                         False,
-                                        run_type)
+                                        run_mode)
 
+    print("\nWritting temp loci file...")
+    cof.write_temp_loci(clusters_to_keep, not_included_cds, clusters, results_output)
 
-    print("Writting members file...")
-    ccf.write_cluster_members_to_file(results_output,
-                                      clusters_to_keep,
-                                      clusters, frequency_in_genomes,
-                                    drop_possible_loci)
-
-    print("Create graphs for the BLAST results...")
+    print("\nCreate graphs for the BLAST results...")
     cds_size_dicts = {'IDs': cds_size.keys(),
                       'Size': cds_size.values()}
     cds_translation_size_dicts = {'IDs': cds_size.keys(),
