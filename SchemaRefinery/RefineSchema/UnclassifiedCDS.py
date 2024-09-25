@@ -443,9 +443,8 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     print("\nWritting dropped CDSs to file...")
     ccf.write_dropped_cds_to_file(dropped_cds, results_output)
     print("\nWritting dropped possible new loci to file...")
-    cof.write_dropped_possible_new_loci_to_file(drop_possible_loci,
+    ccf.write_dropped_possible_new_loci_to_file(drop_possible_loci,
                                                 dropped_cds,
-                                                run_mode,
                                                 results_output)
 
     cof.print_classifications_results(clusters_to_keep,

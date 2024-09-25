@@ -25,7 +25,7 @@ except ModuleNotFoundError:
     
 
 def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio,
-                             translation_table, size_threshold, mode):
+                             translation_table, size_threshold, run_mode):
     # Identify all of the fastas in the schema directory
     fasta_files_dict = {loci.split('.')[0]: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, loci))}
     # Identify all of the fastas short in the schema directory
@@ -42,8 +42,8 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     protein_size_mode_dict = {}
     i = 1
     for loci in fasta_files_dict:
-        subject_fasta = fasta_files_dict[loci] if mode == 'alleles_vs_alleles' or mode == 'reps_vs_alleles' else fasta_files_short_dict[loci]
-        query_fasta = fasta_files_dict[loci] if mode == 'alleles_vs_alleles' else fasta_files_short_dict[loci]
+        subject_fasta = fasta_files_dict[loci] if run_mode == 'alleles_vs_alleles' or run_mode == 'reps_vs_alleles' else fasta_files_short_dict[loci]
+        query_fasta = fasta_files_dict[loci] if run_mode == 'alleles_vs_alleles' else fasta_files_short_dict[loci]
         query_fasta_translation = os.path.join(translation_folder, f"{loci}-translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
@@ -115,8 +115,8 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     best_bsr_values = {}
     total_blasts = len(query_paths_dict)
     i = 1
-    print(f"\nRunning BLASTp for each loci {'alleles' if mode == 'alleles_vs_alleles' else 'representatives'}"
-          f" vs {'representatives' if mode == 'reps_vs_reps' else 'alleles'}:")
+    print(f"\nRunning BLASTp for each loci {'alleles' if run_mode == 'alleles_vs_alleles' else 'representatives'}"
+          f" vs {'representatives' if run_mode == 'reps_vs_reps' else 'alleles'}:")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
         for res in executor.map(bf.run_blastdb_multiprocessing, 
                                 itertools.repeat(blast_exec),

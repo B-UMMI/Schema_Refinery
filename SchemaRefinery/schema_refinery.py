@@ -38,9 +38,6 @@ def download_assemblies():
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-     parser.add_argument('DownloadAssemblies', nargs='+',
-                        help='')
-
      # Common arguments between databases
      parser.add_argument('-db', '--database', type=str,
                         required=True, dest='database',
@@ -111,9 +108,6 @@ def schema_annotation():
 
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-
-     parser.add_argument('SchemaAnnotation', nargs='+',
-                        help='')
 
      parser.add_argument('-s', '--schema-directory', type=str,
                         required=True, dest='schema_directory',
@@ -200,9 +194,6 @@ def unclassified_cds():
     
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    
-     parser.add_argument('RefineSchema', nargs='+',
-                        help='')
 
      parser.add_argument('-s', '--schema', type=str,
                         required=True, dest='schema',
@@ -220,14 +211,14 @@ def unclassified_cds():
                              'with --no-cleanup.')
     
      parser.add_argument('-at', '--alignment_ratio_threshold', type=float,
-                        required=False, dest='alignment_ratio_threshold_gene_fusions',
+                        required=False, dest='alignment_ratio_threshold',
                         default=0.9, help='Threshold value for alignment used to '
-                        'indentify gene fusions (float: 0-1).')
+                        'indentify spurious CDS (float: 0-1).')
     
      parser.add_argument('-pt', '--pident_threshold', type=int,
-                    required=False, dest='pident_threshold_gene_fusions',
+                    required=False, dest='pident_threshold',
                     default=90, help='Threshold value for pident values used to '
-                    'indentify gene fusions (int 0-100).')
+                    'indentify spurious CDS (int 0-100).')
     
      parser.add_argument('-cs', '--clustering-sim', type=float,
                     required=False, dest='clustering_sim',
@@ -277,9 +268,6 @@ def spurious_loci():
     
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    
-     parser.add_argument('RefineSchema', nargs='+',
-                        help='')
 
      parser.add_argument('-s', '--schema', type=str,
                         required=True, dest='schema',
@@ -295,19 +283,26 @@ def spurious_loci():
                         help='Path to the directory that contains'
                              'allele call directory that was run'
                              'with --no-cleanup.')
+     
+     parser.add_argument('-p', '--possible_new_loci', type=str,
+                    required=False, dest='possible_new_loci',
+                    default= None,
+                    help='Path to the directory that contains'
+                         ' the possible new loci')
     
      parser.add_argument('-at', '--alignment_ratio_threshold', type=float,
-                        required=False, dest='alignment_ratio_threshold_gene_fusions',
+                        required=False, dest='alignment_ratio_threshold',
                         default=0.9, help='Threshold value for alignment used to '
-                        'indentify gene fusions (float: 0-1).')
-    
+                        'indentify spurious loci (float: 0-1).')
+     
      parser.add_argument('-pt', '--pident_threshold', type=int,
-                    required=False, dest='pident_threshold_gene_fusions',
+                    required=False, dest='pident_threshold',
                     default=90, help='Threshold value for pident values used to '
-                    'indentify gene fusions (int 0-100).')
+                    'indentify spurious loci (int 0-100).')
     
      parser.add_argument('-st', '--size_threshold', type=int,
                     required=False, dest='size_threshold',
+                    default= 0,
                     help='Size of the CDS to consider processing.')
     
      parser.add_argument('-tb', '--translation_table', type=int,
@@ -326,8 +321,17 @@ def spurious_loci():
                     required=False, dest='cpu',
                     default=1, 
                     help='Number of cpus to run blast instances.')
+     
+     parser.add_argument('-m', '--run-mode', type=str,
+               required=False, dest='run_mode',
+               default='loci_vs_loci', choices=['loci_vs_loci', 'loci_vs_cds'],
+               help='Number of cpus to run blast instances.')
 
      args = parser.parse_args()
+     
+     if args.possible_new_loci and args.run_mode != 'loci_vs_cds':
+          sys.exit("Argument -p --possible_new_loci can only be used with -m --run-mode"
+                   " of loci_vs_cds.")
 
      SpuriousLoci.main(**vars(args))
 
@@ -394,8 +398,8 @@ def identify_paralagous_loci():
                          required=False, dest='size_threshold', default=0.2,
                          help="Size threshold to consider two paralogous loci as similar.")
      
-     parser.add_argument('-m', '--mode', type=str,
-          required=False, dest='mode', choices=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
+     parser.add_argument('-m', '--run-mode', type=str,
+          required=False, dest='run_mode', choices=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
           default='alleles_vs_alleles',
           help='Mode to run the module.')
      
@@ -411,7 +415,9 @@ def main():
                                              'records, and based on alignment against Genbank '
                                              'files and other schemas.',
                                              schema_annotation],
-                         'SpuriousLoci': ["Identifies spurious loci in a schema.", spurious_loci],
+                         'SpuriousLoci': ["Identifies spurious loci in a schema by running against itself or"
+                                          " against unclassified CDS to infer new loci and identify problematic loci.",
+                                          spurious_loci],
                          'UnclassifiedCDS': ["Classifies unclassified and"
                                              "missed classes CDS from a schema.", unclassified_cds],
                          'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],

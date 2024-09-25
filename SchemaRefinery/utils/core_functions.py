@@ -1151,6 +1151,8 @@ def write_blast_summary_results(related_clusters, count_results_by_class, group_
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
                 category = category.split('_')[0] if 'Choice' in category else category
+                # Convert all to string
+                ids = itf.convert_set_elements_to_strings(ids)
                 recommendations_report_file.write(f"{key}\t{category}\t{','.join(ids)}\n")
             recommendations_report_file.write("#\n")
             
@@ -1682,7 +1684,7 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
             if all_alleles:
                 cluster_alleles = []
                 for entry in cluster:
-                    if alleles.get(entry):
+                    if alleles and alleles.get(entry):
                         cluster = alleles[entry]
                         cluster_type = 'CDS_cluster'
                         is_cds = True
@@ -2097,27 +2099,14 @@ def process_new_loci(schema_folder, allelecall_directory, constants):
                 
     return alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci, frequency_in_genomes
 
-def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, mode, results_output):
-    """
-    Write the dropped possible new loci to a file with the reasons for dropping them.
-
-    Parameters
-    ----------
-    drop_possible_loci : set
-        A set of possible new loci IDs that should be dropped.
-    dropped_cds : dict
-        A dictionary where keys are CDS (Coding Sequences) IDs and values are the reasons for dropping them.
-    results_output : str
-        The path to the directory where the output file will be saved.
-
-    Returns
-    -------
-    None
-    """
-    drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
-    locus_drop_reason = {cds.split('_')[0]: reason 
-                         for cds, reason in dropped_cds.items() if '_' in cds} if mode == 'cds_vs_cds' else dropped_cds
-    with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
-        drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
-        for locus in drop_possible_loci:
-            drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")
+def dropped_loci_to_file(schema_loci, dropped, results_output):
+    dropped_file = os.path.join(results_output, "dropped.tsv")
+    
+    with open(dropped_file, 'w') as d:
+        d.write("ID\tReason\tWhere from\n")
+        for drop in dropped:
+            if drop in schema_loci:
+                dropped_from = 'from_schema'
+            else:
+                dropped_from = 'from_possible_new_loci'
+            d.write(f"{drop}\t{'Dropped_due_to_cluster_frequency_filtering'}\t{dropped_from}\n")
