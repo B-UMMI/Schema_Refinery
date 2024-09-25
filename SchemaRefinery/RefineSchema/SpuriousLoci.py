@@ -16,8 +16,8 @@ except ModuleNotFoundError:
                        iterable_functions as itf,
                        linux_functions as lf)
 
-def process_schema(schema, results_output, fastas_folder,
-                   allelecall_directory, run_mode, constants, cpu):
+def process_schema(schema, results_output, possible_new_loci,
+                   allelecall_directory, constants, run_mode, cpu):
     """
     This function processes data related to the schema seed, importing, translating
     and BLASTing against the unclassified CDS clusters representatives groups to
@@ -27,31 +27,18 @@ def process_schema(schema, results_output, fastas_folder,
     ----------
     schema : str
         Path to the schema seed folder.
-    groups_paths : dict
-        Dict that contains the path to the FASTA file for each group.
     results_output : str
         Path were to write the results of this function.
-    reps_translation_dict_cds : dict
-        Dict that contains the translations for each CDS.
-    alleles : dict or None
-        Alleles of each group.
-    frequency_in_genomes : dict
-        Dict that contains sum of frequency of that representatives cluster in the
-        genomes of the schema.
     allelecall_directory : str
         Path to the allele call directory.
     master_file_path : str
         Path to the master file containing retained CDS.
-    allele_ids : list
-        List containg two bools, each representing query and subject, True
-        if they are contain alleles False otherwise.
     run_mode : str
         A flag indicating what type of run to perform, can be cds_vs_cds, loci_vs_cds or loci_vs_loci.
-    master_alleles : bool
-        If True, the function will process all of the alleles of the loci, if False only the
-        representatives.
     constants : list
         Contains the constants to be used in this function.
+    run_mode : str
+        Type of run to perform.
     cpu : int
         Number of CPUs to use during multi processing.master_alleles
 
@@ -63,9 +50,17 @@ def process_schema(schema, results_output, fastas_folder,
 
     """
     if run_mode == 'loci_vs_cds':
-        [alleles, master_file_path, possible_new_loci,
-         translation_dict_possible_new_loci, frequency_in_genomes] = cof.process_new_loci(fastas_folder, allelecall_directory, constants)
-        reps_translation_dict_cds = translation_dict_possible_new_loci
+        [alleles,
+         master_file_path,
+         possible_new_loci,
+         reps_translation_dict_cds,
+         frequency_in_genomes] = cof.process_new_loci(possible_new_loci, allelecall_directory, constants)
+    else:
+        alleles = None
+        master_file_path = None
+        possible_new_loci = None
+        reps_translation_dict_cds = {}
+        frequency_in_genomes = {}
     
     process_schema = True if run_mode == 'loci_vs_loci' else False
     blast_results = os.path.join(results_output, '1_BLAST_processing')
@@ -121,8 +116,6 @@ def process_schema(schema, results_output, fastas_folder,
         write_to_master = True
     else:
         write_to_master = False
-    # Create varible to store proteins sequences if it doesn't exist.
-    reps_translation_dict_cds = {} if not reps_translation_dict_cds else reps_translation_dict_cds
     # If to BLAST against reps or all of the alleles.
     schema_loci if process_schema else schema_loci_short
     for loci, loci_path in schema_loci.items():
@@ -205,13 +198,13 @@ def process_schema(schema, results_output, fastas_folder,
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class,
                                                        classes_outcome)
     # Extract CDS to keep and drop set.
-    clusters_to_keep, drop_possible_loci = cof.extract_clusters_to_keep(classes_outcome,
+    clusters_to_keep, dropped = cof.extract_clusters_to_keep(classes_outcome,
                                                                         count_results_by_class,
                                                                         drop_mark)
         
     cof.count_number_of_reps_and_alleles(clusters_to_keep,
                                          all_alleles,
-                                         drop_possible_loci,
+                                         dropped,
                                          group_reps_ids,
                                          group_alleles_ids)
 
@@ -221,17 +214,19 @@ def process_schema(schema, results_output, fastas_folder,
                                                                            count_results_by_class,
                                                                            frequency_in_genomes,
                                                                            clusters_to_keep,
-                                                                           drop_possible_loci,
+                                                                           dropped,
                                                                            classes_outcome)
     print("\nWritting count_results_by_cluster.tsv, related_matches.tsv files"
           " and recommendations.tsv...")
+    reverse_matches = True if 'loci_vs_loci' else False
     cof.write_blast_summary_results(related_clusters,
                                 count_results_by_class_with_inverse,
                                 group_reps_ids,
                                 group_alleles_ids,
                                 frequency_in_genomes,
                                 recommendations,
-                                run_mode,
+                                reverse_matches,
+                                classes_outcome,
                                 results_output)
 
     # Get all of the CDS that matched with loci
@@ -251,24 +246,20 @@ def process_schema(schema, results_output, fastas_folder,
                                     alleles,
                                     is_matched,
                                     is_matched_alleles,
-                                    run_mode,
                                     blast_results)
     
-    print("\nWritting dropped possible new loci to file...")
-    dropped_cds = {dropped_loci: 'Dropped_due_to_smaller_genome_presence_than_matched_cluster' for dropped_loci in drop_possible_loci}
-    cof.write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output)
+    print(f"Writting file with dropped {'loci' if run_mode == 'loci_vs_loci' else 'loci or possible new loci'}")
+    cof.dropped_loci_to_file(schema_loci, dropped, results_output)
     
     cof.print_classifications_results(clusters_to_keep,
-                                        drop_possible_loci,
+                                        dropped,
                                         possible_new_loci,
                                         all_alleles,
                                         schema_loci,
                                         run_mode)
 
-def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold, 
-        pident_threshold, size_threshold, translation_table, bsr, size_ratio, cpu):
-    frequency_in_genomes = {}
-    loci_ids = [True, True]
+def main(schema, output_directory, allelecall_directory, possible_new_loci, alignment_ratio_threshold, 
+        pident_threshold, size_threshold, translation_table, bsr, size_ratio, run_mode, cpu):
     constants = [alignment_ratio_threshold, 
             pident_threshold,
             None,
@@ -280,18 +271,10 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
             None,
             size_ratio]
 
-    run_mode = 'loci_vs_loci'
     process_schema(schema,
-                       [],
-                       output_directory,
-                       None,
-                       None,
-                       None,
-                       frequency_in_genomes,
-                       allelecall_directory,
-                       None,
-                       loci_ids,
-                       run_mode,
-                       True,
-                       constants,
-                       cpu)
+                   output_directory,
+                   possible_new_loci,
+                   allelecall_directory,
+                   constants,
+                   run_mode,
+                   cpu)

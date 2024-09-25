@@ -856,3 +856,19 @@ def get_shared_elements(dict):
     shared_elements = [elem for elem, count in element_counts.items() if count >= 2]
     
     return shared_elements
+
+def convert_set_elements_to_strings(input_set):
+    """
+    Convert all elements in the list to strings.
+
+    Parameters
+    ----------
+    list : set
+        The list of elements to be converted to strings.
+
+    Returns
+    -------
+    set
+        A list with all elements converted to strings.
+    """
+    return {str(element) for element in input_set}
