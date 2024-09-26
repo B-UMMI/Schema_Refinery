@@ -371,7 +371,6 @@ def identify_paralagous_loci():
      parser = argparse.ArgumentParser(description=__doc__,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
      
-     
      parser.add_argument('-s', '--schema_directory', type=str,
                     required=True, dest='schema_directory',
                     help='Folder that contains the schema to identify paralogous loci.')

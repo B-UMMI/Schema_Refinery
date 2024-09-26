@@ -4,8 +4,6 @@
 import os
 import sys
 
-from SchemaRefinery.RefineSchema import AdaptLoci as al
-
 try:
     from utils import (core_functions as cof,
                        file_functions as ff,
@@ -16,8 +14,6 @@ try:
                        blast_functions as bf,
                        linux_functions as lf,
                        classify_cds_functions as ccf)
-
-    from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
@@ -28,8 +24,6 @@ except ModuleNotFoundError:
                                         blast_functions as bf,
                                         linux_functions as lf,
                                         classify_cds_functions as ccf)
-    
-    from SchemaRefinery.RefineSchema import (SpuriousLoci as sl)
 
 def classify_cds(schema, output_directory, allelecall_directory, constants, temp_paths, cpu):
 
@@ -343,7 +337,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, temp
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
 
     clusters_to_keep, drop_possible_loci = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
-
+    # Add the IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep['1a'] = {values[0]: values for key, values in clusters_to_keep['1a'].items()}
     
     # Add new frequencies in genomes for joined groups

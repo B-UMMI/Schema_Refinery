@@ -11,7 +11,6 @@ try:
                        iterable_functions as itf,
                        linux_functions as lf,
                        graphical_functions as gf,
-                       kmers_functions as kf,
                        pandas_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
@@ -22,7 +21,6 @@ except ModuleNotFoundError:
                                       iterable_functions as itf,
                                       linux_functions as lf,
                                       graphical_functions as gf,
-                                      kmers_functions as kf,
                                       pandas_functions as pf)
 
 def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_group_column = False):
