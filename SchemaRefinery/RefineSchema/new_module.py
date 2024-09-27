@@ -13,7 +13,8 @@ try:
                        kmers_functions as kf,
                        blast_functions as bf,
                        linux_functions as lf,
-                       classify_cds_functions as ccf)
+                       classify_cds_functions as ccf,
+                       schema_classification_functions as scf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
@@ -23,7 +24,8 @@ except ModuleNotFoundError:
                                         kmers_functions as kf,
                                         blast_functions as bf,
                                         linux_functions as lf,
-                                        classify_cds_functions as ccf)
+                                        classify_cds_functions as ccf,
+                                        schema_classification_functions as scf)
 
 def create_directories(output_directory, run_mode):
     # Create base output directory
@@ -307,7 +309,7 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
     # Process loci
     else:
         if possible_new_loci:
-            cof.merge_schemas(schema_path, possible_new_loci, schema_folder)
+            ff.merge_folders(schema_path, possible_new_loci, schema_folder)
         else:
             ff.copy_folder(schema_path, schema_folder)
 
@@ -316,7 +318,7 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
         all_translation_dict,
         frequency_in_genomes,
         to_blast_paths,
-        all_alleles] = cof.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, initial_processing_output)
+        all_alleles] = scf.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, initial_processing_output)
 
 
     # Create BLAST db for the schema DNA sequences.
@@ -376,8 +378,9 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
                                 all_alleles)
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
-
+    # Extract which clusters are to mantain and to display to user.
     clusters_to_keep, drop_possible_loci = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
+    
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep['1a'] = {values[0]: values for key, values in clusters_to_keep['1a'].items()}
     if run_mode == 'unclassified_cds':
@@ -510,7 +513,7 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
 
     if run_mode == 'unclassified_cds':
         print("\nWritting temp loci file...")
-        cof.write_temp_loci(clusters_to_keep, not_included_cds, all_alleles, results_output)
+        ccf.write_temp_loci(clusters_to_keep, not_included_cds, all_alleles, results_output)
 
         print("\nCreate graphs for the BLAST results...")
         cds_size_dicts = {'IDs': cds_size.keys(),

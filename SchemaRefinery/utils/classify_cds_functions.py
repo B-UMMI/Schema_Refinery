@@ -1,24 +1,13 @@
 import os
-import concurrent.futures
-import copy
-from itertools import repeat
 
 try:
     from utils import (file_functions as ff,
                        sequence_functions as sf,
-                       clustering_functions as cf,
-                       blast_functions as bf,
-                       alignments_functions as af,
-                       iterable_functions as itf,
-                       linux_functions as lf,)
+                       iterable_functions as itf,)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       sequence_functions as sf,
-                                      clustering_functions as cf,
-                                      blast_functions as bf,
-                                      alignments_functions as af,
-                                      iterable_functions as itf,
-                                      linux_functions as lf,)
+                                      iterable_functions as itf,)
 
 def identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters, cds_present,
                                   not_included_cds, constants, output_path):
@@ -391,7 +380,7 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, not_included_c
 
     return cds_original_ids
 
-def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output):
+def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, run_mode, results_output):
     """
     Write the dropped possible new loci to a file with the reasons for dropping them.
 
@@ -410,8 +399,120 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, res
     """
     drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
     locus_drop_reason = {cds.split('_')[0]: reason 
-                         for cds, reason in dropped_cds.items() if '_' in cds}
+                        for cds, reason in dropped_cds.items() if '_' in cds}
     with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
         drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
         for locus in drop_possible_loci:
             drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")
+            
+def write_temp_loci(clusters_to_keep, not_included_cds, clusters, output_path):
+    """
+    This function wraps up the results for processing of the unclassified CDSs
+    by writing FASTAs files for the possible new loci to include.
+    
+    Parameters
+    ----------
+    clusters_to_keep : dict
+        Dict of the CDS to keep by each classification.
+    not_included_cds : dict
+        Dict that contains all of the DNA sequences for all of the CDS.
+    clusters : dict
+        Dict that contains the cluster representatives as keys and similar CDS
+        as values.
+    output_path : str
+        Path to were write the FASTA files.
+    constants : list
+        Contains the constants to be used in this function.
+    drop_possible_loci : set
+        Possible new loci that were dropped
+    loci : dict
+        Dict that contains the loci IDs and paths.
+    groups_paths_old : dict
+        The dictionary containing the old paths for the CDSs groups used 
+        to cp instead of creating new FASTAs files.
+    frequency_in_genomes : dict
+        Dict that contains sum of frequency of that representatives cluster in the
+        genomes of the schema.
+    run_mode : str
+        What type of run to make.
+
+    Returns
+    -------
+    groups_paths : dict
+        Dict that contains as Key the ID of each group while the value is the
+        path to the FASTA file that contains its nucleotide sequences.
+    trans_dict_cds : dict
+        Dict that contais the translations of all the CDSs inside the various
+        groups.
+    master_file_rep : str or None
+        Path to the master file that contains all of the representative sequences.
+    """
+
+    def write_possible_new_loci(class_, cds_list, temp_fastas,
+                                groups_paths, not_included_cds,
+                                clusters):
+        """
+        Process each class and CDS list in clusters_to_keep.
+
+        Parameters
+        ----------
+        class_ : str
+            The class type.
+        cds_list : list
+            The list of CDSs.
+        temp_fastas : str
+            The path to the temp FASTAs folder.
+        cds_outcome_results_reps_fastas_folder : str
+            The path to the folder where the representative results will be stored.
+        fasta_folder : str
+            The path to the folder where the fasta files are stored.
+        groups_paths : dict
+            The dictionary containing the paths to the groups.
+        groups_paths_reps : dict
+            The dictionary containing the paths to the representative groups.
+        not_included_cds : dict
+            The dictionary containing the CDSs that were not included.
+        clusters : dict
+            The dictionary containing the clusters.
+
+        Returns
+        -------
+        None, writtes FASTA files.
+        """
+        for cds in cds_list:
+            main_rep = cds
+            cds_group_fasta_file = os.path.join(temp_fastas, main_rep + '.fasta')
+            groups_paths[main_rep] = cds_group_fasta_file
+            save_ids_index = {}
+            if class_ != '1a':
+                cds = [cds]
+            else:
+                cds = clusters_to_keep[class_][cds]
+            index = 1
+            # Write all of the alleles to the files.
+            with open(cds_group_fasta_file, 'w') as fasta_file:
+                for rep_id in cds:
+                    cds_ids = clusters[rep_id]
+                    for cds_id in cds_ids:
+                        # Save the new ID to the dictionary where the old ID is the key.
+                        save_ids_index[cds_id] = cds_id
+                        # Write the allele to the file.
+                        fasta_file.write(f">{index}\n{str(not_included_cds[cds_id])}\n")
+                        index += 1
+
+    temp_fastas_paths = {}
+    print("Writing FASTA and additional files for possible new loci...")
+    temp_fastas = os.path.join(output_path, 'temp_fastas')
+    ff.create_directory(temp_fastas)
+    # Process each class and CDS list in clusters_to_keep
+    for class_, cds_list in clusters_to_keep.items():
+        write_possible_new_loci(class_, cds_list, temp_fastas,
+                                temp_fastas_paths, not_included_cds,
+                                clusters)
+        
+    fastas_path_txt = os.path.join(output_path, "temp_fastas_path.txt")
+    with open(fastas_path_txt, 'w') as fastas_path:
+        for path in temp_fastas_paths.values():
+            fastas_path.write(path + '\n')
+
+    return temp_fastas_paths

@@ -727,6 +727,29 @@ def sort_subdict_by_tuple(dict, order):
     return sorted_data
 
 def check_if_all_elements_are_duplicates(input_list):
+    """
+    Check if all elements in the list are duplicates.
+
+    Parameters
+    ----------
+    input_list : list
+        The list to check for duplicate elements.
+
+    Returns
+    -------
+    bool
+        True if every element in the list occurs more than once, False otherwise.
+        Returns False if the list is empty.
+
+    Examples
+    --------
+    >>> check_if_all_elements_are_duplicates([1, 2, 2, 3, 3, 3])
+    False
+    >>> check_if_all_elements_are_duplicates([2, 2, 3, 3])
+    True
+    >>> check_if_all_elements_are_duplicates([])
+    False
+    """
     # Count occurrences of each element
     element_counts = {}
     for element in input_list:
@@ -782,6 +805,24 @@ def check_if_all_sets_are_same(sets_list):
     return True
 
 def get_duplicates(input_list):
+    """
+    Identify duplicate elements in a list.
+
+    Parameters
+    ----------
+    input_list : list
+        The list to check for duplicate elements.
+
+    Returns
+    -------
+    list
+        A list containing the duplicate elements found in the input list.
+
+    Examples
+    --------
+    >>> get_duplicates([1, 2, 3, 2, 4, 5, 1])
+    [1, 2]
+    """
     # Count occurrences of each element
     element_counts = Counter(input_list)
     # Select elements that appear more than once
@@ -834,17 +875,25 @@ def get_common_elements_in_lists(list_of_lists):
 
     return list(intersection_set)
 
-def get_duplicates(input_list):
-    seen = set()
-    duplicates = []
-    for elem in input_list:
-        if elem in seen:
-            duplicates.append(elem)
-        else:
-            seen.add(elem)
-    return duplicates
-
 def get_shared_elements(dict):
+    """
+    Identify elements that appear in at least two lists within a dictionary.
+
+    Parameters
+    ----------
+    dict : dict
+        A dictionary where the values are lists of elements.
+
+    Returns
+    -------
+    list
+        A list containing elements that appear in at least two lists within the dictionary.
+
+    Examples
+    --------
+    >>> get_shared_elements({'a': [1, 2, 3], 'b': [3, 4, 5], 'c': [5, 6, 7]})
+    [3, 5]
+    """
     
     # Flatten all lists into a single list
     all_elements = [elem for sublist in dict.values() for elem in sublist]
