@@ -25,7 +25,46 @@ except ModuleNotFoundError:
                                         linux_functions as lf,
                                         classify_cds_functions as ccf)
 
+def create_directories(output_directory, run_mode):
+    # Create base output directory
+    ff.create_directory(output_directory)
+    
+    if run_mode == 'unclassfied_cds':
+        initial_processing_output = os.path.join(output_directory, '1_CDS_processing')
+        ff.create_directory(initial_processing_output)
+    else:
+        initial_processing_output = os.path.join(output_directory, '1_schema_processing')
+        schema_folder = os.path.join(initial_processing_output, 'new_schema')
+        ff.create_directory(schema_folder)
+
+    blast_output = os.path.join(output_directory, '2_BLAST_processing')
+    blastn_output = os.path.join(blast_output, '1_BLASTn_processing')
+    blast_db = os.path.join(blastn_output, 'blast_db_nucl')
+    ff.create_directory(blast_db)
+
+    if run_mode == 'unclassified_cds':
+        representatives_blastn_folder = os.path.join(blastn_output, 'cluster_representatives_fastas')
+        ff.create_directory(representatives_blastn_folder)
+    else:
+        representatives_blastn_folder = None
+        
+    results_output = os.path.join(output_directory, '3_processing_results')
+    blast_results = os.path.join(results_output, 'blast_results')
+    ff.create_directory(blast_results)
+    
+    return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
+
 def process_schema(schema_path, output_directory, allelecall_directory, constants, possible_new_loci, temp_paths, run_mode, processing_mode, cpu):
+    # Create directories structure.
+    [initial_processing_output,
+     schema_folder,
+     blast_output,
+     blastn_output,
+     blast_db,
+     representatives_blastn_folder,
+     results_output,
+     blast_results] = create_directories(output_directory, run_mode)
+    
     # Process unclassfied CDS, retrieving and clustering
     if run_mode == 'unclassified_cds':
         temp_folder = temp_paths[0]
@@ -71,13 +110,8 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
             constants[5] = 0
             print("No size threshold was applied to the CDS filtering.")
 
-        # Create directories.
-        ff.create_directory(output_directory)
-
-        cds_output = os.path.join(output_directory, '1_CDS_processing')
-        ff.create_directory(cds_output)
         # This file contains unique CDS.
-        cds_not_present_file_path = os.path.join(cds_output, 'CDS_not_found.fasta')
+        cds_not_present_file_path = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
 
         # Count the number of CDS not present in the schema and write CDS sequence
         # into a FASTA file.
@@ -106,8 +140,8 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
         print("\nTranslate and deduplicate CDS...")
         # Translate the CDS and find unique proteins using hashes, the CDS with
         # the same hash will be added under that hash in protein_hashes.
-        cds_not_present_trans_file_path = os.path.join(cds_output, "CDS_not_found_translation.fasta")
-        cds_not_present_untrans_file_path = os.path.join(cds_output, "CDS_not_found_untranslated.fasta")
+        cds_not_present_trans_file_path = os.path.join(initial_processing_output, "CDS_not_found_translation.fasta")
+        cds_not_present_untrans_file_path = os.path.join(initial_processing_output, "CDS_not_found_untranslated.fasta")
         # Translate and deduplicate protein sequences.
         all_translation_dict, protein_hashes, _ = sf.translate_seq_deduplicate(not_included_cds,
                                                                             cds_not_present_trans_file_path,
@@ -250,35 +284,8 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
                                                     reps_kmers_sim)
         
         alleles = None
-    # Process loci
-    else:
-        schema_processing_folder = os.path.join(output_directory, '1_schema_processing')
-        schema_folder = os.path.join(schema_processing_folder, 'new_schema')
-        if possible_new_loci:
-            cof.merge_schemas(schema_path, possible_new_loci, schema_folder)
-        else:
-            ff.copy_folder(schema_path, schema_folder)
-
-        [alleles,
-        master_file_path,
-        all_translation_dict,
-        frequency_in_genomes,
-        to_blast_paths,
-        all_alleles] = cof.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, schema_processing_folder)
-
-    # Create directories.
-    blast_output = os.path.join(output_directory, '2_BLAST_processing')
-    ff.create_directory(blast_output)
-    
-    blastn_output = os.path.join(blast_output, '1_BLASTn_processing')
-    ff.create_directory(blastn_output)
-    
-    if run_mode == 'unclassified_cds':
+        
         # Create directory and files path where to write FASTAs.
-        representatives_blastn_folder = os.path.join(blastn_output,
-                                                    'cluster_representatives_fastas')
-        ff.create_directory(representatives_blastn_folder)
-
         master_file_path = os.path.join(representatives_blastn_folder,
                                                     'master.fasta')
         # Write files for BLASTn.
@@ -297,12 +304,25 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
                 with open(rep_fasta_file, 'w') as rep_fasta:
                     rep_fasta.write(f">{cluster_rep_id}\n{str(not_included_cds[cluster_rep_id])}\n")
 
+    # Process loci
+    else:
+        if possible_new_loci:
+            cof.merge_schemas(schema_path, possible_new_loci, schema_folder)
+        else:
+            ff.copy_folder(schema_path, schema_folder)
+
+        [alleles,
+        master_file_path,
+        all_translation_dict,
+        frequency_in_genomes,
+        to_blast_paths,
+        all_alleles] = cof.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, initial_processing_output)
+
+
     # Create BLAST db for the schema DNA sequences.
     print("\nCreating BLASTn database...")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
-    blast_db = os.path.join(blastn_output, 'blast_db_nucl')
-    ff.create_directory(blast_db)
     blast_db_nuc = os.path.join(blast_db, 'Blast_db_nucleotide')
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_nuc, 'nucl')
     
@@ -338,11 +358,6 @@ def process_schema(schema_path, output_directory, allelecall_directory, constant
             all_alleles.update(alleles)
 
     print("\nFiltering BLAST results into classes...")
-    results_output = os.path.join(output_directory, '3_processing_results')
-    ff.create_directory(results_output)
-    blast_results = os.path.join(results_output, 'blast_results')
-    ff.create_directory(blast_results)
-
     # Separate results into different classes.
     classes_outcome = cof.separate_blastn_results_into_classes(representative_blast_results,
                                                            constants)
