@@ -1451,7 +1451,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
         processed in this function.
     """
     
-    print("\nRunning BLASTn between cluster representatives vs cluster alleles..." if run_mode == 'cds_vs_cds' else
+    print("\nRunning BLASTn between cluster representatives vs cluster alleles..." if run_mode == 'unclassified_cds' else
           "\nRunning BLASTn between Schema representatives CDS clusters..." if run_mode == 'loci_vs_cds' else
           "\nRunning BLASTn between loci representatives against schema loci...")
     # BLASTn folder
@@ -1596,7 +1596,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     # Print newline
     print('\n')  
     
-    print("Running BLASTp for representatives against cluster alleles..." if run_mode == 'cds_vs_cds'
+    print("Running BLASTp for representatives against cluster alleles..." if run_mode == 'unclassified_cds'
           else "Running BLASTp of schema representatives against cluster alleles..." if run_mode == 'loci_vs_cds'
           else "Running BLASTp for schema representatives against schema alleles")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
