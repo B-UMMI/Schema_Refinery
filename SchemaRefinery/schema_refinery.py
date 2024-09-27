@@ -397,10 +397,10 @@ def identify_paralagous_loci():
                          required=False, dest='size_threshold', default=0.2,
                          help="Size threshold to consider two paralogous loci as similar.")
      
-     parser.add_argument('-m', '--run-mode', type=str,
-          required=False, dest='run_mode', choices=['alleles_vs_alleles', 'reps_vs_reps', 'reps_vs_alleles'],
+     parser.add_argument('-pm', '--processing-mode', type=str,
+          required=False, dest='processing_mode', choices=['alleles_vs_alleles', 'alleles_vs_reps', 'reps_vs_reps', 'reps_vs_alleles'],
           default='alleles_vs_alleles',
-          help='Mode to run the module.')
+          help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
      
      args = parser.parse_args()
 

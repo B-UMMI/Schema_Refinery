@@ -25,7 +25,49 @@ except ModuleNotFoundError:
     
 
 def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio,
-                             translation_table, size_threshold, run_mode):
+                             translation_table, size_threshold, processing_mode):
+    """
+    Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
+
+    Parameters
+    ----------
+    schema_directory : str
+        Path to the directory containing schema FASTA files.
+    output_directory : str
+        Path to the directory where output files will be saved.
+    cpu_cores : int
+        Number of CPU cores to use for parallel processing.
+    blast_score_ratio : float
+        Threshold for the BLAST score ratio to consider loci as paralogous.
+    translation_table : int
+        Translation table number to use for translating nucleotide sequences to protein sequences.
+    size_threshold : float
+        Threshold for the size difference to consider loci as paralogous.
+    run_mode : str
+        Mode of processing, which determines how sequences are handled (e.g., 'alleles_vs_alleles').
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    - The function creates several output files in the specified output directory.
+    - It performs BLAST searches to identify paralogous loci and writes the results to output files.
+    - The function handles different processing modes to determine which sequences to use for BLAST.
+
+    Examples
+    --------
+    >>> schema_directory = '/path/to/schema'
+    >>> output_directory = '/path/to/output'
+    >>> cpu_cores = 4
+    >>> blast_score_ratio = 0.8
+    >>> translation_table = 11
+    >>> size_threshold = 0.2
+    >>> run_mode = 'alleles_vs_alleles'
+    >>> identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio, translation_table, size_threshold, run_mode)
+    """
+
     # Identify all of the fastas in the schema directory
     fasta_files_dict = {loci.split('.')[0]: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, loci))}
     # Identify all of the fastas short in the schema directory
@@ -44,8 +86,8 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     # Translate the sequences that are to be used in the BLASTp search
     for loci in fasta_files_dict:
         # Get the subject and query FASTA files
-        subject_fasta = fasta_files_dict[loci] if run_mode == 'alleles_vs_alleles' or run_mode == 'reps_vs_alleles' else fasta_files_short_dict[loci]
-        query_fasta = fasta_files_dict[loci] if run_mode == 'alleles_vs_alleles' else fasta_files_short_dict[loci]
+        subject_fasta = fasta_files_dict[loci] if processing_mode.split('_')[-1] == 'alleles' else fasta_files_short_dict[loci]
+        query_fasta = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'rep' else fasta_files_dict[loci]
         query_fasta_translation = os.path.join(translation_folder, f"{loci}-translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
