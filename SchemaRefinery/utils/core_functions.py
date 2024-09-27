@@ -1,4 +1,5 @@
 import os
+import shutil
 import concurrent.futures
 from itertools import repeat
 
@@ -1285,8 +1286,6 @@ def get_matches(all_relationships, clusters_to_keep, sorted_blast_dict):
     for class_, entries in list(clusters_to_keep.items()):
         for entry in list(entries):
             if entry not in had_matches and not class_ == '1a':
-                if entry == 'ERR5260641-protein1729':
-                    print(entry)
                 id_ = entry
                 entry = [entry]
                 is_matched.setdefault(id_, set([i[0] for i in changed_ids if i[1] in entry]))
@@ -1678,19 +1677,9 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
                 cluster = [cluster]
                 cluster_type = 'retained'
             
-            is_cds = False
-            if all_alleles:
-                cluster_alleles = []
-                for entry in cluster:
-                    if alleles and alleles.get(entry):
-                        cluster = alleles[entry]
-                        cluster_type = 'CDS_cluster'
-                        is_cds = True
-                    else:
-                        cluster_type = 'loci'
-                        cluster_alleles += all_alleles[entry]
-                if not is_cds:
-                    cluster = cluster_alleles
+            cluster_alleles = []
+            for entry in cluster:
+                cluster_alleles += all_alleles[entry]
 
 
             write_dict = {
@@ -1702,7 +1691,7 @@ def write_processed_results_to_file(clusters_to_keep, representative_blast_resul
                     if query.split('_')[0] in cluster
                 }
             
-            if is_cds and class_ != '1a':
+            if is_matched.get(cluster_id) and class_ != '1a':
                 queries = is_matched[cluster_id]
                 cluster = is_matched_alleles[cluster_id]
                 write_dict = {
@@ -1896,7 +1885,7 @@ def create_graphs(file_path, output_path, filename, other_plots = None):
 
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
-def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_paths_old, clusters, loci, run_mode):
+def print_classifications_results(clusters_to_keep, drop_possible_loci, to_blast_paths, clusters):
     """
     Prints the classification results based on the provided parameters.
 
@@ -1906,21 +1895,18 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
         Dictionary containing CDS to keep, classified by their class type.
     drop_possible_loci : list
         List of possible loci dropped.
-    groups_paths_old : dict
-        The dictionary containing the old paths to the groups.
-        Can be None.
+    to_blast_paths : dict
+        Path to blast
     clusters : dict
         The dictionary containing the clusters.
     loci : bool
         If True, the analysis is based on loci.
-    run_mode : str
-        The mode of run, e.g., 'loci_vs_loci'.
 
     Returns
     -------
     None, prints in stdout
     """
-    def print_results(class_, count, printout, i):
+    def print_results(class_, count, printout):
         """
         Prints the classification results based on the class type.
 
@@ -1941,20 +1927,16 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
         """
         if count > 0:
             if class_ in ['2b', '4b']:
-                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained"
+                print(f"\t\tOut of those groups, {count}  are classified as {class_} and were retained"
                     " but it is recommended to verify them as they may be contained or contain partially inside"
                     " their BLAST match.")
             elif class_ == '1a':
-                print(f"\t\tOut of those groups, {count} {'CDSs groups' if i == 0 else 'loci'} are classified as {class_}"
+                print(f"\t\tOut of those groups, {count} {'CDSs groups'} are classified as {class_}"
                     f" and are contained in {len(printout['1a'])} joined groups that were retained.")
             elif class_ == 'dropped':
-                if run_mode == 'loci_vs_loci':
-                    print(f"\t\tOut of those {count} loci are recommended to be removed.")
-                else:
-                    print(f"\t\tOut of those {count} {'CDSs groups' if i== 0 else 'loci'}"
-                        f" {'were removed from the analysis' if i == 0 else 'are recommended to be replaced with their matched CDS in the schema.'}")
+                print(f"\t\tOut of those {count} have been dropped due to frequency")
             else:
-                print(f"\t\tOut of those groups, {count} {'CDSs' if i == 0 else 'loci'} are classified as {class_} and were retained.")
+                print(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.")
 
     # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
     Retained_not_matched_by_blastn = clusters_to_keep.pop('Retained_not_matched_by_blastn', None)
@@ -1962,100 +1944,75 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, groups_p
     # Display info about the results obtained from processing the classes.
     # Get the total number of CDS reps considered for classification.
     count_cases = {}
-    loci_cases = {}
-    cds_cases = {}
-    if loci:
-        # Iterate over classes and their associated CDS sets
-        for class_, cds_set in clusters_to_keep.items():
-            # Initialize dictionaries for class '1a'
-            if class_ == '1a':
-                loci_cases['1a'] = {}
-                cds_cases['1a'] = {}
-                # Iterate over groups and their associated CDS in class '1a'
-                for group, cds in cds_set.items():
-                    # Separate CDS into those in loci and those not in loci
-                    loci_cases['1a'][group] = [c for c in cds if c in loci]
-                    cds_cases['1a'][group] = [c for c in cds if c not in loci]
-            else:
-                # For other classes, separate CDS into those in loci and those not in loci
-                loci_cases[class_] = [cds for cds in cds_set if cds in loci]
-                cds_cases[class_] = [cds for cds in cds_set if cds not in loci]
 
-        # Process drop_possible_loci in the same way as above
-        loci_cases['dropped'] = [d for d in drop_possible_loci if d in loci]
-        cds_cases['dropped'] = [d for d in drop_possible_loci if d not in loci]
-
-    else:
-        for class_, cds_set in clusters_to_keep.items():
-            cds_cases[class_] = cds_set
-            if class_ == '1a':
-                count_cases[class_] = len(itf.flatten_list(cds_set.values()))
-            else:
-                count_cases[class_] = len(cds_set)
-        cds_cases['dropped'] = drop_possible_loci
+    for class_, loci in clusters_to_keep.items():
+        count_cases[class_] = loci
+        if class_ == '1a':
+            count_cases[class_] = len(itf.flatten_list(loci.values()))
+        else:
+            count_cases[class_] = len(loci)
+        
+    count_cases['dropped'] = len(drop_possible_loci)
     # Check if loci is not empty
-    if loci:
-        for i, printout in enumerate([cds_cases, loci_cases]):
-            if run_mode == 'loci_vs_loci' and i == 0:
-                continue
-            total_loci = len(itf.flatten_list([i 
-                                               for class_, i
-                                               in printout.items()
-                                               if class_ != '1a'])) + len(itf.flatten_list(printout['1a'].values()))
+    total_loci = sum(count_cases.values())
 
-            print(f"Out of {len(groups_paths_old) if i==0 else len(loci)} {'CDSs groups' if i == 0 else 'loci'}:")
-            print(f"\t{total_loci} {'CDSs' if i == 0 else 'loci'}"
-                f" representatives had matches with BLASTn against the {'CDSs' if i == 1 else 'schema'}.")
+    print(f"Out of {len(to_blast_paths)}:")
+    print(f"\t{total_loci}"
+        f" representatives had matches with BLASTn against the.")
+    for class_, count in count_cases.items():
+        print_results(class_, count, clusters_to_keep)
 
-            # Print the classification results
-            for class_, group in printout.items():
-                print_results(class_ ,len(group) if class_ != '1a' else len(itf.flatten_list(group.values())) ,printout, i)
+    print(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches")
 
-            if i == 0:
-                print(f"\t{len(groups_paths_old) - len(itf.flatten_list(printout.values()))}"
-                    " didn't have any BLASTn matches so they were retained.\n")
-    else:
-        # Write info about the classification results.
-        print(f"Out of {len(clusters)} clusters:")
-        print(f"\t{sum(count_cases.values()) + len(drop_possible_loci)} CDS representatives had matches with BLASTn"
-            f" which resulted in {len(itf.flatten_list(clusters_to_keep.values()))} groups")
+    if Retained_not_matched_by_blastn:
+        clusters_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
 
-        # Print the classification results
-        for class_, count in count_cases.items():
-            print_results(class_, count, clusters_to_keep, 0)
-
-        print(f"\t\tOut of those {len(drop_possible_loci)} CDSs groups were removed from the analysis.")
-
-        if Retained_not_matched_by_blastn:
-            print(f"\t\t{len(Retained_not_matched_by_blastn)} didn't have any BLASTn matches so they were retained.")
-            
-            clusters_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
-
-def process_new_loci(schema_folder, allelecall_directory, constants, results_output):
-    possible_new_loci = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
-    possible_new_loci_short_dir = os.path.join(schema_folder, 'short')
-    possible_new_loci_short = {fastafile: os.path.join(possible_new_loci_short_dir, fastafile) for fastafile in os.listdir(possible_new_loci_short_dir) if fastafile.endswith('.fasta')}
+def process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, results_output):
+    schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
+    schema_short_dir = os.path.join(schema_folder, 'short')
+    schema_short = {fastafile: os.path.join(schema_short_dir, fastafile) for fastafile in os.listdir(schema_short_dir) if fastafile.endswith('.fasta')}
     master_file_path = os.path.join(results_output, 'master.fasta')
-    possible_new_loci_translation_folder = os.path.join(results_output, 'possible_new_loci_translation_folder')
+    
+    possible_new_loci_translation_folder = os.path.join(results_output, 'schema_translation_folder')
     ff.create_directory(possible_new_loci_translation_folder)
 
+    to_blast_paths = schema if processing_mode.split('_')[0] == 'alleles' else schema_short
+    to_run_against = schema_short if processing_mode.split('_')[-1] == 'rep' else schema
+
+    all_alleles = {}
     alleles = {}
-    translation_dict_possible_new_loci = {}
+    translation_dict = {}
     frequency_in_genomes = {}
     temp_frequency_in_genomes = {}
     cds_present = os.path.join(allelecall_directory, "temp", "2_cds_preprocess/cds_deduplication/distinct.hashtable")
     decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
-    for new_loci in possible_new_loci.values():
-        loci_id = ff.file_basename(new_loci).split('.')[0]
+    # Alleles to run
+    for loci in to_blast_paths.values():
+        loci_id = ff.file_basename(loci).split('.')[0]
         alleles.setdefault(loci_id, {})
-        fasta_dict = sf.fetch_fasta_dict(new_loci, False)
+        fasta_dict = sf.fetch_fasta_dict(loci, False)
         for allele_id, sequence in fasta_dict.items():
             alleles.setdefault(loci_id, {}).update({allele_id: str(sequence)})
 
+    # Write master file to run against
+    for loci in to_run_against.values():
+        loci_id = ff.file_basename(loci).split('.')[0]
+        alleles.setdefault(loci_id, {})
+        fasta_dict = sf.fetch_fasta_dict(loci, False)
+        for allele_id, sequence in fasta_dict.items():
+            alleles.setdefault(loci_id, {}).update({allele_id: str(sequence)})
+            # Write to master file
             write_type = 'a' if os.path.exists(master_file_path) else 'w'
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(sequence)}\n")
-                
+
+    # Count loci presence and translate all of the alleles.
+    for loci in schema.values():
+        loci_id = ff.file_basename(loci).split('.')[0]
+        all_alleles.setdefault(loci_id, [])
+        fasta_dict = sf.fetch_fasta_dict(loci, False)
+        for allele_id, sequence in fasta_dict.items():  
+            all_alleles[loci_id].append(allele_id)
             hashed_seq = sf.seq_to_hash(str(sequence))
             # if CDS sequence is present in the schema count the number of
             # genomes that it is found minus the first (subtract the first CDS genome).
@@ -2075,9 +2032,9 @@ def process_new_loci(schema_folder, allelecall_directory, constants, results_out
                                                         constants[6],
                                                         False)
         
-        translation_dict_possible_new_loci.update(trans_dict)
+        translation_dict.update(trans_dict)
                 
-    return alleles, master_file_path, possible_new_loci, translation_dict_possible_new_loci, frequency_in_genomes
+    return alleles, master_file_path, translation_dict, frequency_in_genomes, to_blast_paths, all_alleles
 
 def dropped_loci_to_file(schema_loci, dropped, results_output):
     dropped_file = os.path.join(results_output, "dropped.tsv")
@@ -2090,3 +2047,31 @@ def dropped_loci_to_file(schema_loci, dropped, results_output):
             else:
                 dropped_from = 'from_possible_new_loci'
             d.write(f"{drop}\t{'Dropped_due_to_cluster_frequency_filtering'}\t{dropped_from}\n")
+
+def merge_folders(folder1, folder2, output_folder):
+    # Ensure the output folder exists
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    # Helper function to copy files from a folder to the output folder
+    def copy_files(src_folder):
+        for root, _, files in os.walk(src_folder):
+            for file in files:
+                src_file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(src_file_path, src_folder)
+                dest_file_path = os.path.join(output_folder, relative_path)
+                
+                # Ensure the destination directory exists
+                os.makedirs(os.path.dirname(dest_file_path), exist_ok=True)
+                
+                # Handle file naming conflicts
+                if os.path.exists(dest_file_path):
+                    base, ext = os.path.splitext(dest_file_path)
+                    dest_file_path = f"{base}_copy{ext}"
+                
+                # Copy the file
+                shutil.copy2(src_file_path, dest_file_path)
+    
+    # Copy files from both folders
+    copy_files(folder1)
+    copy_files(folder2)

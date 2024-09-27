@@ -388,3 +388,11 @@ def read_tabular(input_file, delimiter='\t'):
 		lines = [line for line in reader]
 
 	return lines
+
+def copy_folder(src_folder, dest_folder):
+    # Ensure the destination folder exists
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder)
+    
+    # Copy the entire folder
+    shutil.copytree(src_folder, dest_folder, dirs_exist_ok=True)

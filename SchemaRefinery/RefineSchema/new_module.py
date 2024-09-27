@@ -25,7 +25,8 @@ except ModuleNotFoundError:
                                         linux_functions as lf,
                                         classify_cds_functions as ccf)
 
-def classify_cds(schema, output_directory, allelecall_directory, constants, possible_new_loci, temp_paths, run_mode, cpu):
+def process_schema(schema_path, output_directory, allelecall_directory, constants, possible_new_loci, temp_paths, run_mode, processing_mode, cpu):
+    # Process unclassfied CDS, retrieving and clustering
     if run_mode == 'unclassified_cds':
         temp_folder = temp_paths[0]
         file_path_cds = temp_paths[1]
@@ -242,30 +243,31 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
                                                     frequency_cds,
                                                     dropped_cds,
                                                     not_included_cds,
-                                                        prot_len_dict,
-                                                        all_translation_dict,
-                                                        protein_hashes,
-                                                        cds_presence_in_genomes,
-                                                        reps_kmers_sim)
+                                                    prot_len_dict,
+                                                    all_translation_dict,
+                                                    protein_hashes,
+                                                    cds_presence_in_genomes,
+                                                    reps_kmers_sim)
         
         alleles = None
-
+    # Process loci
     else:
-        if run_mode == 'loci_vs_cds':
-            [alleles,
-            master_file_path,
-            possible_new_loci,
-            all_translation_dict,
-            frequency_in_genomes] = cof.process_new_loci(possible_new_loci, allelecall_directory, constants, output_directory)
+        schema_processing_folder = os.path.join(output_directory, '1_schema_processing')
+        schema_folder = os.path.join(schema_processing_folder, 'new_schema')
+        if possible_new_loci:
+            cof.merge_schemas(schema_path, possible_new_loci, schema_folder)
         else:
-            alleles = None
-            master_file_path = None
-            possible_new_loci = None
-            all_translation_dict = {}
-            frequency_in_genomes = {}
+            ff.copy_folder(schema_path, schema_folder)
+
+        [alleles,
+        master_file_path,
+        all_translation_dict,
+        frequency_in_genomes,
+        to_blast_paths,
+        all_alleles] = cof.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, schema_processing_folder)
 
     # Create directories.
-    blast_output = os.path.join(output_directory, '2_BLAST_processing' if run_mode == 'unclassfied_cds' else '1_BLAST_processing')
+    blast_output = os.path.join(output_directory, '2_BLAST_processing')
     ff.create_directory(blast_output)
     
     blastn_output = os.path.join(blast_output, '1_BLASTn_processing')
@@ -294,88 +296,9 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
                 # Write the representative FASTA file.
                 with open(rep_fasta_file, 'w') as rep_fasta:
                     rep_fasta.write(f">{cluster_rep_id}\n{str(not_included_cds[cluster_rep_id])}\n")
-    else:
-        process_schema = True if run_mode == 'loci_vs_loci' else False
-        
-        # Get all of the schema loci short FASTA files path.
-        schema_short_path = os.path.join(schema, 'short')
-        schema_loci_short = {os.path.basename(loci_path.replace("_short.fasta", "")): os.path.join(schema_short_path, loci_path) 
-                            for loci_path in ff.get_paths_in_directory_with_suffix(schema_short_path, '_short.fasta')}
-        
-        # Get all of the schema loci FASTA files path.
-        schema_loci = {os.path.basename(loci_path.replace(".fasta", "")): os.path.join(schema, loci_path) 
-                            for loci_path in ff.get_paths_in_directory_with_suffix(schema, '.fasta')}
-
-        #Count the number of reps and alleles in the schema.
-        group_reps_ids = {}
-        group_alleles_ids = {}
-        for loci, fasta_path in schema_loci_short.items():
-                fasta_dict = sf.fetch_fasta_dict(fasta_path, False)
-                for id_, fasta in fasta_dict.items():
-                    group_reps_ids.setdefault(loci, set()).add(id_)
-                fasta_dict = sf.fetch_fasta_dict(schema_loci[loci], False)
-                for id_, fasta in fasta_dict.items():
-                    group_alleles_ids.setdefault(loci, set()).add(id_)
-                    
-        # Create a folder for short translations.
-        blastp_output = os.path.join(blast_output, '2_BLASTp_processing')
-        ff.create_directory(blastp_output)
-        short_translation_folder = os.path.join(blastp_output, 'short_translation_folder')
-        ff.create_directory(short_translation_folder)
-
-        # Find the file in the allele call results that contains the total of each.
-        # classification obtained for each loci.
-        results_statistics = os.path.join(allelecall_directory, 'loci_summary_stats.tsv')
-        # Convert TSV table to dict.
-        results_statistics_dict = itf.tsv_to_dict(results_statistics)
-        # Add the results for all of the Exact matches to the frequency_in_genomes dict.
-        for key, value in results_statistics_dict.items():
-            frequency_in_genomes.setdefault(key, int(value[0]))
-        # Translate each short loci and write to master fasta.
-        print("Translate and write to master fasta file...")
-        i = 1
-        len_short_folder = len(schema_loci_short)
-        all_alleles = {}
-        if not master_file_path:
-            filename = 'master_file' if process_schema else 'master_rep_file'
-            master_file_folder = os.path.join(blastn_output, filename)
-            ff.create_directory(master_file_folder)
-            master_file_path = os.path.join(master_file_folder, f"{filename}.fasta")
-            write_to_master = True
-        else:
-            write_to_master = False
-        # If to BLAST against reps or all of the alleles.
-        schema_loci if process_schema else schema_loci_short
-        for loci, loci_path in schema_loci.items():
-            print(f"\rTranslated{'' if process_schema else ' short'} loci FASTA: {i}/{len_short_folder}", end='', flush=True)
-            i += 1
-            fasta_dict = sf.fetch_fasta_dict(loci_path, False)
-            
-            for allele_id, sequence in fasta_dict.items():
-                all_alleles.setdefault(loci, []).append(allele_id)
-
-                if write_to_master:
-                    write_type = 'w' if not os.path.exists(master_file_path) else 'a'
-                    with open(master_file_path, write_type) as m_file:
-                        m_file.write(f">{allele_id}\n{sequence}\n")
-
-            loci_short_translation_path = os.path.join(short_translation_folder, f"{loci}.fasta")
-            translation_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict, 
-                                                                loci_short_translation_path,
-                                                                None,
-                                                                constants[5],
-                                                                False,
-                                                                constants[6],
-                                                                False)
-            for allele_id, sequence in translation_dict.items():
-                all_translation_dict[allele_id] = sequence
-    # Set to Blast schema short
-    to_blast_paths = schema_loci_short
 
     # Create BLAST db for the schema DNA sequences.
-    print("\nCreating BLASTn database for the unclassified and missed CDSs..."
-          if run_mode == 'unclassified_cds'
-          else print(f"\nCreate BLAST db for the {'schema' if process_schema else 'unclassified'} DNA sequences..."))
+    print("\nCreating BLASTn database...")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
     blast_db = os.path.join(blastn_output, 'blast_db_nucl')
@@ -415,9 +338,7 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
             all_alleles.update(alleles)
 
     print("\nFiltering BLAST results into classes...")
-    results_output = os.path.join(output_directory, '3_processing_results'
-                                  if run_mode == 'unclassified_cds'
-                                  else '2_processing_results')
+    results_output = os.path.join(output_directory, '3_processing_results')
     ff.create_directory(results_output)
     blast_results = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
@@ -458,15 +379,17 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
         #Add all the others frequencies.
         updated_frequency_in_genomes.update(frequency_in_genomes)
         updated_frequency_in_genomes.update(new_cluster_freq)
-        # Open dict to store IDs of the reps and alleles
-        group_reps_ids = {}
-        group_alleles_ids = {}
+    
+    # Open dict to store IDs of the reps and alleles
+    group_reps_ids = {}
+    group_alleles_ids = {}
 
     cof.count_number_of_reps_and_alleles(clusters_to_keep,
                                         all_alleles,
                                         drop_possible_loci,
                                         group_reps_ids,
                                         group_alleles_ids)
+
     if run_mode == 'unclassified_cds':
         print("\nAdd remaining cluster that didn't match by BLASTn...")
         # Add cluster not matched by BLASTn
@@ -521,16 +444,14 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
                                 results_output)
     
     if run_mode != 'unclassified_cds':
-        # Get all of the CDS that matched with loci
-        [is_matched, is_matched_alleles] = cof.get_matches(all_relationships,
-                                                        clusters_to_keep,
-                                                        sorted_blast_dict)
         add_group_column = True
     else:
-        is_matched = None
-        is_matched_alleles = None
         add_group_column = False
 
+    # Get all of the CDS that matched with loci
+    [is_matched, is_matched_alleles] = cof.get_matches(all_relationships,
+                                                    clusters_to_keep,
+                                                    sorted_blast_dict)
     print("\nWritting classes and cluster results to files...")
     report_file_path = os.path.join(blast_results, 'blast_all_matches.tsv')
     # Write all of the BLASTn results to a file.
@@ -542,11 +463,12 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
     cof.write_processed_results_to_file(clusters_to_keep,
                                     representative_blast_results,
                                     classes_outcome,
-                                    alleles,
                                     all_alleles,
+                                    alleles,
                                     is_matched,
                                     is_matched_alleles,
                                     blast_results)
+
     if run_mode == 'unclassified_cds':
         print("\nUpdating IDs and saving changes in cds_id_changes.tsv...")
         ccf.update_ids_and_save_changes(clusters_to_keep,
@@ -564,14 +486,13 @@ def classify_cds(schema, output_directory, allelecall_directory, constants, poss
                                                     results_output)
     else:
         print(f"Writting file with dropped {'loci' if run_mode == 'loci_vs_loci' else 'loci or possible new loci'}")
-        cof.dropped_loci_to_file(schema_loci, drop_possible_loci, results_output)
+        cof.dropped_loci_to_file(to_blast_paths, drop_possible_loci, results_output)
 
     cof.print_classifications_results(clusters_to_keep,
                                         drop_possible_loci,
-                                        possible_new_loci if run_mode != 'unclassified_cds' else False,
-                                        all_alleles,
-                                        schema_loci if run_mode != 'unclassified_cds' else False,
-                                        run_mode)
+                                        to_blast_paths,
+                                        all_alleles)
+
     if run_mode == 'unclassified_cds':
         print("\nWritting temp loci file...")
         cof.write_temp_loci(clusters_to_keep, not_included_cds, all_alleles, results_output)
@@ -617,7 +538,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
                     "was run using --no-cleanup and --output-unclassified flag.")
 
     unclassified_cds_output = os.path.join(output_directory, "unclassified_cds")
-    classify_cds(schema,
+    process_schema(schema,
                  unclassified_cds_output,
                  allelecall_directory,
                 constants,
