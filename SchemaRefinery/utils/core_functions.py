@@ -100,7 +100,7 @@ def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_group_
 def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_values,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
-                         frequency_in_genomes, allele_ids, add_groups_ids):
+                         frequency_in_genomes, allele_ids):
     """
     Enhances BLAST results with additional metrics and frequencies.
 
@@ -132,9 +132,6 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
     allele_ids : list
         Indicates whether the IDs of loci representatives are included in the `frequency_in_genomes`. If true,
         IDs follow the format `loci1_x`.
-    add_groups_ids : Dict, optional
-        A dictionary mapping group IDs to their member CDS. This is used to add group information to the BLAST
-        results for enhanced analysis.
 
     Returns
     -------
@@ -364,7 +361,7 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
 
     def update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes,
                        global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max,
-                       local_palign_min, allele_ids, add_groups_ids):
+                       local_palign_min, allele_ids):
         """
         Updates the BLAST results for a specific query and subject pair with new data.
 
@@ -394,9 +391,6 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
             The minimum local pairwise alignment percentage.
         allele_ids : list
             A list indicating whether to modify the query and/or subject IDs based on loci information.
-        add_groups_ids : dict
-            A dictionary containing group IDs to be added to the results, where keys are subject IDs and values
-            are the group members.
 
         Returns
         -------
@@ -433,11 +427,6 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
         if allele_ids[1]:
             subject = subject_before
         representative_blast_results[query][subject][entry_id].update(update_dict)
-
-        if add_groups_ids:
-            id_ = itf.identify_string_in_dict_get_key(subject, add_groups_ids) or subject
-            update_dict = {'cds_group': id_}
-            representative_blast_results[query][subject][entry_id].update(update_dict)
 
     def remove_results(representative_blast_results, query, subject, entry_id):
         """
@@ -533,7 +522,7 @@ def add_items_to_results(representative_blast_results, reps_kmers_sim, bsr_value
                 local_palign_min = calculate_local_palign(result)
                 # Remove entries with negative local palign values meaning that they are inverse alignments.
                 if local_palign_min >= 0:
-                    update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids, add_groups_ids)
+                    update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids)
                 else:
                     remove_results(representative_blast_results, query, subject, entry_id)
 
