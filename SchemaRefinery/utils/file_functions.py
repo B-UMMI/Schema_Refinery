@@ -388,3 +388,81 @@ def read_tabular(input_file, delimiter='\t'):
 		lines = [line for line in reader]
 
 	return lines
+
+def copy_folder(src_folder, dest_folder):
+    """
+    Copy the contents of one folder to another folder.
+
+    Parameters
+    ----------
+    src_folder : str
+        Path to the source folder to copy.
+    dest_folder : str
+        Path to the destination folder where the contents will be copied.
+
+    Notes
+    -----
+    - If the destination folder does not exist, it will be created.
+    - The function copies the entire folder, including all subdirectories and files.
+    - If the destination folder already exists, existing files will be overwritten.
+    """
+    # Ensure the destination folder exists
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder)
+    
+    # Copy the entire folder
+    shutil.copytree(src_folder, dest_folder, dirs_exist_ok=True)
+
+def merge_folders(folder1, folder2, output_folder):
+    """
+    Merge the contents of two folders into an output folder.
+
+    Parameters
+    ----------
+    folder1 : str
+        Path to the first folder to merge.
+    folder2 : str
+        Path to the second folder to merge.
+    output_folder : str
+        Path to the output folder where the merged contents will be stored.
+
+    Notes
+    -----
+    - If the output folder does not exist, it will be created.
+    - If there are file naming conflicts, the conflicting files will be renamed with a "_copy" suffix.
+    - The function ensures that all intermediate directories are created as needed.
+    """
+    # Helper function to copy files from a folder to the output folder
+    def copy_files(src_folder):
+        """
+        Copy files from the source folder to the output folder.
+
+        Parameters
+        ----------
+        src_folder : str
+            Path to the source folder from which files will be copied.
+        """
+        for root, _, files in os.walk(src_folder):
+            for file in files:
+                src_file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(src_file_path, src_folder)
+                dest_file_path = os.path.join(output_folder, relative_path)
+                
+                # Ensure the destination directory exists
+                os.makedirs(os.path.dirname(dest_file_path), exist_ok=True)
+                
+                # Handle file naming conflicts
+                if os.path.exists(dest_file_path):
+                    base, ext = os.path.splitext(dest_file_path)
+                    dest_file_path = f"{base}_copy{ext}"
+                
+                # Copy the file
+                shutil.copy2(src_file_path, dest_file_path)
+    
+        # Ensure the output folder exists
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    # Copy files from both folders
+    copy_files(folder1)
+    copy_files(folder2)
