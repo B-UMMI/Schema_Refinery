@@ -934,3 +934,34 @@ def create_blast_files(representatives_blastn_folder, all_alleles, not_included_
     write_fasta_file(master_file_path, master_sequences)
 
     return to_blast_paths
+
+def update_frequencies_in_genomes(clusters_to_keep, frequency_in_genomes):
+    """
+    Updates the frequencies in genomes for joined groups and updates the changed clusters frequency from joined CDSs.
+
+    Parameters
+    ----------
+    clusters_to_keep : dict
+        Dictionary containing clusters to keep with their members.
+    frequency_in_genomes : dict
+        Dictionary with the frequency of CDS in the genomes.
+
+    Returns
+    -------
+    dict
+        Updated frequency of CDS in the genomes.
+    """
+    updated_frequency_in_genomes = {}
+    new_cluster_freq = {}
+
+    # Calculate new frequencies for joined groups
+    for cluster_id, cluster_members in clusters_to_keep['1a'].items():
+        new_cluster_freq[cluster_id] = sum(frequency_in_genomes[member] for member in cluster_members)
+        for member in cluster_members:
+            updated_frequency_in_genomes[member] = new_cluster_freq[cluster_id]
+
+    # Add all the other frequencies
+    updated_frequency_in_genomes.update(frequency_in_genomes)
+    updated_frequency_in_genomes.update(new_cluster_freq)
+
+    return updated_frequency_in_genomes

@@ -244,19 +244,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep['1a'] = {values[0]: values for key, values in clusters_to_keep['1a'].items()}
     if run_mode == 'unclassified_cds':
-        # Add new frequencies in genomes for joined groups
-        # Update the changed clusters frequency from Joined CDSs
-        updated_frequency_in_genomes = {}
-        new_cluster_freq = {}
-        for cluster_id, cluster_members in clusters_to_keep['1a'].items():
-            new_cluster_freq[cluster_id] = 0
-            for member in cluster_members:
-                new_cluster_freq[(cluster_id)] += frequency_in_genomes[member]
-            for member in cluster_members:
-                updated_frequency_in_genomes[member] = new_cluster_freq[cluster_id]
-        #Add all the others frequencies.
-        updated_frequency_in_genomes.update(frequency_in_genomes)
-        updated_frequency_in_genomes.update(new_cluster_freq)
+        updated_frequency_in_genomes = ccf.update_frequencies_in_genomes(clusters_to_keep, frequency_in_genomes)
     
     # Open dict to store IDs of the reps and alleles
     group_reps_ids = {}
