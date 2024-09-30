@@ -1282,7 +1282,7 @@ def get_matches(all_relationships, clusters_to_keep, sorted_blast_dict):
     return is_matched, is_matched_alleles
 
 def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
-               rep_paths_nuc, output_dir, constants, cpu, multi_fasta, run_mode):
+               rep_paths_nuc, output_dir, constants, cpu, multi_fasta):
     """
     This functions runs both BLASTn and Subsequently BLASTp based on results of
     BLASTn.
@@ -1306,8 +1306,6 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     multi_fasta : dict
        A dictionary used when the input FASTA files contain multiple CDSs, to ensure correct BLASTn
        execution.
-    run_mode : str
-        A flag indicating what mode of run to perform, can be cds_vs_cds, loci_vs_cds or loci_vs_loci.
         
     Returns
     -------
@@ -1324,9 +1322,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
         processed in this function.
     """
     
-    print("\nRunning BLASTn between cluster representatives vs cluster alleles..." if run_mode == 'unclassified_cds' else
-          "\nRunning BLASTn between Schema representatives CDS clusters..." if run_mode == 'loci_vs_cds' else
-          "\nRunning BLASTn between loci representatives against schema loci...")
+    print("\nRunning BLASTn...")
     # BLASTn folder
     blastn_output = os.path.join(output_dir, '1_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1469,9 +1465,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
     # Print newline
     print('\n')  
     
-    print("Running BLASTp for representatives against cluster alleles..." if run_mode == 'unclassified_cds'
-          else "Running BLASTp of schema representatives against cluster alleles..." if run_mode == 'loci_vs_cds'
-          else "Running BLASTp for schema representatives against schema alleles")
+    print("Running BLASTp...")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches)  .      
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:

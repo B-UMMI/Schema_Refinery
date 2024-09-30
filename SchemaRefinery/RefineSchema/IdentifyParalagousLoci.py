@@ -43,8 +43,8 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
         Translation table number to use for translating nucleotide sequences to protein sequences.
     size_threshold : float
         Threshold for the size difference to consider loci as paralogous.
-    run_mode : str
-        Mode of processing, which determines how sequences are handled (e.g., 'alleles_vs_alleles').
+    processing_mode: str
+        Processing mode to determine which sequences to use for BLAST.
 
     Returns
     -------
@@ -64,8 +64,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     >>> blast_score_ratio = 0.8
     >>> translation_table = 11
     >>> size_threshold = 0.2
-    >>> run_mode = 'alleles_vs_alleles'
-    >>> identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio, translation_table, size_threshold, run_mode)
+    >>> identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio, translation_table, size_threshold, processing_mode)
     """
 
     # Identify all of the fastas in the schema directory
@@ -162,8 +161,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     best_bsr_values = {}
     total_blasts = len(query_paths_dict)
     i = 1
-    print(f"\nRunning BLASTp for each loci {'alleles' if run_mode == 'alleles_vs_alleles' else 'representatives'}"
-          f" vs {'representatives' if run_mode == 'reps_vs_reps' else 'alleles'}:")
+    print(f"\nRunning BLASTp...")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
         for res in executor.map(bf.run_blastdb_multiprocessing, 
                                 itertools.repeat(blast_exec),
