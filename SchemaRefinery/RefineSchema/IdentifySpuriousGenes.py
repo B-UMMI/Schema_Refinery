@@ -56,194 +56,6 @@ def create_directories(output_directory, run_mode):
     
     return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
 
-def get_genomes_ids(count_genomes_path):
-    """
-    Get all genome IDs from the specified directory.
-
-    Parameters
-    ----------
-    count_genomes_path : str
-        Path to the directory containing genome FASTA files.
-
-    Returns
-    -------
-    list
-        List of genome IDs.
-    """
-    return ff.get_paths_in_directory_with_suffix(count_genomes_path, '.fasta')
-
-def set_minimum_genomes(constants, count_genomes_path):
-    """
-    Set the minimum number of genomes in which a specific CDS cluster is present.
-
-    Parameters
-    ----------
-    constants : list
-        List of constants used for processing.
-    count_genomes_path : str
-        Path to the directory containing genome FASTA files.
-    """
-    number_of_genomes = len(get_genomes_ids(count_genomes_path))
-    if number_of_genomes <= 20:
-        constants[2] = 5
-    else:
-        constants[2] = round(number_of_genomes * 0.01)
-
-def filter_cds_by_size(not_included_cds, constants):
-    """
-    Filter CDS by size and update the dropped CDS dictionary.
-
-    Parameters
-    ----------
-    not_included_cds : dict
-        Dictionary of CDS not included in the schema.
-    constants : list
-        List of constants used for processing.
-
-    Returns
-    -------
-    dict
-        Dictionary of dropped CDS.
-    """
-    dropped_cds = {}
-    total_cds = len(not_included_cds)
-    if constants[5]:
-        for key, values in list(not_included_cds.items()):
-            if len(values) < constants[5]:
-                dropped_cds.setdefault(key, 'Dropped_due_to_cds_size')
-                del not_included_cds[key]
-        print(f"{len(not_included_cds)}/{total_cds} have size greater or equal to {constants[5]} bp.")
-    else:
-        constants[5] = 0
-        print("No size threshold was applied to the CDS filtering.")
-    return dropped_cds
-
-def write_cds_not_present_file(not_included_cds, initial_processing_output):
-    """
-    Write CDS not present in the schema to a FASTA file.
-
-    Parameters
-    ----------
-    not_included_cds : dict
-        Dictionary of CDS not included in the schema.
-    initial_processing_output : str
-        Path to the directory where results will be saved.
-
-    Returns
-    -------
-    str
-        Path to the CDS not present FASTA file.
-    """
-    cds_not_present_file_path = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
-    with open(cds_not_present_file_path, 'w+') as cds_not_found:
-        for id_, sequence in list(not_included_cds.items()):
-            cds_not_found.write(f">{id_}\n{str(sequence)}\n")
-    return cds_not_present_file_path
-
-def process_cds_presence(not_included_cds, temp_folder, frequency_cds, cds_presence_in_genomes):
-    """
-    Process CDS presence in genomes and count their frequencies.
-
-    Parameters
-    ----------
-    not_included_cds : dict
-        Dictionary of CDS not included in the schema.
-    temp_folder : str
-        Path to the temporary folder.
-    frequency_cds : dict
-        Dictionary to store CDS frequencies.
-    cds_presence_in_genomes : dict
-        Dictionary to store CDS presence in genomes.
-    """
-    cds_present = os.path.join(temp_folder, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
-    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
-    for id_, sequence in list(not_included_cds.items()):
-        hashed_seq = sf.seq_to_hash(str(sequence))
-        if hashed_seq in decoded_sequences_ids:
-            frequency_cds[id_] = len(set(decoded_sequences_ids[hashed_seq][1:]))
-            cds_presence_in_genomes.setdefault(id_, decoded_sequences_ids[hashed_seq][1:])
-        else:
-            frequency_cds[id_] = 0
-            
-    return cds_present
-
-def translate_and_deduplicate_cds(not_included_cds, initial_processing_output, constants):
-    """
-    Translate and deduplicate CDS sequences.
-
-    Parameters
-    ----------
-    not_included_cds : dict
-        Dictionary of CDS not included in the schema.
-    initial_processing_output : str
-        Path to the directory where results will be saved.
-    constants : list
-        List of constants used for processing.
-
-    Returns
-    -------
-    tuple
-        A tuple containing:
-        - all_translation_dict (dict): Dictionary of translated sequences.
-        - protein_hashes (dict): Dictionary of protein hashes.
-    """
-    cds_not_present_trans_file_path = os.path.join(initial_processing_output, "CDS_not_found_translation.fasta")
-    cds_not_present_untrans_file_path = os.path.join(initial_processing_output, "CDS_not_found_untranslated.fasta")
-    all_translation_dict, protein_hashes, _ = sf.translate_seq_deduplicate(not_included_cds,
-                                                                           cds_not_present_trans_file_path,
-                                                                           cds_not_present_untrans_file_path,
-                                                                           constants[5],
-                                                                           True,
-                                                                           constants[6],
-                                                                           True)
-    return all_translation_dict, protein_hashes
-
-def filter_clusters_by_frequency(all_alleles, frequency_in_genomes, constants):
-    """
-    Filter clusters by the total sum of CDS present in genomes.
-
-    Parameters
-    ----------
-    all_alleles : dict
-        Dictionary of all alleles with loci IDs as keys.
-    frequency_in_genomes : dict
-        Dictionary of loci frequencies in genomes.
-    constants : list
-        List of constants used for processing.
-
-    Returns
-    -------
-    dict
-        Dictionary of filtered alleles.
-    """
-    return {rep: cluster_member for rep, cluster_member in all_alleles.items() 
-            if frequency_in_genomes[rep] >= constants[2]}
-
-def write_master_file(all_alleles, not_included_cds, representatives_blastn_folder):
-    """
-    Write master FASTA file for the representatives.
-
-    Parameters
-    ----------
-    all_alleles : dict
-        Dictionary of all alleles with loci IDs as keys.
-    not_included_cds : dict
-        Dictionary of CDS not included in the schema.
-    representatives_blastn_folder : str
-        Path to the directory where results will be saved.
-
-    Returns
-    -------
-    str
-        Path to the master FASTA file.
-    """
-    master_file_path = os.path.join(representatives_blastn_folder, 'master.fasta')
-    with open(master_file_path, 'w') as all_fasta:
-        for members in all_alleles.values():
-            for member in members:
-                all_fasta.write(f">{member}\n{str(not_included_cds[member])}\n")
-    return master_file_path
-
 def identify_spurious_genes(schema_path, output_directory, allelecall_directory, constants, possible_new_loci, temp_paths, run_mode, processing_mode, cpu):
     # Create directories structure.
     [initial_processing_output,
@@ -258,78 +70,103 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
     # Process unclassfied CDS, retrieving and clustering
     if run_mode == 'unclassified_cds':
         temp_folder = temp_paths[0]
-    file_path_cds = temp_paths[1]
+        file_path_cds = temp_paths[1]
+        #missing_classes_fastas = temp_paths[2]
 
-    count_genomes_path = os.path.join(temp_folder, '1_cds_prediction')
-    if not constants[2]:
-        set_minimum_genomes(constants, count_genomes_path)
-    genomes_ids = get_genomes_ids(count_genomes_path)
+        # Verify if the dataset is small, if it is, keep minimum genomes in which
+        # specific CDS cluster is present to 5 if not to 1% of the dataset size.
+        if not constants[2]:
+            ccf.set_minimum_genomes_threshold(temp_folder, constants)
 
-    print("Identifying CDS not present in the schema...")
-    not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
-    for key, value in list(not_included_cds.items()):
-        not_included_cds[itf.replace_by_regex(key, '_', '-')] = not_included_cds.pop(key)
+        print("Identifying CDS not present in the schema...")
+        # Get dict with CDS ids as key and sequence as values.
+        not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
+        #Make IDS universally usable
+        for key, value in list(not_included_cds.items()):
+            not_included_cds[itf.replace_by_regex(key, '_', '-')] = not_included_cds.pop(key)
 
-    print("\nFiltering missing CDS in the schema...")
-    dropped_cds = filter_cds_by_size(not_included_cds, constants)
+        print("\nFiltering missing CDS in the schema...")
+        cds_size, not_included_cds, dropped_cds = ccf.filter_cds_by_size(not_included_cds, constants[5])
 
-    print("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...")
-    frequency_cds = {}
-    cds_presence_in_genomes = {}
-    cds_present = process_cds_presence(not_included_cds, temp_folder, frequency_cds, cds_presence_in_genomes)
+        # This file contains unique CDS.
+        cds_not_present_file_path = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
 
-    print("\nTranslate and deduplicate CDS...")
-    all_translation_dict, protein_hashes = translate_and_deduplicate_cds(not_included_cds, initial_processing_output, constants)
+        # Count the number of CDS not present in the schema and write CDS sequence
+        # into a FASTA file.
+        frequency_cds = {}
+        cds_presence_in_genomes = {}
 
-    print("\nExtracting minimizers for the translated sequences and clustering...")
-    reps_groups = {}
-    all_alleles = {}
-    reps_sequences = {}
-    all_translation_dict = {k: v for k, v in all_translation_dict.items() if k not in dropped_cds}
-    all_translation_dict = {k: v for k, v in sorted(all_translation_dict.items(), key=lambda x: len(x[1]), reverse=True)}
-    [all_alleles, reps_sequences, reps_groups, prot_len_dict] = cf.minimizer_clustering(all_translation_dict, 5, 5, True, 1, all_alleles, reps_sequences, reps_groups, 1, constants[3], constants[4], True, constants[9])
+        print("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...")
+        cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output, temp_folder, not_included_cds)
 
-    all_alleles = {cluster_rep: [value[0] for value in values] for cluster_rep, values in all_alleles.items()}
-    filtered_protein_hashes = {hash_prot: cds_ids for hash_prot, cds_ids in protein_hashes.items() if len(cds_ids) > 1}
-    for cluster_rep, values in list(all_alleles.items()):
-        for cds_id in list(values):
-            protein_hash = itf.identify_string_in_dict_get_key(cds_id, filtered_protein_hashes)
-            if protein_hash is not None:
-                all_alleles[cluster_rep] += filtered_protein_hashes[protein_hash][1:]
+        print("\nTranslate and deduplicate CDS...")
+        all_translation_dict, protein_hashes, cds_translation_size = ccf.translate_and_deduplicate_cds(
+                                                                                                    not_included_cds,
+                                                                                                    initial_processing_output,
+                                                                                                    constants
+                                                                                                )
 
-    total_number_clusters = len(all_alleles)
-    print(f"{len(all_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
-    singleton_cluster = len([cluster for cluster in all_alleles if len(all_alleles) == 1])
-    print(f"\tOut of those clusters, {singleton_cluster} are singletons")
-    print(f"\tOut of those clusters, {total_number_clusters - singleton_cluster} have more than one CDS.")
+        print("\nExtracting minimizers for the translated sequences and clustering...")
+        all_translation_dict = ccf.remove_dropped_cds(all_translation_dict, dropped_cds, protein_hashes)
+        all_translation_dict = ccf.sort_by_protein_size(all_translation_dict)
+        all_alleles, reps_sequences, reps_groups, prot_len_dict = ccf.cluster_by_minimizers(all_translation_dict, constants)
+        all_alleles = ccf.reformat_clusters(all_alleles, protein_hashes)
 
-    print("\nFiltering clusters...")
-    frequency_in_genomes = {rep: sum([frequency_cds[entry] for entry in value]) for rep, value in all_alleles.items()}
-    dropped_cds.update({cds_id: 'Dropped_due_to_cluster_frequency_filtering' for cds_id in itf.flatten_list([all_alleles[rep] for rep in all_alleles if frequency_in_genomes[rep] < constants[2]])})
-    all_alleles = filter_clusters_by_frequency(all_alleles, frequency_in_genomes, constants)
+        # Calculate the total number of clusters
+        total_number_clusters = len(all_alleles)
+        print(f"{len(all_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
 
-    print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}), out of {total_number_clusters} clusters, {len(all_alleles)} remained.")
-    intial_length = len(all_alleles)
-    if intial_length != len(all_alleles):
-        print(f"After filtering by CDS frequency in the genomes (>= {len(genomes_ids)}), out of {intial_length} clusters, {len(all_alleles)} remained.")
+        # Calculate the number of singleton clusters
+        singleton_clusters = len([cluster for cluster in all_alleles.values() if len(cluster) == 1])
+        print(f"\tOut of those clusters, {singleton_clusters} are singletons")
 
-    print("\nRetrieving kmers similiarity and coverage between representatives...")
-    reps_kmers_sim = {}
-    reps_translation_dict = {rep_id: rep_seq for rep_id, rep_seq in all_translation_dict.items() if rep_id.split('_')[0] in all_alleles}
-    reps_translation_dict = {k: v for k, v in sorted(reps_translation_dict.items(), key=lambda x: len(x[1]), reverse=True)}
-    for cluster_id in reps_translation_dict:
-        kmers_rep = set(kf.determine_minimizers(reps_translation_dict[cluster_id], 5, 5, 1, True, True))
-        reps_kmers_sim[cluster_id] = cf.select_representatives(kmers_rep, reps_groups, 0, 0, prot_len_dict, cluster_id, 5, False)
-        reps_kmers_sim[cluster_id] = {match_values[0]: match_values[1:] for match_values in reps_kmers_sim[cluster_id]}
+        # Calculate the number of clusters with more than one CDS
+        multi_cds_clusters = total_number_clusters - singleton_clusters
+        print(f"\tOut of those clusters, {multi_cds_clusters} have more than one CDS.")
+        
+        print("\nFiltering clusters...")
+        # Calculate the frequency of each cluster in the genomes.
+        frequency_in_genomes = {
+            rep: sum(frequency_cds[entry] for entry in cluster_members)
+            for rep, cluster_members in all_alleles.items()
+        }
+        # Add reason for filtering out CDS.
+        dropped_cds.update({
+            cds_id: 'Dropped_due_to_cluster_frequency_filtering'
+            for cds_id in itf.flatten_list([
+                all_alleles[rep] for rep in all_alleles if frequency_in_genomes[rep] < constants[2]
+            ])
+        })
+        # Filter cluster by the total sum of CDS that are present in the genomes, based on input value.
+        filtered_alleles = {
+            rep: cluster_members for rep, cluster_members in all_alleles.items()
+            if frequency_in_genomes[rep] >= constants[2]
+        }
 
-    print("\nReplacing CDSs IDs with the cluster representative ID...")
-    cds_original_ids = ccf.replace_ids_in_clusters(all_alleles, frequency_cds, dropped_cds, not_included_cds, prot_len_dict, all_translation_dict, protein_hashes, cds_presence_in_genomes, reps_kmers_sim)
+        print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
+            f" out of {total_number_clusters} clusters, {len(filtered_alleles)} remained.")
 
-    master_file_path = write_master_file(all_alleles, not_included_cds, representatives_blastn_folder)
-    to_blast_paths = {cluster_rep_id: os.path.join(representatives_blastn_folder, f"cluster_rep_{cluster_rep_id}.fasta") for cluster_rep_id in all_alleles.keys()}
-    for cluster_rep_id, rep_fasta_file in to_blast_paths.items():
-        with open(rep_fasta_file, 'w') as rep_fasta:
-            rep_fasta.write(f">{cluster_rep_id}\n{str(not_included_cds[cluster_rep_id])}\n")
+        # Update all_alleles with the filtered results
+        all_alleles = filtered_alleles
+
+        print("\nRetrieving kmers similiarity and coverage between representatives...")
+        reps_translation_dict = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
+        reps_kmers_sim = ccf.calculate_kmers_similarity(reps_translation_dict, reps_groups, prot_len_dict)
+
+        print("\nReplacing CDSs IDs with the cluster representative ID...")
+        cds_original_ids = ccf.replace_ids_in_clusters(all_alleles,
+                                                    frequency_cds,
+                                                    dropped_cds,
+                                                    not_included_cds,
+                                                    prot_len_dict,
+                                                    all_translation_dict,
+                                                    protein_hashes,
+                                                    cds_presence_in_genomes,
+                                                    reps_kmers_sim)
+        
+        alleles = None
+        
+        to_blast_paths = ccf.create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds)
 
     # Process loci
     else:
@@ -375,8 +212,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                          representative_blast_results_coords_all,
                          representative_blast_results_coords_pident,
                          frequency_in_genomes,
-                         [True, True],
-                         all_alleles)
+                         [True, True])
 
     if run_mode != 'unclassified_cds':
         # Add CDS joined clusters to all_alleles IDS
