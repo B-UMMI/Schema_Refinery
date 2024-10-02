@@ -938,7 +938,7 @@ def create_blast_files(representatives_blastn_folder, all_alleles, not_included_
 
     write_fasta_file(master_file_path, master_sequences)
 
-    return to_blast_paths
+    return to_blast_paths, master_file_path
 
 def update_frequencies_in_genomes(clusters_to_keep, frequency_in_genomes):
     """

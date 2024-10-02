@@ -260,7 +260,7 @@ def identify_spurious_genes():
      
      parser.add_argument('-m', '--run-mode', type=str,
           required=False, dest='run_mode',
-          default='schema', choices=['unclassified', 'schema'],
+          default='schema', choices=['unclassified_cds', 'schema'],
           help='Number of cpus to run blast instances.')
      
      parser.add_argument('-pm', '--processing-mode', type=str,

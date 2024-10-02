@@ -162,7 +162,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         
         alleles = None
         
-        to_blast_paths = ccf.create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds, processing_mode)
+        to_blast_paths, master_file_path = ccf.create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds, processing_mode)
 
     # Process loci
     else:
