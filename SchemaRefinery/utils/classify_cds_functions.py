@@ -1,27 +1,17 @@
 import os
 
 try:
-    from utils import (core_functions as cof,
-                       file_functions as ff,
+    from utils import (file_functions as ff,
                        sequence_functions as sf,
                        clustering_functions as cf,
                        iterable_functions as itf,
-                       kmers_functions as kf,
-                       blast_functions as bf,
-                       linux_functions as lf,
-                       classify_cds_functions as ccf,
-                       schema_classification_functions as scf)
+                       kmers_functions as kf,)
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import (core_functions as cof,
-                                        file_functions as ff,
+    from SchemaRefinery.utils import (file_functions as ff,
                                         sequence_functions as sf,
                                         clustering_functions as cf,
                                         iterable_functions as itf,
-                                        kmers_functions as kf,
-                                        blast_functions as bf,
-                                        linux_functions as lf,
-                                        classify_cds_functions as ccf,
-                                        schema_classification_functions as scf)
+                                        kmers_functions as kf,)
 
 def identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, clusters, cds_present,
                                   not_included_cds, constants, output_path):
@@ -891,11 +881,12 @@ def write_fasta_file(file_path, sequences):
     sequences : dict
         Dictionary with sequence IDs as keys and sequences as values.
     """
-    with open(file_path, 'w') as fasta_file:
+    write_type = 'a' if os.path.exists(file_path) else 'w'
+    with open(file_path, write_type) as fasta_file:
         for seq_id, sequence in sequences.items():
             fasta_file.write(f">{seq_id}\n{sequence}\n")
 
-def create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds):
+def create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds, processing_mode):
     """
     Creates BLAST files for the representatives and writes them to the specified folder.
 
@@ -907,6 +898,9 @@ def create_blast_files(representatives_blastn_folder, all_alleles, not_included_
         Dictionary with cluster representatives as keys and cluster members as values.
     not_included_cds : dict
         Dictionary with CDS IDs as keys and sequences as values.
+    processing_mode : str
+        Mode of processing, which determines how sequences are handled, four types, reps_vs_reps
+        reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
 
     Returns
     -------
@@ -915,21 +909,32 @@ def create_blast_files(representatives_blastn_folder, all_alleles, not_included_
     """
     # Create directory and files path where to write FASTAs.
     master_file_path = os.path.join(representatives_blastn_folder, 'master.fasta')
+    
     to_blast_paths = {}
 
-    # Write master file for the representatives.
+    queries = processing_mode.split('_')[0]
+    subjects = processing_mode.split('_')[-1]
     master_sequences = {}
     for members in all_alleles.values():
-        for member in members:
-            master_sequences[member] = str(not_included_cds[member])
-
         cluster_rep_id = members[0]
-        rep_fasta_file = os.path.join(representatives_blastn_folder, f"cluster_rep_{cluster_rep_id}.fasta")
-        to_blast_paths[cluster_rep_id] = rep_fasta_file
+        loci = cluster_rep_id.split('_')[0]
+        fasta_file = os.path.join(representatives_blastn_folder, f"cluster_rep_{cluster_rep_id}.fasta")
+        to_blast_paths[loci] = fasta_file
 
-        # Write the representative FASTA file.
-        rep_sequences = {cluster_rep_id: str(not_included_cds[cluster_rep_id])}
-        write_fasta_file(rep_fasta_file, rep_sequences)
+        if queries == 'reps':
+            sequence = {cluster_rep_id: not_included_cds[cluster_rep_id]}
+        else:
+            sequence = {}
+            for member in members:
+                sequence[member] = str(not_included_cds[member])
+        
+        write_fasta_file(fasta_file, sequence)
+
+        if subjects == 'reps':
+            master_sequences[member] = str(not_included_cds[members[0]])
+        else:
+            for member in members:
+                master_sequences[member] = str(not_included_cds[member])
 
     write_fasta_file(master_file_path, master_sequences)
 

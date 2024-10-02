@@ -8,9 +8,7 @@ try:
     from utils import (core_functions as cof,
                        file_functions as ff,
                        sequence_functions as sf,
-                       clustering_functions as cf,
                        iterable_functions as itf,
-                       kmers_functions as kf,
                        blast_functions as bf,
                        linux_functions as lf,
                        classify_cds_functions as ccf,
@@ -19,9 +17,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
-                                        clustering_functions as cf,
                                         iterable_functions as itf,
-                                        kmers_functions as kf,
                                         blast_functions as bf,
                                         linux_functions as lf,
                                         classify_cds_functions as ccf,
@@ -56,7 +52,7 @@ def create_directories(output_directory, run_mode):
     
     return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
 
-def identify_spurious_genes(schema_path, output_directory, allelecall_directory, constants, possible_new_loci, temp_paths, run_mode, processing_mode, cpu):
+def identify_spurious_genes(schema_path, output_directory, allelecall_directory, possible_new_loci, constants, temp_paths, run_mode, processing_mode, cpu):
     # Create directories structure.
     [initial_processing_output,
      schema_folder,
@@ -166,7 +162,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         
         alleles = None
         
-        to_blast_paths = ccf.create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds)
+        to_blast_paths = ccf.create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds, processing_mode)
 
     # Process loci
     else:
@@ -352,7 +348,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                                                     results_output)
     else:
         print(f"Writting file with dropped {'loci' if run_mode == 'loci_vs_loci' else 'loci or possible new loci'}")
-        cof.dropped_loci_to_file(to_blast_paths, drop_possible_loci, results_output)
+        scf.dropped_loci_to_file(to_blast_paths, drop_possible_loci, results_output)
 
     cof.print_classifications_results(clusters_to_keep,
                                         drop_possible_loci,
@@ -379,21 +375,21 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
 
-def main(schema, output_directory, allelecall_directory, alignment_ratio_threshold_gene_fusions, 
-        pident_threshold_gene_fusions, clustering_sim, clustering_cov, genome_presence,
-        size_threshold, translation_table, bsr, problematic_proportion, size_ratio, run_mode, processing_mode, cpu):
+def main(schema, output_directory, allelecall_directory, possible_new_loci, alignment_ratio_threshold, 
+        pident_threshold, clustering_sim, clustering_cov, genome_presence,
+        absolute_size, translation_table, bsr, problematic_proportion, size_ratio, run_mode, processing_mode, cpu):
     
     temp_paths = [os.path.join(allelecall_directory, "temp"), 
                       os.path.join(allelecall_directory, "unclassified_sequences.fasta"),
                       os.path.join(allelecall_directory, "missing_classes.fasta")]
     # Put all constants in one dict in order to decrease number of variables
     # used around.
-    constants = [alignment_ratio_threshold_gene_fusions, 
-                pident_threshold_gene_fusions,
+    constants = [alignment_ratio_threshold, 
+                pident_threshold,
                 genome_presence,
                 clustering_sim,
                 clustering_cov,
-                size_threshold,
+                absolute_size,
                 translation_table,
                 bsr,
                 problematic_proportion,
@@ -407,6 +403,7 @@ def main(schema, output_directory, allelecall_directory, alignment_ratio_thresho
     identify_spurious_genes(schema,
                  unclassified_cds_output,
                  allelecall_directory,
+                 possible_new_loci,
                 constants,
                 temp_paths,
                 run_mode,
