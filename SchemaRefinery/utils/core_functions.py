@@ -10,7 +10,8 @@ try:
                        iterable_functions as itf,
                        linux_functions as lf,
                        graphical_functions as gf,
-                       pandas_functions as pf)
+                       pandas_functions as pf,
+                       sequence_functions as sf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       clustering_functions as cf,
@@ -19,7 +20,8 @@ except ModuleNotFoundError:
                                       iterable_functions as itf,
                                       linux_functions as lf,
                                       graphical_functions as gf,
-                                      pandas_functions as pf)
+                                      pandas_functions as pf,
+                                      sequence_functions as sf)
 
 def alignment_dict_to_file(blast_results_dict, file_path, write_type, add_group_column = False):
     """
@@ -1492,7 +1494,7 @@ def run_blasts(blast_db, cds_to_blast, reps_translation_dict,
             representative_blast_results_coords_pident, bsr_values, self_score_dict]
 
 def write_processed_results_to_file(clusters_to_keep, representative_blast_results,
-                                    classes_outcome, all_alleles, alleles, is_matched,
+                                    classes_outcome, all_alleles, is_matched,
                                     is_matched_alleles, output_path):
     """
     Write processed results to files in specified output directories.
@@ -1834,3 +1836,134 @@ def print_classifications_results(clusters_to_keep, drop_possible_loci, to_blast
 
     if Retained_not_matched_by_blastn:
         clusters_to_keep['Retained_not_matched_by_blastn'] = Retained_not_matched_by_blastn
+
+def add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, clusters_to_keep,
+                           clusters, reason, processed_drop):
+    """
+    Adds CDS to the dropped CDS list based on the provided parameters.
+
+    Parameters
+    ----------
+    drop_possible_loci : list
+        List of possible loci dropped.
+    dropped_cds : dict
+        Dictionary to store dropped CDS with their reasons.
+    clusters_to_keep : dict
+        Dictionary containing CDS to keep, classified by their class type.
+    clusters : dict
+        Dictionary containing clusters of CDS.
+    reason : str
+        Reason for dropping the CDS.
+    processed_drop : list
+        List of already processed drop IDs.
+
+    Returns
+    -------
+    None
+    """
+
+    for drop_id in drop_possible_loci:
+        if drop_id in processed_drop:
+            continue
+        else:
+            processed_drop.append(drop_id)
+            
+        if itf.identify_string_in_dict_get_key(drop_id, clusters_to_keep['1a']):
+            # Add all of the other elements of the joined group to the dropped list.
+            drop_possible_loci.update(clusters_to_keep['1a'])
+            del clusters_to_keep['1a'][drop_id]
+        else:
+            class_ = itf.identify_string_in_dict_get_key(drop_id, {key: value for key, value in clusters_to_keep.items() if key != '1a'})
+            if class_:
+                clusters_to_keep[class_].remove(drop_id)
+
+        dropped_1a = itf.identify_string_in_dict_get_value(drop_id, clusters_to_keep['1a'])
+        if dropped_1a is not None:
+            for rep_id in dropped_1a:
+                for cds_id in clusters[rep_id]:
+                    dropped_cds[cds_id] = reason
+        else:
+            for cds_id in clusters[drop_id]:
+                dropped_cds[cds_id] = reason
+                
+def identify_problematic_new_loci(clusters_to_keep, all_alleles, cds_present,
+                                  all_nucleotide_sequences, constants, results_output):
+    """
+    Identify problematic new loci based on the presence of NIPHs and NIPHEMs.
+
+    Parameters
+    ----------
+    clusters_to_keep : dict
+        A dictionary where keys are class labels and values are dictionaries with cluster IDs as keys 
+        and lists of cluster members as values, for key 1a the values are dicts with joined cluster
+        ID as key and list as value.
+    all_alleles : dict
+        A dictionary where keys are cluster IDs and values are lists of allele IDs.
+    cds_present : str
+        Path to the distinct.hashtable file.
+    all_nucleotide_sequences : dict
+        A dictionary where keys are allele IDs and values are sequences not included in the the schema.
+    constants : list
+        A list of constants used in the function. The 9th element (index 8) is the threshold for 
+        problematic proportion.
+    results_output : str
+        The path to the directory where the output file will be saved.
+
+    Returns
+    -------
+    dropped_problematic : set
+        The updated set of cluster IDs that should be dropped.
+    """
+    dropped_problematic = set()
+    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present) # Dict to store the decoded sequences.
+    niphems_in_possible_new_loci = {} # Dict to store the NIPHEMs in each possible new loci.
+    niphs_in_possible_new_loci = {} # Dict to store the NIPHs in each possible new loci.
+    temp_niphs_in_possible_new_loci = {} # Temp dict to store the NIPHs in each possible new loci.
+    total_possible_new_loci_genome_presence = {} # Dict to store the total number of genomes in each possible new loci.
+    problematic_loci = {} # Dict to store the proportion of problematic genomes in each possible new loci.
+    for class_, cluster_keep in clusters_to_keep.items():
+        for cluster_id in cluster_keep:
+            niphems_in_possible_new_loci.setdefault(cluster_id, [])
+            temp_niphs_in_possible_new_loci.setdefault(cluster_id, {})
+            if class_ == '1a':
+                cluster = itf.flatten_list([all_alleles[i] for i in clusters_to_keep['1a'][cluster_id]])
+            else:
+                cluster = all_alleles[cluster_id]
+            for allele_id in cluster:
+                sequence = all_nucleotide_sequences[allele_id]
+                hashed_seq = sf.seq_to_hash(str(sequence))
+                allele_presence_in_genomes = decoded_sequences_ids[hashed_seq][1:]
+                # NIPHs
+                temp_niphs_in_possible_new_loci[cluster_id].setdefault(allele_id, set(allele_presence_in_genomes))
+                # NIPHEMS
+                # Convert list to set
+                unique_elements = set(allele_presence_in_genomes)
+                if len(unique_elements) == len(allele_presence_in_genomes):
+                    continue
+                else:
+                    niphems_genomes = itf.get_duplicates(allele_presence_in_genomes)
+                    niphems_in_possible_new_loci.setdefault(cluster_id, []).extend(niphems_genomes)
+
+            niphs_in_genomes = set(itf.get_shared_elements(temp_niphs_in_possible_new_loci[cluster_id]))
+            niphs_in_possible_new_loci.setdefault(cluster_id, niphs_in_genomes)
+            
+            niphems_in_genomes = set(niphems_in_possible_new_loci[cluster_id])
+
+            problematic_genomes_in_possible_new_loci = niphs_in_genomes | niphems_in_genomes
+
+            total_possible_new_loci_genome_presence = len(set(itf.flatten_list(temp_niphs_in_possible_new_loci[cluster_id].values())))
+            
+            problematic_proportion = len(problematic_genomes_in_possible_new_loci)/total_possible_new_loci_genome_presence
+            problematic_loci.setdefault(cluster_id, problematic_proportion)
+            if problematic_proportion >= constants[8]:
+                dropped_problematic.add(cluster_id)
+
+    
+    # Write the groups that were removed due to the presence of NIPHs or NIPHEMs.
+    niphems_and_niphs_file = os.path.join(results_output, 'niphems_and_niphs_groups.tsv')
+    with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
+        niphems_and_niphs.write('Group_ID\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
+        for group, proportion in problematic_loci.items():
+            niphems_and_niphs.write(f"{group}\t{proportion}\t{'Dropped' if group in dropped_problematic else 'Kept'}\n")
+            
+    return dropped_problematic

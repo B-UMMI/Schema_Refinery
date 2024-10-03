@@ -76,16 +76,13 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
 
         print("Identifying CDS not present in the schema...")
         # Get dict with CDS ids as key and sequence as values.
-        not_included_cds = sf.fetch_fasta_dict(file_path_cds, True)
+        all_nucleotide_sequences = sf.fetch_fasta_dict(file_path_cds, True)
         #Make IDS universally usable
-        for key, value in list(not_included_cds.items()):
-            not_included_cds[itf.replace_by_regex(key, '_', '-')] = not_included_cds.pop(key)
+        for key, value in list(all_nucleotide_sequences.items()):
+            all_nucleotide_sequences[itf.replace_by_regex(key, '_', '-')] = all_nucleotide_sequences.pop(key)
 
         print("\nFiltering missing CDS in the schema...")
-        cds_size, not_included_cds, dropped_cds = ccf.filter_cds_by_size(not_included_cds, constants[5])
-
-        # This file contains unique CDS.
-        cds_not_present_file_path = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
+        cds_size, all_nucleotide_sequences, dropped_alleles = ccf.filter_cds_by_size(all_nucleotide_sequences, constants[5])
 
         # Count the number of CDS not present in the schema and write CDS sequence
         # into a FASTA file.
@@ -93,17 +90,19 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         cds_presence_in_genomes = {}
 
         print("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...")
-        cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output, temp_folder, not_included_cds)
+        cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output,
+                                                                                          temp_folder,
+                                                                                          all_nucleotide_sequences)
 
         print("\nTranslate and deduplicate CDS...")
         all_translation_dict, protein_hashes, cds_translation_size = ccf.translate_and_deduplicate_cds(
-                                                                                                    not_included_cds,
+                                                                                                    all_nucleotide_sequences,
                                                                                                     initial_processing_output,
                                                                                                     constants
                                                                                                 )
 
         print("\nExtracting minimizers for the translated sequences and clustering...")
-        all_translation_dict = ccf.remove_dropped_cds(all_translation_dict, dropped_cds, protein_hashes)
+        all_translation_dict = ccf.remove_dropped_cds(all_translation_dict, dropped_alleles, protein_hashes)
         all_translation_dict = ccf.sort_by_protein_size(all_translation_dict)
         all_alleles, reps_sequences, reps_groups, prot_len_dict = ccf.cluster_by_minimizers(all_translation_dict, constants)
         all_alleles = ccf.reformat_clusters(all_alleles, protein_hashes)
@@ -127,7 +126,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
             for rep, cluster_members in all_alleles.items()
         }
         # Add reason for filtering out CDS.
-        dropped_cds.update({
+        dropped_alleles.update({
             cds_id: 'Dropped_due_to_cluster_frequency_filtering'
             for cds_id in itf.flatten_list([
                 all_alleles[rep] for rep in all_alleles if frequency_in_genomes[rep] < constants[2]
@@ -152,17 +151,15 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         print("\nReplacing CDSs IDs with the cluster representative ID...")
         cds_original_ids = ccf.replace_ids_in_clusters(all_alleles,
                                                     frequency_cds,
-                                                    dropped_cds,
-                                                    not_included_cds,
+                                                    dropped_alleles,
+                                                    all_nucleotide_sequences,
                                                     prot_len_dict,
                                                     all_translation_dict,
                                                     protein_hashes,
                                                     cds_presence_in_genomes,
                                                     reps_kmers_sim)
         
-        alleles = None
-        
-        to_blast_paths, master_file_path = ccf.create_blast_files(representatives_blastn_folder, all_alleles, not_included_cds, processing_mode)
+        to_blast_paths, master_file_path = ccf.create_blast_files(representatives_blastn_folder, all_alleles, all_nucleotide_sequences, processing_mode)
 
     # Process loci
     else:
@@ -171,12 +168,17 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         else:
             ff.copy_folder(schema_path, schema_folder)
 
-        [alleles,
+        dropped_alleles = {}
+
+        [all_nucleotide_sequences,
         master_file_path,
         all_translation_dict,
         frequency_in_genomes,
         to_blast_paths,
-        all_alleles] = scf.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, initial_processing_output)
+        all_alleles,
+        cds_present,
+        group_reps_ids,
+        group_alleles_ids] = scf.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, initial_processing_output)
 
 
     # Create BLAST db for the schema DNA sequences.
@@ -210,11 +212,6 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                          frequency_in_genomes,
                          [True, True])
 
-    if run_mode != 'unclassified_cds':
-        # Add CDS joined clusters to all_alleles IDS
-        if alleles:
-            all_alleles.update(alleles)
-
     print("\nFiltering BLAST results into classes...")
     # Separate results into different classes.
     classes_outcome = cof.separate_blastn_results_into_classes(representative_blast_results,
@@ -235,52 +232,64 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to mantain and to display to user.
-    clusters_to_keep, drop_possible_loci = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
+    clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
     
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep['1a'] = {values[0]: values for key, values in clusters_to_keep['1a'].items()}
     if run_mode == 'unclassified_cds':
         updated_frequency_in_genomes = ccf.update_frequencies_in_genomes(clusters_to_keep, frequency_in_genomes)
     
-    # Open dict to store IDs of the reps and alleles
-    group_reps_ids = {}
-    group_alleles_ids = {}
+        # Open dict to store IDs of the reps and alleles
+        group_reps_ids = {}
+        group_alleles_ids = {}
 
-    cof.count_number_of_reps_and_alleles(clusters_to_keep,
-                                        all_alleles,
-                                        drop_possible_loci,
-                                        group_reps_ids,
-                                        group_alleles_ids)
+        cof.count_number_of_reps_and_alleles(clusters_to_keep,
+                                            all_alleles,
+                                            dropped_loci_ids,
+                                            group_reps_ids,
+                                            group_alleles_ids)
 
-    if run_mode == 'unclassified_cds':
         print("\nAdd remaining cluster that didn't match by BLASTn...")
         # Add cluster not matched by BLASTn
         all_matched_clusters = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep['1a'].values()])
         clusters_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in all_alleles.keys() if cluster not in all_matched_clusters])
 
-        processed_drop = []
-        # Add Ids of the dropped cases due to frequency during classification
-        ccf.add_cds_to_dropped_cds(drop_possible_loci,
-                                dropped_cds,
-                                clusters_to_keep,
-                                all_alleles,
-                                'Dropped_due_to_smaller_genome_presence_than_matched_cluster', processed_drop)
+    processed_drop = []
+    # Add Ids of the dropped cases due to frequency during classification
+    cof.add_cds_to_dropped_cds(dropped_loci_ids,
+                            dropped_alleles,
+                            clusters_to_keep,
+                            all_alleles,
+                            'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
+                            processed_drop)
 
-        print("\nFiltering problematic possible new loci based on NIPHS and NIPHEMS presence and"
-            " writting results to niphems_and_niphs_groups.tsv...")
-        drop_possible_loci = ccf.identify_problematic_new_loci(drop_possible_loci, clusters_to_keep, all_alleles, cds_present, not_included_cds, constants, results_output)
-        
+    print("\nFiltering problematic possible new loci based on NIPHS and NIPHEMS presence and"
+        " writting results to niphems_and_niphs_groups.tsv...")
+    # Identify problematic possible new loci based on NIPHs and NIPHEMs presence
+    dropped_problematic = cof.identify_problematic_new_loci(clusters_to_keep,
+                                                         all_alleles,
+                                                         cds_present,
+                                                         all_nucleotide_sequences,
+                                                         constants,
+                                                         results_output)
+    # For unclassified cds remove NIPHS and NIPHEMS possible new loci
+    # For Schema keep them because the user should make the choice to remove or keep
+    # them, especially if there are joined clusters.
+    if run_mode == 'unclassified_cds':
+        # Add Ids of the dropped cases due to during NIPH and NIPHEMs
+        dropped_loci_ids.update(dropped_problematic)
         # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
         # classification
-        ccf.add_cds_to_dropped_cds(drop_possible_loci,
-                                dropped_cds,
+        cof.add_cds_to_dropped_cds(dropped_loci_ids,
+                                dropped_alleles,
                                 clusters_to_keep,
                                 all_alleles,
-                                'Dropped_due_high_presence_of_NIPHs_and_NIPHEMs_in_genomes', processed_drop)
+                                'Dropped_due_high_presence_of_NIPHs_and_NIPHEMs_in_genomes',
+                                processed_drop)
 
         # Remove from all releveant dicts
-        ccf.remove_dropped_cds_from_analysis(dropped_cds,
-                                            not_included_cds,
+        ccf.remove_dropped_cds_from_analysis(dropped_alleles,
+                                            all_nucleotide_sequences,
                                             all_translation_dict,
                                             protein_hashes)
 
@@ -289,7 +298,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                                                                           count_results_by_class,
                                                                           frequency_in_genomes,
                                                                           clusters_to_keep,
-                                                                          drop_possible_loci,
+                                                                          dropped_loci_ids,
                                                                           classes_outcome)
 
     print("\nWritting count_results_by_cluster.tsv, related_matches.tsv files"
@@ -326,7 +335,6 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                                     representative_blast_results,
                                     classes_outcome,
                                     all_alleles,
-                                    alleles,
                                     is_matched,
                                     is_matched_alleles,
                                     blast_results)
@@ -336,28 +344,25 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         ccf.update_ids_and_save_changes(clusters_to_keep,
                                     all_alleles,
                                     cds_original_ids,
-                                    dropped_cds,
-                                    not_included_cds,
+                                    dropped_alleles,
+                                    all_nucleotide_sequences,
                                     results_output)
         print("\nWritting dropped CDSs to file...")
-        ccf.write_dropped_cds_to_file(dropped_cds, results_output)
+        ccf.write_dropped_cds_to_file(dropped_alleles, results_output)
 
-        print("\nWritting dropped possible new loci to file...")
-        ccf.write_dropped_possible_new_loci_to_file(drop_possible_loci,
-                                                    dropped_cds,
-                                                    results_output)
-    else:
-        print(f"Writting file with dropped {'loci' if run_mode == 'loci_vs_loci' else 'loci or possible new loci'}")
-        scf.dropped_loci_to_file(to_blast_paths, drop_possible_loci, results_output)
+    print("\nWritting dropped possible new loci to file...")
+    ccf.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
+                                                dropped_alleles,
+                                                results_output)
 
     cof.print_classifications_results(clusters_to_keep,
-                                        drop_possible_loci,
+                                        dropped_loci_ids,
                                         to_blast_paths,
                                         all_alleles)
 
     if run_mode == 'unclassified_cds':
         print("\nWritting temp loci file...")
-        ccf.write_temp_loci(clusters_to_keep, not_included_cds, all_alleles, results_output)
+        ccf.write_temp_loci(clusters_to_keep, all_nucleotide_sequences, all_alleles, results_output)
 
         print("\nCreate graphs for the BLAST results...")
         cds_size_dicts = {'IDs': cds_size.keys(),
