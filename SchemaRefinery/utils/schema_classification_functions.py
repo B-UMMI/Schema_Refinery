@@ -9,48 +9,6 @@ except ModuleNotFoundError:
                                       iterable_functions as itf,
                                       sequence_functions as sf)
 
-def dropped_loci_to_file(schema_loci, dropped, results_output):
-    """
-    Write dropped loci information to a file.
-
-    Parameters
-    ----------
-    schema_loci : set
-        A set of loci IDs that are part of the schema.
-    dropped : list
-        A list of loci IDs that have been dropped.
-    results_output : str
-        The directory where the dropped loci file will be saved.
-
-    Returns
-    -------
-    None
-
-    Notes
-    -----
-    - The function creates a file named "dropped.tsv" in the specified results_output directory.
-    - The file contains three columns: ID, Reason, and Where from.
-    - The Reason column is always 'Dropped_due_to_cluster_frequency_filtering'.
-    - The Where from column indicates whether the loci was dropped from the schema or from possible new loci.
-
-    Examples
-    --------
-    >>> schema_loci = {'locus1', 'locus2', 'locus3'}
-    >>> dropped = ['locus1', 'locus4']
-    >>> results_output = '/path/to/results'
-    >>> dropped_loci_to_file(schema_loci, dropped, results_output)
-    """
-    dropped_file = os.path.join(results_output, "dropped.tsv")
-    
-    with open(dropped_file, 'w') as d:
-        d.write("ID\tReason\tWhere from\n")
-        for drop in dropped:
-            if drop in schema_loci:
-                dropped_from = 'from_schema'
-            else:
-                dropped_from = 'from_possible_new_loci'
-            d.write(f"{drop}\t{'Dropped_due_to_cluster_frequency_filtering'}\t{dropped_from}\n")
-
 def process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, results_output):
     """
     Process new loci by translating sequences, counting frequencies, and preparing files for BLAST.
@@ -100,7 +58,7 @@ def process_new_loci(schema_folder, allelecall_directory, constants, processing_
     
     # Create a dictionary of short schema FASTA files
     schema_short_dir = os.path.join(schema_folder, 'short')
-    schema_short = {fastafile: os.path.join(schema_short_dir, fastafile) for fastafile in os.listdir(schema_short_dir) if fastafile.endswith('.fasta')}
+    schema_short = {fastafile.replace('_short', ''): os.path.join(schema_short_dir, fastafile) for fastafile in os.listdir(schema_short_dir) if fastafile.endswith('.fasta')}
     
     # Path to the master FASTA file
     master_file_path = os.path.join(results_output, 'master.fasta')
@@ -115,49 +73,51 @@ def process_new_loci(schema_folder, allelecall_directory, constants, processing_
 
     # Initialize dictionaries for alleles, translations, and frequencies
     all_alleles = {}
-    alleles = {}
+    all_nucleotide_sequences = {}
     translation_dict = {}
     frequency_in_genomes = {}
     temp_frequency_in_genomes = {}
+    group_reps_ids = {}
+    group_alleles_ids = {}
     
     # Path to the CDS presence file
     cds_present = os.path.join(allelecall_directory, "temp", "2_cds_preprocess/cds_deduplication/distinct.hashtable")
     decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
     
     # Process alleles to run
-    for loci in to_blast_paths.values():
+    for loci, loci_path in to_blast_paths.items():
         loci_id = ff.file_basename(loci).split('.')[0]
-        alleles.setdefault(loci_id, {})
-        fasta_dict = sf.fetch_fasta_dict(loci, False)
+        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
-            alleles.setdefault(loci_id, {}).update({allele_id: str(sequence)})
+            group_reps_ids.setdefault(loci_id, []).append(allele_id)
+            all_nucleotide_sequences.setdefault(loci_id, str(sequence))
 
     # Write master file to run against
-    for loci in to_run_against.values():
+    for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
-        alleles.setdefault(loci_id, {})
-        fasta_dict = sf.fetch_fasta_dict(loci, False)
+        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
-            alleles.setdefault(loci_id, {}).update({allele_id: str(sequence)})
+            group_alleles_ids.setdefault(loci_id, []).append(allele_id)
+            all_nucleotide_sequences.setdefault(allele_id, str(sequence))
             # Write to master file
             write_type = 'a' if os.path.exists(master_file_path) else 'w'
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(sequence)}\n")
 
     # Count loci presence and translate all of the alleles
-    for loci in schema.values():
+    for loci, loci_path in schema.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         all_alleles.setdefault(loci_id, [])
-        fasta_dict = sf.fetch_fasta_dict(loci, False)
+        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():  
             all_alleles[loci_id].append(allele_id)
             hashed_seq = sf.seq_to_hash(str(sequence))
             # If CDS sequence is present in the schema, count the number of genomes it is found in
             if hashed_seq in decoded_sequences_ids:
                 # Count frequency of only presence, do not include the total CDS in the genomes
-                temp_frequency_in_genomes.setdefault(loci_id, []).append(len(set(decoded_sequences_ids[hashed_seq][1:])))
+                temp_frequency_in_genomes.setdefault(loci_id, []).extend(decoded_sequences_ids[hashed_seq][1:])
 
-        frequency_in_genomes.setdefault(loci_id, sum(temp_frequency_in_genomes[loci_id]))
+        frequency_in_genomes.setdefault(loci_id, len(set(temp_frequency_in_genomes[loci_id])))
 
         # Translate sequences and update translation dictionary
         trans_path_file = os.path.join(possible_new_loci_translation_folder, f"{loci_id}.fasta")
@@ -171,4 +131,4 @@ def process_new_loci(schema_folder, allelecall_directory, constants, processing_
         
         translation_dict.update(trans_dict)
                 
-    return alleles, master_file_path, translation_dict, frequency_in_genomes, to_blast_paths, all_alleles
+    return all_nucleotide_sequences, master_file_path, translation_dict, frequency_in_genomes, to_blast_paths, all_alleles, cds_present, group_reps_ids, group_alleles_ids

@@ -207,6 +207,11 @@ def identify_spurious_genes():
                         help='Path to the directory that contains'
                              'allele call directory that was run'
                              'with --no-cleanup.')
+     
+     parser.add_argument('-pnl', '--possible-new-loci', type=str,
+                        required=False, dest='possible_new_loci',
+                        help='Path to the directory that contains'
+                             'possible new loci')
     
      parser.add_argument('-at', '--alignment_ratio_threshold', type=float,
                         required=False, dest='alignment_ratio_threshold',
@@ -233,8 +238,8 @@ def identify_spurious_genes():
                     help='The minimum number of genomes specific cluster'
                     'cluster of CDS must be present in order to be considered.')
     
-     parser.add_argument('-st', '--size_threshold', type=int,
-                    required=False, dest='size_threshold',
+     parser.add_argument('-as', '--absolute_size', type=int,
+                    required=False, dest='absolute_size', default=201,
                     help='Size of the CDS to consider processing.')
     
      parser.add_argument('-tb', '--translation_table', type=int,
@@ -249,13 +254,13 @@ def identify_spurious_genes():
           required=False, dest='size_ratio', default=0.8,
           help='Size ratio to consider alleles as the same locus.')
      
-     parser.add_argument('-b', '--problematic_proportion', type=float,
-          required=False, dest='problematic_proportion', default=0.3,
+     parser.add_argument('-pp', '--problematic_proportion', type=float,
+          required=False, dest='problematic_proportion', default=0,
           help='Proportion of problematic (NIPHS and NIPHEMS) CDSs per loci allowed.')
      
      parser.add_argument('-m', '--run-mode', type=str,
           required=False, dest='run_mode',
-          default='schema', choices=['unclassified', 'schema'],
+          default='schema', choices=['unclassified_cds', 'schema'],
           help='Number of cpus to run blast instances.')
      
      parser.add_argument('-pm', '--processing-mode', type=str,
@@ -355,7 +360,7 @@ def main():
                                              'records, and based on alignment against Genbank '
                                              'files and other schemas.',
                                              schema_annotation],
-                         'identify_spurious_genes': ["Identifies spurious genes in a schema by running against itself or"
+                         'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or"
                                           " against unclassified CDS to infer new loci and identify problematic genes.",
                                           identify_spurious_genes],
                          'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
