@@ -1,6 +1,7 @@
-from typing import List, Set, Dict, Union, Tuple, Optional
+from typing import List, Set, Dict, Union, Tuple, Optional, Iterator
 import hashlib
 from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
 try:
@@ -232,7 +233,7 @@ def translate_dna(dna_sequence: str, table_id: int, min_len: int, cds: bool = Tr
 
     return ','.join(exceptions)
 
-def read_fasta_file_iterator(file: str) -> SeqIO.FastaIterator:
+def read_fasta_file_iterator(file: str) -> Iterator[SeqRecord]:
     """
     Reads fasta files and puts it into a dict.
 
@@ -243,12 +244,12 @@ def read_fasta_file_iterator(file: str) -> SeqIO.FastaIterator:
 
     Returns
     -------
-    SeqIO.FastaIterator
+    Iterator[SeqRecord]
         Returns iterator to read fasta file.
     """
     return SeqIO.parse(file, "fasta")
 
-def read_fasta_file_dict(file: str) -> Dict[str, SeqIO.SeqRecord]:
+def read_fasta_file_dict(file: str) -> Dict[str, Iterator[SeqRecord]]:
     """
     Reads a FASTA file and returns a dictionary where the keys are sequence identifiers and the values are sequence records.
 
@@ -435,7 +436,8 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, untr
     if untras_seq and untras_path:
         with open(untras_path, 'w+') as untras_file:
             for id_s, exceptions in untras_seq.items():
-                untras_file.write(f">{id_s}\n{'\n'.join(exceptions)}\n")
+                exceptions_str = '\n'.join(exceptions)
+                untras_file.write(f">{id_s}\n{exceptions_str}\n")
     return translation_dict, protein_hashes, untras_seq
 
 def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
@@ -486,7 +488,7 @@ def deduplicate_fasta_dict(fasta_dict: Dict[str, str]) -> Dict[str, str]:
             del fasta_dict[key]
     return fasta_dict
 
-def sequence_generator(input_file: str) -> SeqIO.FastaIterator:
+def sequence_generator(input_file: str) -> Iterator[SeqRecord]:
     """
     Create a SeqRecord iterator.
 
@@ -497,7 +499,7 @@ def sequence_generator(input_file: str) -> SeqIO.FastaIterator:
 
     Returns
     -------
-    SeqIO.FastaIterator
+    Iterator[SeqRecord]
         SeqRecord iterator.
     """
     return SeqIO.parse(input_file, 'fasta')

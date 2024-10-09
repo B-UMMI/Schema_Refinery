@@ -1,7 +1,7 @@
 import urllib.request
 import time
 import http.client
-from typing import Union, Tuple
+from typing import Union, Tuple, Any
 
 def download_file(url: str, file_name: str, retry: int) -> Union[str, Tuple[str, Any]]:
     """

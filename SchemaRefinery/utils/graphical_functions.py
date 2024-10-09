@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-import plotly.graph_objects as go, Figure
+import plotly.graph_objects as go
 import plotly.offline
 from plotly.subplots import make_subplots
 from typing import List, Optional, Union, Dict, Any
@@ -427,7 +427,7 @@ def create_subplots(
     go.Figure
         Returns a Figure object containing the subplots.
     """
-    fig: Figure = make_subplots(
+    fig: go.Figure = make_subplots(
         rows=rows,
         cols=columns,
         shared_xaxes=share_x,
