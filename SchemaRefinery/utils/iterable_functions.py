@@ -4,24 +4,6 @@ import itertools
 import pickle
 from typing import List, Tuple, Dict, Union, Any, Set
 
-def join_list(lst: List[Any], delimiter: str) -> str:
-    """
-    Join all elements in a list into a single string using a delimiter.
-
-    Parameters
-    ----------
-    lst : list
-        List with elements to be joined.
-    delimiter : str
-        Character or string used to join list elements.
-
-    Returns
-    -------
-    str
-        A single string with all elements in the input list joined by the specified delimiter.
-    """
-    return delimiter.join(map(str, lst))
-
 def flatten_list(list_to_flatten: List[List[Any]]) -> List[Any]:
     """
     Flatten one level of a nested list.
