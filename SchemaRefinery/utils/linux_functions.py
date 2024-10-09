@@ -1,6 +1,7 @@
 import shutil
+from typing import Optional
 
-def get_tool_path(name):
+def get_tool_path(name: str) -> Optional[str]:
     """
     Get the path of the specified tool.
 
@@ -11,9 +12,7 @@ def get_tool_path(name):
 
     Returns
     -------
-    return : str or None
+    Optional[str]
         The path of the tool if it is found in the PATH. If the tool is not found, returns None.
     """
-
-    # Get the path of the tool
     return shutil.which(name)

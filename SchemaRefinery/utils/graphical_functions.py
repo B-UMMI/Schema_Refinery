@@ -1,100 +1,104 @@
 import os
-import plotly.graph_objects as go
+import pandas as pd
+import plotly.graph_objects as go, Figure
 import plotly.offline
 from plotly.subplots import make_subplots
+from typing import List, Optional, Union, Dict, Any
 
-def render_line_chart(df, output_path, columns, ascending):
+def render_line_chart(df: pd.DataFrame, output_path: str, columns: List[str], ascending: bool) -> None:
     """
     Render line chart for each column name in input.
-    
+
     Parameters
     ----------
-    df : pandas dataframe
-        pandas dataframe
+    df : pd.DataFrame
+        Pandas dataframe.
     output_path : str
         Where to write HTML file.
-    columns : list
-        List that contains the columns ids to create line chart.
-    labels : list
-        Contains x and y lables to add to the chart.
+    columns : List[str]
+        List that contains the column ids to create line chart.
     ascending : bool
         Bool to choose order to sort (False for highest to smallest).
-    
+
     Returns
     -------
-    return : None
+    None
         Writes HTML files inside the output path.
     """
-    
     for column_id in columns:
-        fig = go.Figure(data=go.Scatter(y=df[column_id].sort_values(ascending=ascending)))
+        fig: go.Figure = go.Figure(data=go.Scatter(y=df[column_id].sort_values(ascending=ascending)))
         # Update layout
         fig.update_layout(
-        title=f"Line chart of {column_id}",
-        xaxis_title="Value",
-        yaxis_title="Frequency")
+            title=f"Line chart of {column_id}",
+            xaxis_title="Value",
+            yaxis_title="Frequency"
+        )
         
         html_path = os.path.join(output_path, f'line_chart_{column_id}.html')
         fig.write_html(html_path)
-        
-def render_histogram(df, output_path, columns, labels):
+
+def render_histogram(df: pd.DataFrame, output_path: str, columns: List[str], labels: List[str]) -> None:
     """
-    Render line plot for each column name in input.
-    
+    Render histogram for each column name in input.
+
     Parameters
     ----------
-    df : pandas dataframe
-        pandas dataframe
+    df : pd.DataFrame
+        Pandas dataframe.
     output_path : str
         Where to write HTML file.
-    columns : list
-        List that contains the columns ids to create histogram plot.
-    labels : list
-        Contains x and y lables to add to the chart.
-    
+    columns : List[str]
+        List that contains the column ids to create histogram plot.
+    labels : List[str]
+        Contains x and y labels to add to the chart.
+
     Returns
     -------
-    return : None
+    None
         Writes HTML files inside the output path.
     """
-    
-    
     for column_id in columns:
-        fig = go.Figure(data=go.Histogram(x=df[column_id]))
+        fig: go.Figure = go.Figure(data=go.Histogram(x=df[column_id]))
         # Update layout
         fig.update_layout(
-        title=f"Histogram of {column_id}",
-        xaxis_title=labels[0],
-        yaxis_title=labels[1])
+            title=f"Histogram of {column_id}",
+            xaxis_title=labels[0],
+            yaxis_title=labels[1]
+        )
         
-        html_path = os.path.join(output_path, f'histogram_{column_id}.html')
+        html_path: str = os.path.join(output_path, f'histogram_{column_id}.html')
         fig.write_html(html_path)
 
-def create_graph_trace(function, x = None , y = None, plotname = None, mode = None):
+def create_graph_trace(
+    function: str, 
+    x: Optional[Union[pd.DataFrame, List[Any]]] = None, 
+    y: Optional[Union[pd.DataFrame, List[Any]]] = None, 
+    plotname: Optional[str] = None, 
+    mode: Optional[str] = None
+) -> go.Figure:
     """
-    Based on input creates and returns a graph trace using plotly.
-    
+    Based on input creates and returns a graph trace using Plotly.
+
     Parameters
     ----------
     function : str
-        Which plot to trace, can be ['boxplot', 'scatterplot', 'histogram']
-    x : pandas dataframe, optional
-        Values to add to the trace contained in pandas dataframe.
-    y : pandas dataframe, optional
-        Values to add to the trace contained in pandas dataframe.
-    plotname : str, optional
+        Which plot to trace, can be ['boxplot', 'scatterplot', 'histogram', 'violin'].
+    x : Optional[Union[pd.DataFrame, List[Any]]], optional
+        Values to add to the trace contained in pandas dataframe or list.
+    y : Optional[Union[pd.DataFrame, List[Any]]], optional
+        Values to add to the trace contained in pandas dataframe or list.
+    plotname : Optional[str], optional
         The name for the plot.
-    mode : str, optional
-        Mode to create the plot trace (for scatter 'lines' or 'markers')
-    
+    mode : Optional[str], optional
+        Mode to create the plot trace (for scatter 'lines' or 'markers').
+
     Returns
     -------
-    returns : plotly.graph_objs._trace
-        The Plotly figure object containing plot.
-
+    go.Figure
+        The Plotly figure object containing the plot.
     """
     if function == 'scatter':
-        return go.Scatter(x = x, y = y, name = plotname, mode = mode)
+        return go.Scatter(x=x, y=y, name=plotname, mode=mode)
     elif function == 'boxplot':
         function = go.Box
     elif function == 'scatterplot':
@@ -104,23 +108,34 @@ def create_graph_trace(function, x = None , y = None, plotname = None, mode = No
     elif function == 'violin':
         function = go.Violin
     
-    
-    return function(x = x, y = y, name = plotname)
+    return function(x=x, y=y, name=plotname)
 
-def create_violin_plot(y = None, x = None, name = None, orientation = 'v', box_visible = True, 
-                       meanline_visible = False, points = 'outliers', line_color = None, 
-                       marker = None, opacity = 1, side = 'both', scalemode = 'width', 
-                       spanmode = 'soft', scalegroup = None):
+def create_violin_plot(
+    y: Optional[Union[List[Any], pd.Series]] = None, 
+    x: Optional[Union[str, int, List[Union[str, int]]]] = None, 
+    name: Optional[str] = None, 
+    orientation: str = 'v', 
+    box_visible: bool = True, 
+    meanline_visible: bool = False, 
+    points: str = 'outliers', 
+    line_color: Optional[Union[str, int]] = None, 
+    marker: Optional[Dict[str, Any]] = None, 
+    opacity: float = 1, 
+    side: str = 'both', 
+    scalemode: str = 'width', 
+    spanmode: str = 'soft', 
+    scalegroup: Optional[str] = None
+) -> go.Violin:
     """
     Create a violin plot using Plotly.
-    
+
     Parameters
     ----------
-    y : list, array-like, or pandas Series, optional
+    y : Optional[Union[List[Any], pd.Series]], optional
         The data for the violin plot.
-    x : str, int, or list of str/int, optional
+    x : Optional[Union[str, int, List[Union[str, int]]]], optional
         The group labels or positions along the x-axis for the violin plot.
-    name : str, optional
+    name : Optional[str], optional
         The given name for the plot.
     orientation : str, optional
         The orientation of the violin plot ('v' for vertical, 'h' for horizontal).
@@ -130,9 +145,9 @@ def create_violin_plot(y = None, x = None, name = None, orientation = 'v', box_v
         Whether to display the mean line inside the violin plot (default is False).
     points : str, optional
         Whether to show points on the violin plot ('outliers', 'suspectedoutliers', or 'all').
-    line_color : str or int, optional
+    line_color : Optional[Union[str, int]], optional
         The color of the line around the violin plot.
-    marker : dict, optional
+    marker : Optional[Dict[str, Any]], optional
         A dictionary specifying the marker properties for the points (if shown).
     opacity : float, optional
         The opacity of the violin plot (a value between 0 and 1, default is 1).
@@ -142,33 +157,39 @@ def create_violin_plot(y = None, x = None, name = None, orientation = 'v', box_v
         The scaling mode for the violin plot ('width' or 'count', default is 'width').
     spanmode : str, optional
         The span mode for the violin plot ('soft' or 'hard', default is 'soft').
-    scalegroup : str, optional
+    scalegroup : Optional[str], optional
         The name of the group of violins whose widths should be made proportional to the number of samples in each group.
-        
+
     Returns
     -------
-    return : plotly.graph_objs.Violin
+    go.Violin
         The Plotly figure object containing the violin plot.
     """
-    return go.Violin(y = y, x = x, name = name, orientation = orientation, box_visible = box_visible,
-                     meanline_visible = meanline_visible, points = points,
-                     line_color = line_color, marker = marker, opacity = opacity,
-                     side = side, scalemode = scalemode, spanmode = spanmode,
-                     scalegroup = scalegroup)
+    return go.Violin(
+        y=y, x=x, name=name, orientation=orientation, box_visible=box_visible,
+        meanline_visible=meanline_visible, points=points, line_color=line_color,
+        marker=marker, opacity=opacity, side=side, scalemode=scalemode,
+        spanmode=spanmode, scalegroup=scalegroup
+    )
 
-
-def create_box_plot(y = None, x = None, name = None, orientation = 'v', boxpoints = 'outliers', 
-                    jitter = 0.3, title = None, xaxis_title = None, yaxis_title = None):
+def create_box_plot(
+    y: Optional[Union[List[Any], pd.Series]] = None, 
+    x: Optional[Union[str, int, List[Union[str, int]]]] = None, 
+    name: Optional[str] = None, 
+    orientation: str = 'v', 
+    boxpoints: str = 'outliers', 
+    jitter: float = 0.3
+) -> go.Box:
     """
     Create a box plot using Plotly.
-    
+
     Parameters
     ----------
-    y : list, array-like, or pandas Series, optional
+    y : Optional[Union[List[Any], pd.Series]], optional
         The data for the box plot.
-    x : str, int, or list of str/int, optional
+    x : Optional[Union[str, int, List[Union[str, int]]]], optional
         The group labels or positions along the x-axis for the box plot.
-    name : str, optional
+    name : Optional[str], optional
         The given name for the plot.
     orientation : str, optional
         The orientation of the box plot ('v' for vertical, 'h' for horizontal).
@@ -176,244 +197,263 @@ def create_box_plot(y = None, x = None, name = None, orientation = 'v', boxpoint
         Specifies how the data points are displayed ('outliers', 'suspectedoutliers', 'all', or False).
     jitter : float, optional
         Sets the amount of jitter in the box plot points (0 for no jitter, 1 for full jitter).
-    
+
     Returns
     -------
-    return : plotly.graph_objs.Box
+    go.Box
         The Plotly figure object containing the box plot.
     """
-    
-    return go.Box(y = y, x = x, name = name, orientation = orientation,
-                  boxpoints = boxpoints, jitter = jitter)
+    return go.Box(
+        y=y, x=x, name=name, orientation=orientation,
+        boxpoints=boxpoints, jitter=jitter
+    )
 
-def create_histogram(x, name = None, xbins = None, histnorm = None, orientation = 'v'):
+def create_histogram(
+    x: Union[List[Any], pd.Series], 
+    name: Optional[str] = None, 
+    xbins: Optional[Dict[str, Any]] = None, 
+    histnorm: Optional[str] = None, 
+    orientation: str = 'v'
+) -> go.Histogram:
     """
     Create a histogram using Plotly.
-    
+
     Parameters
     ----------
-    
-    x : list, array-like, or pandas Series
+    x : Union[List[Any], pd.Series]
         The data for the histogram.
-    name : str, optional
+    name : Optional[str], optional
         The given name for the plot.
-    bins : dict or int, optional
+    xbins : Optional[Dict[str, Any]], optional
         Specification of histogram bins (see Plotly documentation for details).
-    histnorm : str, optional
+    histnorm : Optional[str], optional
         Specifies the type of normalization for the histogram.
     orientation : str, optional
         The orientation of the histogram ('v' for vertical, 'h' for horizontal).
-    
+
     Returns
     -------
-    fig : plotly.graph_objs.Histogram
-        The Plotly figure object containing the box plot.
+    go.Histogram
+        The Plotly figure object containing the histogram.
     """
-    
-    return go.Histogram(x = x, xbins = xbins, histnorm = histnorm, orientation = orientation)
+    return go.Histogram(
+        x=x, xbins=xbins, histnorm=histnorm, orientation=orientation
+    )
 
-def generate_plot(traces, title=None, xaxis_title=None, yaxis_title=None):
+def generate_plot(
+    traces: List[go.Figure], 
+    title: Optional[str] = None, 
+    xaxis_title: Optional[str] = None, 
+    yaxis_title: Optional[str] = None
+) -> go.Figure:
     """
     Generate a plot using Plotly based on input traces.
 
     Parameters
     ----------
-    traces : list
+    traces : List[go.Figure]
         Contains the list of traces.
-    title : str, optional
+    title : Optional[str], optional
         Title for the plot.
-    xaxis_title : str, optional
+    xaxis_title : Optional[str], optional
         x axis title.
-    yaxis_title : str, optional
-        y axis title
+    yaxis_title : Optional[str], optional
+        y axis title.
 
     Returns
     -------
-    fig : plotly.graph_objs.Figure
+    go.Figure
         Returns a generated plot.
     """
-
     # Create layout
-    layout = go.Layout(title=title,
-                       xaxis=dict(title=xaxis_title),
-                       yaxis=dict(title=yaxis_title))
+    layout: go.Layout = go.Layout(
+        title=title,
+        xaxis=dict(title=xaxis_title),
+        yaxis=dict(title=yaxis_title)
+    )
 
     # Create figure
-    fig = go.Figure(data=traces, layout=layout)
+    fig: go.Figure = go.Figure(data=traces, layout=layout)
     
     return fig
 
-def write_fig_to_html(fig, output_path, filename):
+def write_fig_to_html(fig: go.Figure, output_path: str, filename: str) -> None:
     """
     Writes the fig plotly object to HTML file.
 
     Parameters
     ----------
-    fig : plotly.graph_objects object
-        Figure onject to write to HTML file.
+    fig : go.Figure
+        Figure object to write to HTML file.
     output_path : str
-        Path were to save the HTML file.
+        Path where to save the HTML file.
     filename : str
         Name for the HTML file.
-        
+
     Returns
     -------
-    return : None
-        Writes an HTML file containg the plot to the output directory.
+    None
+        Writes an HTML file containing the plot to the output directory.
     """
-    html_path = os.path.join(output_path, f'{filename}.html')
+    html_path: str = os.path.join(output_path, f'{filename}.html')
     fig.write_html(html_path)
 
-def plotly_update_layout(fig, title = None, xaxis_title= None, yaxis_title= None, 
-                         legend= None, font= None, margin= None, width= None, 
-                         height= None, template= None, plot_bgcolor= None, paper_bgcolor= None, 
-                         annotations=None, shapes= None, images= None, updatemenus= None, 
-                         sliders= None, scene= None, geo= None, showlegend= None):
+def plotly_update_layout(
+    fig: go.Figure, 
+    title: Optional[str] = None, 
+    xaxis_title: Optional[str] = None, 
+    yaxis_title: Optional[str] = None, 
+    legend: Optional[Dict[str, Any]] = None, 
+    font: Optional[Dict[str, Any]] = None, 
+    margin: Optional[Dict[str, int]] = None, 
+    width: Optional[int] = None, 
+    height: Optional[int] = None, 
+    template: Optional[Union[str, Dict[str, Any]]] = None, 
+    plot_bgcolor: Optional[str] = None, 
+    paper_bgcolor: Optional[str] = None, 
+    annotations: Optional[List[Dict[str, Any]]] = None, 
+    shapes: Optional[List[Dict[str, Any]]] = None, 
+    images: Optional[List[Dict[str, Any]]] = None, 
+    updatemenus: Optional[List[Dict[str, Any]]] = None, 
+    sliders: Optional[List[Dict[str, Any]]] = None, 
+    scene: Optional[Dict[str, Any]] = None, 
+    geo: Optional[Dict[str, Any]] = None, 
+    showlegend: Optional[bool] = None
+) -> go.Figure:
     """
     Update plotly layout.
-    
+
     Parameters
     ----------
-
-    fig : plotly.graph_objects object
-        Plotly go object.
-    title : str
-    xaxis_title : str
-    yaxis_title : str
-    legend : dict
-        Contains the following keys and values:
-            'orientation' : str
-                'h' for horizontal, 'v' for vertical.
-            'x' : float
-                x coordinates of the legend anchor.
-            'y' : float
-                y coordinates of the legend anchor.
-            'xanchor' : str
-                Specifies where the legend is anchored.
-            'yanchor' : str
-                Specifies where the legend is anchored.
-    font : dict
-        Contains the following keys and values:
-            'family' : str
-                Font family.
-            'size' : int
-                Font size.
-            'color' : str
-                Font color.
-    margin : dict
-        Contains the following keys and values:
-            'l' : int
-                Left margin.
-            'r' : int
-                Right margin.
-            't' : int
-                Top margin.
-            'b' : int
-                Bottom margin.
-    width : int
+    fig : go.Figure
+        Plotly figure object.
+    title : Optional[str], optional
+        Title of the plot.
+    xaxis_title : Optional[str], optional
+        Title of the x-axis.
+    yaxis_title : Optional[str], optional
+        Title of the y-axis.
+    legend : Optional[Dict[str, Any]], optional
+        Dictionary specifying legend properties.
+    font : Optional[Dict[str, Any]], optional
+        Dictionary specifying font properties.
+    margin : Optional[Dict[str, int]], optional
+        Dictionary specifying margin properties.
+    width : Optional[int], optional
         Width of the plot.
-    height : int
+    height : Optional[int], optional
         Height of the plot.
-    template : str or dict
+    template : Optional[Union[str, Dict[str, Any]]], optional
         Plotly template name or template object to apply to the plot.
-    plot_bgcolor : str
+    plot_bgcolor : Optional[str], optional
         Background color of the plot.
-    paper_bgcolor : str
+    paper_bgcolor : Optional[str], optional
         Background color of the plot paper (the area outside the plot).
-    annotations : list
+    annotations : Optional[List[Dict[str, Any]]], optional
         List of dictionaries specifying annotations to be added to the plot.
-    shapes : list
+    shapes : Optional[List[Dict[str, Any]]], optional
         List of dictionaries specifying shapes to be added to the plot.
-    images : list
+    images : Optional[List[Dict[str, Any]]], optional
         List of dictionaries specifying images to be added to the plot.
-    updatemenus : list
+    updatemenus : Optional[List[Dict[str, Any]]], optional
         List of dictionaries specifying update menus to be added to the plot.
-    sliders : list
+    sliders : Optional[List[Dict[str, Any]]], optional
         List of dictionaries specifying sliders to be added to the plot.
-    scene : dict
+    scene : Optional[Dict[str, Any]], optional
         Dictionary specifying the properties of 3D scenes.
-    geo : dict
+    geo : Optional[Dict[str, Any]], optional
         Dictionary specifying the properties of geographic maps.
-    showlegend : bool
+    showlegend : Optional[bool], optional
         Whether to show the legend.
-        
+
     Returns
     -------
-    fig : plotly.graph_objects
+    go.Figure
         Returns the updated plot.
     """
-    
-    return fig.update_layout(title = title,
-                             xaxis_title = xaxis_title,
-                             yaxis_title = yaxis_title,
-                             legend = legend,
-                             font = font,
-                             margin = margin,
-                             width = width,
-                             height = height,
-                             template = template,
-                             plot_bgcolor = plot_bgcolor,
-                             paper_bgcolor = paper_bgcolor,
-                             annotations = annotations,
-                             shapes = shapes,
-                             images = images,
-                             updatemenus = updatemenus,
-                             sliders = sliders,
-                             scene = scene,
-                             geo = geo,
-                             showlegend = showlegend)
+    return fig.update_layout(
+        title=title,
+        xaxis_title=xaxis_title,
+        yaxis_title=yaxis_title,
+        legend=legend,
+        font=font,
+        margin=margin,
+        width=width,
+        height=height,
+        template=template,
+        plot_bgcolor=plot_bgcolor,
+        paper_bgcolor=paper_bgcolor,
+        annotations=annotations,
+        shapes=shapes,
+        images=images,
+        updatemenus=updatemenus,
+        sliders=sliders,
+        scene=scene,
+        geo=geo,
+        showlegend=showlegend
+    )
 
-def create_subplots(traces, rows, columns, share_x = None, share_y = None, subplot_titles = None, coords = None):
+def create_subplots(
+    traces: List[go.Figure], 
+    rows: int, 
+    columns: int, 
+    share_x: Optional[bool] = None, 
+    share_y: Optional[bool] = None, 
+    subplot_titles: Optional[List[str]] = None, 
+    coords: Optional[List[List[int]]] = None
+) -> go.Figure:
     """
-    Creates subplots from traces using plotly.
-    
+    Creates subplots from traces using Plotly.
+
     Parameters
     ----------
-    traces : list
+    traces : List[go.Figure]
         Contains the list of traces.
     rows : int
         Number of rows.
     columns : int
         Number of columns.
-    share_x : bool
-        If the traces share same x.
-    share_y : bool
-        If the traces share same y.
-    subplot_titles : list
+    share_x : Optional[bool], optional
+        If the traces share the same x-axis.
+    share_y : Optional[bool], optional
+        If the traces share the same y-axis.
+    subplot_titles : Optional[List[str]], optional
         Contains the list of subplot titles.
-    coords : list
-        Contains the list of lists of coords of rows and columns to add each subplot.
-    
-    fig : plotly.graph_objects.Figure
+    coords : Optional[List[List[int]]], optional
+        Contains the list of lists of coordinates of rows and columns to add each subplot.
+
+    Returns
+    -------
+    go.Figure
         Returns a Figure object containing the subplots.
     """
-    fig = make_subplots(rows = rows,
-                        cols= columns,
-                        shared_xaxes = share_x,
-                        shared_yaxes = share_y,
-                        subplot_titles = subplot_titles)
+    fig: Figure = make_subplots(
+        rows=rows,
+        cols=columns,
+        shared_xaxes=share_x,
+        shared_yaxes=share_y,
+        subplot_titles=subplot_titles
+    )
     
     for i, trace in enumerate(traces):
         if coords:
-            row = traces[i][0]
-            column = traces[i][1]
+            row = coords[i][0]
+            column = coords[i][1]
         else:
             row = None
             column = None
 
-        fig.add_trace(trace,
-                      row = row,
-                      col = column)
+        fig.add_trace(trace, row=row, col=column)
     
     return fig
 
-def save_plots_to_html(figures, output_path, filename):
+def save_plots_to_html(figures: List[go.Figure], output_path: str, filename: str) -> None:
     """
-    Saves a list of plotly.graph_objects object to one HTML file.
-    
+    Saves a list of plotly.graph_objects objects to one HTML file.
+
     Parameters
     ----------
-    figures : list
+    figures : List[go.Figure]
         List that contains the figures to save.
     output_path : str
         Path to the output directory.
@@ -422,11 +462,10 @@ def save_plots_to_html(figures, output_path, filename):
 
     Returns
     -------
-    return : None
+    None
         Writes an HTML file containing the plots to the output directory.
     """
-    
-    html_path = os.path.join(output_path, f'{filename}.html')
+    html_path: str = os.path.join(output_path, f'{filename}.html')
     # Open a new HTML file
     with open(html_path, 'w') as f:
         # Write HTML header
