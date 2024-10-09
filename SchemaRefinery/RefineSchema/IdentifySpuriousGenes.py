@@ -158,8 +158,9 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                                                     protein_hashes,
                                                     cds_presence_in_genomes,
                                                     reps_kmers_sim)
-        
+
         to_blast_paths, master_file_path = ccf.create_blast_files(representatives_blastn_folder, all_alleles, all_nucleotide_sequences, processing_mode)
+
 
     # Process loci
     else:

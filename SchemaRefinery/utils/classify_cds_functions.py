@@ -757,6 +757,7 @@ def write_fasta_file(file_path, sequences):
         for seq_id, sequence in sequences.items():
             fasta_file.write(f">{seq_id}\n{sequence}\n")
 
+
 def create_blast_files(representatives_blastn_folder, all_alleles, all_nucleotide_sequences, processing_mode):
     """
     Creates BLAST files for the representatives and writes them to the specified folder.
