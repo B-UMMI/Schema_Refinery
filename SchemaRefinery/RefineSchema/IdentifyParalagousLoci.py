@@ -68,11 +68,14 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     """
 
     # Identify all of the fastas in the schema directory
-    fasta_files_dict = {loci.split('.')[0]: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, loci))}
+    fasta_files_dict = {loci.split('.')[0]: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')}
     # Identify all of the fastas short in the schema directory
     short_folder = os.path.join(schema_directory, 'short')
-    fasta_files_short_dict = {loci.split('.')[0]: os.path.join(short_folder, loci) for loci in os.listdir(short_folder) if os.path.isfile(os.path.join(short_folder, loci))}
-    
+    fasta_files_short_dict = {
+        loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
+        for loci in os.listdir(short_folder)
+        if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
+    }
     blast_folder = os.path.join(output_directory, 'Blast')
     ff.create_directory(blast_folder)
     translation_folder = os.path.join(output_directory, 'Translation')
