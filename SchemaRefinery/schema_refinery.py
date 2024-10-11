@@ -285,7 +285,16 @@ def schema_annotation():
                          dest='size_ratio',
                          default=0.8,
                          help='Size ratio to consider alleles as the same locus.')
-
+     
+     parser.add_argument('-rm',
+                         '--run-mode',
+                         type=str,
+                         required=False,
+                         dest='run_mode',
+                         default='reps',
+                         choices=['reps', 'alleles'],
+                         help='Mode to run the module: reps or alleles.')
+    
      args = parser.parse_args()
 
      SchemaAnnotation.main(args)
