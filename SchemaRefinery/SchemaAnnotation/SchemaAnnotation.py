@@ -73,7 +73,8 @@ def main(args):
                                               args.translation_table,
                                               args.clustering_sim,
                                               args.clustering_cov,
-                                              args.size_ratio)
+                                              args.size_ratio,
+                                              args.run_mode)
         results_files.append(genbank_file)
     matched_schemas = None
     if 'match-schemas' in args.annotation_options:
