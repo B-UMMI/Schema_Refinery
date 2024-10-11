@@ -53,29 +53,35 @@ def main(args):
         if proteomes_directory is not None:
             # Split proteome records into two files, one with TrEMBL records
             # and another with Swiss-Prot records
-            split_data = ps.proteome_splitter(proteomes_directory, args.output_directory)
+            split_data = ps.proteome_splitter(proteomes_directory,
+                                              args.output_directory)
             tr_file, sp_file, descriptions_file = split_data
 
             # Align loci against proteome records
             annotations = pm.proteome_matcher(args.schema_directory,
                                               [tr_file, sp_file, descriptions_file],
-                                              args.output_directory, args.cpu_cores,
-                                              args.blast_score_ratio)
+                                              args.output_directory,
+                                              args.cpu,
+                                              args.bsr)
             results_files.extend(annotations)
     if 'genbank' in args.annotation_options:
         genbank_file = ga.genbank_annotations(args.genbank_files,
                                               args.schema_directory,
                                               args.output_directory,
-                                              args.cpu_cores,
-                                              args.blast_score_ratio)
+                                              args.cpu,
+                                              args.bsr,
+                                              args.translation_table,
+                                              args.clustering_sim,
+                                              args.clustering_cov,
+                                              args.size_ratio)
         results_files.append(genbank_file)
     matched_schemas = None
     if 'match-schemas' in args.annotation_options:
         matched_schemas = ms.match_schemas(args.schema_directory,
                                            args.subject_schema,
                                            args.output_directory,
-                                           args.blast_score_ratio,
-                                           args.cpu_cores)
+                                           args.bsr,
+                                           args.cpu)
         results_files.append(matched_schemas)
 
     # Merge all results into a single file

@@ -221,11 +221,19 @@ def schema_annotation():
                          type=float,
                          required=False,
                          default=0.6,
-                         dest='blast_score_ratio',
+                         dest='bsr',
                          help='Minimum BSR value to consider aligned '
                              'alleles as alleles for the same locus. '
                              'This argument is optional for the Match Schemas '
                              'sub-module.')
+     
+     parser.add_argument('-t',
+                         '--threads',
+                         type=int,
+                         required=False,
+                         default=1,
+                         dest='threads',
+                         help='Number of threads for concurrent download.')
 
      parser.add_argument('-c',
                          '--cpu',
@@ -233,7 +241,7 @@ def schema_annotation():
                          required=False,
                          default=1,
                          dest='cpu',
-                         help='Number of cpu for concurrent download.')
+                         help='Number of cpu for multiprocessing.')
 
      parser.add_argument('-r',
                          '--retry',
