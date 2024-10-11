@@ -267,8 +267,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     # Check if the BSR value is higher than the threshold
                     if bsr_value >= bsr:
                         # Round BSR values if they are superior to 1.0 to 1 decimal place
-                        if bsr_values > 1.0:
-                            bsr_values = round(bsr_values, 1)
+                        if bsr_value > 1.0:
+                            bsr_value = round(bsr_value, 1)
                         # Save all of the diferent matches that this query had and their BSR values
                         bsr_values[query].update({subject_id: bsr_value})
                     else:
@@ -276,7 +276,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     # Check if the BSR value is the best for the locus
                     current_best_bsr = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    if current_best_bsr and bsr_values > current_best_bsr[1]:
+                    if current_best_bsr and bsr_value > current_best_bsr[1]:
                         best_bsr_values[loci] = [subject_id, bsr_value]
                     else:
                         best_bsr_values[loci] = [subject_id, bsr_value]
