@@ -70,7 +70,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                         output_directory: str, cpu: int,
                         bsr: float, translation_table: int,
                         clustering_sim: float, clustering_cov: float,
-                        size_ratio: float) -> str:
+                        size_ratio: float, run_mode: str) -> str:
     """
     Process GenBank files to extract annotations and perform BLAST searches.
 
@@ -97,13 +97,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     output_directory = os.path.join(output_directory, 'genbank_annotations')
     ff.create_directory(output_directory)
 
-    print("Loading GenBank files...")
+    print("\nLoading GenBank files...")
     # List and sort GenBank files
     gbk_files: List[str] = [os.path.join(genbank_files, f) for f in os.listdir(genbank_files)]
     gbk_files.sort()
-    
-    print('\n')
-    print('Extracting protein annotations from GenBank files...')
+
+    print('\nExtracting protein annotations from GenBank files...')
     # Parse GenBank files and extract protein annotations
     i = 0
     all_cds_info: Dict[str, List[str]] = {}
@@ -169,19 +168,27 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             outfile.write(f">{protein_id}\n{values}\n")
         
     # BLAST alleles for each locus against file with all CDSs from origin genomes
+    fasta_files_dict = {
+        loci.split('.')[0]: os.path.join(schema_directory, loci)
+        for loci in os.listdir(schema_directory)
+        if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
+        }
+    # Short folder
     short_folder = os.path.join(schema_directory, 'short')
     fasta_files_short_dict = {
         loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
         for loci in os.listdir(short_folder)
         if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
-    }
+        }
+
+    files_to_run = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
     print("Translating sequences...")
     reps_translations_folder = os.path.join(output_directory, 'reps_translations')
     ff.create_directory(reps_translations_folder)
     translation_dict = {}
     reps_ids = {}
     translations_paths = {}
-    for loci, loci_path in fasta_files_short_dict.items():
+    for loci, loci_path in files_to_run.items():
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         print(f"\rTranslating schema reps: {loci}", end='', flush=True)
         for allele_id, sequence in fasta_dict.items():
@@ -198,7 +205,6 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                                                             translation_table,
                                                             False)
             translation_dict.update(trans_dict)
-    print('\n')
 
     # Create BLASTdb
     blastdb_path = os.path.join(blast_processing_folder, 'blastdb')
@@ -230,10 +236,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                             
             print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
             i += 1
-    # Print newline
-    print('\n')
     
-    print("Running BLASTp...")
+    print("\nRunning BLASTp...")
     blastp_results_folder = os.path.join(blast_processing_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
