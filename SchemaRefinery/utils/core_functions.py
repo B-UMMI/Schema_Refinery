@@ -1862,24 +1862,24 @@ def add_cds_to_dropped_cds(drop_possible_loci, dropped_cds, clusters_to_keep,
     None
     """
 
-    for drop_id in drop_possible_loci:
+    for drop_id in drop_possible_loci.copy():
         if drop_id in processed_drop:
             continue
         else:
             processed_drop.append(drop_id)
-            
-        if itf.identify_string_in_dict_get_key(drop_id, clusters_to_keep['1a']):
+
+        class_1a_id = itf.identify_string_in_dict_get_key(drop_id, clusters_to_keep['1a'])
+        if class_1a_id:
             # Add all of the other elements of the joined group to the dropped list.
-            drop_possible_loci.update(clusters_to_keep['1a'])
+            process_ids = clusters_to_keep['1a'][class_1a_id]
             del clusters_to_keep['1a'][drop_id]
         else:
             class_ = itf.identify_string_in_dict_get_key(drop_id, {key: value for key, value in clusters_to_keep.items() if key != '1a'})
             if class_:
                 clusters_to_keep[class_].remove(drop_id)
 
-        dropped_1a = itf.identify_string_in_dict_get_value(drop_id, clusters_to_keep['1a'])
-        if dropped_1a is not None:
-            for rep_id in dropped_1a:
+        if class_1a_id:
+            for rep_id in process_ids:
                 for cds_id in clusters[rep_id]:
                     dropped_cds[cds_id] = reason
         else:
@@ -1967,3 +1967,28 @@ def identify_problematic_new_loci(clusters_to_keep, all_alleles, cds_present,
             niphems_and_niphs.write(f"{group}\t{proportion}\t{'Dropped' if group in dropped_problematic else 'Kept'}\n")
             
     return dropped_problematic
+
+def write_dropped_possible_new_loci_to_file(drop_possible_loci, dropped_cds, results_output):
+    """
+    Write the dropped possible new loci to a file with the reasons for dropping them.
+
+    Parameters
+    ----------
+    drop_possible_loci : set
+        A set of possible new loci IDs that should be dropped.
+    dropped_cds : dict
+        A dictionary where keys are CDS (Coding Sequences) IDs and values are the reasons for dropping them.
+    results_output : str
+        The path to the directory where the output file will be saved.
+
+    Returns
+    -------
+    None
+    """
+    drop_possible_loci_output = os.path.join(results_output, 'drop_possible_new_loci.tsv')
+    locus_drop_reason = {cds.split('_')[0]: reason 
+                        for cds, reason in dropped_cds.items() if '_' in cds}
+    with open(drop_possible_loci_output, 'w') as drop_possible_loci_file:
+        drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
+        for locus in drop_possible_loci:
+            drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")

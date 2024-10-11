@@ -352,7 +352,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
         ccf.write_dropped_cds_to_file(dropped_alleles, results_output)
 
     print("\nWritting dropped possible new loci to file...")
-    ccf.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
+    cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                 dropped_alleles,
                                                 results_output)
 
