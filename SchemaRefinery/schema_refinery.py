@@ -37,66 +37,96 @@ def download_assemblies():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
      # Common arguments between databases
-     parser.add_argument('-db', '--database', type=str,
-                        required=True, dest='database',
-                        nargs='+',
-                        choices=['NCBI', 'ENA661K'],
-                        help='Databases from which assemblies will '
+     parser.add_argument('-db',
+                         '--database',
+                         type=str,
+                         required=True,
+                         dest='database',
+                         nargs='+',
+                         choices=['NCBI', 'ENA661K'],
+                         help='Databases from which assemblies will '
                              'be downloaded.')
 
-     parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the output directory.')
+     parser.add_argument('-o',
+                         '--output-directory',
+                         type=str,
+                         required=True,
+                         dest='output_directory',
+                         help='Path to the output directory.')
 
-     parser.add_argument('-e', '--email', type=str,
-                        required=True, dest='email',
-                        help='Email provided to Entrez.')
+     parser.add_argument('-e',
+                         '--email',
+                         type=str,
+                         required=True,
+                         dest='email',
+                         help='Email provided to Entrez.')
 
-     parser.add_argument('-t', '--taxon', type=str,
-                        required=False, dest='taxon',
-                        help='Scientific name of the taxon.')
+     parser.add_argument('-t',
+                         '--taxon',
+                         type=str,
+                         required=False,
+                         dest='taxon',
+                         help='Scientific name of the taxon.')
 
-     parser.add_argument('-th', '--threads', type=int,
-                        required=False, default=1,
-                        dest='threads',
-                        help='Number of threads used for download. You should '
+     parser.add_argument('-th',
+                         '--threads',
+                         type=int,
+                         required=False,
+                         default=1,
+                         dest='threads',
+                         help='Number of threads used for download. You should '
                              'provide an API key to perform more requests '
                              'through Entrez.')
 
-     parser.add_argument('-r', '--retry', type=int,
-                        required=False, dest='retry',
-                        default=7,
-                        help='Maximum number of retries when a '
+     parser.add_argument('-r',
+                         '--retry',
+                         type=int,
+                         required=False,
+                         dest='retry',
+                         default=7,
+                         help='Maximum number of retries when a '
                              'download fails.')
 
-     parser.add_argument('-k', '--api-key', type=str,
-                        required=False, dest='api_key',
-                        help='Personal API key provided to the NCBI. If not set, '
+     parser.add_argument('-k',
+                         '--api-key',
+                         type=str,
+                         required=False,
+                         dest='api_key',
+                         help='Personal API key provided to the NCBI. If not set, '
                              'only 3 requests per second are allowed. With a '
                              'valid API key the limit increases to 10 '
                              'requests per second.')
 
      parser.add_argument('-fm', '--fetch-metadata',
-                        required=False, dest='fetch_metadata',
-                        action='store_true',
-                        default=False,
-                        help='If provided, the process downloads '
+                         required=False,
+                         dest='fetch_metadata',
+                         action='store_true',
+                         default=False,
+                         help='If provided, the process downloads '
                              'metadata for the assemblies.')
 
-     parser.add_argument('-f', '--filtering-criteria', type=pv.validate_criteria_file,
-                        required=False, dest='filtering_criteria',
-                        help='TSV file containing filtering parameters '
+     parser.add_argument('-f',
+                         '--filtering-criteria',
+                         type=pv.validate_criteria_file,
+                         required=False,
+                         dest='filtering_criteria',
+                         help='TSV file containing filtering parameters '
                              'applied before assembly download.')
 
-     parser.add_argument('--download', action='store_true',
-                        required=False, dest='download',
-                        help='If the assemblies that passed the filtering '
+     parser.add_argument('--download',
+                         action='store_true',
+                         required=False,
+                         dest='download',
+                         help='If the assemblies that passed the filtering '
                              'criteria should be downloaded.')
 
      # Arguments specific for NCBI
-     parser.add_argument('-i', '--input-table', type=str,
-                        required=False, dest='input_table',
-                        help='Text file with a list of accession numbers for the NCBI Assembly database.')
+     parser.add_argument('-i',
+                         '--input-table',
+                         type=str,
+                         required=False,
+                         dest='input_table',
+                         help='Text file with a list of accession numbers for the NCBI Assembly database.')
 
      args = parser.parse_args()
 
@@ -107,21 +137,30 @@ def schema_annotation():
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-     parser.add_argument('-s', '--schema-directory', type=str,
-                        required=True, dest='schema_directory',
-                        help='Path to the schema\'s directory.')
+     parser.add_argument('-s',
+                         '--schema-directory',
+                         type=str,
+                         required=True,
+                         dest='schema_directory',
+                         help='Path to the schema\'s directory.')
 
-     parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the output directory where to '
+     parser.add_argument('-o',
+                         '--output-directory',
+                         type=str,
+                         required=True,
+                         dest='output_directory',
+                         help='Path to the output directory where to '
                              'save the files.')
 
-     parser.add_argument('-ao', '--annotation-options', type=str,
-                        required=True, dest='annotation_options',
-                        nargs='+',
-                        choices=['uniprot-proteomes', 'genbank',
+     parser.add_argument('-ao',
+                         '--annotation-options',
+                         type=str,
+                         required=True,
+                         dest='annotation_options',
+                         nargs='+',
+                         choices=['uniprot-proteomes', 'genbank',
                                  'uniprot-sparql', 'match-schemas'],
-                        help='Annotation options to run. "uniprot-proteomes" '
+                         help='Annotation options to run. "uniprot-proteomes" '
                              'to download UniProt reference proteomes for '
                              'the taxa and align with BLASTp. "genbank-files"'
                              ' to aligned against the CDSs in a set of '
@@ -135,54 +174,109 @@ def schema_annotation():
                         help='TSV file downloaded from UniProt '
                              'that contains the list of proteomes.')
 
-     parser.add_argument('-gf', '--genbank-files', type=str,
-                        required=False, dest='genbank_files',
-                        help='Path to the directory that contains '
+     parser.add_argument('-gf',
+                         '--genbank-files',
+                         type=str,
+                         required=False,
+                         dest='genbank_files',
+                         help='Path to the directory that contains '
                              'Genbank files with annotations to '
                              'extract.')
 
-     parser.add_argument('-ca', '--chewie-annotations', type=str,
-                        required=False, nargs='+', dest='chewie_annotations',
-                        help='File with the results from chewBBACA '
+     parser.add_argument('-ca',
+                         '--chewie-annotations',
+                         type=str,
+                         required=False,
+                         nargs='+',
+                         dest='chewie_annotations',
+                         help='File with the results from chewBBACA '
                              'UniprotFinder module.')
 
-     parser.add_argument('-ss', '--subject-schema', type=str,
-                        required=False, dest='subject_schema',
-                        help='Path to que subject schema directory. '
+     parser.add_argument('-ss',
+                         '--subject-schema',
+                         type=str,
+                         required=False,
+                         dest='subject_schema',
+                         help='Path to que subject schema directory. '
                              'This argument is needed by the Match Schemas '
                              'sub-module.')
 
-     parser.add_argument('-sa', '--subject-annotations', type=str,
-                        required=False, dest='subject_annotations',
-                        help='Annotations of the subject schema.')
+     parser.add_argument('-sa',
+                         '--subject-annotations',
+                         type=str,
+                         required=False,
+                         dest='subject_annotations',
+                         help='Annotations of the subject schema.')
 
-     parser.add_argument('-sc', '--subject-columns', type=str, required=False,
-                        nargs='+',
-                        dest='subject_columns',
-                        help='Columns from the subject schema annotations '
+     parser.add_argument('-sc',
+                         '--subject-columns',
+                         type=str,
+                         required=False,
+                         nargs='+',
+                         dest='subject_columns',
+                         help='Columns from the subject schema annotations '
                              'to merge into the new schema annotations.')
 
-     parser.add_argument('--bsr', type=float, required=False,
-                        default=0.6, dest='blast_score_ratio',
-                        help='Minimum BSR value to consider aligned '
+     parser.add_argument('--bsr',
+                         type=float,
+                         required=False,
+                         default=0.6,
+                         dest='blast_score_ratio',
+                         help='Minimum BSR value to consider aligned '
                              'alleles as alleles for the same locus. '
                              'This argument is optional for the Match Schemas '
                              'sub-module.')
 
-     parser.add_argument('-th', '--threads', type=int,
-                        required=False, default=2,
-                        dest='threads',
-                        help='Number of threads for concurrent download.')
+     parser.add_argument('-c',
+                         '--cpu',
+                         type=int,
+                         required=False,
+                         default=1,
+                         dest='cpu',
+                         help='Number of cpu for concurrent download.')
 
-     parser.add_argument('-r', '--retry', type=int,
-                        required=False, dest='retry',
-                        default=7,
-                        help='Maximum number of retries when a '
+     parser.add_argument('-r',
+                         '--retry',
+                         type=int,
+                         required=False,
+                         dest='retry',
+                         default=7,
+                         help='Maximum number of retries when a '
                              'download fails.')
+     
+     parser.add_argument('-tt',
+                         '--translation_table',
+                         type=int,
+                         required=False,
+                         dest='translation_table',
+                         default=11,
+                         help='Translation table to use for the CDS translation.')
 
-     parser.add_argument('-cpu', '--cpu-cores', type=int, required=False,
-                        dest='cpu_cores', default=1,
-                        help='Number of CPU cores to pass to BLAST.')
+     parser.add_argument('-cs',
+                         '--clustering-sim',
+                         type=float,
+                         required=False,
+                         dest='clustering_sim',
+                         default=0.9,
+                         help='Similiriaty value for'
+                         'kmers representatives (float: 0-1).')
+
+     parser.add_argument('-cc',
+                         '--clustering-cov',
+                         type=float,
+                         required=False,
+                         dest='clustering_cov',
+                         default=0.9,
+                         help='Coverage value for'
+                         'kmers representatives (float: 0-1).')
+     
+     parser.add_argument('-sr',
+                         '--size_ratio',
+                         type=float,
+                         required=False,
+                         dest='size_ratio',
+                         default=0.8,
+                         help='Size ratio to consider alleles as the same locus.')
 
      args = parser.parse_args()
 
@@ -193,85 +287,147 @@ def identify_spurious_genes():
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-     parser.add_argument('-s', '--schema', type=str,
-                        required=True, dest='schema',
-                        help='Path to the created schema folder.')
+     parser.add_argument('-s',
+                         '--schema',
+                         type=str,
+                         required=True,
+                         dest='schema',
+                         help='Path to the created schema folder.')
 
-     parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the directory to which '
+     parser.add_argument('-o',
+                         '--output-directory',
+                         type=str,
+                         required=True,
+                         dest='output_directory',
+                         help='Path to the directory to which '
                              'files will be stored.')
     
-     parser.add_argument('-a', '--allelecall-directory', type=str,
-                        required=True, dest='allelecall_directory',
-                        help='Path to the directory that contains'
+     parser.add_argument('-a',
+                         '--allelecall-directory',
+                         type=str,
+                         required=True,
+                         dest='allelecall_directory',
+                         help='Path to the directory that contains'
                              'allele call directory that was run'
                              'with --no-cleanup.')
      
-     parser.add_argument('-pnl', '--possible-new-loci', type=str,
-                        required=False, dest='possible_new_loci',
-                        help='Path to the directory that contains'
+     parser.add_argument('-pnl',
+                         '--possible-new-loci',
+                         type=str,
+                         required=False,
+                         dest='possible_new_loci',
+                         help='Path to the directory that contains'
                              'possible new loci')
     
-     parser.add_argument('-at', '--alignment_ratio_threshold', type=float,
-                        required=False, dest='alignment_ratio_threshold',
-                        default=0.9, help='Threshold value for alignment used to '
-                        'indentify spurious CDS (float: 0-1).')
+     parser.add_argument('-at',
+                         '--alignment_ratio_threshold',
+                         type=float,
+                         required=False,
+                         dest='alignment_ratio_threshold',
+                         default=0.9,
+                         help='Threshold value for alignment used to '
+                              'indentify spurious CDS (float: 0-1).')
     
-     parser.add_argument('-pt', '--pident_threshold', type=int,
-                    required=False, dest='pident_threshold',
-                    default=90, help='Threshold value for pident values used to '
-                    'indentify spurious CDS (int 0-100).')
+     parser.add_argument('-pt',
+                         '--pident_threshold',
+                         type=int,
+                         required=False,
+                         dest='pident_threshold',
+                         default=90,
+                         help='Threshold value for pident values used to '
+                              'indentify spurious CDS (int 0-100).')
     
-     parser.add_argument('-cs', '--clustering-sim', type=float,
-                    required=False, dest='clustering_sim',
-                    default=0.9, help='Similiriaty value for'
-                    'kmers representatives (float: 0-1).')
+     parser.add_argument('-cs',
+                         '--clustering-sim',
+                         type=float,
+                         required=False,
+                         dest='clustering_sim',
+                         default=0.9,
+                         help='Similiriaty value for'
+                              'kmers representatives (float: 0-1).')
     
-     parser.add_argument('-cc', '--clustering-cov', type=float,
-                    required=False, dest='clustering_cov',
-                    default=0.9, help='Coverage value for'
-                    'kmers representatives (float: 0-1).')
+     parser.add_argument('-cc',
+                         '--clustering-cov',
+                         type=float,
+                         required=False,
+                         dest='clustering_cov',
+                         default=0.9,
+                         help='Coverage value for'
+                              'kmers representatives (float: 0-1).')
     
-     parser.add_argument('-gp', '--genome_presence', type=int,
-                    required=False, dest='genome_presence',
-                    help='The minimum number of genomes specific cluster'
-                    'cluster of CDS must be present in order to be considered.')
+     parser.add_argument('-gp',
+                         '--genome_presence',
+                         type=int,
+                         required=False,
+                         dest='genome_presence',
+                         help='The minimum number of genomes specific cluster'
+                              'cluster of CDS must be present in order to be considered.')
     
-     parser.add_argument('-as', '--absolute_size', type=int,
-                    required=False, dest='absolute_size', default=201,
-                    help='Size of the CDS to consider processing.')
+     parser.add_argument('-as',
+                         '--absolute_size',
+                         type=int,
+                         required=False,
+                         dest='absolute_size',
+                         default=201,
+                         help='Size of the CDS to consider processing.')
     
-     parser.add_argument('-tb', '--translation_table', type=int,
-          required=False, dest='translation_table', default=11,
-          help='Translation table to use for the CDS translation.')
+     parser.add_argument('-tt',
+                         '--translation_table',
+                         type=int,
+                         required=False,
+                         dest='translation_table',
+                         default=11,
+                         help='Translation table to use for the CDS translation.')
      
-     parser.add_argument('-b', '--bsr', type=float,
-          required=False, dest='bsr', default=0.6,
-          help='BSR value to consider alleles as the same locus.')
+     parser.add_argument('-b',
+                         '--bsr',
+                         type=float,
+                         required=False,
+                         dest='bsr',
+                         default=0.6,
+                         help='BSR value to consider alleles as the same locus.')
      
-     parser.add_argument('-sr', '--size_ratio', type=float,
-          required=False, dest='size_ratio', default=0.8,
-          help='Size ratio to consider alleles as the same locus.')
+     parser.add_argument('-sr',
+                         '--size_ratio',
+                         type=float,
+                         required=False,
+                         dest='size_ratio',
+                         default=0.8,
+                         help='Size ratio to consider alleles as the same locus.')
      
-     parser.add_argument('-pp', '--problematic_proportion', type=float,
-          required=False, dest='problematic_proportion', default=0,
-          help='Proportion of problematic (NIPHS and NIPHEMS) CDSs per loci allowed.')
+     parser.add_argument('-pp',
+                         '--problematic_proportion',
+                         type=float,
+                         required=False,
+                         dest='problematic_proportion',
+                         default=0,
+                         help='Proportion of problematic (NIPHS and NIPHEMS) CDSs per loci allowed.')
      
-     parser.add_argument('-m', '--run-mode', type=str,
-          required=False, dest='run_mode',
-          default='schema', choices=['unclassified_cds', 'schema'],
-          help='Number of cpus to run blast instances.')
+     parser.add_argument('-m',
+                         '--run-mode',
+                         type=str,
+                         required=False,
+                         dest='run_mode',
+                         default='schema',
+                         choices=['unclassified_cds', 'schema'],
+                         help='Number of cpus to run blast instances.')
      
-     parser.add_argument('-pm', '--processing-mode', type=str,
-          required=False, dest='processing_mode',
-          default='reps_vs_alleles', choices=['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps'],
-          help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
+     parser.add_argument('-pm',
+                         '--processing-mode',
+                         type=str,
+                         required=False,
+                         dest='processing_mode',
+                         default='reps_vs_alleles',
+                         choices=['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps'],
+                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
-     parser.add_argument('-c', '--cpu', type=int,
-                    required=False, dest='cpu',
-                    default=1, 
-                    help='Number of cpus to run blast instances.')
+     parser.add_argument('-c',
+                         '--cpu',
+                         type=int,
+                         required=False,
+                         dest='cpu',
+                         default=1, 
+                         help='Number of cpus to run blast instances.')
 
      args = parser.parse_args()
 
@@ -286,27 +442,44 @@ def adapt_loci():
      parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-     parser.add_argument('-i', '--input_file', type=str,
-                    required=True, dest='input_file',
-                    help='TSV file with the loci path to be adapted.')
+     parser.add_argument('-i',
+                         '--input_file',
+                         type=str,
+                         required=True,
+                         dest='input_file',
+                         help='TSV file with the loci path to be adapted.')
      
-     parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the directory to which '
+     parser.add_argument('-o',
+                         '--output-directory',
+                         type=str,
+                         required=True,
+                         dest='output_directory',
+                         help='Path to the directory to which '
                              'files will be stored.')
      
-     parser.add_argument('-c', '--cpu', type=int,
-                    required=False, dest='cpu_cores',
-                    default=1, 
-                    help='Number of cpus to run blast instances.')
+     parser.add_argument('-c',
+                         '--cpu',
+                         type=int,
+                         required=False,
+                         dest='cpu_cores',
+                         default=1, 
+                         help='Number of cpus to run blast instances.')
      
-     parser.add_argument('-b', '--bsr', type=float,
-          required=False, dest='blast_score_ratio', default=0.6,
-          help='BSR value to consider alleles as the same locus.')
+     parser.add_argument('-b',
+                         '--bsr',
+                         type=float,
+                         required=False,
+                         dest='blast_score_ratio',
+                         default=0.6,
+                         help='BSR value to consider alleles as the same locus.')
      
-     parser.add_argument('-tb', '--translation_table', type=int,
-          required=False, dest='translation_table', default=11,
-          help='Translation table to use for the CDS translation.')
+     parser.add_argument('-tt',
+                         '--translation_table',
+                         type=int,
+                         required=False,
+                         dest='translation_table',
+                         default=11,
+                         help='Translation table to use for the CDS translation.')
      
      args = parser.parse_args()
 
@@ -317,36 +490,61 @@ def identify_paralagous_loci():
      parser = argparse.ArgumentParser(description=__doc__,
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
      
-     parser.add_argument('-s', '--schema_directory', type=str,
-                    required=True, dest='schema_directory',
-                    help='Folder that contains the schema to identify paralogous loci.')
+     parser.add_argument('-s',
+                         '--schema_directory',
+                         type=str,
+                         required=True,
+                         dest='schema_directory',
+                         help='Folder that contains the schema to identify paralogous loci.')
      
-     parser.add_argument('-o', '--output-directory', type=str,
-                        required=True, dest='output_directory',
-                        help='Path to the directory to which '
-                             'files will be stored.')
+     parser.add_argument('-o',
+                         '--output-directory',
+                         type=str,
+                         required=True,
+                         dest='output_directory',
+                         help='Path to the directory to which '
+                              'files will be stored.')
      
-     parser.add_argument('-c', '--cpu', type=int,
-                    required=False, dest='cpu_cores',
-                    default=1, 
-                    help='Number of cpus to run blast instances.')
+     parser.add_argument('-c',
+                         '--cpu',
+                         type=int,
+                         required=False,
+                         dest='cpu_cores',
+                         default=1, 
+                         help='Number of cpus to run blast instances.')
      
-     parser.add_argument('-b', '--bsr', type=float,
-          required=False, dest='blast_score_ratio', default=0.6,
-          help='BSR value to consider alleles as the same locus.')
+     parser.add_argument('-b',
+                         '--bsr',
+                         type=float,
+                         required=False,
+                         dest='blast_score_ratio',
+                         default=0.6,
+                         help='BSR value to consider alleles as the same locus.')
      
-     parser.add_argument('-tb', '--translation_table', type=int,
-          required=False, dest='translation_table', default=11,
-          help='Translation table to use for the CDS translation.')
+     parser.add_argument('-tt',
+                         '--translation_table',
+                         type=int,
+                         required=False,
+                         dest='translation_table',
+                         default=11,
+                         help='Translation table to use for the CDS translation.')
      
-     parser.add_argument('-st', '--size_threshold', type=float,
-                         required=False, dest='size_threshold', default=0.2,
+     parser.add_argument('-st',
+                         '--size_threshold',
+                         type=float,
+                         required=False,
+                         dest='size_threshold',
+                         default=0.2,
                          help="Size threshold to consider two paralogous loci as similar.")
      
-     parser.add_argument('-pm', '--processing-mode', type=str,
-          required=False, dest='processing_mode', choices=['alleles_vs_alleles', 'alleles_vs_reps', 'reps_vs_reps', 'reps_vs_alleles'],
-          default='alleles_vs_alleles',
-          help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
+     parser.add_argument('-pm',
+                         '--processing-mode',
+                         type=str,
+                         required=False,
+                         dest='processing_mode',
+                         choices=['alleles_vs_alleles', 'alleles_vs_reps', 'reps_vs_reps', 'reps_vs_alleles'],
+                         default='alleles_vs_alleles',
+                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
      
      args = parser.parse_args()
 

@@ -1,47 +1,50 @@
 import os
 import concurrent.futures
 from itertools import repeat 
-from typing import Dict, List
+from typing import Dict, List, Set, Tuple
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
 
 try:
-    from utils import blast_functions as bf
+    from utils import (
+        blast_functions as bf,
+        sequence_functions as sf,
+        file_functions as ff,
+        linux_functions as lf,
+        alignments_functions as af,
+        clustering_functions as cf
+    )
     from utils.sequence_functions import translate_sequence
-    from utils import file_functions as ff
-    from utils import linux_functions as lf
-    from utils import alignments_functions as af
-    from utils import sequence_functions as sf
-    from utils import clustering_functions as cf
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import blast_functions as bf
+    from SchemaRefinery.utils import (
+        blast_functions as bf,
+        sequence_functions as sf,
+        file_functions as ff,
+        linux_functions as lf,
+        alignments_functions as af,
+        clustering_functions as cf
+    )
     from SchemaRefinery.utils.sequence_functions import translate_sequence
-    from SchemaRefinery.utils import file_functions as ff
-    from SchemaRefinery.utils import linux_functions as lf
-    from SchemaRefinery.utils import alignments_functions as af
-    from SchemaRefinery.utils import sequence_functions as sf
-    from SchemaRefinery.utils import clustering_functions as cf
 
-def get_protein_annotation_fasta(seqRecord):
+def get_protein_annotation_fasta(seqRecord: SeqRecord) -> Dict[str, List[str]]:
     """Get the translated protein from a Genbank file.
 
     Parameters
     ----------
-    seqRecord : Biopython SeqRecord
+    seqRecord : SeqRecord
         BioPython sequence record object.
 
     Returns
     -------
-    fasta : list
-        List containing the protein in fasta format.
-    fasta_dict : dict
+    Dict[str, List[str]]
         Dict containing the translated protein as key and the values are
-        list containing the protein_id, the product and the gene name.
+        list containing the product, the gene name, and the translated protein.
 
     Notes
     -----
     Source: https://github.com/LeeBergstrand/Genbank-Downloaders/blob/d904c92788696b02d9521802ebf1fc999a600e1b/SeqExtract.py#L48
     """
-    cds_info = {}
+    cds_info: Dict[str, List[str]] = {}
     features = seqRecord.features  # Each sequence has a list (called features) that stores seqFeature objects.
     for feature in features:  # For each feature on the sequence
         if feature.type == "CDS":  # CDS means coding sequence (These are the only features we're interested in)
@@ -103,24 +106,27 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     print('Extracting protein annotations from GenBank files...')
     # Parse GenBank files and extract protein annotations
     i = 0
-    total_length = len(gbk_files)
-    all_cds_info = {}
-    all_translation_dict = {}
-    processed_proteins = set()
-    total_proteins = 0
+    all_cds_info: Dict[str, List[str]] = {}
+    all_translation_dict: Dict[str, str] = {}
+    processed_proteins: Set[str] = set()
+    same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
+    total_proteins: int = 0
+
     for f in gbk_files:
         print(f"\rExtracting protein annotations from GenBank file: {os.path.basename(f)}", end='', flush=True)
-        recs = [rec for rec in SeqIO.parse(f, 'genbank')]
+        recs: List[SeqRecord] = [rec for rec in SeqIO.parse(f, 'genbank')]
         for r in recs:
-            cds_info = get_protein_annotation_fasta(r)
+            cds_info: Dict[str, List[str]] = get_protein_annotation_fasta(r)
             total_proteins += len(cds_info)
             for id_, info in cds_info.items():
                 # Skip if protein has no id and no sequence
                 if not id_:
                     continue
                 product, gene, translated_protein = info
-                protein_hash = sf.hash_sequence(translated_protein)
+                protein_hash: str = sf.hash_sequence(translated_protein)
                 if protein_hash in processed_proteins:
+                    # If the protein has already been processed, save the other annotations that it may have
+                    same_protein_other_annotations.setdefault(protein_hash, []).append([id_, product, gene])
                     continue
                 else:
                     processed_proteins.add(protein_hash)
@@ -134,21 +140,24 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     all_alleles = {}
     reps_sequences = {}
     reps_groups = {}
-
-    all_alleles, reps_sequences, reps_groups, prot_len_dict = cf.minimizer_clustering(
-        all_translation_dict,
-        5,
-        5,
-        True,
-        1,
-        all_alleles,
-        reps_sequences,
-        reps_groups,
-        1,
-        clustering_sim,
-        clustering_cov,
-        True,
-        size_ratio
+    # Cluster protein sequences
+    [all_alleles,
+     reps_sequences,
+     reps_groups,
+     prot_len_dict] = cf.minimizer_clustering(
+                                            all_translation_dict,
+                                            5,
+                                            5,
+                                            True,
+                                            1,
+                                            all_alleles,
+                                            reps_sequences,
+                                            reps_groups,
+                                            1,
+                                            clustering_sim,
+                                            clustering_cov,
+                                            True,
+                                            size_ratio
     )
     print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} custers.\n")
     # Save extracted protein sequences to a file
@@ -209,9 +218,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Calculate self-score
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
-                                fasta_files_short_dict.keys(),
+                                translations_paths.keys(),
                                 repeat(get_blastp_exec),
-                                fasta_files_short_dict.values(),
+                                translations_paths.values(),
                                 repeat(self_score_reps_folder)):
             
             _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True, True, True)
@@ -253,15 +262,15 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     subject_score = next(iter(results.values()))['score']
                     bsr_value = bf.compute_bsr(subject_score, self_score_dict[query])
                     if bsr_value >= bsr:
-                        bsr_values[query].update({subject_id: bsr})
+                        bsr_values[query].update({subject_id: bsr_value})
                     else:
                         continue
 
                     current_best_bsr = best_bsr_values.get(loci)
                     if current_best_bsr and bsr > current_best_bsr[1]:
-                        best_bsr_values[loci] = [subject_id, bsr]
+                        best_bsr_values[loci] = [subject_id, bsr_value]
                     else:
-                        best_bsr_values[loci] = [subject_id, bsr]
+                        best_bsr_values[loci] = [subject_id, bsr_value]
                     
         
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
@@ -274,9 +283,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
         at.write(header + '\n')
         for loci, subject_info in best_bsr_values.items():
             subject_id = subject_info[0]
-            bsr = subject_id[1]
+            bsr_value = subject_id[1]
             product = all_cds_info[subject_info[0]][0]
             gene = all_cds_info[subject_info[0]][1]
             
-            at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr}\n")
+            at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr_value}\n")
             
