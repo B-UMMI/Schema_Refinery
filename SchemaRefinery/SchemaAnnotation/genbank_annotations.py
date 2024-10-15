@@ -158,7 +158,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                                             True,
                                             size_ratio
     )
-    print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} custers.\n")
+    print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.\n")
     # Save extracted protein sequences to a file
     blast_processing_folder = os.path.join(output_directory, 'blast_processing')
     ff.create_directory(blast_processing_folder)
