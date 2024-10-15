@@ -98,7 +98,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.\n")
     
     # Save clustered protein sequences to a file
-    clustered_protein_master_file: str = os.path.join(output_directory, f"{file_name}.fasta")
+    clustered_protein_master_file: str = os.path.join(output_directory, f"{file_name}")
     with open(clustered_protein_master_file, 'w') as outfile:
         for protein_id, values in reps_sequences.items():
             outfile.write(f">{protein_id}\n{values}\n")
@@ -206,7 +206,7 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], blast_processing_folder: s
     max_id_length: int = len(max(reps_ids, key=len))
     
     # Run BLASTp
-    print("\nRunning BLASTp...")
+    print("Running BLASTp...")
     blastp_results_folder: str = os.path.join(blast_processing_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     
@@ -320,7 +320,7 @@ def proteome_matcher(proteome_files: List[str], schema_directory: str,
         # Create BLAST database files
         blast_db_files: Optional[str] = create_database_files(proteome_file, clustering_sim, clustering_cov, size_ratio, blast_processing_folder)
         # Save paths to proteome file paths
-        proteomes_data_paths.setdefault(proteome_file, [proteome_folder, blast_processing_folder, blast_db_files])
+        proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
 
     # BLAST alleles for each locus against file with all CDSs from origin genomes
     fasta_files_dict: Dict[str, str] = {
@@ -338,7 +338,7 @@ def proteome_matcher(proteome_files: List[str], schema_directory: str,
     
     # Translate sequences and save to FASTA file
     files_to_run: Dict[str, str] = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
-    print("Translating sequences...")
+    print("\nTranslating sequences...")
     reps_translations_folder: str = os.path.join(output_directory, 'reps_translations')
     ff.create_directory(reps_translations_folder)
     translation_dict: Dict[str, str] = {}
