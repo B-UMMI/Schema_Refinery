@@ -1,42 +1,41 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Purpose
--------
-
-This script splits records in a set of UniProt proteomes into
-two Fasta files, one with records from Swiss-Prot and another
-with records from TrEMBL. It saves the description in the header
-of each record into a binary file created with the Pickle module.
-
-Code documentation
-------------------
-"""
-
-
 import os
 import gzip
 import pickle
-
+from typing import Dict, Tuple, List
 from Bio import SeqIO
 
+def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[str, str, str]:
+    """
+    Split proteome records into Swiss-Prot and TrEMBL records and save them to separate files.
 
-def proteome_splitter(proteomes_directory: str, output_directory: str):
+    Parameters
+    ----------
+    proteomes_directory : str
+        Path to the directory containing proteome files.
+    output_directory : str
+        Path to the directory where output files will be saved.
 
+    Returns
+    -------
+    Tuple[str, str, str]
+        Paths to the TrEMBL records file, Swiss-Prot records file, and descriptions file.
+    """
     # List proteomes in proteome directory
-    proteomes = [os.path.join(proteomes_directory, f)
-                 for f in os.listdir(proteomes_directory)]
+    proteomes: List[str] = [os.path.join(proteomes_directory, f)
+                            for f in os.listdir(proteomes_directory)]
 
-    # Divide into Swiss-Prot and TrEMBL records
-    swiss_records = {}
-    trembl_records = {}
-    descriptions = {}
+    # Initialize dictionaries to store Swiss-Prot, TrEMBL records, and descriptions
+    swiss_records: Dict[str, str] = {}
+    trembl_records: Dict[str, str] = {}
+    descriptions: Dict[str, str] = {}
+
+    # Process each proteome file
     for file in proteomes:
         with gzip.open(file, 'rt') as gzfasta:
             for rec in SeqIO.parse(gzfasta, 'fasta'):
-                recid = rec.id
-                prot = str(rec.seq)
-                desc = rec.description
+                recid: str = rec.id
+                prot: str = str(rec.seq)
+                desc: str = rec.description
                 if recid.startswith('tr'):
                     trembl_records[recid] = prot
                 elif recid.startswith('sp'):
@@ -44,24 +43,24 @@ def proteome_splitter(proteomes_directory: str, output_directory: str):
                 descriptions[recid] = desc
 
     # Save TrEMBL records to FASTA file
-    tr_filename = 'trembl_prots.fasta'
-    tr_file_path = os.path.join(output_directory, tr_filename)
+    tr_filename: str = 'trembl_prots.fasta'
+    tr_file_path: str = os.path.join(output_directory, tr_filename)
     with open(tr_file_path, 'w') as tout:
-        records = ['>{0}\n{1}'.format(k, v) for k, v in trembl_records.items()]
-        rectext = '\n'.join(records)
-        tout.write(rectext+'\n')
+        records: List[str] = ['>{0}\n{1}'.format(k, v) for k, v in trembl_records.items()]
+        rectext: str = '\n'.join(records)
+        tout.write(rectext + '\n')
 
     # Save Swiss-Prot records to FASTA file
-    sp_filename = 'swiss_prots.fasta'
-    sp_file_path = os.path.join(output_directory, sp_filename)
+    sp_filename: str = 'swiss_prots.fasta'
+    sp_file_path: str = os.path.join(output_directory, sp_filename)
     with open(sp_file_path, 'w') as tout:
-        records = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
-        rectext = '\n'.join(records)
-        tout.write(rectext+'\n')
+        records: List[str] = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
+        rectext: str = '\n'.join(records)
+        tout.write(rectext + '\n')
 
     # Save descriptions with Pickle
-    descriptions_filename = 'prots_descriptions'
-    descriptions_file_path = os.path.join(output_directory, descriptions_filename)
+    descriptions_filename: str = 'prots_descriptions'
+    descriptions_file_path: str = os.path.join(output_directory, descriptions_filename)
     with open(descriptions_file_path, 'wb') as dout:
         pickle.dump(descriptions, dout)
 
