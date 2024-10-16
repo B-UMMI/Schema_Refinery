@@ -167,44 +167,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
         for protein_id, values in reps_sequences.items():
             outfile.write(f">{protein_id}\n{values}\n")
         
-    # BLAST alleles for each locus against file with all CDSs from origin genomes
-    fasta_files_dict = {
-        loci.split('.')[0]: os.path.join(schema_directory, loci)
-        for loci in os.listdir(schema_directory)
-        if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
-        }
-    # Short folder
-    short_folder = os.path.join(schema_directory, 'short')
-    fasta_files_short_dict = {
-        loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
-        for loci in os.listdir(short_folder)
-        if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
-        }
-
-    files_to_run = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
-    print("Translating sequences...")
-    reps_translations_folder = os.path.join(output_directory, 'reps_translations')
-    ff.create_directory(reps_translations_folder)
-    translation_dict = {}
-    reps_ids = {}
-    translations_paths = {}
-    for loci, loci_path in files_to_run.items():
-        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
-        print(f"\rTranslating schema reps: {loci}", end='', flush=True)
-        for allele_id, sequence in fasta_dict.items():
-            reps_ids.setdefault(loci, []).append(allele_id)
-            
-            # Translate sequences and update translation dictionary
-            trans_path_file = os.path.join(reps_translations_folder, f"{loci}.fasta")
-            translations_paths[loci] = trans_path_file
-            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
-                                                            trans_path_file,
-                                                            None,
-                                                            0,
-                                                            False,
-                                                            translation_table,
-                                                            False)
-            translation_dict.update(trans_dict)
+    [translation_dict,
+     reps_ids,
+     translations_paths] = sf.translate_schema_loci(schema_directory,
+                                                    output_directory,
+                                                    translation_table,
+                                                    run_mode)
 
     # Create BLASTdb
     blastdb_path = os.path.join(blast_processing_folder, 'blastdb')
@@ -212,30 +180,16 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     blast_db_files = os.path.join(blastdb_path, 'genbank_protein_db')
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
     bf.make_blast_db(makeblastdb_exec, genbank_protein_file, blast_db_files, 'prot')
-    
-    print("\nCalculate self-score for the CDSs...")
-    self_score_reps_folder = os.path.join(blast_processing_folder, 'self_score_reps')
-    ff.create_directory(self_score_reps_folder)
-    self_score_dict = {}
+
     max_id_length = len(max(reps_ids))
     # Get Path to the blastp executable
     get_blastp_exec = lf.get_tool_path('blastp')
-    i = 1
     # Calculate self-score
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_self_score_multiprocessing,
-                                translations_paths.keys(),
-                                repeat(get_blastp_exec),
-                                translations_paths.values(),
-                                repeat(self_score_reps_folder)):
-            
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True, True, True)
-    
-            # Save self-score
-            self_score_dict.update(self_score)
-                            
-            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
-            i += 1
+    self_score_dict: Dict[str, float]= bf.calculate_self_score(translations_paths,
+                                                                get_blastp_exec,
+                                                                blast_processing_folder,
+                                                                max_id_length,
+                                                                cpu)   
     
     print("\nRunning BLASTp...")
     blastp_results_folder = os.path.join(blast_processing_folder, 'blastp_results')
@@ -292,6 +246,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Save annotations
     header = 'Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR'
     annotations_file = os.path.join(output_directory, 'genbank_annotations.tsv')
+    not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
     with open(annotations_file, 'w') as at:
         at.write(header + '\n')
         for loci, subject_info in best_bsr_values.items():
@@ -301,4 +256,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             gene = all_cds_info[subject_info[0]][1] # Get the gene name
             # Write the annotations to the file
             at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr_value}\n")
+        # Write the loci that did not match or the BSR value was lower than the threshold
+        for loci in not_matched_or_bsr_failed_loci:
+            at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+
+    return annotations_file
             

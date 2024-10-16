@@ -112,60 +112,6 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         
     return blast_db_files
 
-def self_score_calculation(reps_ids: Dict[str, str], self_score_folder: str,
-                           translations_paths: Dict[str, str], cpu: int) -> Dict[str, float]:
-    """
-    Calculate self-scores for representative protein sequences using BLASTp.
-
-    Parameters
-    ----------
-    reps_ids : Dict[str, str]
-        Dictionary of representative IDs.
-    self_score_folder : str
-        Path to the folder for storing self-score results.
-    translations_paths : Dict[str, str]
-        Dictionary of translation paths.
-    cpu : int
-        Number of CPUs to use.
-
-    Returns
-    -------
-    Dict[str, float]
-        Dictionary of self-scores for each representative ID.
-    """
-    # Create directory for self-score results
-    print("\nCalculate self-score for the schema...")
-    self_score_reps_folder: str = os.path.join(self_score_folder, 'self_score_reps')
-    ff.create_directory(self_score_reps_folder)
-    
-    # Initialize dictionary to store self-scores
-    self_score_dict: Dict[str, float] = {}
-    max_id_length: int = len(max(reps_ids, key=len))
-    
-    # Get path to the blastp executable
-    get_blastp_exec: str = lf.get_tool_path('blastp')
-    i: int = 1
-    self_score: float
-
-    # Calculate self-scores using multiprocessing
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_self_score_multiprocessing,
-                                translations_paths.keys(),
-                                repeat(get_blastp_exec),
-                                translations_paths.values(),
-                                repeat(self_score_reps_folder)):
-            
-            # Extract self-scores from BLAST results
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True, True, True)
-    
-            # Update self-score dictionary
-            self_score_dict.update(self_score)
-                            
-            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
-            i += 1
-
-    return self_score_dict
-
 def run_blast_for_proteomes(reps_ids: Dict[str, str], blast_processing_folder: str, translations_paths: Dict[str, str],
                             blast_db_files: str, proteome_folder: str, file_name_without_extension: str,
                             descriptions: Dict[str, str], self_score_dict: Dict[str, float], cpu: int, bsr: float) -> None:
@@ -261,6 +207,7 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], blast_processing_folder: s
     # Save annotations
     header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
     annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
+    not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
     with open(annotations_file, 'w') as at:
         at.write(header + '\n')
         for loci, subject_info in best_bsr_values.items():
@@ -272,6 +219,11 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], blast_processing_folder: s
             sname: str = desc.split('GN=')[1].split(' PE=')[0]
             # Write the annotations to the file
             at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+        # Write loci that did not match or failed the BSR threshold
+        for loci in not_matched_or_bsr_failed_loci:
+            at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+    
+    return annotations_file
 
 def proteome_matcher(proteome_files: List[str], schema_directory: str,
                      output_directory: str, cpu: int, bsr: float,
@@ -322,55 +274,28 @@ def proteome_matcher(proteome_files: List[str], schema_directory: str,
         # Save paths to proteome file paths
         proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
 
-    # BLAST alleles for each locus against file with all CDSs from origin genomes
-    fasta_files_dict: Dict[str, str] = {
-        loci.split('.')[0]: os.path.join(schema_directory, loci)
-        for loci in os.listdir(schema_directory)
-        if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
-    }
-    # Short folder
-    short_folder: str = os.path.join(schema_directory, 'short')
-    fasta_files_short_dict: Dict[str, str] = {
-        loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
-        for loci in os.listdir(short_folder)
-        if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
-    }
-    
-    # Translate sequences and save to FASTA file
-    files_to_run: Dict[str, str] = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
-    print("\nTranslating sequences...")
-    reps_translations_folder: str = os.path.join(output_directory, 'reps_translations')
-    ff.create_directory(reps_translations_folder)
-    translation_dict: Dict[str, str] = {}
-    reps_ids: Dict[str, List[str]] = {}
-    translations_paths: Dict[str, str] = {}
-    for loci, loci_path in files_to_run.items():
-        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(loci_path, False)
-        print(f"\rTranslating schema reps: {loci}", end='', flush=True)
-        for allele_id, sequence in fasta_dict.items():
-            reps_ids.setdefault(loci, []).append(allele_id)
-            
-            # Translate sequences and update translation dictionary
-            trans_path_file: str = os.path.join(reps_translations_folder, f"{loci}.fasta")
-            translations_paths[loci] = trans_path_file
-            trans_dict: Dict[str, str]
-            trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
-                                                            trans_path_file,
-                                                            None,
-                                                            0,
-                                                            False,
-                                                            translation_table,
-                                                            False)
-            translation_dict.update(trans_dict)
+    [translation_dict,
+     reps_ids,
+     translations_paths] = sf.translate_schema_loci(schema_directory,
+                                                    output_directory,
+                                                    translation_table,
+                                                    run_mode)
 
     # Import Swiss-Prot and TrEMBL records descriptions
     with open(proteome_files[2], 'rb') as dinfile:
         descriptions: Dict[str, str] = pickle.load(dinfile)
 
-    # Calculate self-score for representatives
-    self_score_folder: str = os.path.join(output_directory, 'self_score')
-    self_score_dict: Dict[str, float] = self_score_calculation(reps_ids, self_score_folder, translations_paths, cpu)
-
+    # For better prints get max length of string
+    max_id_length: int = len(max(reps_ids, key=len))
+    
+    # Get path to the blastp executable
+    blast_exec: str = lf.get_tool_path('blastp')
+    self_score_dict: Dict[str, float] = bf.calculate_self_score(translations_paths,
+                                                                blast_exec,
+                                                                output_directory,
+                                                                max_id_length,
+                                                                cpu)
+    annotations_files = []
     for file_name, paths in proteomes_data_paths.items():
         if paths[2] is None:
             print(f"\nSkipping proteome file BLAST: {file_name} due to lack of proteins")
@@ -384,7 +309,7 @@ def proteome_matcher(proteome_files: List[str], schema_directory: str,
         blast_db_files: str
         [proteome_folder, blast_processing_folder, blast_db_files] = paths
         # Run Blasts and save to file
-        run_blast_for_proteomes(reps_ids,
+        annotations_file = run_blast_for_proteomes(reps_ids,
                                 blast_processing_folder,
                                 translations_paths,
                                 blast_db_files,
@@ -394,3 +319,7 @@ def proteome_matcher(proteome_files: List[str], schema_directory: str,
                                 self_score_dict,
                                 cpu,
                                 bsr)
+        # Save annotations file
+        annotations_files.append(annotations_file)
+        
+        return annotations_files[0], annotations_files[1]

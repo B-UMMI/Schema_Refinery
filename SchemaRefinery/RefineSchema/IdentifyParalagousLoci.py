@@ -2,6 +2,7 @@ import os
 import concurrent.futures
 import itertools
 import statistics
+from typing import Dict
 try:
     from utils import (
                         sequence_functions as sf,
@@ -22,7 +23,6 @@ except ModuleNotFoundError:
                                     statistics as stats,
                                     clustering_functions as cf,
     )
-    
 
 def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio,
                              translation_table, size_threshold, processing_mode):
@@ -68,7 +68,11 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     """
 
     # Identify all of the fastas in the schema directory
-    fasta_files_dict = {loci.split('.')[0]: os.path.join(schema_directory, loci) for loci in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')}
+    fasta_files_dict = {
+        loci.split('.')[0]: os.path.join(schema_directory, loci)
+        for loci in os.listdir(schema_directory)
+        if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
+    }
     # Identify all of the fastas short in the schema directory
     short_folder = os.path.join(schema_directory, 'short')
     fasta_files_short_dict = {
@@ -122,31 +126,12 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     max_id_length = len(max(query_paths_dict.keys(), key=len))
     # Blast executable
     blast_exec = lf.get_tool_path('blastp')
-    # Self-score folder
-    blastp_results_ss_folder = os.path.join(blast_folder, 'blastp_results_ss')
-    ff.create_directory(blastp_results_ss_folder)
-
-    self_score_dict = {}
-    i = 1
     # Calculate self-score
-    print("\nCalculating self-score for each loci:")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
-        for res in executor.map(bf.run_self_score_multiprocessing,
-                                query_paths_dict.keys(),
-                                itertools.repeat(blast_exec),
-                                query_paths_dict.values(),
-                                itertools.repeat(blastp_results_ss_folder)):
-            
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, True)
-    
-            # Save self-score
-            self_score_dict[res[0]] = self_score
-                            
-            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
-            i += 1    
-    
-    # Print newline
-    print('\n')  
+    self_score_dict: Dict[str, float] = bf.calculate_self_score(query_paths_dict,
+                                                                blast_exec,
+                                                                blast_folder,
+                                                                max_id_length,
+                                                                cpu_cores)   
 
     # Get makeblastdb executable
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
