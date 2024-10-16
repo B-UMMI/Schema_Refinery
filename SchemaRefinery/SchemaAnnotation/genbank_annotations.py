@@ -12,7 +12,8 @@ try:
         file_functions as ff,
         linux_functions as lf,
         alignments_functions as af,
-        clustering_functions as cf
+        clustering_functions as cf,
+        iterable_functions as itf,
     )
     from utils.sequence_functions import translate_sequence
 except ModuleNotFoundError:
@@ -22,7 +23,8 @@ except ModuleNotFoundError:
         file_functions as ff,
         linux_functions as lf,
         alignments_functions as af,
-        clustering_functions as cf
+        clustering_functions as cf,
+        iterable_functions as itf
     )
     from SchemaRefinery.utils.sequence_functions import translate_sequence
 
@@ -110,9 +112,10 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     processed_proteins: Set[str] = set()
     same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
     total_proteins: int = 0
-
+    all_genbank_files_ids = {}
     for f in gbk_files:
-        print(f"\rExtracting protein annotations from GenBank file: {os.path.basename(f)}", end='', flush=True)
+        file_name = os.path.basename(f)
+        print(f"\rExtracting protein annotations from GenBank file: {file_name}", end='', flush=True)
         recs: List[SeqRecord] = [rec for rec in SeqIO.parse(f, 'genbank')]
         for r in recs:
             cds_info: Dict[str, List[str]] = get_protein_annotation_fasta(r)
@@ -121,6 +124,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                 # Skip if protein has no id and no sequence
                 if not id_:
                     continue
+                # Add all IDs in the Genbank file
+                all_genbank_files_ids.setdefault(file_name.removesuffix('.gbff'), []).append(id_)
                 product, gene, translated_protein = info
                 protein_hash: str = sf.hash_sequence(translated_protein)
                 if protein_hash in processed_proteins:
@@ -197,6 +202,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     bsr_values = {}
     best_bsr_values = {}
+    best_bsr_values_per_genbank_file = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts = len(reps_ids)
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -239,6 +245,13 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     else:
                         best_bsr_values[loci] = [subject_id, bsr_value]
                     
+                    # Get best value for genbank file
+                    genbank_file = itf.identify_string_in_dict_get_key(subject_id, all_genbank_files_ids)
+                    current_best_in_genbank_file = best_bsr_values_per_genbank_file[genbank_file].get(loci)
+                    if current_best_in_genbank_file and bsr_value > current_best_in_genbank_file[1]:
+                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value]
+                    else:
+                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value]
         
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
@@ -263,5 +276,21 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
         for loci in not_matched_or_bsr_failed_loci:
             at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
 
+    annotations_per_genbank_file = os.path.join(output_directory, "annotations_per_genbank_file")
+    ff.create_directory(annotations_per_genbank_file)
+    for file, loci_results in best_bsr_values_per_genbank_file.items():
+        annotations_file_genbank = os.path.join(annotations_per_genbank_file, f"{file}.tsv")
+        with open(annotations_file_genbank, 'w') as at:
+            for loci, subject_info in loci_results.items():
+                subject_id = subject_info[0] # Get the original ID and not the modified Blast version
+                bsr_value = subject_info[1] # Get the BSR value
+                product = all_cds_info[subject_info[0]][0] # Get the product name
+                gene = all_cds_info[subject_info[0]][1] # Get the gene name
+                # Check if the gene name is empty
+                if gene == '':
+                    gene = 'NA'
+                # Write the annotations to the file
+                at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr_value}\n")
+        
     return annotations_file
             
