@@ -84,7 +84,7 @@ def process_new_loci(schema_folder, allelecall_directory, constants, processing_
     cds_present = os.path.join(allelecall_directory, "temp", "2_cds_preprocess/cds_deduplication/distinct.hashtable")
     decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
     
-    # Process alleles to run
+    # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
@@ -92,7 +92,7 @@ def process_new_loci(schema_folder, allelecall_directory, constants, processing_
             group_reps_ids.setdefault(loci_id, []).append(allele_id)
             all_nucleotide_sequences.setdefault(loci_id, str(sequence))
 
-    # Write master file to run against
+    # Write master file to run against, DNA sequences
     for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)

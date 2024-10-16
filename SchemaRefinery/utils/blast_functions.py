@@ -1,6 +1,17 @@
 import subprocess
 import os
 import sys
+import itertools
+import concurrent.futures
+
+try:
+    from utils import (file_functions as ff,
+                       blast_functions as bf,
+                       alignments_functions as af)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (file_functions as ff,
+                                      blast_functions as bf,
+                                      alignments_functions as af)
 
 def make_blast_db(makeblastdb_path, input_fasta, output_path, db_type):
 	"""Create a BLAST database.
@@ -345,3 +356,29 @@ def run_blastdb_aliastool(blastdb_aliastool_path, seqid_infile, seqid_outfile):
 				 f'{blastdb_aliastool_path} returned the following error:\n{stderr}')
 
 	return [stdout, stderr]
+
+def calculate_self_score(paths_dict, blast_exec, output_folder, max_id_length, cpu):
+    # Self-score folder
+    self_score_folder = os.path.join(output_folder, 'self-score-folder')
+    ff.create_directory(self_score_folder)
+
+    self_score_dict = {}
+    i = 1
+    # Calculate self-score
+    print("\nCalculating self-score for each loci:")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_self_score_multiprocessing,
+                                paths_dict.keys(),
+                                itertools.repeat(blast_exec),
+                                paths_dict.values(),
+                                itertools.repeat(self_score_folder)):
+            
+            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, True)
+    
+            # Save self-score
+            self_score_dict.update(self_score)
+                            
+            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
+            i += 1    
+            
+    return self_score_dict

@@ -1,13 +1,16 @@
 from typing import List, Set, Dict, Union, Tuple, Optional, Iterator
 import hashlib
+import os
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
 try:
     from RefineSchema.constants import DNA_BASES
+    from utils import (file_functions as ff,)
 except ModuleNotFoundError:
     from SchemaRefinery.RefineSchema.constants import DNA_BASES
+    from SchemaRefinery.utils import (file_functions as ff,)
 
 def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) -> bool:
     """
@@ -539,3 +542,53 @@ def fasta_lines(template: str, records_data: List[List[str]]) -> List[str]:
         A list with strings representing FASTA records.
     """
     return [fasta_str_record(template, arg) for arg in records_data]
+
+def translate_schema_loci(schema_directory, output_directory, translation_table, run_mode):
+    
+    # BLAST alleles for each locus against file with all CDSs from origin genomes
+    fasta_files_dict: Dict[str, str] = {
+        loci.split('.')[0]: os.path.join(schema_directory, loci)
+        for loci in os.listdir(schema_directory)
+        if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
+    }
+    # Short folder
+    short_folder: str = os.path.join(schema_directory, 'short')
+    fasta_files_short_dict: Dict[str, str] = {
+        loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
+        for loci in os.listdir(short_folder)
+        if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
+    }
+    
+    # Choose what files to use for the BLAST search
+    files_to_run: Dict[str, str] = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
+    print("\nTranslating sequences...")
+    # Create directory for translated sequences
+    reps_translations_folder: str = os.path.join(output_directory, 'reps_translations')
+    ff.create_directory(reps_translations_folder)
+
+    translation_dict: Dict[str, str] = {}
+    reps_ids: Dict[str, List[str]] = {}
+    translations_paths: Dict[str, str] = {}
+    for loci, loci_path in files_to_run.items():
+        # Get the fasta sequences
+        fasta_dict: Dict[str, str] = fetch_fasta_dict(loci_path, False)
+        print(f"\rTranslating schema reps: {loci}", end='', flush=True)
+        # Add allele IDs to the reps_ids dictionary
+        reps_ids.setdefault(loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+        # Translate sequences and update translation dictionary
+        trans_path_file: str = os.path.join(reps_translations_folder, f"{loci}.fasta")
+        # Save translation paths
+        translations_paths[loci] = trans_path_file
+        trans_dict: Dict[str, str]
+        # Translate sequences and save to file
+        trans_dict, _, _ = translate_seq_deduplicate(fasta_dict,
+                                                        trans_path_file,
+                                                        None,
+                                                        0,
+                                                        False,
+                                                        translation_table,
+                                                        False)
+        # Update the translation dictionary
+        translation_dict.update(trans_dict)
+        
+    return translation_dict, reps_ids, translations_paths
