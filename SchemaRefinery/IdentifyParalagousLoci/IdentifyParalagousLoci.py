@@ -173,7 +173,9 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu, bsr,
                     # Get the best BSR value between loci
                     # If the BSR is better than the current best, update it
                     subject_loci_id = subject_id.split('_')[0]
-                    if not best_bsr_values[query_loci_id].get(subject_loci_id) or best_bsr_values[query_loci_id][subject_loci_id] >= computed_score:
+                    if not best_bsr_values[query_loci_id].get(subject_loci_id):
+                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+                    elif computed_score  > best_bsr_values[query_loci_id][subject_loci_id]:
                         best_bsr_values[query_loci_id][subject_loci_id] = computed_score
                     
                     
@@ -211,10 +213,10 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu, bsr,
     paralagous_loci_report_cluster_by_id = os.path.join(output_directory, 'paralagous_loci_report_cluster_by_id.tsv')
     with open(paralagous_loci_report_cluster_by_id, 'a') as report_file:
         for cluster in paralagous_list:
-            report_file.write(f"{cluster}\n")
+            report_file.write(f"{','.join(cluster)}\n")
     # Cluster the paralagous loci by id that passed the mode check and write the results to a file
     paralagous_list_mode_check = cf.cluster_by_ids(paralagous_list_mode_check)
     paralagous_loci_report_mode = os.path.join(output_directory, 'paralagous_loci_report_mode.tsv')
     with open(paralagous_loci_report_mode, 'a') as report_file:
         for cluster in paralagous_list_mode_check:
-            report_file.write(f"{cluster}\n")
+            report_file.write(f"{','.join(cluster)}\n")
