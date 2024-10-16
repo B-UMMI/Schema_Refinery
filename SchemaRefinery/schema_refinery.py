@@ -529,7 +529,7 @@ def identify_paralagous_loci():
                          '--cpu',
                          type=int,
                          required=False,
-                         dest='cpu_cores',
+                         dest='cpu',
                          default=1, 
                          help='Number of cpus to run blast instances.')
      
@@ -537,7 +537,7 @@ def identify_paralagous_loci():
                          '--bsr',
                          type=float,
                          required=False,
-                         dest='blast_score_ratio',
+                         dest='bsr',
                          default=0.6,
                          help='BSR value to consider alleles as the same locus.')
      
