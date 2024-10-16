@@ -254,6 +254,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             bsr_value = subject_info[1] # Get the BSR value
             product = all_cds_info[subject_info[0]][0] # Get the product name
             gene = all_cds_info[subject_info[0]][1] # Get the gene name
+            # Check if the gene name is empty
+            if gene == '':
+                gene = 'NA'
             # Write the annotations to the file
             at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr_value}\n")
         # Write the loci that did not match or the BSR value was lower than the threshold
