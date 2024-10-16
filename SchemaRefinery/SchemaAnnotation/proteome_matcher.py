@@ -217,6 +217,9 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], blast_processing_folder: s
             desc: str = descriptions[subject_id]
             lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
             sname: str = desc.split('GN=')[1].split(' PE=')[0]
+            # If there is no short name, set it to 'NA'
+            if sname == '':
+                sname = 'NA'
             # Write the annotations to the file
             at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
         # Write loci that did not match or failed the BSR threshold
