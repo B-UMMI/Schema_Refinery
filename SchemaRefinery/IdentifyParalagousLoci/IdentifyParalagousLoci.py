@@ -169,7 +169,15 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu, bsr,
                     #Highest score (First one)
                     subject_score = next(iter(results.values()))['score']
                     computed_score = bf.compute_bsr(subject_score, self_score_dict[query])
-                    bsr_values[query].update({subject_id: computed_score})
+                    # Check if the BSR value is higher than the threshold
+                    if computed_score >= bsr:
+                        # Round BSR values if they are superior to 1.0 to 1 decimal place
+                        if computed_score > 1.0:
+                            computed_score = round(computed_score, 1)
+                        # Save all of the diferent matches that this query had and their BSR values
+                        bsr_values[query].update({subject_id: computed_score})
+                    else:
+                        continue
                     # Get the best BSR value between loci
                     # If the BSR is better than the current best, update it
                     subject_loci_id = subject_id.split('_')[0]
@@ -185,22 +193,13 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu, bsr,
     # Print newline
     print('\n')
     
-    filtered_best_bsr_values = {
-    query_loci_id: {
-        subject_loci_id: computed_score
-        for subject_loci_id, computed_score in subject_dict.items()
-        if computed_score >= bsr
-    }
-    for query_loci_id, subject_dict in best_bsr_values.items()
-    }
-    
     paralagous_loci_report = os.path.join(output_directory, 'paralagous_loci_report.tsv')
     paralagous_list = []
     paralagous_list_mode_check = []
     # Write the report file with all of the paralagous loci results
     with open(paralagous_loci_report, 'w') as report_file:
         report_file.write("Query_loci_id\tSubject_loci_id\tBSR\tMode_check\n")
-        for query_loci_id, subject_dict in filtered_best_bsr_values.items():
+        for query_loci_id, subject_dict in best_bsr_values.items():
             for subject_loci_id, computed_score in subject_dict.items():
                 paralagous_list.append((query_loci_id, subject_loci_id))
                 mode_check = stats.modes_within_value(protein_size_mode_dict[query_loci_id], protein_size_mode_dict[subject_loci_id], size_threshold)
