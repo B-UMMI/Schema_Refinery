@@ -46,7 +46,7 @@ def match_schemas(query_schema, subject_schema, output_directory, bsr, translati
     subject_files, subject_files_short = get_schema_files(subject_schema)
     # Choose what files to use for the BLAST search
     query_fastas = query_files if run_mode.split('_')[0] == 'alleles' else query_files_short
-    subject_fastas = subject_files_short if run_mode.split('_')[1] == 'rep' else subject_files
+    subject_fastas = subject_files_short if run_mode.split('_')[-1] == 'rep' else subject_files
     # Create the output directory
     blast_folder = os.path.join(output_directory, 'Blast')
     ff.create_directory(blast_folder)
