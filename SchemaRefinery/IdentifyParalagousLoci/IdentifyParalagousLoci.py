@@ -24,7 +24,7 @@ except ModuleNotFoundError:
                                     clustering_functions as cf,
     )
 
-def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio,
+def identify_paralagous_loci(schema_directory, output_directory, cpu, bsr,
                              translation_table, size_threshold, processing_mode):
     """
     Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
@@ -35,9 +35,9 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
         Path to the directory containing schema FASTA files.
     output_directory : str
         Path to the directory where output files will be saved.
-    cpu_cores : int
+    cpu : int
         Number of CPU cores to use for parallel processing.
-    blast_score_ratio : float
+    bsr : float
         Threshold for the BLAST score ratio to consider loci as paralogous.
     translation_table : int
         Translation table number to use for translating nucleotide sequences to protein sequences.
@@ -60,11 +60,11 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     --------
     >>> schema_directory = '/path/to/schema'
     >>> output_directory = '/path/to/output'
-    >>> cpu_cores = 4
-    >>> blast_score_ratio = 0.8
+    >>> cpu = 4
+    >>> bsr = 0.8
     >>> translation_table = 11
     >>> size_threshold = 0.2
-    >>> identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blast_score_ratio, translation_table, size_threshold, processing_mode)
+    >>> identify_paralagous_loci(schema_directory, output_directory, cpu, bsr, translation_table, size_threshold, processing_mode)
     """
 
     # Identify all of the fastas in the schema directory
@@ -131,7 +131,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
                                                                 blast_exec,
                                                                 blast_folder,
                                                                 max_id_length,
-                                                                cpu_cores)   
+                                                                cpu)   
 
     # Get makeblastdb executable
     makeblastdb_exec = lf.get_tool_path('makeblastdb')
@@ -150,7 +150,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     total_blasts = len(query_paths_dict)
     i = 1
     print(f"\nRunning BLASTp...")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu_cores) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blastdb_multiprocessing, 
                                 itertools.repeat(blast_exec),
                                 itertools.repeat(blast_db_prot),
@@ -168,7 +168,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
                 for subject_id, results in subjects_dict.items():
                     #Highest score (First one)
                     subject_score = next(iter(results.values()))['score']
-                    computed_score = bf.compute_bsr(subject_score, self_score_dict[res[0]])
+                    computed_score = bf.compute_bsr(subject_score, self_score_dict[query])
                     bsr_values[query].update({subject_id: computed_score})
                     # Get the best BSR value between loci
                     # If the BSR is better than the current best, update it
@@ -187,7 +187,7 @@ def identify_paralagous_loci(schema_directory, output_directory, cpu_cores, blas
     query_loci_id: {
         subject_loci_id: computed_score
         for subject_loci_id, computed_score in subject_dict.items()
-        if computed_score >= blast_score_ratio
+        if computed_score >= bsr
     }
     for query_loci_id, subject_dict in best_bsr_values.items()
     }
