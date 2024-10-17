@@ -14,8 +14,9 @@ Code documentation
 
 import os
 import csv
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
 
 try:
     from utils import blast_functions as bf
@@ -29,7 +30,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import linux_functions as lf
 
 
-def get_protein_annotation_fasta(seqRecord):
+def get_protein_annotation_fasta(seqRecord: SeqRecord) -> Tuple[List[str], Dict[str, List[str]]]:
     """Get the translated protein from a Genbank file.
 
     Parameters
@@ -44,13 +45,9 @@ def get_protein_annotation_fasta(seqRecord):
     fasta_dict : dict
         Dict containing the translated protein as key and the values are
         list containing the protein_id, the product and the gene name.
-
-    Notes
-    -----
-    Source: https://github.com/LeeBergstrand/Genbank-Downloaders/blob/d904c92788696b02d9521802ebf1fc999a600e1b/SeqExtract.py#L48
     """
-    fasta = []
-    fasta_dict = {}
+    fasta: List[str] = []
+    fasta_dict: Dict[str, List[str]] = {}
     features = seqRecord.features  # Each sequence has a list (called features) that stores seqFeature objects.
     for feature in features:  # For each feature on the sequence
         if feature.type == "CDS":  # CDS means coding sequence (These are the only features we're interested in)
@@ -64,9 +61,9 @@ def get_protein_annotation_fasta(seqRecord):
             if protein_id == 'no_protein_id':
                 continue  # Skips the iteration if protein has no id.
 
-            gene = str(featQualifiers.get('gene', '')).strip('\'[]')
-            product = str(featQualifiers.get('product', 'no_product_name')).strip('\'[]')
-            translated_protein = str(featQualifiers.get('translation', 'no_translation')).strip('\'[]')
+            gene: str = str(featQualifiers.get('gene', '')).strip('\'[]')
+            product: str = str(featQualifiers.get('product', 'no_product_name')).strip('\'[]')
+            translated_protein: str = str(featQualifiers.get('translation', 'no_translation')).strip('\'[]')
 
             fasta.append(('>' + protein_id + '|' + gene + '|' + product + '\n' + translated_protein))
             fasta_dict[translated_protein] = [protein_id, product, gene]
