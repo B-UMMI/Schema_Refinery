@@ -297,6 +297,16 @@ def schema_annotation():
                          default='reps',
                          choices=['reps', 'alleles'],
                          help='Mode to run the module: reps or alleles.')
+     
+     parser.add_argument('-egtc',
+                         '-extra_genbank_table_columns',
+                         type=list,
+                         required=False,
+                         dest='extra_genbank_table_columns',
+                         nargs='+',
+                         default=[],
+                         choices = ['locus_tag', 'note', 'codon_start', 'function', 'protein_id', 'db_xref'],
+                         help='List of columns to add to annotation file.',)
     
      args = parser.parse_args()
 

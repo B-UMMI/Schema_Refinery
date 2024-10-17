@@ -88,7 +88,8 @@ def main(args: Namespace) -> None:
                                                    args.clustering_sim,
                                                    args.clustering_cov,
                                                    args.size_ratio,
-                                                   args.run_mode)
+                                                   args.run_mode,
+                                                   args.extra_genbank_table_columns)
         results_files.append(genbank_file)
 
     matched_schemas: Optional[str] = None
