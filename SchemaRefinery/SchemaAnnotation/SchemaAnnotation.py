@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from argparse import Namespace
 from functools import reduce
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 try:
     from SchemaAnnotation import (proteome_fetcher as pf,
@@ -52,15 +52,17 @@ def main(args: Namespace) -> None:
 
         if proteomes_directory is not None:
             # Split proteome records into TrEMBL and Swiss-Prot records
-            split_data: Tuple[str, str, str] = ps.proteome_splitter(proteomes_directory,
+            split_data: Tuple[str, str, str, Dict[str, List[str]]] = ps.proteome_splitter(proteomes_directory,
                                                                     args.output_directory)
             tr_file: str
             sp_file: str
             descriptions_file: str
-            tr_file, sp_file, descriptions_file = split_data
+            proteome_file_ids: Dict[str, List[str]]
+            tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
             # Align loci against proteome records
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
+                                                         proteome_file_ids,
                                                          args.schema_directory,
                                                          args.output_directory,
                                                          args.cpu,

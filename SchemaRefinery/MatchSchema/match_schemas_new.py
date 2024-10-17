@@ -1,5 +1,6 @@
 import os
-from typing import Dict, List, Tuple, Set, Optional
+from typing import Dict, List
+
 try:
     from utils import (
                         sequence_functions as sf,
@@ -21,16 +22,32 @@ except ModuleNotFoundError:
                                     clustering_functions as cf,
     )
 
-def get_schema_files(schema_directory):
-    # Identify all of the fastas in the schema directory
-    fasta_files_dict = {
+def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+    """
+    Identify all of the FASTA files in the schema directory and its 'short' subdirectory.
+
+    Parameters
+    ----------
+    schema_directory : str
+        Path to the directory containing schema FASTA files.
+
+    Returns
+    -------
+    Tuple[Dict[str, str], Dict[str, str]]
+        A tuple containing two dictionaries:
+        - The first dictionary maps loci names to their file paths in the schema directory.
+        - The second dictionary maps loci names to their file paths in the 'short' subdirectory.
+    """
+    # Identify all of the FASTA files in the schema directory
+    fasta_files_dict: Dict[str, str] = {
         loci.split('.')[0]: os.path.join(schema_directory, loci)
         for loci in os.listdir(schema_directory)
         if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
     }
-    # Identify all of the fastas short in the schema directory
-    short_folder = os.path.join(schema_directory, 'short')
-    fasta_files_short_dict = {
+    
+    # Identify all of the FASTA files in the 'short' subdirectory
+    short_folder: str = os.path.join(schema_directory, 'short')
+    fasta_files_short_dict: Dict[str, str] = {
         loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
         for loci in os.listdir(short_folder)
         if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')

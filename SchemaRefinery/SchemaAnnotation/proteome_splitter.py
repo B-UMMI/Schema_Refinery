@@ -4,7 +4,7 @@ import pickle
 from typing import Dict, Tuple, List
 from Bio import SeqIO
 
-def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[str, str, str]:
+def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[str, str, str, dict]:
     """
     Split proteome records into Swiss-Prot and TrEMBL records and save them to separate files.
 
@@ -28,14 +28,18 @@ def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[
     swiss_records: Dict[str, str] = {}
     trembl_records: Dict[str, str] = {}
     descriptions: Dict[str, str] = {}
-
+    proteome_file_ids: Dict[str, List[str]] = {}
     # Process each proteome file
     for file in proteomes:
+        file_name: str = os.path.basename(file).split('.')[0]
         with gzip.open(file, 'rt') as gzfasta:
             for rec in SeqIO.parse(gzfasta, 'fasta'):
                 recid: str = rec.id
                 prot: str = str(rec.seq)
                 desc: str = rec.description
+                # Add record ID to appropriate proteome file
+                proteome_file_ids.setdefault(file_name, []).append(recid)
+                
                 if recid.startswith('tr'):
                     trembl_records[recid] = prot
                 elif recid.startswith('sp'):
@@ -54,8 +58,8 @@ def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[
     sp_filename: str = 'swiss_prots.fasta'
     sp_file_path: str = os.path.join(output_directory, sp_filename)
     with open(sp_file_path, 'w') as tout:
-        records: List[str] = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
-        rectext: str = '\n'.join(records)
+        records = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
+        rectext = '\n'.join(records)
         tout.write(rectext + '\n')
 
     # Save descriptions with Pickle
@@ -64,4 +68,4 @@ def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[
     with open(descriptions_file_path, 'wb') as dout:
         pickle.dump(descriptions, dout)
 
-    return tr_file_path, sp_file_path, descriptions_file_path
+    return tr_file_path, sp_file_path, descriptions_file_path, proteome_file_ids
