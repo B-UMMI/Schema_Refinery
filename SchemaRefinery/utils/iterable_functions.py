@@ -4,6 +4,7 @@ import itertools
 import pickle
 from typing import List, Tuple, Dict, Union, Any, Set
 
+
 def flatten_list(list_to_flatten: List[List[Any]]) -> List[Any]:
     """
     Flatten one level of a nested list.
@@ -19,6 +20,7 @@ def flatten_list(list_to_flatten: List[List[Any]]) -> List[Any]:
         Input list flattened by one level.
     """
     return list(itertools.chain(*list_to_flatten))
+
 
 def isListEmpty(input_list: List[Any]) -> bool:
     """
@@ -36,6 +38,7 @@ def isListEmpty(input_list: List[Any]) -> bool:
     """
     if isinstance(input_list, list):
         return all(map(isListEmpty, input_list)) if isinstance(input_list, list) else False
+
 
 def divide_list_into_n_chunks(list_to_divide: List[Any], n: int) -> List[List[Any]]:
     """
@@ -66,6 +69,7 @@ def divide_list_into_n_chunks(list_to_divide: List[Any], n: int) -> List[List[An
 
     return [sublist for sublist in sublists if sublist]
 
+
 def get_max_min_values(input_list: List[Union[int, float]]) -> Tuple[Union[int, float], Union[int, float]]:
     """
     From an input list, return the maximum and minimum integer or float values.
@@ -81,6 +85,7 @@ def get_max_min_values(input_list: List[Union[int, float]]) -> Tuple[Union[int, 
         A tuple containing the largest and smallest values in the input list.
     """
     return max(input_list), min(input_list)
+
 
 def decompress_number(text: str, index: int) -> Tuple[int, int]:
     """
@@ -115,6 +120,7 @@ def decompress_number(text: str, index: int) -> Tuple[int, int]:
     number = number | (n << bitwise_shift)
     return index, (~number >> 1) if (number & 1) != 0 else (number >> 1)
 
+
 def polyline_decoding(text: str) -> List[float]:
     """
     Decode a list of integers compressed with polyline encoding.
@@ -140,7 +146,8 @@ def polyline_decoding(text: str) -> List[float]:
 
     return [round(item * (10 ** (-precision)), precision) for item in number_list]
 
-def decode_CDS_sequences_ids(path_to_file: str) -> Dict[str, List[int]]:
+
+def decode_CDS_sequences_ids(path_to_file: str) -> Dict[str, List[float]]:
     """
     Read a dictionary contained in a pickle file and decode its values based on polyline.
 
@@ -158,6 +165,7 @@ def decode_CDS_sequences_ids(path_to_file: str) -> Dict[str, List[int]]:
         hash_table = pickle.load(infile)
 
     return {key: polyline_decoding(value) for key, value in hash_table.items()}
+
 
 def get_unique_sublists(list_of_lists: List[List[Any]]) -> List[List[Any]]:
     """
@@ -182,6 +190,7 @@ def get_unique_sublists(list_of_lists: List[List[Any]]) -> List[List[Any]]:
             unique_sublists.append(sublist)
     return unique_sublists
 
+
 def all_match_lists(list1: List[Any], list2: List[Any]) -> bool:
     """
     Check if all elements of list1 are contained in list2.
@@ -200,6 +209,7 @@ def all_match_lists(list1: List[Any], list2: List[Any]) -> bool:
     """
     return all(elem in list2 for elem in list1)
 
+
 def any_match_lists(list1: List[Any], list2: List[Any]) -> bool:
     """
     Check if any element of list1 is contained in list2.
@@ -217,6 +227,7 @@ def any_match_lists(list1: List[Any], list2: List[Any]) -> bool:
         True if any element of list1 is found in list2, False otherwise.
     """
     return any(elem in list2 for elem in list1)
+
 
 def contains_sublist(main_list: List[Any], list_of_lists: List[List[Any]]) -> bool:
     """
@@ -239,6 +250,7 @@ def contains_sublist(main_list: List[Any], list_of_lists: List[List[Any]]) -> bo
             return True
     return False
 
+
 def partially_contains_sublist(main_list: List[Any], list_of_lists: List[List[Any]]) -> bool:
     """
     Check if elements of the main list are partially contained in any sublist of the list of lists.
@@ -259,6 +271,7 @@ def partially_contains_sublist(main_list: List[Any], list_of_lists: List[List[An
         if any_match_lists(main_list, sublist):
             return True
     return False
+
 
 def identify_string_in_dict_get_key(input_str: str, dictionary: Dict[Union[str, int], Any]) -> Union[str, int, None]:
     """
@@ -281,6 +294,7 @@ def identify_string_in_dict_get_key(input_str: str, dictionary: Dict[Union[str, 
             return key
     return None
 
+
 def identify_string_in_dict_get_value(search_key: str, search_dict: Dict[str, Any]) -> Any:
     """
     Identify the value in the dictionary where the search key is present.
@@ -302,29 +316,6 @@ def identify_string_in_dict_get_value(search_key: str, search_dict: Dict[str, An
             return value
     return None
 
-def identify_string_in_dict_lists_regex(target_value: str, dict_of_lists: Dict[Union[str, int], List[List[str]]], regex: bool = False) -> Union[str, int, bool]:
-    """
-    Identifies if a string is present in any list inside a dictionary.
-
-    Parameters
-    ----------
-    target_value : str
-        The value to find.
-    dict_of_lists : dict
-        A dictionary where the values are lists of lists.
-    regex : bool, optional
-        A regex pattern to search for in the lists.
-
-    Returns
-    -------
-    int or str or bool
-        The key of the entry where the string is present, or False if not found.
-    """
-    for key, lists in dict_of_lists.items():
-        for list_ in lists:
-            if target_value in [remove_by_regex(l, regex) for l in list_] if regex else list_:
-                return key
-    return False
 
 def has_element_of_type(input_list: List[Any], target_type: type) -> bool:
     """
@@ -347,6 +338,7 @@ def has_element_of_type(input_list: List[Any], target_type: type) -> bool:
             return True
     return False
 
+
 def create_whitespace_string(input_string: str) -> str:
     """
     Create a string with the same length as the input string filled with whitespace.
@@ -362,6 +354,7 @@ def create_whitespace_string(input_string: str) -> str:
         String containing the same number of white spaces as the length of the input string.
     """
     return " " * len(input_string)
+
 
 def remove_empty_dicts_recursive(nested_dict: Dict[Any, Any]) -> Dict[Any, Any]:
     """
@@ -383,6 +376,7 @@ def remove_empty_dicts_recursive(nested_dict: Dict[Any, Any]) -> Dict[Any, Any]:
             if not nested_dict[key] and not isinstance(nested_dict[key], (bool, int, float)):
                 del nested_dict[key]
     return nested_dict
+
 
 def tsv_to_dict(file_path: str, skip_header: bool = False, sep: str = '\t') -> Dict[str, List[str]]:
     """
@@ -416,6 +410,7 @@ def tsv_to_dict(file_path: str, skip_header: bool = False, sep: str = '\t') -> D
 
     return data_dict
 
+
 def partially_contains_fragment_of_list(target_list: List[Any], list_of_lists: List[List[Any]]) -> bool:
     """
     Check if the target_list is contained inside sublist even if it partially.
@@ -439,6 +434,7 @@ def partially_contains_fragment_of_list(target_list: List[Any], list_of_lists: L
             return True
     return False
 
+
 def remove_by_regex(string: str, pattern: str) -> str:
     """
     Remove all occurrences of a pattern from a string.
@@ -456,6 +452,7 @@ def remove_by_regex(string: str, pattern: str) -> str:
         The string with all occurrences of the pattern removed.
     """
     return re.sub(pattern, '', string)
+
 
 def replace_by_regex(string: str, pattern: str, replacement: str) -> str:
     """
@@ -477,6 +474,7 @@ def replace_by_regex(string: str, pattern: str, replacement: str) -> str:
     """
     return re.sub(pattern, replacement, string)
 
+
 def regex_present(regex_list: List[str], string: str) -> bool:
     """
     Check if any regex in a list is found in a string.
@@ -494,6 +492,7 @@ def regex_present(regex_list: List[str], string: str) -> bool:
         True if any regex is found in the string, False otherwise.
     """
     return any(re.search(regex, string) for regex in regex_list)
+
 
 def search_string_by_regex(pattern: str, string: str) -> Union[str, None]:
     """
@@ -513,6 +512,7 @@ def search_string_by_regex(pattern: str, string: str) -> Union[str, None]:
     """
     match = re.search(pattern, string)
     return match.group(1) if match else string
+
 
 def add_strings_to_subsets(my_list: List[Set[str]], my_strings: List[str]) -> bool:
     """
@@ -543,6 +543,7 @@ def add_strings_to_subsets(my_list: List[Set[str]], my_strings: List[str]) -> bo
                 break
     return found
 
+
 def find_index(input_list: List[str], target_string: str) -> Union[int, None]:
     """
     Find the index of a string in a list.
@@ -563,6 +564,7 @@ def find_index(input_list: List[str], target_string: str) -> Union[int, None]:
         return input_list.index(target_string)
     except ValueError:
         return None
+
 
 def find_sublist_index(input_list_of_lists: List[List[Any]], target_value: Any) -> Union[int, None]:
     """
@@ -585,6 +587,7 @@ def find_sublist_index(input_list_of_lists: List[List[Any]], target_value: Any) 
     except ValueError:
         return None
 
+
 def try_convert_to_type(value: Any, target_type: type) -> Any:
     """
     Attempts to convert a given value to a specified type.
@@ -606,6 +609,7 @@ def try_convert_to_type(value: Any, target_type: type) -> Any:
     except (ValueError, TypeError):
         return value
 
+
 def repeat_strings_in_a_list(string: str, times: int) -> List[str]:
     """
     Creates a list where a given character is repeated a specified number of times.
@@ -623,6 +627,7 @@ def repeat_strings_in_a_list(string: str, times: int) -> List[str]:
         A list containing the character repeated 'times' times.
     """
     return [string for _ in range(times)]
+
 
 def sort_subdict_by_tuple(dict_: Dict[str, Dict[str, Any]], order: Tuple[str, ...]) -> Dict[str, OrderedDict]:
     """
@@ -646,6 +651,7 @@ def sort_subdict_by_tuple(dict_: Dict[str, Dict[str, Any]], order: Tuple[str, ..
         sorted_data[key] = sorted_subdict
     return sorted_data
 
+
 def check_if_all_elements_are_duplicates(input_list: List[Any]) -> bool:
     """
     Check if all elements in the list are duplicates.
@@ -661,7 +667,7 @@ def check_if_all_elements_are_duplicates(input_list: List[Any]) -> bool:
         True if every element in the list occurs more than once, False otherwise.
         Returns False if the list is empty.
     """
-    element_counts = {}
+    element_counts: dict[str, int] = {}
     for element in input_list:
         if element in element_counts:
             element_counts[element] += 1
@@ -672,6 +678,7 @@ def check_if_all_elements_are_duplicates(input_list: List[Any]) -> bool:
         if count == 1:
             return False
     return True if element_counts else False
+
 
 def check_if_all_sets_are_same(sets_list: List[Set[Any]]) -> bool:
     """
@@ -698,6 +705,7 @@ def check_if_all_sets_are_same(sets_list: List[Set[Any]]) -> bool:
     
     return True
 
+
 def get_duplicates(input_list: List[Any]) -> List[Any]:
     """
     Identify duplicate elements in a list.
@@ -715,6 +723,7 @@ def get_duplicates(input_list: List[Any]) -> List[Any]:
     element_counts = Counter(input_list)
     duplicates = [element for element, count in element_counts.items() if count > 1]
     return duplicates
+
 
 def join_list(lst: List[str], delimiter: str) -> str:
     """
@@ -734,6 +743,7 @@ def join_list(lst: List[str], delimiter: str) -> str:
     """
     return delimiter.join(lst)
 
+
 def get_common_elements_in_lists(list_of_lists: List[List[Any]]) -> List[Any]:
     """
     Finds common elements between various lists.
@@ -748,14 +758,12 @@ def get_common_elements_in_lists(list_of_lists: List[List[Any]]) -> List[Any]:
     list
         Returns a list that contains the intersection of all elements inside the list of lists.
     """
-    intersection_set = None
-    for lst in list_of_lists:
-        if intersection_set is None:
-            intersection_set = set(lst)
-        else:
-            intersection_set.intersection_update(lst)
+    intersection_set: set[Any] = set(list_of_lists[0])
+    for lst in list_of_lists[1:]:
+        intersection_set.intersection_update(lst)
 
     return list(intersection_set)
+
 
 def get_shared_elements(dict_: Dict[str, List[Any]]) -> List[Any]:
     """
@@ -775,6 +783,7 @@ def get_shared_elements(dict_: Dict[str, List[Any]]) -> List[Any]:
     element_counts = Counter(all_elements)
     shared_elements = [elem for elem, count in element_counts.items() if count >= 2]
     return shared_elements
+
 
 def convert_set_elements_to_strings(input_set: Set[Any]) -> Set[str]:
     """

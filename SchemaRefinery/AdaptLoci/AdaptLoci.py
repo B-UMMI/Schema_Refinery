@@ -15,8 +15,7 @@ import shutil
 import traceback
 import multiprocessing
     
-from Bio import SeqIO
-from Bio.Seq import Seq
+from Bio import SeqIO, Seq
 
 try:
     from utils import (file_functions as ff,

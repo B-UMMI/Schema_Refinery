@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from argparse import Namespace
 from functools import reduce
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 try:
     from SchemaAnnotation import (proteome_fetcher as pf,
@@ -44,25 +44,28 @@ def main(args: Namespace) -> None:
 
     # Check if 'uniprot-proteomes' is in the annotation options
     if 'uniprot-proteomes' in args.annotation_options:
+        uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
         # Fetch proteome data and store the directory path
         proteomes_directory: Optional[str] = pf.proteome_fetcher(args.proteome_table,
-                                                                 args.output_directory,
+                                                                 uniprot_annotations_folder,
                                                                  args.threads,
                                                                  args.retry)
 
         if proteomes_directory is not None:
             # Split proteome records into TrEMBL and Swiss-Prot records
-            split_data: Tuple[str, str, str] = ps.proteome_splitter(proteomes_directory,
-                                                                    args.output_directory)
+            split_data: Tuple[str, str, str, Dict[str, List[str]]] = ps.proteome_splitter(proteomes_directory,
+                                                                    uniprot_annotations_folder)
             tr_file: str
             sp_file: str
             descriptions_file: str
-            tr_file, sp_file, descriptions_file = split_data
+            proteome_file_ids: Dict[str, List[str]]
+            tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
             # Align loci against proteome records
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
+                                                         proteome_file_ids,
                                                          args.schema_directory,
-                                                         args.output_directory,
+                                                         uniprot_annotations_folder,
                                                          args.cpu,
                                                          args.bsr,
                                                          args.translation_table,
@@ -74,10 +77,11 @@ def main(args: Namespace) -> None:
 
     # Check if 'genbank' is in the annotation options
     if 'genbank' in args.annotation_options:
+        genbank_annotation_folder: str = os.path.join(args.output_directory, 'genbank_annotations')
         # Process GenBank annotations
         genbank_file: str = ga.genbank_annotations(args.genbank_files,
                                                    args.schema_directory,
-                                                   args.output_directory,
+                                                   genbank_annotation_folder,
                                                    args.cpu,
                                                    args.bsr,
                                                    args.translation_table,
@@ -90,10 +94,11 @@ def main(args: Namespace) -> None:
     matched_schemas: Optional[str] = None
     # Check if 'match-schemas' is in the annotation options
     if 'match-schemas' in args.annotation_options:
+        matched_schemas_folder: str = os.path.join(args.output_directory, 'matched_schemas')
         # Match schemas
         matched_schemas = ms.match_schemas(args.schema_directory,
                                            args.subject_schema,
-                                           args.output_directory,
+                                           matched_schemas_folder,
                                            args.bsr,
                                            args.cpu)
         results_files.append(matched_schemas)

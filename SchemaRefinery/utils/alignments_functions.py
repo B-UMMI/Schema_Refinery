@@ -72,11 +72,9 @@ def join_intervals(alignments: List[List[Any]]) -> Tuple[List[str], List[Dict[st
                     "subject": first["subject"],
                     "internal_alignments": first["internal_alignments"] + second["internal_alignments"]
                 }
-                found_new_interval: bool = True
-                start_stop_list_for_processing: List[Dict[str, Any]]
-                new_interval: Dict[str, Any]
+                found_new_interval = True
                 start_stop_list_for_processing = start_stop_list_for_processing[:i] + [new_interval] + start_stop_list_for_processing[i + 2:]
-                new_index: int = i
+                new_index = i
                 break
 
     for interval in start_stop_list_for_processing:
@@ -117,7 +115,7 @@ def filter_out_equal_alignments(original: List[Dict[str, Any]], inverted: List[D
         has_alignment: bool = False
         for o in original:
             if i["query_start"] == o["subject_start"] and i["query_end"] == o["subject_end"]:
-                has_alignment: bool = True
+                has_alignment = True
                 break
         
         if not has_alignment:

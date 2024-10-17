@@ -18,20 +18,20 @@ from AdaptLoci import AdaptLoci
 from IdentifyParalagousLoci import IdentifyParalagousLoci
 
 try:
-     from DownloadAssemblies import DownloadAssemblies
-     from SchemaAnnotation import SchemaAnnotation
-     from utils import parameter_validation as pv
-     from RefineSchema import IdentifySpuriousGenes
-     from IdentifyParalagousLoci import IdentifyParalagousLoci
-     from AdaptLoci import AdaptLoci
+	from DownloadAssemblies import DownloadAssemblies
+	from SchemaAnnotation import SchemaAnnotation
+	from utils import parameter_validation as pv
+	from RefineSchema import IdentifySpuriousGenes
+	from IdentifyParalagousLoci import IdentifyParalagousLoci
+	from AdaptLoci import AdaptLoci
      
 except ModuleNotFoundError:
-     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
-     from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
-     from SchemaRefinery.utils import parameter_validation as pv
-     from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
-     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalagousLoci
-     from SchemaRefinery.AdaptLoci import AdaptLoci
+	from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
+	from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
+	from SchemaRefinery.utils import parameter_validation as pv
+	from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
+	from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalagousLoci
+	from SchemaRefinery.AdaptLoci import AdaptLoci
 
 
 def download_assemblies():
