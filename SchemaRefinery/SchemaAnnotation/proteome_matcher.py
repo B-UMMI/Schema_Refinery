@@ -115,6 +115,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     return blast_db_files
 
 def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[str, List[str]],
+                            best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]],
                             blast_processing_folder: str, translations_paths: Dict[str, str],
                             blast_db_files: str, proteome_folder: str, file_name_without_extension: str,
                             descriptions: Dict[str, str], self_score_dict: Dict[str, float], cpu: int, bsr: float) -> None:
@@ -162,7 +163,6 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[st
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Tuple[str, float]] = {}
-    best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in proteome_file_ids.keys()}
     total_blasts: int = len(reps_ids)
     i: int = 1
     
@@ -237,23 +237,6 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[st
         # Write loci that did not match or failed the BSR threshold
         for loci in not_matched_or_bsr_failed_loci:
             at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
-    # Save best annotations per proteome file
-    best_annotations_per_proteome_file: str = os.path.join(proteome_folder, "best_annotations_per_proteome_file")
-    ff.create_directory(best_annotations_per_proteome_file)
-    for file, loci_results in best_bsr_values_per_proteome_file.items():
-        annotations_file_proteome: str = os.path.join(best_annotations_per_proteome_file, f"{file}.tsv")
-        with open(annotations_file_proteome, 'w') as at:
-            for loci, subject_info in loci_results.items():
-                subject_id: str = subject_info[0]
-                split_subject_id: str = subject_id.split('|')[1]
-                bsr_value: float = subject_info[1]
-                desc: str = descriptions[subject_id]
-                lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-                sname: str = desc.split('GN=')[1].split(' PE=')[0]
-                if sname == '':
-                    sname = 'NA'
-                # Write the annotations to the file
-                at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
 
     return annotations_file
 
@@ -341,8 +324,10 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         blast_db_files: str
         [proteome_folder, blast_processing_folder, blast_db_files] = paths
         # Run Blasts and save to file
+        best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in proteome_file_ids.keys()}
         annotations_file = run_blast_for_proteomes(reps_ids,
                                 proteome_file_ids,
+                                best_bsr_values_per_proteome_file,
                                 blast_processing_folder,
                                 translations_paths,
                                 blast_db_files,
@@ -355,4 +340,22 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         # Save annotations file
         annotations_files.append(annotations_file)
         
+        # Save best annotations per proteome file
+        best_annotations_per_proteome_file: str = os.path.join(proteome_folder, "best_annotations_per_proteome_file")
+        ff.create_directory(best_annotations_per_proteome_file)
+        for file, loci_results in best_bsr_values_per_proteome_file.items():
+            annotations_file_proteome: str = os.path.join(best_annotations_per_proteome_file, f"{file}.tsv")
+            with open(annotations_file_proteome, 'w') as at:
+                for loci, subject_info in loci_results.items():
+                    subject_id: str = subject_info[0]
+                    split_subject_id: str = subject_id.split('|')[1]
+                    bsr_value: float = subject_info[1]
+                    desc: str = descriptions[subject_id]
+                    lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
+                    sname: str = desc.split('GN=')[1].split(' PE=')[0]
+                    if sname == '':
+                        sname = 'NA'
+                    # Write the annotations to the file
+                    at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+
         return annotations_files[0], annotations_files[1]
