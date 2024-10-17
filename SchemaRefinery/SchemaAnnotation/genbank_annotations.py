@@ -58,6 +58,7 @@ def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: Li
 
             if protein_id == 'no_protein_id':
                 continue  # Skips the iteration if protein has no id.
+            # Get all of the relevant values from the genbank file CDS
             for column_name in genbank_table_columns:
                 cds_info.setdefault(protein_id, []).append(str(featQualifiers.get(column_name, '')).strip('\'[]'))
 
@@ -280,9 +281,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             # Check if any element is empty
             update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
             # Write the annotations to the file
-            if len(subject_info[0]) == 2:
+            if len(subject_info[0]) == 2: # If no extra columns are present
                 at.write(f"{loci}\t{subject_id}\t{update_cds_info[:2]}\t{bsr_value}\n")
-            else:
+            else: # If extra columns are present
                 at.write(f"{loci}\t{subject_id}\t{tab.join(update_cds_info[:2])}\t{bsr_value}\t{tab.join(update_cds_info[2:])}\n")
     
         # Write the loci that did not match or the BSR value was lower than the threshold
@@ -298,12 +299,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             for loci, subject_info in loci_results.items():
                 subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
                 bsr_value: float = subject_info[1]  # Get the BSR value
-                # Check if any element is empty
+                # Check if any element is empty and replace with NA
                 update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
                 # Write the annotations to the file
-                if len(subject_info[0]) == 2:
+                if len(subject_info[0]) == 2: # If no extra columns are present
                     at.write(f"{loci}\t{subject_id}\t{update_cds_info[:2]}\t{bsr_value}\n")
-                else:
+                else: # If extra columns are present
                     at.write(f"{loci}\t{subject_id}\t{tab.join(update_cds_info[:2])}\t{bsr_value}\t{tab.join(update_cds_info[2:])}\n")
         
     return annotations_file

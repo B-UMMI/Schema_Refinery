@@ -33,6 +33,21 @@ except ModuleNotFoundError:
 	from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalagousLoci
 	from SchemaRefinery.AdaptLoci import AdaptLoci
 
+GENBANK_CDS_QUALIFIERS_CHOICES = [
+    "db_xref", "note", "codon_start", "transl_table", "translation", 
+    "locus_tag", "function", "EC_number", "standard_name", "pseudo",
+    "operon", "old_locus_tag", "exception"
+]
+
+PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
+
+IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema']
+
+SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
+
+DATABASE_CHOICES = ['NCBI', 'ENA661K']
+
+SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'uniprot-sparql', 'match-schemas']
 
 def download_assemblies():
 
@@ -46,7 +61,7 @@ def download_assemblies():
                          required=True,
                          dest='database',
                          nargs='+',
-                         choices=['NCBI', 'ENA661K'],
+                         choices=DATABASE_CHOICES,
                          help='Databases from which assemblies will '
                              'be downloaded.')
 
@@ -161,8 +176,7 @@ def schema_annotation():
                          required=True,
                          dest='annotation_options',
                          nargs='+',
-                         choices=['uniprot-proteomes', 'genbank',
-                                 'uniprot-sparql', 'match-schemas'],
+                         choices=SCHEMA_ANNOTATION_RUNS_CHOICES,
                          help='Annotation options to run. "uniprot-proteomes" '
                              'to download UniProt reference proteomes for '
                              'the taxa and align with BLASTp. "genbank-files"'
@@ -295,7 +309,7 @@ def schema_annotation():
                          required=False,
                          dest='run_mode',
                          default='reps',
-                         choices=['reps', 'alleles'],
+                         choices=SCHEMA_ANNOTATION_RUN_MODE_CHOICES,
                          help='Mode to run the module: reps or alleles.')
      
      parser.add_argument('-egtc',
@@ -305,8 +319,8 @@ def schema_annotation():
                          dest='extra_genbank_table_columns',
                          nargs='+',
                          default=[],
-                         choices = ['locus_tag', 'note', 'codon_start', 'function', 'protein_id', 'db_xref'],
-                         help='List of columns to add to annotation file.',)
+                         choices = GENBANK_CDS_QUALIFIERS_CHOICES,
+                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).',)
     
      args = parser.parse_args()
 
@@ -439,7 +453,7 @@ def identify_spurious_genes():
                          required=False,
                          dest='run_mode',
                          default='schema',
-                         choices=['unclassified_cds', 'schema'],
+                         choices=IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES,
                          help='Number of cpus to run blast instances.')
      
      parser.add_argument('-pm',
@@ -448,7 +462,7 @@ def identify_spurious_genes():
                          required=False,
                          dest='processing_mode',
                          default='reps_vs_alleles',
-                         choices=['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps'],
+                         choices=PROCESSING_MODE_CHOICES,
                          help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
      parser.add_argument('-c',
@@ -572,7 +586,7 @@ def identify_paralagous_loci():
                          type=str,
                          required=False,
                          dest='processing_mode',
-                         choices=['alleles_vs_alleles', 'alleles_vs_reps', 'reps_vs_reps', 'reps_vs_alleles'],
+                         choices=PROCESSING_MODE_CHOICES,
                          default='alleles_vs_alleles',
                          help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
      
