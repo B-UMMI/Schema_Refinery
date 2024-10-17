@@ -2,7 +2,8 @@ import os
 import concurrent.futures
 from itertools import repeat 
 from typing import Dict, List, Set, Tuple, Union
-from Bio import SeqIO, SeqRecord
+from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
 
 try:
     from utils import (
@@ -25,7 +26,7 @@ except ModuleNotFoundError:
         iterable_functions as itf
     )
 
-def get_protein_annotation_fasta(seqRecord: SeqRecord) -> Dict[str, List[str]]:
+def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: List[str]) -> Dict[str, List[str]]:
     """
     Get the translated protein from a Genbank file.
 
@@ -57,12 +58,9 @@ def get_protein_annotation_fasta(seqRecord: SeqRecord) -> Dict[str, List[str]]:
 
             if protein_id == 'no_protein_id':
                 continue  # Skips the iteration if protein has no id.
-
-            gene: str = str(featQualifiers.get('gene', '')).strip('\'[]')
-            product: str = str(featQualifiers.get('product', 'no_product_name')).strip('\'[]')
-            translated_protein: str = str(featQualifiers.get('translation', 'no_translation')).strip('\'[]')
-
-            cds_info[protein_id] = [product, gene, translated_protein]
+            # Get all of the relevant values from the genbank file CDS
+            for column_name in genbank_table_columns:
+                cds_info.setdefault(protein_id, []).append(str(featQualifiers.get(column_name, '')).strip('\'[]'))
 
     return cds_info
 
@@ -70,7 +68,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                         output_directory: str, cpu: int,
                         bsr: float, translation_table: int,
                         clustering_sim: float, clustering_cov: float,
-                        size_ratio: float, run_mode: str) -> str:
+                        size_ratio: float, run_mode: str,
+                        extra_genbank_table_columns: List[str]) -> str:
     """
     Process GenBank files to extract annotations and perform BLAST searches.
 
@@ -112,13 +111,14 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     total_proteins: int = 0
     all_genbank_files_ids: Dict[str, List[str]] = {}
 
+    genbank_table_columns: List[str] = ['gene', 'product', 'translation'] + extra_genbank_table_columns
     # Parse GenBank files and extract protein annotations
     for f in gbk_files:
         file_name: str = os.path.basename(f)
         print(f"\rExtracting protein annotations from GenBank file: {file_name}", end='', flush=True)
         recs: List[SeqRecord] = [rec for rec in SeqIO.parse(f, 'genbank')]
         for r in recs:
-            cds_info: Dict[str, List[str]] = get_protein_annotation_fasta(r)
+            cds_info: Dict[str, List[str]] = get_protein_annotation_fasta(r, genbank_table_columns)
             total_proteins += len(cds_info)
             for id_, info in cds_info.items():
                 # Skip if protein has no id and no sequence
@@ -126,14 +126,11 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     continue
                 # Add all IDs in the Genbank file
                 all_genbank_files_ids.setdefault(file_name.removesuffix('.gbff'), []).append(id_)
-                product: str
-                gene: str
-                translated_protein: str
-                product, gene, translated_protein = info
+                translated_protein: str = info.pop(2)
                 protein_hash: str = sf.hash_sequence(translated_protein)
                 if protein_hash in processed_proteins:
                     # If the protein has already been processed, save the other annotations that it may have
-                    same_protein_other_annotations.setdefault(protein_hash, []).append((id_, product, gene))
+                    same_protein_other_annotations.setdefault(protein_hash, []).append((id_, *info))
                     continue
                 else:
                     processed_proteins.add(protein_hash)
@@ -272,7 +269,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             i += 1
 
     # Save annotations
-    header: str = 'Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR'
+    tab = '\t'
+    header: str = f"Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR\t{tab.join(extra_genbank_table_columns)}"
     annotations_file: str = os.path.join(output_directory, 'genbank_annotations.tsv')
     not_matched_or_bsr_failed_loci: set = set(translations_paths.keys()) - set(best_bsr_values.keys())
     with open(annotations_file, 'w') as at:
@@ -280,32 +278,34 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
         for loci, subject_info in best_bsr_values.items():
             subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
             bsr_value: float = subject_info[1]  # Get the BSR value
-            product: str = all_cds_info[subject_info[0]][0]  # Get the product name
-            gene: str = all_cds_info[subject_info[0]][1]  # Get the gene name
-            # Check if the gene name is empty
-            if gene == '':
-                gene = 'NA'
+            # Check if any element is empty
+            update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
             # Write the annotations to the file
-            at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr_value}\n")
+            if len(subject_info[0]) == 2: # If no extra columns are present
+                at.write(f"{loci}\t{subject_id}\t{update_cds_info[:2]}\t{bsr_value}\n")
+            else: # If extra columns are present
+                at.write(f"{loci}\t{subject_id}\t{tab.join(update_cds_info[:2])}\t{bsr_value}\t{tab.join(update_cds_info[2:])}\n")
+    
         # Write the loci that did not match or the BSR value was lower than the threshold
         for loci in not_matched_or_bsr_failed_loci:
-            at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+            at.write(f"{loci}{(tab+'NA')*(len(genbank_table_columns) + 1)}\n")
 
     best_annotations_per_genbank_file: str = os.path.join(output_directory, "best_annotations_per_genbank_file")
     ff.create_directory(best_annotations_per_genbank_file)
     for file, loci_results in best_bsr_values_per_genbank_file.items():
         annotations_file_genbank: str = os.path.join(best_annotations_per_genbank_file, f"{file}.tsv")
         with open(annotations_file_genbank, 'w') as at:
+            at.write(header)
             for loci, subject_info in loci_results.items():
                 subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
                 bsr_value: float = subject_info[1]  # Get the BSR value
-                product: str = all_cds_info[subject_info[0]][0]  # Get the product name
-                gene: str = all_cds_info[subject_info[0]][1]  # Get the gene name
-                # Check if the gene name is empty
-                if gene == '':
-                    gene = 'NA'
+                # Check if any element is empty and replace with NA
+                update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
                 # Write the annotations to the file
-                at.write(f"{loci}\t{subject_id}\t{product}\t{gene}\t{bsr_value}\n")
+                if len(subject_info[0]) == 2: # If no extra columns are present
+                    at.write(f"{loci}\t{subject_id}\t{update_cds_info[:2]}\t{bsr_value}\n")
+                else: # If extra columns are present
+                    at.write(f"{loci}\t{subject_id}\t{tab.join(update_cds_info[:2])}\t{bsr_value}\t{tab.join(update_cds_info[2:])}\n")
         
     return annotations_file
             
