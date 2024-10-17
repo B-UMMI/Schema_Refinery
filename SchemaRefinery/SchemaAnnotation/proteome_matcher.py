@@ -22,7 +22,7 @@ except ModuleNotFoundError:
                                       iterable_functions as itf)
 
 def create_database_files(proteome_file: str, clustering_sim: float, clustering_cov: float, size_ratio: float,
-                          output_directory: str) -> Optional[str]:
+                          blast_processing_folder: str) -> Optional[str]:
     """
     Create database files from a proteome file by extracting protein sequences, clustering them, and creating a BLAST database.
 
@@ -36,7 +36,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         Clustering coverage threshold.
     size_ratio : float
         Size ratio for clustering.
-    output_directory : str
+    blast_processing_folder : str
         Path to the output directory.
 
     Returns
@@ -97,16 +97,16 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         size_ratio
     )
     
-    print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.\n")
+    print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.")
     
     # Save clustered protein sequences to a file
-    clustered_protein_master_file: str = os.path.join(output_directory, f"{file_name}")
+    clustered_protein_master_file: str = os.path.join(blast_processing_folder, f"{file_name}")
     with open(clustered_protein_master_file, 'w') as outfile:
         for protein_id, values in reps_sequences.items():
             outfile.write(f">{protein_id}\n{values}\n")
     
     # Create BLAST database
-    blastdb_path: str = os.path.join(output_directory, 'blastdb')
+    blastdb_path: str = os.path.join(blast_processing_folder, 'blastdb')
     ff.create_directory(blastdb_path)
     blast_db_files: str = os.path.join(blastdb_path, 'genbank_protein_db')
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
@@ -274,25 +274,30 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     -------
     None
     """
+    proteome_matcher_output = os.path.join(output_directory, 'proteome_matcher_output')
     # Create BLAST database files for each proteome
     proteomes_data_paths: Dict[str, List[str]] = {}
     for proteome_file in proteome_files[:2]:
         # Get proteome file name
         proteome_file_base: str = os.path.basename(proteome_file)
         # Create folder for proteome processing
-        proteome_folder: str = os.path.join(output_directory, f"{proteome_file_base.split('.')[0]}_processing")
+        proteome_folder: str = os.path.join(proteome_matcher_output, f"{proteome_file_base.split('.')[0]}_processing")
         # Create directory for proteome BLAST processing
         blast_processing_folder: str = os.path.join(proteome_folder, 'blast_processing')
         ff.create_directory(blast_processing_folder)
         # Create BLAST database files
-        blast_db_files: Optional[str] = create_database_files(proteome_file, clustering_sim, clustering_cov, size_ratio, blast_processing_folder)
+        blast_db_files: Optional[str] = create_database_files(proteome_file,
+                                                              clustering_sim,
+                                                              clustering_cov,
+                                                              size_ratio,
+                                                              blast_processing_folder)
         # Save paths to proteome file paths
         proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
 
     [translation_dict,
      reps_ids,
      translations_paths] = sf.translate_schema_loci(schema_directory,
-                                                    output_directory,
+                                                    proteome_matcher_output,
                                                     translation_table,
                                                     run_mode)
 
@@ -303,13 +308,15 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     # For better prints get max length of string
     max_id_length: int = len(max(reps_ids, key=len))
     
+    print('\n')
     # Get path to the blastp executable
     blast_exec: str = lf.get_tool_path('blastp')
     self_score_dict: Dict[str, float] = bf.calculate_self_score(translations_paths,
                                                                 blast_exec,
-                                                                output_directory,
+                                                                proteome_matcher_output,
                                                                 max_id_length,
                                                                 cpu)
+    print('\n')
     annotations_files = []
     for file_name, paths in proteomes_data_paths.items():
         if paths[2] is None:
@@ -340,22 +347,21 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         # Save annotations file
         annotations_files.append(annotations_file)
         
-        # Save best annotations per proteome file
-        best_annotations_per_proteome_file: str = os.path.join(proteome_folder, "best_annotations_per_proteome_file")
-        ff.create_directory(best_annotations_per_proteome_file)
-        for file, loci_results in best_bsr_values_per_proteome_file.items():
-            annotations_file_proteome: str = os.path.join(best_annotations_per_proteome_file, f"{file}.tsv")
-            with open(annotations_file_proteome, 'w') as at:
-                for loci, subject_info in loci_results.items():
-                    subject_id: str = subject_info[0]
-                    split_subject_id: str = subject_id.split('|')[1]
-                    bsr_value: float = subject_info[1]
-                    desc: str = descriptions[subject_id]
-                    lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-                    sname: str = desc.split('GN=')[1].split(' PE=')[0]
-                    if sname == '':
-                        sname = 'NA'
-                    # Write the annotations to the file
-                    at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+    # Save best annotations per proteome file
+    best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
+    ff.create_directory(best_annotations_per_proteome_file)
+    for file, loci_results in best_bsr_values_per_proteome_file.items():
+        annotations_file_proteome: str = os.path.join(best_annotations_per_proteome_file, f"{file}.tsv")
+        with open(annotations_file_proteome, 'w') as at:
+            for loci, subject_info in loci_results.items():
+                subject_id: str = subject_info[0]
+                bsr_value: float = subject_info[1]
+                desc: str = descriptions[subject_id]
+                lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
+                sname: str = desc.split('GN=')[1].split(' PE=')[0]
+                if sname == '':
+                    sname = 'NA'
+                # Write the annotations to the file
+                at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
 
         return annotations_files[0], annotations_files[1]
