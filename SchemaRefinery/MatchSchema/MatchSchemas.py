@@ -175,19 +175,19 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
         for query in not_matched_loci:
             out.write(f'{query}\tNot matched\tNA\n')
 
-def match_schemas(query_schema: str, subject_schema: str, output_directory: str, bsr: float,
-                  translation_table: int, cpu: int, run_mode: str):
+def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
+                  translation_table: int, cpu: int, processing_mode: str):
     # Query schema files
     query_files: Dict[str, str]
     query_files_short: Dict[str, str]
-    query_files, query_files_short = get_schema_files(query_schema)
+    query_files, query_files_short = get_schema_files(query_schema_directory)
     # Subject schema files
     subject_files: Dict[str, str]
     subject_files_short: Dict[str, str]
-    subject_files, subject_files_short = get_schema_files(subject_schema)
+    subject_files, subject_files_short = get_schema_files(subject_schema_directory)
     # Choose what files to use for the BLAST search
-    query_fastas: Dict[str, str] = query_files if run_mode.split('_')[0] == 'alleles' else query_files_short
-    subject_fastas: Dict[str, str] = subject_files_short if run_mode.split('_')[-1] == 'rep' else subject_files
+    query_fastas: Dict[str, str] = query_files if processing_mode.split('_')[0] == 'alleles' else query_files_short
+    subject_fastas: Dict[str, str] = subject_files_short if processing_mode.split('_')[-1] == 'rep' else subject_files
     # Create the output directory
     blast_folder: str = os.path.join(output_directory, 'Blast')
     ff.create_directory(blast_folder)
