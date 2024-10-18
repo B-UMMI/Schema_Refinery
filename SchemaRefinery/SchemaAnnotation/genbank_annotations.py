@@ -270,7 +270,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
 
     # Save annotations
     tab = '\t'
-    header: str = f"Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR\t{tab.join(extra_genbank_table_columns)}"
+    header: str = f"Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR{tab if extra_genbank_table_columns else ''}{tab.join(extra_genbank_table_columns)}\n"
     annotations_file: str = os.path.join(output_directory, 'genbank_annotations.tsv')
     not_matched_or_bsr_failed_loci: set = set(translations_paths.keys()) - set(best_bsr_values.keys())
     with open(annotations_file, 'w') as at:
