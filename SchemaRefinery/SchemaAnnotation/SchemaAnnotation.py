@@ -4,12 +4,13 @@ from argparse import Namespace
 from functools import reduce
 from typing import List, Optional, Tuple, Dict
 
+from MatchSchema.legacy_code import match_schemas as ms
+
 try:
     from SchemaAnnotation import (proteome_fetcher as pf,
                                   proteome_splitter as ps,
                                   proteome_matcher as pm,
-                                  genbank_annotations as ga,
-                                  match_schemas as ms)
+                                  genbank_annotations as ga)
     from utils import (file_functions as ff)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,

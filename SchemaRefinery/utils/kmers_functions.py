@@ -1,4 +1,6 @@
-def string_kmerizer(input_string, k_value, offset=1, position=False):
+from typing import List, Optional, Union, Tuple
+
+def string_kmerizer(input_string: str, k_value: int, offset: int = 1, position: bool = False) -> List[Union[str, Tuple[str, int]]]:
     """
     Decompose a string into k-mers.
 
@@ -23,7 +25,7 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
         stored and tuples of k-mer and start position
         if the position is stored.
     """
-
+    kmers: List[Union[str, Tuple[str, int]]]
     if position is False:
         kmers = [input_string[i:i+k_value]
                  for i in range(0, len(input_string)-k_value+1, offset)]
@@ -33,8 +35,8 @@ def string_kmerizer(input_string, k_value, offset=1, position=False):
 
     return kmers
 
-def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
-                         position=False, guarantee_tip=False):
+def determine_minimizers(input_string: str, adjacent_kmers: int, k_value: int, offset: int = 1,
+                         position: bool = False, guarantee_tip: bool = False) -> list:
     """
     Determine minimizers for a input string.
 
@@ -66,22 +68,22 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
     """
 
     # break string into k-mers
-    kmers = string_kmerizer(input_string, k_value, offset, position)
+    kmers: List[Union[str, Tuple[str, int]]] = string_kmerizer(input_string, k_value, offset, position)
 
-    i = 0
-    previous = None
-    sell = False
-    minimizers = []
+    i: int = 0
+    previous: Optional[Union[str, Tuple[str, int]]] = None
+    sell: bool = False
+    minimizers: List[Union[str, Tuple[str, int]]] = []
     # determine total number of windows
-    last_window = (len(kmers)-adjacent_kmers)
+    last_window: int = (len(kmers) - adjacent_kmers)
       
     while i <= last_window:
         # get kmers in current window
-        window = kmers[i:i+adjacent_kmers]
+        window: List[Union[str, Tuple[str, int]]] = kmers[i:i+adjacent_kmers]
         # pick smallest kmer as minimizer
-        minimizer = [min(window)]
+        minimizer: List[Union[str, Tuple[str, int]]] = [min(window)]
         # get position in window of smallest minimizer
-        minimizer_idx = window.index(minimizer[0])
+        minimizer_idx: int = window.index(minimizer[0])
         # sliding window that does not included last minimizer
         if previous is None:
             # simply store smallest minimizer
@@ -94,10 +96,10 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
             # Do not store minimizer if it is the same
             if minimizer[0] != previous:
                 # get kmers smaller than last minimizer
-                skipped = window[1:minimizer_idx]
+                skipped: List[Union[str, Tuple[str, int]]] = window[1:minimizer_idx]
                 # determine if any of the smaller kmers is
                 # the minimizer of a skipped window
-                minimal = previous
+                minimal: Union[str, Tuple[str, int]] = previous
                 for m in skipped:
                     if m < minimal:
                         minimizer.append(m)
@@ -128,7 +130,7 @@ def determine_minimizers(input_string, adjacent_kmers, k_value, offset=1,
         
     return minimizers
 
-def kmer_coverage(position, window_size):
+def kmer_coverage(position: list, window_size: int) -> int:
     """
     Determines the sum size of kmers for coverage calculation
     
@@ -145,8 +147,8 @@ def kmer_coverage(position, window_size):
         Total sum of the kmers size based on starting position.
     """
     
-    size = 0
-    len_positions = len(position)-1
+    size: int = 0
+    len_positions: int = len(position)-1
     for i, pos in enumerate(position):
         if i == 0:
             start = pos

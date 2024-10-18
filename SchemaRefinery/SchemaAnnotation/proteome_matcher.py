@@ -114,7 +114,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         
     return blast_db_files
 
-def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[str, List[str]],
+def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Dict[str, List[str]],
                             best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]],
                             blast_processing_folder: str, translations_paths: Dict[str, str],
                             blast_db_files: str, proteome_folder: str, file_name_without_extension: str,
@@ -124,8 +124,6 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[st
 
     Parameters
     ----------
-    reps_ids : Dict[str, str]
-        Dictionary of representative IDs.
     blast_processing_folder : str
         Path to the folder for BLAST processing.
     translations_paths : Dict[str, str]
@@ -152,9 +150,6 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[st
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
     
-    # Get the maximum length of the IDs for better prints
-    max_id_length: int = len(max(reps_ids, key=len))
-    
     # Run BLASTp
     print("Running BLASTp...")
     blastp_results_folder: str = os.path.join(blast_processing_folder, 'blastp_results')
@@ -163,7 +158,7 @@ def run_blast_for_proteomes(reps_ids: Dict[str, str], proteome_file_ids: Dict[st
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Tuple[str, float]] = {}
-    total_blasts: int = len(reps_ids)
+    total_blasts: int = len(translations_paths)
     i: int = 1
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -332,7 +327,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         [proteome_folder, blast_processing_folder, blast_db_files] = paths
         # Run Blasts and save to file
         best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in proteome_file_ids.keys()}
-        annotations_file = run_blast_for_proteomes(reps_ids,
+        annotations_file = run_blast_for_proteomes(max_id_length,
                                 proteome_file_ids,
                                 best_bsr_values_per_proteome_file,
                                 blast_processing_folder,
