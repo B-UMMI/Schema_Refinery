@@ -14,9 +14,6 @@ Code documentation
 import sys
 import argparse
 
-from AdaptLoci import AdaptLoci
-from IdentifyParalagousLoci import IdentifyParalagousLoci
-
 try:
     from DownloadAssemblies import DownloadAssemblies
     from SchemaAnnotation import SchemaAnnotation
@@ -51,10 +48,27 @@ DATABASE_CHOICES = ['NCBI', 'ENA661K']
 
 SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'uniprot-sparql', 'match-schemas']
 
-def download_assemblies():
+def download_assemblies() -> None:
+    """
+    Parse command-line arguments and initiate the download of assemblies.
 
+    This function sets up an argument parser to handle various command-line
+    options for downloading assemblies from specified databases. It then
+    calls the main function of the DownloadAssemblies class with the parsed
+    arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    
+    # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                    formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Common arguments between databases
     parser.add_argument('-db',
@@ -64,8 +78,7 @@ def download_assemblies():
                         dest='database',
                         nargs='+',
                         choices=DATABASE_CHOICES,
-                        help='Databases from which assemblies will '
-                            'be downloaded.')
+                        help='Databases from which assemblies will be downloaded.')
 
     parser.add_argument('-o',
                         '--output-directory',
@@ -94,9 +107,7 @@ def download_assemblies():
                         required=False,
                         default=1,
                         dest='threads',
-                        help='Number of threads used for download. You should '
-                            'provide an API key to perform more requests '
-                            'through Entrez.')
+                        help='Number of threads used for download. You should provide an API key to perform more requests through Entrez.')
 
     parser.add_argument('-r',
                         '--retry',
@@ -104,41 +115,35 @@ def download_assemblies():
                         required=False,
                         dest='retry',
                         default=7,
-                        help='Maximum number of retries when a '
-                            'download fails.')
+                        help='Maximum number of retries when a download fails.')
 
     parser.add_argument('-k',
                         '--api-key',
                         type=str,
                         required=False,
                         dest='api_key',
-                        help='Personal API key provided to the NCBI. If not set, '
-                            'only 3 requests per second are allowed. With a '
-                            'valid API key the limit increases to 10 '
-                            'requests per second.')
+                        help='Personal API key provided to the NCBI. If not set, only 3 requests per second are allowed. With a valid API key the limit increases to 10 requests per second.')
 
-    parser.add_argument('-fm', '--fetch-metadata',
+    parser.add_argument('-fm',
+                        '--fetch-metadata',
                         required=False,
                         dest='fetch_metadata',
                         action='store_true',
                         default=False,
-                        help='If provided, the process downloads '
-                            'metadata for the assemblies.')
+                        help='If provided, the process downloads metadata for the assemblies.')
 
     parser.add_argument('-f',
                         '--filtering-criteria',
                         type=pv.validate_criteria_file,
                         required=False,
                         dest='filtering_criteria',
-                        help='TSV file containing filtering parameters '
-                            'applied before assembly download.')
+                        help='TSV file containing filtering parameters applied before assembly download.')
 
     parser.add_argument('--download',
                         action='store_true',
                         required=False,
                         dest='download',
-                        help='If the assemblies that passed the filtering '
-                            'criteria should be downloaded.')
+                        help='If the assemblies that passed the filtering criteria should be downloaded.')
 
     # Arguments specific for NCBI
     parser.add_argument('-i',
@@ -148,15 +153,35 @@ def download_assemblies():
                         dest='input_table',
                         help='Text file with a list of accession numbers for the NCBI Assembly database.')
 
+    # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Call the main function of the DownloadAssemblies class with the parsed arguments
     DownloadAssemblies.main(args)
 
-def schema_annotation():
 
+def schema_annotation() -> None:
+    """
+    Parse command-line arguments and initiate the schema annotation process.
+
+    This function sets up an argument parser to handle various command-line
+    options for annotating schemas. It then calls the main function of the
+    SchemaAnnotation class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    
+    # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                    formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    # Add arguments to the parser
     parser.add_argument('-s',
                         '--schema-directory',
                         type=str,
@@ -169,8 +194,7 @@ def schema_annotation():
                         type=str,
                         required=True,
                         dest='output_directory',
-                        help='Path to the output directory where to '
-                            'save the files.')
+                        help='Path to the output directory where to save the files.')
 
     parser.add_argument('-ao',
                         '--annotation-options',
@@ -179,28 +203,21 @@ def schema_annotation():
                         dest='annotation_options',
                         nargs='+',
                         choices=SCHEMA_ANNOTATION_RUNS_CHOICES,
-                        help='Annotation options to run. "uniprot-proteomes" '
-                            'to download UniProt reference proteomes for '
-                            'the taxa and align with BLASTp. "genbank-files"'
-                            ' to aligned against the CDSs in a set of '
-                            'Genbank files. "uniprot-sparql" to search for '
-                            'exact matches through UniProt\'s SPARQL '
-                            'endpoint. "match-schemas" to align against '
-                            'provided target schema and report best matches.')
+                        help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
 
-    parser.add_argument('-pt', '--proteome-table', type=str,
-                    required=False, dest='proteome_table',
-                    help='TSV file downloaded from UniProt '
-                            'that contains the list of proteomes.')
+    parser.add_argument('-pt',
+                        '--proteome-table',
+                        type=str,
+                        required=False,
+                        dest='proteome_table',
+                        help='TSV file downloaded from UniProt that contains the list of proteomes.')
 
     parser.add_argument('-gf',
                         '--genbank-files',
                         type=str,
                         required=False,
                         dest='genbank_files',
-                        help='Path to the directory that contains '
-                            'Genbank files with annotations to '
-                            'extract.')
+                        help='Path to the directory that contains Genbank files with annotations to extract.')
 
     parser.add_argument('-ca',
                         '--chewie-annotations',
@@ -208,17 +225,14 @@ def schema_annotation():
                         required=False,
                         nargs='+',
                         dest='chewie_annotations',
-                        help='File with the results from chewBBACA '
-                            'UniprotFinder module.')
+                        help='File with the results from chewBBACA UniprotFinder module.')
 
     parser.add_argument('-ss',
                         '--subject-schema',
                         type=str,
                         required=False,
                         dest='subject_schema',
-                        help='Path to que subject schema directory. '
-                            'This argument is needed by the Match Schemas '
-                            'sub-module.')
+                        help='Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.')
 
     parser.add_argument('-sa',
                         '--subject-annotations',
@@ -233,18 +247,14 @@ def schema_annotation():
                         required=False,
                         nargs='+',
                         dest='subject_columns',
-                        help='Columns from the subject schema annotations '
-                            'to merge into the new schema annotations.')
+                        help='Columns from the subject schema annotations to merge into the new schema annotations.')
 
     parser.add_argument('--bsr',
                         type=float,
                         required=False,
                         default=0.6,
                         dest='bsr',
-                        help='Minimum BSR value to consider aligned '
-                            'alleles as alleles for the same locus. '
-                            'This argument is optional for the Match Schemas '
-                            'sub-module.')
+                        help='Minimum BSR value to consider aligned alleles as alleles for the same locus. This argument is optional for the Match Schemas sub-module.')
     
     parser.add_argument('-t',
                         '--threads',
@@ -260,7 +270,7 @@ def schema_annotation():
                         required=False,
                         default=1,
                         dest='cpu',
-                        help='Number of cpu for multiprocessing.')
+                        help='Number of CPU cores for multiprocessing.')
 
     parser.add_argument('-r',
                         '--retry',
@@ -268,11 +278,10 @@ def schema_annotation():
                         required=False,
                         dest='retry',
                         default=7,
-                        help='Maximum number of retries when a '
-                            'download fails.')
+                        help='Maximum number of retries when a download fails.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -285,8 +294,7 @@ def schema_annotation():
                         required=False,
                         dest='clustering_sim',
                         default=0.9,
-                        help='Similiriaty value for'
-                        'kmers representatives (float: 0-1).')
+                        help='Similarity value for kmers representatives (float: 0-1).')
 
     parser.add_argument('-cc',
                         '--clustering-cov',
@@ -294,8 +302,7 @@ def schema_annotation():
                         required=False,
                         dest='clustering_cov',
                         default=0.9,
-                        help='Coverage value for'
-                        'kmers representatives (float: 0-1).')
+                        help='Coverage value for kmers representatives (float: 0-1).')
     
     parser.add_argument('-sr',
                         '--size_ratio',
@@ -315,24 +322,44 @@ def schema_annotation():
                         help='Mode to run the module: reps or alleles.')
     
     parser.add_argument('-egtc',
-                        '-extra_genbank_table_columns',
-                        type=list,
+                        '--extra_genbank_table_columns',
+                        type=str,
                         required=False,
                         dest='extra_genbank_table_columns',
                         nargs='+',
                         default=[],
-                        choices = GENBANK_CDS_QUALIFIERS_CHOICES,
-                        help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).',)
+                        choices=GENBANK_CDS_QUALIFIERS_CHOICES,
+                        help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
 
+    # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Call the main function of the SchemaAnnotation class with the parsed arguments
     SchemaAnnotation.main(args)
 
-def identify_spurious_genes():
-    
-    parser = argparse.ArgumentParser(description=__doc__,
-                                    formatter_class=argparse.RawDescriptionHelpFormatter)
 
+def identify_spurious_genes() -> None:
+    """
+    Parse command-line arguments and initiate the process to identify spurious genes.
+
+    This function sets up an argument parser to handle various command-line
+    options for identifying spurious genes in a schema. It then calls the main
+    function of the IdentifySpuriousGenes class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    # Add arguments to the parser
     parser.add_argument('-s',
                         '--schema',
                         type=str,
@@ -345,25 +372,21 @@ def identify_spurious_genes():
                         type=str,
                         required=True,
                         dest='output_directory',
-                        help='Path to the directory to which '
-                            'files will be stored.')
+                        help='Path to the directory to which files will be stored.')
 
     parser.add_argument('-a',
                         '--allelecall-directory',
                         type=str,
                         required=True,
                         dest='allelecall_directory',
-                        help='Path to the directory that contains'
-                            'allele call directory that was run'
-                            'with --no-cleanup.')
+                        help='Path to the directory that contains allele call directory that was run with --no-cleanup.')
     
     parser.add_argument('-pnl',
                         '--possible-new-loci',
                         type=str,
                         required=False,
                         dest='possible_new_loci',
-                        help='Path to the directory that contains'
-                            'possible new loci')
+                        help='Path to the directory that contains possible new loci.')
 
     parser.add_argument('-at',
                         '--alignment_ratio_threshold',
@@ -371,8 +394,7 @@ def identify_spurious_genes():
                         required=False,
                         dest='alignment_ratio_threshold',
                         default=0.9,
-                        help='Threshold value for alignment used to '
-                            'indentify spurious CDS (float: 0-1).')
+                        help='Threshold value for alignment used to identify spurious CDS (float: 0-1).')
 
     parser.add_argument('-pt',
                         '--pident_threshold',
@@ -380,8 +402,7 @@ def identify_spurious_genes():
                         required=False,
                         dest='pident_threshold',
                         default=90,
-                        help='Threshold value for pident values used to '
-                            'indentify spurious CDS (int 0-100).')
+                        help='Threshold value for pident values used to identify spurious CDS (int 0-100).')
 
     parser.add_argument('-cs',
                         '--clustering-sim',
@@ -389,8 +410,7 @@ def identify_spurious_genes():
                         required=False,
                         dest='clustering_sim',
                         default=0.9,
-                        help='Similiriaty value for'
-                            'kmers representatives (float: 0-1).')
+                        help='Similarity value for kmers representatives (float: 0-1).')
 
     parser.add_argument('-cc',
                         '--clustering-cov',
@@ -398,16 +418,14 @@ def identify_spurious_genes():
                         required=False,
                         dest='clustering_cov',
                         default=0.9,
-                        help='Coverage value for'
-                            'kmers representatives (float: 0-1).')
+                        help='Coverage value for kmers representatives (float: 0-1).')
 
     parser.add_argument('-gp',
                         '--genome_presence',
                         type=int,
                         required=False,
                         dest='genome_presence',
-                        help='The minimum number of genomes specific cluster'
-                            'cluster of CDS must be present in order to be considered.')
+                        help='The minimum number of genomes specific cluster of CDS must be present in order to be considered.')
 
     parser.add_argument('-as',
                         '--absolute_size',
@@ -456,8 +474,8 @@ def identify_spurious_genes():
                         dest='run_mode',
                         default='schema',
                         choices=IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES,
-                        help='Number of cpus to run blast instances.')
-    
+                        help='Run mode for identifying spurious loci.')
+
     parser.add_argument('-pm',
                         '--processing-mode',
                         type=str,
@@ -473,21 +491,41 @@ def identify_spurious_genes():
                         required=False,
                         dest='cpu',
                         default=1, 
-                        help='Number of cpus to run blast instances.')
+                        help='Number of CPUs to run BLAST instances.')
 
+    # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the possible_new_loci argument
     if args.possible_new_loci and args.run_mode != 'loci_vs_cds':
-        sys.exit("Argument -p --possible_new_loci can only be used with -m --run-mode"
-                " of unclassified.")
+        sys.exit("Argument -p --possible_new_loci can only be used with -m --run-mode of loci_vs_cds.")
     
+    # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
     IdentifySpuriousGenes.main(**vars(args))
 
-def adapt_loci():
 
+def adapt_loci() -> None:
+    """
+    Parse command-line arguments and initiate the process to adapt loci.
+
+    This function sets up an argument parser to handle various command-line
+    options for adapting loci. It then calls the main function of the AdaptLoci
+    class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    
+    # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                    formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    # Add arguments to the parser
     parser.add_argument('-i',
                         '--input_file',
                         type=str,
@@ -500,8 +538,7 @@ def adapt_loci():
                         type=str,
                         required=True,
                         dest='output_directory',
-                        help='Path to the directory to which '
-                            'files will be stored.')
+                        help='Path to the directory to which files will be stored.')
     
     parser.add_argument('-c',
                         '--cpu',
@@ -509,7 +546,7 @@ def adapt_loci():
                         required=False,
                         dest='cpu_cores',
                         default=1, 
-                        help='Number of cpus to run blast instances.')
+                        help='Number of CPUs to run BLAST instances.')
     
     parser.add_argument('-b',
                         '--bsr',
@@ -527,15 +564,35 @@ def adapt_loci():
                         default=11,
                         help='Translation table to use for the CDS translation.')
     
+    # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Call the main function of the AdaptLoci class with the parsed arguments
     AdaptLoci.main(**vars(args))
 
-def identify_paralagous_loci():
 
-    parser = argparse.ArgumentParser(description=__doc__,
-                                formatter_class=argparse.RawDescriptionHelpFormatter)
+def identify_paralogous_loci() -> None:
+    """
+    Parse command-line arguments and initiate the process to identify paralogous loci.
+
+    This function sets up an argument parser to handle various command-line
+    options for identifying paralogous loci in a schema. It then calls the main
+    function of the IdentifyParalogousLoci class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    
+    # Add arguments to the parser
     parser.add_argument('-s',
                         '--schema_directory',
                         type=str,
@@ -548,8 +605,7 @@ def identify_paralagous_loci():
                         type=str,
                         required=True,
                         dest='output_directory',
-                        help='Path to the directory to which '
-                            'files will be stored.')
+                        help='Path to the directory to which files will be stored.')
     
     parser.add_argument('-c',
                         '--cpu',
@@ -557,7 +613,7 @@ def identify_paralagous_loci():
                         required=False,
                         dest='cpu',
                         default=1, 
-                        help='Number of cpus to run blast instances.')
+                        help='Number of CPUs to run BLAST instances.')
     
     parser.add_argument('-b',
                         '--bsr',
@@ -592,15 +648,35 @@ def identify_paralagous_loci():
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
+    # Parse the command-line arguments
     args = parser.parse_args()
 
-    IdentifyParalagousLoci.identify_paralagous_loci(**vars(args))
+    # Call the main function of the IdentifyParalogousLoci class with the parsed arguments
+    IdentifyParalagousLoci.identify_paralogous_loci(**vars(args))
 
-def match_schemas():
+
+def match_schemas() -> None:
+    """
+    Parse command-line arguments and initiate the process to match schemas.
+
+    This function sets up an argument parser to handle various command-line
+    options for matching schemas. It then calls the main function of the
+    MatchSchemas class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     
+    # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
      
+    # Add arguments to the parser
     parser.add_argument('-qs',
                         '--query_schema_directory',
                         type=str,
@@ -620,8 +696,7 @@ def match_schemas():
                         type=str,
                         required=True,
                         dest='output_directory',
-                        help='Path to the directory to which '
-                            'files will be stored.')
+                        help='Path to the directory to which files will be stored.')
     
     parser.add_argument('-c',
                         '--cpu',
@@ -629,7 +704,7 @@ def match_schemas():
                         required=False,
                         dest='cpu',
                         default=1, 
-                        help='Number of cpus to run blast instances.')
+                        help='Number of CPUs to run BLAST instances.')
     
     parser.add_argument('-b',
                         '--bsr',
@@ -656,8 +731,10 @@ def match_schemas():
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
+    # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Call the main function of the MatchSchemas class with the parsed arguments
     MatchSchemas.match_schemas(**vars(args))
     
 
