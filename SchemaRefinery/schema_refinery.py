@@ -750,7 +750,7 @@ def main():
                                         " against unclassified CDS to infer new loci and identify problematic genes.",
                                         identify_spurious_genes],
                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
-                        'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralagous_loci],
+                        'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
                         'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
