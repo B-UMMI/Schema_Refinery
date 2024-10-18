@@ -4,7 +4,7 @@ import pickle
 from typing import Dict, Tuple, List
 from Bio import SeqIO
 
-def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[str, str, str, dict]:
+def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[str, str, str, Dict[str, List[str]]]:
     """
     Split proteome records into Swiss-Prot and TrEMBL records and save them to separate files.
 
