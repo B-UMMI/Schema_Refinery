@@ -14,6 +14,7 @@ try:
         alignments_functions as af,
         clustering_functions as cf,
         iterable_functions as itf,
+        pandas_functions as pf,
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -23,7 +24,8 @@ except ModuleNotFoundError:
         linux_functions as lf,
         alignments_functions as af,
         clustering_functions as cf,
-        iterable_functions as itf
+        iterable_functions as itf,
+        pandas_functions as pf,
     )
 
 def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: List[str]) -> Dict[str, List[str]]:
@@ -56,8 +58,8 @@ def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: Li
             # is not found. Calls strip to remove unwanted brackets and ' from qualifier before storing it as a string.
             protein_id: str = str(featQualifiers.get('protein_id', '')).strip('\'[]')
 
-            if protein_id == 'no_protein_id':
-                continue  # Skips the iteration if protein has no id.
+            if protein_id == 'no_protein_id' or cds_info.get(protein_id):
+                continue  # Skips the iteration if protein has no id or already exists in the dictionary (duplicate)
             # Get all of the relevant values from the genbank file CDS
             for column_name in genbank_table_columns:
                 cds_info.setdefault(protein_id, []).append(str(featQualifiers.get(column_name, '')).strip('\'[]'))
@@ -69,7 +71,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                         bsr: float, translation_table: int,
                         clustering_sim: float, clustering_cov: float,
                         size_ratio: float, run_mode: str,
-                        extra_genbank_table_columns: List[str]) -> str:
+                        extra_genbank_table_columns: List[str],
+                        genbank_ids: List[str]) -> str:
     """
     Process GenBank files to extract annotations and perform BLAST searches.
 
@@ -249,32 +252,46 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                         bsr_values[query].update({subject_id: bsr_value})
                     else:
                         continue
+
+                    # Extract extra information
+                    if all_cds_info:
+                        extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_id]]
+                    else:
+                        extra_info: List[str] = []
                     # Check if the BSR value is the best for the locus
                     current_best_bsr: List[Union[str, float]] = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
                     if current_best_bsr and bsr_value > current_best_bsr[1]:
-                        best_bsr_values[loci] = [subject_id, bsr_value]
+                        best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
                     else:
-                        best_bsr_values[loci] = [subject_id, bsr_value]
+                        best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
 
                     # Get best value for genbank file
                     genbank_file: str = itf.identify_string_in_dict_get_key(subject_id, all_genbank_files_ids)
                     current_best_in_genbank_file: List[Union[str, float]] = best_bsr_values_per_genbank_file[genbank_file].get(loci)
                     if current_best_in_genbank_file and bsr_value > current_best_in_genbank_file[1]:
-                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value]
+                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
                     else:
-                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value]
+                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
 
+    merge_files: List[str] = []
     # Save annotations
     tab = '\t'
-    header: str = f"Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR\t{tab.join(extra_genbank_table_columns)}"
-    annotations_file: str = os.path.join(output_directory, 'genbank_annotations.tsv')
+    header: str = f"Locus\tgenebank_origin_id\tgenebank_origin_product\tgenebank_origin_name\tBSR{tab if extra_genbank_table_columns else ''}{tab.join(extra_genbank_table_columns)}\n"
+    # Create the best annotations file
+    best_annotations_all_genbank_files: str = os.path.join(output_directory, "best_annotations_all_genbank_files")
+    ff.create_directory(best_annotations_all_genbank_files)
+    best_annotations_file: str = os.path.join(best_annotations_all_genbank_files, 'best_genbank_annotations.tsv')
+    # Add the best annotations file to the list of files to merge
+    merge_files.append(best_annotations_file)
+    # Get the loci that did not match or the BSR value was lower than the threshold
     not_matched_or_bsr_failed_loci: set = set(translations_paths.keys()) - set(best_bsr_values.keys())
-    with open(annotations_file, 'w') as at:
-        at.write(header + '\n')
+    # Write the annotations to the file
+    with open(best_annotations_file, 'w') as at:
+        at.write(header)
         for loci, subject_info in best_bsr_values.items():
             subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
             bsr_value: float = subject_info[1]  # Get the BSR value
@@ -294,18 +311,24 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     ff.create_directory(best_annotations_per_genbank_file)
     for file, loci_results in best_bsr_values_per_genbank_file.items():
         annotations_file_genbank: str = os.path.join(best_annotations_per_genbank_file, f"{file}.tsv")
+        if file in genbank_ids:
+            merge_files.append(annotations_file_genbank)
         with open(annotations_file_genbank, 'w') as at:
             at.write(header)
             for loci, subject_info in loci_results.items():
                 subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
                 bsr_value: float = subject_info[1]  # Get the BSR value
                 # Check if any element is empty and replace with NA
-                update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
+                update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_id]]
                 # Write the annotations to the file
                 if len(subject_info[0]) == 2: # If no extra columns are present
                     at.write(f"{loci}\t{subject_id}\t{update_cds_info[:2]}\t{bsr_value}\n")
                 else: # If extra columns are present
                     at.write(f"{loci}\t{subject_id}\t{tab.join(update_cds_info[:2])}\t{bsr_value}\t{tab.join(update_cds_info[2:])}\n")
-        
+    
+    # Merge all annotations files that user wants
+    annotations_file: str = os.path.join(output_directory, 'best_genbank_annotations.tsv')
+    pf.merge_files_into_same_file_by_key(merge_files, 'Locus', annotations_file)
+
     return annotations_file
             

@@ -19,7 +19,7 @@ try:
     from SchemaAnnotation import SchemaAnnotation
     from utils import parameter_validation as pv
     from RefineSchema import IdentifySpuriousGenes
-    from IdentifyParalagousLoci import IdentifyParalagousLoci
+    from IdentifyParalagousLoci import IdentifyParalogousLoci
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
      
@@ -330,6 +330,16 @@ def schema_annotation() -> None:
                         default=[],
                         choices=GENBANK_CDS_QUALIFIERS_CHOICES,
                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
+
+    parser.add_argument('-gi',
+                    '--genbank_ids',
+                    type=str,
+                    required=False,
+                    dest='genbank_ids',
+                    nargs='+',
+                    default=[],
+                    choices=GENBANK_CDS_QUALIFIERS_CHOICES,
+                    help='List of GenBank IDs to add to final results.')
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -652,7 +662,7 @@ def identify_paralogous_loci() -> None:
     args = parser.parse_args()
 
     # Call the main function of the IdentifyParalogousLoci class with the parsed arguments
-    IdentifyParalagousLoci.identify_paralogous_loci(**vars(args))
+    IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
 
 def match_schemas() -> None:

@@ -24,7 +24,7 @@ except ModuleNotFoundError:
                                     clustering_functions as cf,
     )
 
-def identify_paralagous_loci(schema_directory, output_directory, cpu, bsr,
+def identify_paralogous_loci(schema_directory, output_directory, cpu, bsr,
                              translation_table, size_threshold, processing_mode):
     """
     Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
