@@ -3,6 +3,7 @@ import os
 import sys
 import itertools
 import concurrent.futures
+from typing import Dict, Any
 
 try:
     from utils import (file_functions as ff,
@@ -357,13 +358,35 @@ def run_blastdb_aliastool(blastdb_aliastool_path, seqid_infile, seqid_outfile):
 
 	return [stdout, stderr]
 
-def calculate_self_score(paths_dict, blast_exec, output_folder, max_id_length, cpu):
+def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_folder: str, max_id_length: int, cpu: int) -> Dict[str, int]:
+    """
+    Calculate self-score for each loci using BLASTp.
+
+    Parameters
+    ----------
+    paths_dict : dict
+        Dictionary with keys as loci identifiers and values as paths to the loci files.
+    blast_exec : str
+        Path to the BLASTp executable.
+    output_folder : str
+        Path to the output folder where results will be stored.
+    max_id_length : int
+        Maximum length of the loci identifiers.
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+
+    Returns
+    -------
+    dict
+        Dictionary with loci identifiers as keys and their self-scores as values.
+    """
+    
     # Self-score folder
-    self_score_folder = os.path.join(output_folder, 'self-score-folder')
+    self_score_folder: str = os.path.join(output_folder, 'self-score-folder')
     ff.create_directory(self_score_folder)
 
-    self_score_dict = {}
-    i = 1
+    self_score_dict: Dict[str, Any] = {}
+    i: int = 1
     # Calculate self-score
     print("\nCalculating self-score for each loci:")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -373,11 +396,13 @@ def calculate_self_score(paths_dict, blast_exec, output_folder, max_id_length, c
                                 paths_dict.values(),
                                 itertools.repeat(self_score_folder)):
             
+            # Extract self-score from BLAST results
             _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, True)
     
             # Save self-score
             self_score_dict.update(self_score)
                             
+            # Print progress
             print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
             i += 1    
             

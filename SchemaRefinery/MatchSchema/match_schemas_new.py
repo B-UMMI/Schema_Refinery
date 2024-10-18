@@ -1,6 +1,6 @@
 import os
 import concurrent.futures
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Dict, List, Tuple, Optional
 from itertools import repeat
 
 try:
@@ -56,19 +56,42 @@ def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, s
     return fasta_files_dict, fasta_files_short_dict
 
 def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_files: str,
-                             blast_folder: str, bsr: float, cpu: int):
-    # Get Path to the blastp executable
-    get_blastp_exec: str = lf.get_tool_path('blastp')
-    
-    # Get the maximum length of the IDs for better prints
-    max_id_length: int = len(max(query_translations_paths.keys(), key=len))
+                             blast_folder: str, self_score_dict: Dict[str, float], max_id_length: int,
+                             get_blastp_exec: str, bsr: float, cpu: int) -> Dict[str, Tuple[str, float]]:
+    """
+    Run BLASTp to match schemas and calculate BSR values.
+
+    Parameters
+    ----------
+    query_translations_paths : dict
+        Dictionary with keys as query identifiers and values as paths to the query translation files.
+    blast_db_files : str
+        Path to the BLAST database files.
+    blast_folder : str
+        Path to the folder where BLAST results will be stored.
+    self_score_dict : dict
+        Dictionary with query identifiers as keys and their self-scores as values.
+    max_id_length : int
+        Maximum length of the query identifiers.
+    get_blastp_exec : str
+        Path to the BLASTp executable.
+    bsr : float
+        BSR threshold value.
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+
+    Returns
+    -------
+    dict
+        Dictionary with loci identifiers as keys and tuples of the best subject identifier and BSR value as values.
+    """
     
     # Run BLASTp
     print("Running BLASTp...")
     blastp_results_folder: str = os.path.join(blast_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     
-    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
+    # Initialize dictionaries to store BSR values
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Tuple[str, float]] = {}
     total_blasts: int = len(query_translations_paths)
@@ -92,6 +115,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                 # Create the dict of the query
                 bsr_values.setdefault(query, {})
                 for subject_id, results in subjects_dict.items():
+                    subject_loci = subject_id.split('_')[0]
                     # Highest score (First one)
                     subject_score: float = next(iter(results.values()))['score']
                     # Calculate BSR value
@@ -109,14 +133,47 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                     current_best_bsr: Optional[Tuple[str, float]] = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
                     if current_best_bsr and bsr_value > current_best_bsr[1]:
-                        best_bsr_values[loci] = (subject_id, bsr_value)
+                        best_bsr_values[loci] = (subject_loci, bsr_value)
                     else:
-                        best_bsr_values[loci] = (subject_id, bsr_value)
+                        best_bsr_values[loci] = (subject_loci, bsr_value)
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
 
     return best_bsr_values
+
+def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float]],
+                                     query_translations_paths: Dict[str, str], output_folder: str) -> None:
+    """
+    Write the best BLAST matches to a file.
+
+    Parameters
+    ----------
+    best_bsr_values : dict
+        Dictionary with loci identifiers as keys and tuples of the best subject identifier and BSR value as values.
+    query_translations_paths : dict
+        Dictionary with keys as query identifiers and values as paths to the query translation files.
+    output_folder : str
+        Path to the folder where the output file will be stored.
+
+    Returns
+    -------
+    None
+    """
+    
+    # Identify loci that were not matched
+    not_matched_loci: List[str] = [query for query in query_translations_paths.keys() if query not in best_bsr_values.keys()]
+    
+    # Path to the output file
+    best_blast_matches_file: str = os.path.join(output_folder, 'best_blast_matches.tsv')
+    
+    # Write the best BLAST matches to a file
+    with open(best_blast_matches_file, 'w') as out:
+        out.write('Query\tBest Match\tBSR\n')
+        for query, match in best_bsr_values.items():
+            out.write(f'{query}\t{match[0]}\t{match[1]}\n')
+        for query in not_matched_loci:
+            out.write(f'{query}\tNot matched\tNA\n')
 
 def match_schemas(query_schema: str, subject_schema: str, output_directory: str, bsr: float,
                   translation_table: int, cpu: int, run_mode: str):
@@ -195,7 +252,19 @@ def match_schemas(query_schema: str, subject_schema: str, output_directory: str,
         # Update the subject translation dictionary
         subject_translation_dict.update(trans_dict)
     
-    # Create BLAST database
+
+    # Get Path to the blastp executable
+    get_blastp_exec: str = lf.get_tool_path('blastp')
+    
+    # Get the maximum length of the IDs for better prints
+    max_id_length: int = len(max(query_translations_paths.keys(), key=len))
+
+    # Calculate self-scores for each query
+    self_score_dict: Dict[str, int] = bf.calculate_self_score(query_translations_paths,
+                                                              get_blastp_exec,
+                                                              blast_folder,
+                                                              max_id_length,
+                                                              cpu)
 
     # Create BLAST database
     blastdb_path: str = os.path.join(blast_folder, 'blastdb')
@@ -205,5 +274,13 @@ def match_schemas(query_schema: str, subject_schema: str, output_directory: str,
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_files, 'prot')
 
     # Run BLAST
-    best_bsr_values = run_blasts_match_schemas(query_translations_paths, blast_db_files, blast_folder, bsr, cpu)
+    best_bsr_values = run_blasts_match_schemas(query_translations_paths,
+                                               blast_db_files,
+                                               blast_folder,
+                                               self_score_dict,
+                                               get_blastp_exec,
+                                               max_id_length,
+                                               bsr,
+                                               cpu)
 
+    write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
