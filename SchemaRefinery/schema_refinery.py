@@ -371,11 +371,11 @@ def identify_spurious_genes() -> None:
 
     # Add arguments to the parser
     parser.add_argument('-s',
-                        '--schema',
+                        '--schema-directory',
                         type=str,
                         required=True,
-                        dest='schema',
-                        help='Path to the created schema folder.')
+                        dest='schema_directory',
+                        help='Path to the created schema directory.')
 
     parser.add_argument('-o',
                         '--output-directory',
@@ -604,7 +604,7 @@ def identify_paralogous_loci() -> None:
     
     # Add arguments to the parser
     parser.add_argument('-s',
-                        '--schema_directory',
+                        '--schema-directory',
                         type=str,
                         required=True,
                         dest='schema_directory',
@@ -688,14 +688,14 @@ def match_schemas() -> None:
      
     # Add arguments to the parser
     parser.add_argument('-qs',
-                        '--query_schema_directory',
+                        '--query-schema-directory',
                         type=str,
                         required=True,
                         dest='query_schema_directory',
                         help='Folder that contains the schema to identify paralogous loci.')
 
     parser.add_argument('-ss',
-                        '--subject_schema_directory',
+                        '--subject-chema-directory',
                         type=str,
                         required=True,
                         dest='subject_schema_directory',
