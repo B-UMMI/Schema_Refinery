@@ -10,7 +10,6 @@ try:
                         linux_functions as lf,
                         file_functions as ff,
                         alignments_functions as af,
-                        iterable_functions as itf,
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -19,7 +18,7 @@ except ModuleNotFoundError:
                                     linux_functions as lf,
                                     file_functions as ff,
                                     alignments_functions as af,
-                                    iterable_functions as itf,
+                                    
     )
 
 def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, str]]:
@@ -274,13 +273,13 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_files, 'prot')
 
     # Run BLAST
-    best_bsr_values = run_blasts_match_schemas(query_translations_paths,
-                                               blast_db_files,
-                                               blast_folder,
-                                               self_score_dict,
-                                               get_blastp_exec,
-                                               max_id_length,
-                                               bsr,
-                                               cpu)
+    best_bsr_values: Dict[str, Tuple[str, float]] = run_blasts_match_schemas(query_translations_paths,
+                                                                            blast_db_files,
+                                                                            blast_folder,
+                                                                            self_score_dict,
+                                                                            get_blastp_exec,
+                                                                            max_id_length,
+                                                                            bsr,
+                                                                            cpu)
 
     write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)

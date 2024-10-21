@@ -52,7 +52,7 @@ def create_directories(output_directory, run_mode):
     
     return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
 
-def identify_spurious_genes(schema_path, output_directory, allelecall_directory, possible_new_loci, constants, temp_paths, run_mode, processing_mode, cpu):
+def identify_spurious_genes(schema_directory, output_directory, allelecall_directory, possible_new_loci, constants, temp_paths, run_mode, processing_mode, cpu):
     # Create directories structure.
     [initial_processing_output,
      schema_folder,
@@ -165,9 +165,9 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
     # Process loci
     else:
         if possible_new_loci:
-            ff.merge_folders(schema_path, possible_new_loci, schema_folder)
+            ff.merge_folders(schema_directory, possible_new_loci, schema_folder)
         else:
-            ff.copy_folder(schema_path, schema_folder)
+            ff.copy_folder(schema_directory, schema_folder)
 
         dropped_alleles = {}
 
@@ -381,7 +381,7 @@ def identify_spurious_genes(schema_path, output_directory, allelecall_directory,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
 
-def main(schema, output_directory, allelecall_directory, possible_new_loci, alignment_ratio_threshold, 
+def main(schema_directory, output_directory, allelecall_directory, possible_new_loci, alignment_ratio_threshold, 
         pident_threshold, clustering_sim, clustering_cov, genome_presence,
         absolute_size, translation_table, bsr, problematic_proportion, size_ratio, run_mode, processing_mode, cpu):
     
@@ -406,7 +406,7 @@ def main(schema, output_directory, allelecall_directory, possible_new_loci, alig
                     "was run using --no-cleanup and --output-unclassified flag.")
 
     unclassified_cds_output = os.path.join(output_directory, "unclassified_cds_processing" if run_mode == 'unclassified_cds' else 'schema_processing') 
-    identify_spurious_genes(schema,
+    identify_spurious_genes(schema_directory,
                  unclassified_cds_output,
                  allelecall_directory,
                  possible_new_loci,
