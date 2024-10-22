@@ -331,16 +331,25 @@ def schema_annotation() -> None:
                         choices=GENBANK_CDS_QUALIFIERS_CHOICES,
                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
 
-    parser.add_argument('-gi',
-                    '--genbank_ids',
+    parser.add_argument('-gia',
+                    '--genbank-ids-to-add',
                     type=str,
                     required=False,
-                    dest='genbank_ids',
+                    dest='genbank_ids_to_add',
                     nargs='+',
                     default=[],
                     choices=GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of GenBank IDs to add to final results.')
-
+    
+    parser.add_argument('-pia',
+                    '--proteome-ids-to-add',
+                    type=str,
+                    required=False,
+                    dest='proteome_ids_to_add',
+                    nargs='+',
+                    default=[],
+                    choices=GENBANK_CDS_QUALIFIERS_CHOICES,
+                    help='List of Proteome IDs to add to final results.')
     # Parse the command-line arguments
     args = parser.parse_args()
 
