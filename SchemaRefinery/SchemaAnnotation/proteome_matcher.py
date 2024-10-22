@@ -11,7 +11,8 @@ try:
                        blast_functions as bf,
                        linux_functions as lf,
                        alignments_functions as af,
-                       iterable_functions as itf)
+                       iterable_functions as itf,
+                       pandas_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (sequence_functions as sf,
                                       file_functions as ff,
@@ -19,7 +20,8 @@ except ModuleNotFoundError:
                                       blast_functions as bf,
                                       linux_functions as lf,
                                       alignments_functions as af,
-                                      iterable_functions as itf)
+                                      iterable_functions as itf,
+                                      pandas_functions as pf)
 
 def create_database_files(proteome_file: str, clustering_sim: float, clustering_cov: float, size_ratio: float,
                           blast_processing_folder: str) -> Optional[str]:
@@ -216,10 +218,10 @@ def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Di
 
     return best_bsr_values
 
-def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, List[str]], 
-                    schema_directory: str, output_directory: str, cpu: int, bsr: float,
-                    translation_table: int, clustering_sim: float, clustering_cov: float,
-                    size_ratio: float, run_mode: str) -> None:
+def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, List[str]],
+                    proteome_ids_to_add: List[str], schema_directory: str, output_directory: str,
+                    cpu: int, bsr: float, translation_table: int, clustering_sim: float, 
+                    clustering_cov: float, size_ratio: float, run_mode: str) -> None:
     """
     Match proteomes by creating BLAST database files, translating sequences, and running BLAST.
 
@@ -295,7 +297,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                                 max_id_length,
                                                                 cpu)
     print('\n')
-    annotations_files = []
+    merge_files = [[], []]
     for file_name, paths in proteomes_data_paths.items():
         if paths[2] is None:
             print(f"\nSkipping proteome file BLAST: {file_name} due to lack of proteins")
@@ -320,8 +322,31 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                 cpu,
                                 bsr)
         
+        # Save annotations
+        header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
+        annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
+        not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
+        with open(annotations_file, 'w') as at:
+            at.write(header + '\n')
+            for loci, subject_info in best_bsr_values.items():
+                subject_id: str = subject_info[0]
+                bsr_value: float = subject_info[1]
+                desc: str = descriptions[subject_id]
+                lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
+                sname: str = desc.split('GN=')[1].split(' PE=')[0]
+                # If there is no short name, set it to 'NA'
+                if sname == '':
+                    sname = 'NA'
+                # Write the annotations to the file
+                at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+            # Write loci that did not match or failed the BSR threshold
+            for loci in not_matched_or_bsr_failed_loci:
+                at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
 
-    for proteome_file_id, loci_values in list(best_bsr_values_per_proteome_file.items()):
+        # Save annotations file
+        merge_files[i].append(annotations_file)
+
+    for i, proteome_file_id, loci_values in enumerate(list(best_bsr_values_per_proteome_file.items())):
         for loci_id, values in list(loci_values.items()):
             # Find all of the proteins that reps representes
             proteinid = values[0]
@@ -350,30 +375,6 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                         continue
                     # Verify if genbank file is in the dict
                     best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, [id_, bsr_value])
-
-        # Save annotations
-        header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
-        annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
-        not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
-        with open(annotations_file, 'w') as at:
-            at.write(header + '\n')
-            for loci, subject_info in best_bsr_values.items():
-                subject_id: str = subject_info[0]
-                bsr_value: float = subject_info[1]
-                desc: str = descriptions[subject_id]
-                lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-                sname: str = desc.split('GN=')[1].split(' PE=')[0]
-                # If there is no short name, set it to 'NA'
-                if sname == '':
-                    sname = 'NA'
-                # Write the annotations to the file
-                at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
-            # Write loci that did not match or failed the BSR threshold
-            for loci in not_matched_or_bsr_failed_loci:
-                at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
-
-        # Save annotations file
-        annotations_files.append(annotations_file)
         
     # Save best annotations per proteome file
     best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
@@ -388,6 +389,9 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         # Create Swiss-Prot and TrEMBL annotations files
         swiss_prot_annotations = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
         trembl_annotations = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
+        if file in proteome_ids_to_add:
+            merge_files[0].append(swiss_prot_annotations)
+            merge_files[1].append(trembl_annotations)
         with open(swiss_prot_annotations, 'w') as sp, open(trembl_annotations, 'w') as tr:
             for loci, subject_info in loci_results.items():
                 subject_id: str = subject_info[0]
@@ -403,4 +407,11 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                 elif subject_id.startswith('tr|'):
                     tr.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
 
-    return annotations_files[0], annotations_files[1]
+    # Merge all annotations files that user wants
+    merged_annotations_file_list = []
+    for merge_annotations in merge_files:
+        merged_annotations_file: str = os.path.join(output_directory, 'best_genbank_annotations.tsv')
+        merged_annotations_file_list.append(merged_annotations_file)
+        pf.merge_files_into_same_file_by_key(merge_annotations, 'Locus', merged_annotations_file)
+
+    return merged_annotations_file_list[0], merged_annotations_file_list[1]
