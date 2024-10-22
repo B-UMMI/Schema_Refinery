@@ -110,9 +110,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     all_cds_info: Dict[str, List[str]] = {}
     all_translation_dict: Dict[str, str] = {}
     processed_proteins: Set[str] = set()
-    same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
     total_proteins: int = 0
     all_genbank_files_ids: Dict[str, List[str]] = {}
+    # Create dictionaries to hashed sequence and its representative ID
+    hash_to_rep_id: Dict[str, str] = {}
+    # Create dictionaries to store the representatives ID and what it representes
+    same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
 
     genbank_table_columns: List[str] = ['gene', 'product', 'translation'] + extra_genbank_table_columns
     # Parse GenBank files and extract protein annotations
@@ -133,11 +136,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                 protein_hash: str = sf.hash_sequence(translated_protein)
                 if protein_hash in processed_proteins:
                     # If the protein has already been processed, save the other annotations that it may have
-                    same_protein_other_annotations.setdefault(protein_hash, []).append((id_, *info))
+                    same_protein_other_annotations.setdefault(hash_to_rep_id[protein_hash], []).append((id_, *info))
                     continue
                 else:
                     processed_proteins.add(protein_hash)
                     all_translation_dict[id_] = translated_protein
+                    hash_to_rep_id[protein_hash] = id_
 
             all_cds_info.update(cds_info)
 
@@ -254,10 +258,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                         continue
 
                     # Extract extra information
-                    if all_cds_info:
-                        extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_id]]
-                    else:
-                        extra_info: List[str] = []
+                    extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_id]]
                     # Check if the BSR value is the best for the locus
                     current_best_bsr: List[Union[str, float]] = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
@@ -276,6 +277,41 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
+
+    print("\nExtracting best annotations for genbank files for proteins that were deduplicated and clustered...")
+    # Add all the other best matches that files may have but are being represented by other sequence
+    for gbk_file, loci_values in list(best_bsr_values_per_genbank_file.items()):
+        for loci_id, values in list(loci_values.items()):
+            # Find all of the proteins that reps representes
+            proteinid = values[0]
+            same_protein = same_protein_other_annotations.get(proteinid)
+            # Check if the protein is being represented by another sequence
+            if same_protein:
+                # For all of the elements that the representative represents add them to the dict
+                for id_, *info in same_protein:
+                    # Get genbank file for that ID
+                    genbank_file: str = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
+                    # If the genbank file is the same as the one that the representative is in, skip (may be copy protein)
+                    if gbk_file == genbank_file:
+                        continue
+                    # Add 'NA' if element is empty
+                    extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[id_]]
+                    # Verify if genbank file is in the dict
+                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, values[1], extra_info])
+            # For clustered elements
+            rep_cluster = all_alleles.get(proteinid)
+            if rep_cluster:
+                for values in rep_cluster:
+                    id_ = values[0]
+                    # Get genbank file for that ID
+                    genbank_file: str = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
+                    # If the genbank file is the same as the one that the representative is in, skip (may be paralogous protein)
+                    if gbk_file == genbank_file:
+                        continue
+                    # Add 'NA' if element is empty
+                    extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[id_]]
+                    # Verify if genbank file is in the dict
+                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, values[1], extra_info])
 
     merge_files: List[str] = []
     # Save annotations

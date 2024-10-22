@@ -117,8 +117,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
 def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Dict[str, List[str]],
                             best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]],
                             blast_processing_folder: str, translations_paths: Dict[str, str],
-                            blast_db_files: str, proteome_folder: str, file_name_without_extension: str,
-                            descriptions: Dict[str, str], self_score_dict: Dict[str, float], cpu: int, bsr: float) -> None:
+                            blast_db_files: str, self_score_dict: Dict[str, float], cpu: int, bsr: float) -> None:
     """
     Run BLAST for proteomes to calculate self-scores and BSR values, and save the annotations.
 
@@ -201,44 +200,22 @@ def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Di
                         best_bsr_values[loci] = (subject_id, bsr_value)
                         
                     # Get best value for genbank file
-                    genbank_file: str = itf.identify_string_in_dict_get_key(subject_id, proteome_file_ids)
-                    current_best_in_genbank_file: List[Union[str, float]] = best_bsr_values_per_proteome_file[genbank_file].get(loci)
-                    if current_best_in_genbank_file and bsr_value > current_best_in_genbank_file[1]:
-                        best_bsr_values_per_proteome_file[genbank_file][loci] = [subject_id, bsr_value]
+                    proteome_file: str = itf.identify_string_in_dict_get_key(subject_id, proteome_file_ids)
+                    current_best_in_proteome_file: List[Union[str, float]] = best_bsr_values_per_proteome_file[proteome_file].get(loci)
+                    if current_best_in_proteome_file and bsr_value > current_best_in_proteome_file[1]:
+                        best_bsr_values_per_proteome_file[proteome_file][loci] = [subject_id, bsr_value]
                     else:
-                        best_bsr_values_per_proteome_file[genbank_file][loci] = [subject_id, bsr_value]
+                        best_bsr_values_per_proteome_file[proteome_file][loci] = [subject_id, bsr_value]
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
 
-    # Save annotations
-    header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
-    annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
-    not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
-    with open(annotations_file, 'w') as at:
-        at.write(header + '\n')
-        for loci, subject_info in best_bsr_values.items():
-            subject_id: str = subject_info[0]
-            split_subject_id: str = subject_id.split('|')[1]
-            bsr_value: float = subject_info[1]
-            desc: str = descriptions[subject_id]
-            lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-            sname: str = desc.split('GN=')[1].split(' PE=')[0]
-            # If there is no short name, set it to 'NA'
-            if sname == '':
-                sname = 'NA'
-            # Write the annotations to the file
-            at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
-        # Write loci that did not match or failed the BSR threshold
-        for loci in not_matched_or_bsr_failed_loci:
-            at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
-
-    return annotations_file
+    return best_bsr_values
 
 def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, List[str]], 
-                     schema_directory: str, output_directory: str, cpu: int, bsr: float,
-                     translation_table: int, clustering_sim: float,
-                     clustering_cov: float, size_ratio: float, run_mode: str) -> None:
+                    schema_directory: str, output_directory: str, cpu: int, bsr: float,
+                    translation_table: int, clustering_sim: float, clustering_cov: float,
+                    size_ratio: float, run_mode: str) -> None:
     """
     Match proteomes by creating BLAST database files, translating sequences, and running BLAST.
 
@@ -327,18 +304,38 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         [proteome_folder, blast_processing_folder, blast_db_files] = paths
         # Run Blasts and save to file
         best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in proteome_file_ids.keys()}
-        annotations_file = run_blast_for_proteomes(max_id_length,
+        best_bsr_values = run_blast_for_proteomes(max_id_length,
                                 proteome_file_ids,
                                 best_bsr_values_per_proteome_file,
                                 blast_processing_folder,
                                 translations_paths,
                                 blast_db_files,
-                                proteome_folder,
-                                file_name_without_extension,
-                                descriptions,
                                 self_score_dict,
                                 cpu,
                                 bsr)
+        
+        # Save annotations
+        header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
+        annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
+        not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
+        with open(annotations_file, 'w') as at:
+            at.write(header + '\n')
+            for loci, subject_info in best_bsr_values.items():
+                subject_id: str = subject_info[0]
+                split_subject_id: str = subject_id.split('|')[1]
+                bsr_value: float = subject_info[1]
+                desc: str = descriptions[subject_id]
+                lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
+                sname: str = desc.split('GN=')[1].split(' PE=')[0]
+                # If there is no short name, set it to 'NA'
+                if sname == '':
+                    sname = 'NA'
+                # Write the annotations to the file
+                at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+            # Write loci that did not match or failed the BSR threshold
+            for loci in not_matched_or_bsr_failed_loci:
+                at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+
         # Save annotations file
         annotations_files.append(annotations_file)
         
