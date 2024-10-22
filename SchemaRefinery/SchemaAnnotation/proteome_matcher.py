@@ -49,6 +49,9 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     # Initialize dictionaries and sets for storing protein sequences and annotations
     all_translation_dict: Dict[str, str] = {}
     processed_proteins: Set[str] = set()
+    # Create dictionaries to hashed sequence and its representative ID
+    hash_to_rep_id: Dict[str, str] = {}
+    # Create dictionaries to store the representatives ID and what it representes
     same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
 
     print(f"\nExtracting protein from proteome file: {os.path.basename(proteome_file)}...")
@@ -66,11 +69,12 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         protein_hash: str = sf.hash_sequence(sequence)
         if protein_hash in processed_proteins:
             # If the protein has already been processed, save the other annotations that it may have
-            same_protein_other_annotations.setdefault(protein_hash, []).append((id_,))
+            same_protein_other_annotations.setdefault(hash_to_rep_id[protein_hash], []).append(id_)
             continue
         else:
             processed_proteins.add(protein_hash)
             all_translation_dict[id_] = sequence
+            hash_to_rep_id[protein_hash] = id_
 
     print(f"\nOut of {total_proteins} protein sequences, {len(all_translation_dict)} are unique proteins\n")
     
@@ -112,7 +116,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
     bf.make_blast_db(makeblastdb_exec, clustered_protein_master_file, blast_db_files, 'prot')
         
-    return blast_db_files
+    return blast_db_files, same_protein_other_annotations, all_alleles
 
 def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Dict[str, List[str]],
                             best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]],
@@ -258,11 +262,13 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         blast_processing_folder: str = os.path.join(proteome_folder, 'blast_processing')
         ff.create_directory(blast_processing_folder)
         # Create BLAST database files
-        blast_db_files: Optional[str] = create_database_files(proteome_file,
-                                                              clustering_sim,
-                                                              clustering_cov,
-                                                              size_ratio,
-                                                              blast_processing_folder)
+        [blast_db_files,
+        same_protein_other_annotations,
+        all_alleles] = create_database_files(proteome_file,
+                                            clustering_sim,
+                                            clustering_cov,
+                                            size_ratio,
+                                            blast_processing_folder)
         # Save paths to proteome file paths
         proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
 
@@ -314,6 +320,37 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                 cpu,
                                 bsr)
         
+
+    for proteome_file_id, loci_values in list(best_bsr_values_per_proteome_file.items()):
+        for loci_id, values in list(loci_values.items()):
+            # Find all of the proteins that reps representes
+            proteinid = values[0]
+            bsr_value = values[1]
+            same_protein = same_protein_other_annotations.get(proteinid)
+            # Check if the protein is being represented by another sequence
+            if same_protein:
+                # For all of the elements that the representative represents add them to the dict
+                for id_, *info in same_protein:
+                    # Get genbank file for that ID
+                    proteome_file_id_current: str = itf.identify_string_in_dict_get_key(id_, proteome_file_ids)
+                    # If the genbank file is the same as the one that the representative is in, skip (may be copy protein)
+                    if proteome_file_id == proteome_file_id_current:
+                        continue
+                    # Verify if genbank file is in the dict
+                    best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, [id_, bsr_value])
+            # For clustered elements
+            rep_cluster = all_alleles.get(proteinid)
+            if rep_cluster:
+                for values in rep_cluster:
+                    id_ = values[0]
+                    # Get genbank file for that ID
+                    proteome_file_id_current: str = itf.identify_string_in_dict_get_key(id_, proteome_file_ids)
+                    # If the genbank file is the same as the one that the representative is in, skip (may be paralogous protein)
+                    if proteome_file_id == proteome_file_id_current:
+                        continue
+                    # Verify if genbank file is in the dict
+                    best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, [id_, bsr_value])
+
         # Save annotations
         header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
         annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
@@ -322,7 +359,6 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
             at.write(header + '\n')
             for loci, subject_info in best_bsr_values.items():
                 subject_id: str = subject_info[0]
-                split_subject_id: str = subject_id.split('|')[1]
                 bsr_value: float = subject_info[1]
                 desc: str = descriptions[subject_id]
                 lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
@@ -331,7 +367,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                 if sname == '':
                     sname = 'NA'
                 # Write the annotations to the file
-                at.write(f"{loci}\t{split_subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+                at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
             # Write loci that did not match or failed the BSR threshold
             for loci in not_matched_or_bsr_failed_loci:
                 at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
@@ -342,9 +378,17 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     # Save best annotations per proteome file
     best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
     ff.create_directory(best_annotations_per_proteome_file)
+    # Create Swiss-Prot and TrEMBL folders
+    swiss_prot_folder: str = os.path.join(best_annotations_per_proteome_file, 'Swiss-Prot')
+    ff.create_directory(swiss_prot_folder)
+    trembl_folder: str = os.path.join(best_annotations_per_proteome_file, 'TrEMBL')
+    ff.create_directory(trembl_folder)
+
     for file, loci_results in best_bsr_values_per_proteome_file.items():
-        annotations_file_proteome: str = os.path.join(best_annotations_per_proteome_file, f"{file}.tsv")
-        with open(annotations_file_proteome, 'w') as at:
+        # Create Swiss-Prot and TrEMBL annotations files
+        swiss_prot_annotations = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
+        trembl_annotations = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
+        with open(swiss_prot_annotations, 'w') as sp, open(trembl_annotations, 'w') as tr:
             for loci, subject_info in loci_results.items():
                 subject_id: str = subject_info[0]
                 bsr_value: float = subject_info[1]
@@ -353,7 +397,10 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                 sname: str = desc.split('GN=')[1].split(' PE=')[0]
                 if sname == '':
                     sname = 'NA'
-                # Write the annotations to the file
-                at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+                # Write to the appropriate file based on the start of subject_id
+                if subject_id.startswith('sp|'):
+                    sp.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+                elif subject_id.startswith('tr|'):
+                    tr.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
 
-        return annotations_files[0], annotations_files[1]
+    return annotations_files[0], annotations_files[1]

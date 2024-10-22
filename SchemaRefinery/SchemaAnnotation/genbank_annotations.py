@@ -284,6 +284,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
         for loci_id, values in list(loci_values.items()):
             # Find all of the proteins that reps representes
             proteinid = values[0]
+            bsr_value = values[1]
             same_protein = same_protein_other_annotations.get(proteinid)
             # Check if the protein is being represented by another sequence
             if same_protein:
@@ -297,7 +298,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     # Add 'NA' if element is empty
                     extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[id_]]
                     # Verify if genbank file is in the dict
-                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, values[1], extra_info])
+                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, bsr_value, extra_info])
             # For clustered elements
             rep_cluster = all_alleles.get(proteinid)
             if rep_cluster:
@@ -311,7 +312,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     # Add 'NA' if element is empty
                     extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[id_]]
                     # Verify if genbank file is in the dict
-                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, values[1], extra_info])
+                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, bsr_value, extra_info])
 
     merge_files: List[str] = []
     # Save annotations
