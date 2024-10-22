@@ -219,9 +219,10 @@ def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Di
     return best_bsr_values
 
 def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, List[str]],
-                    proteome_ids_to_add: List[str], schema_directory: str, output_directory: str,
-                    cpu: int, bsr: float, translation_table: int, clustering_sim: float, 
-                    clustering_cov: float, size_ratio: float, run_mode: str) -> None:
+                    schema_directory: str, output_directory: str, cpu: int, bsr: float, 
+                    translation_table: int, clustering_sim: float, 
+                    clustering_cov: float, size_ratio: float, run_mode: str,
+                    proteome_ids_to_add: List[str]) -> None:
     """
     Match proteomes by creating BLAST database files, translating sequences, and running BLAST.
 

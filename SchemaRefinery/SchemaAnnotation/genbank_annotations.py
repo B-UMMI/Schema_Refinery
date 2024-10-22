@@ -72,7 +72,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                         clustering_sim: float, clustering_cov: float,
                         size_ratio: float, run_mode: str,
                         extra_genbank_table_columns: List[str],
-                        genbank_ids: List[str]) -> str:
+                        genbank_ids_to_add: List[str]) -> str:
     """
     Process GenBank files to extract annotations and perform BLAST searches.
 
