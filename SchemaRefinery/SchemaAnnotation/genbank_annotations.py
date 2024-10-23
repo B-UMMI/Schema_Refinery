@@ -348,7 +348,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     ff.create_directory(best_annotations_per_genbank_file)
     for file, loci_results in best_bsr_values_per_genbank_file.items():
         annotations_file_genbank: str = os.path.join(best_annotations_per_genbank_file, f"{file}.tsv")
-        if file in genbank_ids:
+        if file in genbank_ids_to_add:
             merge_files.append(annotations_file_genbank)
         with open(annotations_file_genbank, 'w') as at:
             at.write(header)
