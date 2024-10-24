@@ -326,36 +326,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                             'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
                             processed_drop)
 
-    print("\nFiltering problematic possible new loci based on NIPHS and NIPHEMS presence and"
-        " writing results to niphems_and_niphs_groups.tsv...")
-    # Identify problematic possible new loci based on NIPHs and NIPHEMs presence
-    dropped_problematic = cof.identify_problematic_new_loci(clusters_to_keep,
-                                                         all_alleles,
-                                                         cds_present,
-                                                         all_nucleotide_sequences,
-                                                         constants,
-                                                         results_output)
-    # For unclassified cds remove NIPHS and NIPHEMS possible new loci
-    # For Schema keep them because the user should make the choice to remove or keep
-    # them, especially if there are joined clusters.
-    if run_mode == 'unclassified_cds':
-        # Add Ids of the dropped cases due to during NIPH and NIPHEMs
-        dropped_loci_ids.update(dropped_problematic)
-        # Add Ids of the dropped cases due to frequency during NIPH and NIPHEMs
-        # classification
-        cof.add_cds_to_dropped_cds(dropped_loci_ids,
-                                dropped_alleles,
-                                clusters_to_keep,
-                                all_alleles,
-                                'Dropped_due_high_presence_of_NIPHs_and_NIPHEMs_in_genomes',
-                                processed_drop)
-
-        # Remove from all relevant dicts
-        ccf.remove_dropped_cds_from_analysis(dropped_alleles,
-                                            all_nucleotide_sequences,
-                                            all_translation_dict,
-                                            protein_hashes)
-
     print("\nExtracting results...")
     related_clusters, recommendations = cof.extract_results(processed_results,
                                                             count_results_by_class,

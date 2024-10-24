@@ -543,14 +543,51 @@ def fasta_lines(template: str, records_data: List[List[str]]) -> List[str]:
     """
     return [fasta_str_record(template, arg) for arg in records_data]
 
-def translate_schema_loci(schema_directory, output_directory, translation_table, run_mode):
-    
-    # BLAST alleles for each locus against file with all CDSs from origin genomes
+def translate_schema_loci(schema_directory: str, 
+                          output_directory: str, 
+                          translation_table: int, 
+                          run_mode: str) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, str]]:
+    """
+    Translates schema loci sequences and saves the translated sequences to the output directory.
+
+    This function translates the sequences of schema loci from the given directory and saves the
+    translated sequences to the specified output directory. It supports two run modes: 'alleles' and
+    'short', which determine the set of files to be used for the translation.
+
+    Parameters
+    ----------
+    schema_directory : str
+        Path to the directory containing the schema loci FASTA files.
+    output_directory : str
+        Path to the directory where the translated sequences will be saved.
+    translation_table : int
+        Translation table to be used for translating the sequences.
+    run_mode : str
+        Mode of operation, either 'alleles' or 'short', to determine the set of files to use.
+
+    Returns
+    -------
+    Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, str]]
+        A tuple containing:
+        - translation_dict: A dictionary where keys are sequence IDs and values are translated sequences.
+        - reps_ids: A dictionary where keys are loci names and values are lists of allele IDs.
+        - translations_paths: A dictionary where keys are loci names and values are paths to the translated sequence files.
+
+    Notes
+    -----
+    - The function first creates dictionaries of loci names and their corresponding file paths for both 'alleles' and 'short' modes.
+    - It then selects the appropriate set of files based on the run mode.
+    - It creates a directory for the translated sequences if it does not exist.
+    - It iterates over the selected files, translates the sequences, and saves the translated sequences to the output directory.
+    - The function returns dictionaries containing the translated sequences, allele IDs, and paths to the translated sequence files.
+    """
+    # Create dictionaries of loci names and their corresponding file paths
     fasta_files_dict: Dict[str, str] = {
         loci.split('.')[0]: os.path.join(schema_directory, loci)
         for loci in os.listdir(schema_directory)
         if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
     }
+    
     # Short folder
     short_folder: str = os.path.join(schema_directory, 'short')
     fasta_files_short_dict: Dict[str, str] = {
@@ -562,33 +599,85 @@ def translate_schema_loci(schema_directory, output_directory, translation_table,
     # Choose what files to use for the BLAST search
     files_to_run: Dict[str, str] = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
     print("\nTranslating sequences...")
+    
     # Create directory for translated sequences
     reps_translations_folder: str = os.path.join(output_directory, 'reps_translations')
     ff.create_directory(reps_translations_folder)
 
+    # Initialize dictionaries to store translations, allele IDs, and translation paths
     translation_dict: Dict[str, str] = {}
     reps_ids: Dict[str, List[str]] = {}
     translations_paths: Dict[str, str] = {}
+    
+    # Iterate over the selected files and translate the sequences
     for loci, loci_path in files_to_run.items():
         # Get the fasta sequences
         fasta_dict: Dict[str, str] = fetch_fasta_dict(loci_path, False)
         print(f"\rTranslating schema reps: {loci}", end='', flush=True)
+        
         # Add allele IDs to the reps_ids dictionary
-        reps_ids.setdefault(loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+        reps_ids.setdefault(loci, []).extend(fasta_dict.keys())
+        
         # Translate sequences and update translation dictionary
         trans_path_file: str = os.path.join(reps_translations_folder, f"{loci}.fasta")
+        
         # Save translation paths
         translations_paths[loci] = trans_path_file
-        trans_dict: Dict[str, str]
+        
         # Translate sequences and save to file
+        trans_dict: Dict[str, str]
         trans_dict, _, _ = translate_seq_deduplicate(fasta_dict,
-                                                        trans_path_file,
-                                                        None,
-                                                        0,
-                                                        False,
-                                                        translation_table,
-                                                        False)
+                                                     trans_path_file,
+                                                     None,
+                                                     0,
+                                                     False,
+                                                     translation_table,
+                                                     False)
         # Update the translation dictionary
         translation_dict.update(trans_dict)
         
     return translation_dict, reps_ids, translations_paths
+
+
+def fetch_loci_to_dict(schema_directory: str) -> Dict[str, Dict[str, str]]:
+    """
+    Fetches schema loci from a directory and returns them as a dictionary.
+
+    This function scans a given directory for FASTA files, reads their contents, and returns
+    a dictionary where the keys are the loci names (without the file extension) and the values
+    are dictionaries of FASTA sequences.
+
+    Parameters
+    ----------
+    schema_directory : str
+        Path to the directory containing the schema loci FASTA files.
+
+    Returns
+    -------
+    Dict[str, Dict[str, str]]
+        A dictionary where the keys are loci names and the values are dictionaries of FASTA sequences.
+
+    Notes
+    -----
+    - The function first creates a dictionary of loci names and their corresponding file paths.
+    - It then reads the FASTA sequences from each file and stores them in a nested dictionary.
+    - The nested dictionary is returned, with loci names as keys and FASTA sequence dictionaries as values.
+    """
+    # Create a dictionary of loci names and their corresponding file paths
+    fasta_files_dict: Dict[str, str] = {
+        loci.split('.')[0]: os.path.join(schema_directory, loci)
+        for loci in os.listdir(schema_directory)
+        if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
+    }
+
+    # Initialize a dictionary to store FASTA sequences for each locus
+    fastas_dict: Dict[str, Dict[str, str]] = {}
+    
+    # Iterate over the loci and their file paths
+    for loci, loci_path in fasta_files_dict.items():
+        # Get the FASTA sequences from the file
+        fasta_dict: Dict[str, str] = fetch_fasta_dict(loci_path, False)
+        # Store the FASTA sequences in the dictionary
+        fastas_dict.setdefault(loci, fasta_dict)
+    
+    return fastas_dict
