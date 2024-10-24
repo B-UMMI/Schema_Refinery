@@ -1969,7 +1969,8 @@ def add_cds_to_dropped_cds(drop_possible_loci: List[int], dropped_cds: Dict[int,
         else:
             for cds_id in clusters[drop_id]:
                 dropped_cds[cds_id] = reason
-                
+
+#Unused
 def identify_problematic_new_loci(clusters_to_keep: Dict[str, Dict[int, List[int]]], all_alleles: Dict[int, List[int]], 
                                   cds_present: str, all_nucleotide_sequences: Dict[int, str], constants: List[Any], 
                                   results_output: str) -> Set[int]:
