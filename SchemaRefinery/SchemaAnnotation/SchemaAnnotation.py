@@ -73,7 +73,8 @@ def main(args: Namespace) -> None:
                                                          args.clustering_sim,
                                                          args.clustering_cov,
                                                          args.size_ratio,
-                                                         args.run_mode)
+                                                         args.run_mode,
+                                                         args.proteome_ids_to_add)
             results_files.extend(annotations)
 
     # Check if 'genbank' is in the annotation options
@@ -91,7 +92,7 @@ def main(args: Namespace) -> None:
                                                    args.size_ratio,
                                                    args.run_mode,
                                                    args.extra_genbank_table_columns,
-                                                   args.genbank_ids)
+                                                   args.genbank_ids_to_add)
         results_files.append(genbank_file)
 
     matched_schemas: Optional[str] = None
