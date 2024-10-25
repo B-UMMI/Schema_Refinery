@@ -96,7 +96,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     """
     
     # Create output directory for genbank annotations
-    output_directory: str = os.path.join(output_directory, 'genbank_annotations')
+    output_directory = os.path.join(output_directory, 'genbank_annotations')
     ff.create_directory(output_directory)
 
     print("\nLoading GenBank files...")
