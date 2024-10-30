@@ -218,4 +218,4 @@ def identify_paralogous_loci(schema_directory, output_directory, cpu, bsr,
     paralagous_loci_report_mode = os.path.join(output_directory, 'paralagous_loci_report_mode.tsv')
     with open(paralagous_loci_report_mode, 'a') as report_file:
         for cluster in paralagous_list_mode_check:
-            report_file.write(f"{','.join(cluster)}\n")
+            report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")

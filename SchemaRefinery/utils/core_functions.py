@@ -1128,13 +1128,13 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     # Write the recommendations to the output file
     recommendations_file: str = os.path.join(results_output, "recommendations.tsv")
     with open(recommendations_file, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Cluster\tRecommendation\tID\n")
+        recommendations_report_file.write("Recommendation\tID\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
                 category = category.split('_')[0] if 'Choice' in category else category
                 # Convert all to string
                 ids = itf.convert_set_elements_to_strings(ids)
-                recommendations_report_file.write(f"{key}\t{category}\t{','.join(ids)}\n")
+                recommendations_report_file.write(f"{category}\t{','.join(ids)}\n")
             recommendations_report_file.write("#\n")
             
     # Add the reverse matches to the related clusters
