@@ -35,6 +35,7 @@ def string_kmerizer(input_string: str, k_value: int, offset: int = 1, position: 
 
     return kmers
 
+
 def determine_minimizers(input_string: str, adjacent_kmers: int, k_value: int, offset: int = 1,
                          position: bool = False, guarantee_tip: bool = False) -> list:
     """
@@ -129,6 +130,7 @@ def determine_minimizers(input_string: str, adjacent_kmers: int, k_value: int, o
             minimizers.append(kmers[-1])
         
     return minimizers
+
 
 def kmer_coverage(position: list, window_size: int) -> int:
     """

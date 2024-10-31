@@ -102,6 +102,7 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
                     # Convert alignment data to a tab-separated string and write to the file
                     report_file.write('\t'.join(map(str, alignment_data.values())) + '\n')
 
+
 def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                          reps_kmers_sim: Dict[str, Dict[str, Tuple[float, float]]], 
                          bsr_values: Dict[str, Dict[str, float]],
@@ -441,119 +442,6 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
 
             clean_up_results(representative_blast_results, query, subject)
 
-def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
-                                         constants: Tuple[Any, ...]) -> Tuple[str, ...]:
-    """
-    Separates BLAST results into predefined classes based on specific criteria.
-
-    This function iterates through BLAST results and classifies each result into a specific class
-    based on criteria such as global alignment percentage, bit score ratio (bsr), and frequency ratios
-    between query and subject CDS in genomes. The classification is done by updating the results
-    dictionary with a new key-value pair indicating the class of each BLAST result.
-
-    Parameters
-    ----------
-    representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
-        A nested dictionary where the first level keys are query sequence IDs, the second level keys
-        are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
-        result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
-        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
-    constants : Tuple[Any, ...]
-        A collection of constants used in the classification criteria. Specifically, `constants[1]`
-        is used as a threshold for the percentage identity (pident) in one of the classification conditions.
-
-    Returns
-    -------
-    Tuple[str, ...]
-        A tuple of class identifiers indicating the order of priority for the classes.
-
-    Notes
-    -----
-    - The function modifies `representative_blast_results` in place by adding a 'class' key to each
-      BLASTN result dictionary.
-    - The classification logic is based on a combination of alignment quality metrics and frequency
-      ratios, with specific thresholds and conditions determining the class assignment.
-    - The function assumes that `constants` provides necessary thresholds for classification and
-      that its elements are accessed by index.
-    """
-    
-    def add_class_to_dict(class_name: str) -> None:
-        """
-        Adds a class identifier to a BLAST result within the representative_blast_results dictionary.
-
-        This helper function is used to update the BLASTN result dictionaries with a 'class' key,
-        assigning the specified class identifier based on the classification logic in the outer function.
-
-        Parameters
-        ----------
-        class_name : str
-            The class identifier to be added to the BLASTN result. This should be one of the values
-            from the classes_outcome tuple defined in the outer function.
-
-        Notes
-        -----
-        - This function directly modifies the `representative_blast_results` dictionary from the outer
-          scope, specifically adding or updating the 'class' key for a BLASTN result.
-        - It is designed to be used only within the `separate_blastn_results_into_classes` function.
-        """
-        representative_blast_results[query][id_subject][id_].update({'class': class_name})
-
-    # Define classes based on priority
-    classes_outcome: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
-    pident: float = constants[1]
-    bsr: float = constants[7]
-    size_ratio: float = 1 - constants[9]
-
-    # Loop through the representative BLAST results
-    for query, rep_blast_result in representative_blast_results.items():
-        for id_subject, matches in rep_blast_result.items():
-            for id_, blastn_entry in matches.items():
-                # Calculate the frequency ratio
-                query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
-                subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
-                
-                # If one of the frequencies is 0, set the ratio to 0.1 if the other frequency is 10 times greater
-                if query_freq == 0 or subject_freq == 0:
-                    freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
-                else:
-                    freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
-                
-                # Classify based on global_palign_all_min and bsr
-                global_palign_all_min: float = blastn_entry['global_palign_all_min']
-                bsr_value: float = blastn_entry['bsr']
-                pident_value: float = blastn_entry['pident']
-                global_palign_pident_max: float = blastn_entry['global_palign_pident_max']
-                
-                if global_palign_all_min >= size_ratio:
-                    if bsr_value >= bsr:
-                        # Add to class '1a' if bsr is greater than or equal to bsr value
-                        add_class_to_dict('1a')
-                    elif freq_ratio <= 0.1:
-                        # Add to class '1b' if frequency ratio is less than or equal to 0.1
-                        add_class_to_dict('1b')
-                    else:
-                        # Add to class '1c' if none of the above conditions are met
-                        add_class_to_dict('1c')
-                elif 0.4 <= global_palign_all_min < size_ratio:
-                    if pident_value >= pident:
-                        if global_palign_pident_max >= size_ratio:
-                            # Add to class '2a' or '2b' based on frequency ratio
-                            add_class_to_dict('2a' if freq_ratio <= 0.1 else '2b')
-                        else:
-                            # Add to class '3a' or '3b' based on frequency ratio
-                            add_class_to_dict('3a' if freq_ratio <= 0.1 else '3b')
-                    else:
-                        if global_palign_pident_max >= size_ratio:
-                            # Add to class '4a' or '4b' based on frequency ratio
-                            add_class_to_dict('4a' if freq_ratio <= 0.1 else '4b')
-                        else:
-                            # Add to class '4c' if none of the above conditions are met
-                            add_class_to_dict('4c')
-                else:
-                    # Add to class '5' for everything that is unrelated
-                    add_class_to_dict('5')
-
-    return classes_outcome
 
 def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                                          constants: Tuple[Any, ...]) -> Tuple[str, ...]:
@@ -668,6 +556,122 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
                     add_class_to_dict('5')
 
     return classes_outcome
+
+
+def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+                                         constants: Tuple[Any, ...]) -> Tuple[str, ...]:
+    """
+    Separates BLAST results into predefined classes based on specific criteria.
+
+    This function iterates through BLAST results and classifies each result into a specific class
+    based on criteria such as global alignment percentage, bit score ratio (bsr), and frequency ratios
+    between query and subject CDS in genomes. The classification is done by updating the results
+    dictionary with a new key-value pair indicating the class of each BLAST result.
+
+    Parameters
+    ----------
+    representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
+        A nested dictionary where the first level keys are query sequence IDs, the second level keys
+        are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
+        result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
+        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
+    constants : Tuple[Any, ...]
+        A collection of constants used in the classification criteria. Specifically, `constants[1]`
+        is used as a threshold for the percentage identity (pident) in one of the classification conditions.
+
+    Returns
+    -------
+    Tuple[str, ...]
+        A tuple of class identifiers indicating the order of priority for the classes.
+
+    Notes
+    -----
+    - The function modifies `representative_blast_results` in place by adding a 'class' key to each
+      BLASTN result dictionary.
+    - The classification logic is based on a combination of alignment quality metrics and frequency
+      ratios, with specific thresholds and conditions determining the class assignment.
+    - The function assumes that `constants` provides necessary thresholds for classification and
+      that its elements are accessed by index.
+    """
+    
+    def add_class_to_dict(class_name: str) -> None:
+        """
+        Adds a class identifier to a BLAST result within the representative_blast_results dictionary.
+
+        This helper function is used to update the BLASTN result dictionaries with a 'class' key,
+        assigning the specified class identifier based on the classification logic in the outer function.
+
+        Parameters
+        ----------
+        class_name : str
+            The class identifier to be added to the BLASTN result. This should be one of the values
+            from the classes_outcome tuple defined in the outer function.
+
+        Notes
+        -----
+        - This function directly modifies the `representative_blast_results` dictionary from the outer
+          scope, specifically adding or updating the 'class' key for a BLASTN result.
+        - It is designed to be used only within the `separate_blastn_results_into_classes` function.
+        """
+        representative_blast_results[query][id_subject][id_].update({'class': class_name})
+
+    # Define classes based on priority
+    classes_outcome: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
+    pident: float = constants[1]
+    bsr: float = constants[7]
+    size_ratio: float = 1 - constants[9]
+
+    # Loop through the representative BLAST results
+    for query, rep_blast_result in representative_blast_results.items():
+        for id_subject, matches in rep_blast_result.items():
+            for id_, blastn_entry in matches.items():
+                # Calculate the frequency ratio
+                query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
+                subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
+                
+                # If one of the frequencies is 0, set the ratio to 0.1 if the other frequency is 10 times greater
+                if query_freq == 0 or subject_freq == 0:
+                    freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
+                else:
+                    freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
+                
+                # Classify based on global_palign_all_min and bsr
+                global_palign_all_min: float = blastn_entry['global_palign_all_min']
+                bsr_value: float = blastn_entry['bsr']
+                pident_value: float = blastn_entry['pident']
+                global_palign_pident_max: float = blastn_entry['global_palign_pident_max']
+                
+                if global_palign_all_min >= size_ratio:
+                    if bsr_value >= bsr:
+                        # Add to class '1a' if bsr is greater than or equal to bsr value
+                        add_class_to_dict('1a')
+                    elif freq_ratio <= 0.1:
+                        # Add to class '1b' if frequency ratio is less than or equal to 0.1
+                        add_class_to_dict('1b')
+                    else:
+                        # Add to class '1c' if none of the above conditions are met
+                        add_class_to_dict('1c')
+                elif 0.4 <= global_palign_all_min < size_ratio:
+                    if pident_value >= pident:
+                        if global_palign_pident_max >= size_ratio:
+                            # Add to class '2a' or '2b' based on frequency ratio
+                            add_class_to_dict('2a' if freq_ratio <= 0.1 else '2b')
+                        else:
+                            # Add to class '3a' or '3b' based on frequency ratio
+                            add_class_to_dict('3a' if freq_ratio <= 0.1 else '3b')
+                    else:
+                        if global_palign_pident_max >= size_ratio:
+                            # Add to class '4a' or '4b' based on frequency ratio
+                            add_class_to_dict('4a' if freq_ratio <= 0.1 else '4b')
+                        else:
+                            # Add to class '4c' if none of the above conditions are met
+                            add_class_to_dict('4c')
+                else:
+                    # Add to class '5' for everything that is unrelated
+                    add_class_to_dict('5')
+
+    return classes_outcome
+
 
 def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Any]]], 
                     classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
@@ -830,6 +834,7 @@ def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, 
                                                     strings)
 
     return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark, all_relationships
+
 
 def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_by_class: Dict[str, Dict[str, int]], 
                     frequency_in_genomes: Dict[str, int], clusters_to_keep: Dict[str, List[str]], 
@@ -1077,6 +1082,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
     
     return related_clusters, recommendations
 
+
 def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]]], count_results_by_class: Dict[str, Dict[str, Tuple[int, int]]], 
                                 group_reps_ids: Dict[str, List[str]], group_alleles_ids: Dict[str, List[str]], 
                                 frequency_in_genomes: Dict[str, int], recommendations: Dict[str, Dict[str, List[str]]], 
@@ -1222,6 +1228,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
             count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\n")
             count_results_by_cluster_file.write('\n#')
 
+
 def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to_keep: Dict[str, List[str]], 
                 sorted_blast_dict: Dict[str, Any]) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
     """
@@ -1293,6 +1300,7 @@ def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to
                                                         and i[1].split('_')[0] in entry_list]))
     
     return is_matched, is_matched_alleles
+
 
 def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
                output_dir: str, constants: List[Any], cpu: int,
@@ -1507,6 +1515,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     return (representative_blast_results, representative_blast_results_coords_all,
             representative_blast_results_coords_pident, bsr_values, self_score_dict)
 
+
 def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str], Dict[str, List[str]]]], 
                                     representative_blast_results: Dict[str, Dict[str, Dict[str, Any]]],
                                     classes_outcome: List[str], all_alleles: Dict[str, List[str]], 
@@ -1601,6 +1610,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
         report_file_path: str = os.path.join(blast_results_by_class_output, f"blastn_group_{class_}.tsv")
         alignment_dict_to_file(write_dict, report_file_path, 'w', add_group_column)
 
+
 def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: Dict[str, Dict[str, int]], 
                             drop_mark: Set[int]) -> Tuple[Dict[str, List[Union[int, List[int]]]], Set[int]]:
     """
@@ -1685,6 +1695,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     
     return clusters_to_keep, drop_possible_loci
 
+
 def count_number_of_reps_and_alleles(clusters_to_keep: Dict[str, Dict[int, List[int]]], clusters: Dict[int, List[int]], 
                                     drop_possible_loci: Set[int], group_reps_ids: Dict[int, Set[int]], 
                                     group_alleles_ids: Dict[int, Set[int]]) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
@@ -1745,6 +1756,7 @@ def count_number_of_reps_and_alleles(clusters_to_keep: Dict[str, Dict[int, List[
             group_alleles_ids.setdefault(id_, set()).update(clusters[id_])
 
     return group_reps_ids, group_alleles_ids
+
 
 def create_graphs(file_path: str, output_path: str, filename: str, other_plots: Optional[List[Dict[str, Any]]] = None) -> None:
     """
@@ -1812,6 +1824,7 @@ def create_graphs(file_path: str, output_path: str, filename: str, other_plots: 
 
     # Save all the plots to an HTML file
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
+
 
 def print_classifications_results(clusters_to_keep: Dict[str, Any], drop_possible_loci: List[int], 
                                   to_blast_paths: Dict[str, str], clusters: Dict[str, Any]) -> None:
@@ -1905,6 +1918,7 @@ def print_classifications_results(clusters_to_keep: Dict[str, Any], drop_possibl
     if retained_not_matched_by_blastn:
         clusters_to_keep['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
 
+
 def add_cds_to_dropped_cds(drop_possible_loci: List[int], dropped_cds: Dict[int, str], clusters_to_keep: Dict[str, Any], 
                             clusters: Dict[int, List[int]], reason: str, processed_drop: List[int]) -> None:
     """
@@ -1969,6 +1983,7 @@ def add_cds_to_dropped_cds(drop_possible_loci: List[int], dropped_cds: Dict[int,
         else:
             for cds_id in clusters[drop_id]:
                 dropped_cds[cds_id] = reason
+
 
 #Unused
 def identify_problematic_new_loci(clusters_to_keep: Dict[str, Dict[int, List[int]]], all_alleles: Dict[int, List[int]], 
@@ -2077,6 +2092,7 @@ def identify_problematic_new_loci(clusters_to_keep: Dict[str, Dict[int, List[int
             niphems_and_niphs.write(f"{group}\t{proportion}\t{outcome}\n")
     
     return dropped_problematic
+
 
 def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], dropped_cds: Dict[str, str], 
                                             results_output: str) -> None:

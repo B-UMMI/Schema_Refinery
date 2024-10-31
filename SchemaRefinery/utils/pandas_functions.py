@@ -19,6 +19,7 @@ def dict_to_df(dictionary: Dict[str, Any]) -> pd.DataFrame:
     """
     return pd.DataFrame.from_dict(dictionary)
 
+
 def merge_files_into_same_file_by_key(files: List[str], key_to_merge, output_file) -> pd.DataFrame:
     dfs: List[pd.DataFrame] = []
     for file in files:

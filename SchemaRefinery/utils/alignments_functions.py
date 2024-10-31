@@ -91,6 +91,7 @@ def join_intervals(alignments: List[List[Any]]) -> Tuple[List[str], List[Dict[st
     
     return final_start_stop_list, start_stop_list_for_processing
 
+
 def filter_out_equal_alignments(original: List[Dict[str, Any]], inverted: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Filters out alignments from the inverted list that are equal to any alignment in the original list.
@@ -122,6 +123,7 @@ def filter_out_equal_alignments(original: List[Dict[str, Any]], inverted: List[D
             new_original.append(i)
 
     return new_original
+
 
 def process_alignments_for_graphs(alignments_dict: Dict[str, List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
     """
@@ -165,6 +167,7 @@ def process_alignments_for_graphs(alignments_dict: Dict[str, List[Dict[str, Any]
         keys_set.add(inverted_key)
     
     return processed_alignments_dict
+
 
 def get_alignments_dict(blast_results_file: str) -> Dict[str, List[Dict[str, Any]]]:
     """
@@ -222,6 +225,7 @@ def get_alignments_dict(blast_results_file: str) -> Dict[str, List[Dict[str, Any
                 alignments_dict[key].append(value)
 
     return alignments_dict
+
 
 def process_blast_results(blast_results_file: str, constants_threshold: List[float]) -> Tuple[str, Dict[str, List[Dict[str, Any]]]]:
     """
@@ -314,6 +318,7 @@ def process_blast_results(blast_results_file: str, constants_threshold: List[flo
                     del filtered_alignments_dict[key]
         
     return '\n'.join(alignment_strings), filtered_alignments_dict
+
 
 def get_alignments_dict_from_blast_results(
     blast_results_file: str,
@@ -473,6 +478,7 @@ def get_alignments_dict_from_blast_results(
             
     return alignments_dict, self_scores, alignment_coords_all, alignment_coords_pident
 
+
 def remove_inverse_alignments(
     alignments_dict: Dict[str, Dict[str, Any]], 
     all_representatives_alignments_dict: Dict[str, Dict[str, Any]]
@@ -507,6 +513,7 @@ def remove_inverse_alignments(
     alignments_pair_list: List[List[str]] = [key.split(";") for key in filtered_alignments_dict.keys()]
 
     return alignments_pair_list
+
 
 def merge_intervals(intervals: List[List[int]]) -> List[List[int]]:
     """

@@ -33,6 +33,7 @@ def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) 
     diff = string_chars - alphabet_chars
     return len(diff) == 0
 
+
 def check_str_multiple(input_string: str, number: int) -> bool:
     """
     Verifies if the length of the input string is a multiple of the specified number.
@@ -51,6 +52,7 @@ def check_str_multiple(input_string: str, number: int) -> bool:
     """
     return (len(input_string) % number) == 0
 
+
 def reverse_str(string: str) -> str:
     """
     Reverse the character order in the input string.
@@ -66,6 +68,7 @@ def reverse_str(string: str) -> str:
         The reverse of the input string.
     """
     return string[::-1]
+
 
 def reverse_complement(dna_sequence: str) -> str:
     """
@@ -87,6 +90,7 @@ def reverse_complement(dna_sequence: str) -> str:
     complement_strand = ''.join(complement_bases)
     return reverse_str(complement_strand)
 
+
 def translate_sequence(dna_str: str, table_id: int, cds: bool = True) -> str:
     """
     Translate a DNA sequence into a protein sequence using the BioPython package.
@@ -107,6 +111,7 @@ def translate_sequence(dna_str: str, table_id: int, cds: bool = True) -> str:
     """
     myseq_obj = Seq(dna_str)
     return Seq.translate(myseq_obj, table=table_id, cds=cds)
+
 
 def determine_duplicated_seqs(sequences: Dict[str, str]) -> Dict[str, List[str]]:
     """
@@ -130,6 +135,7 @@ def determine_duplicated_seqs(sequences: Dict[str, str]) -> Dict[str, List[str]]
             equal_seqs[seq] = [seqid]
     return equal_seqs
 
+
 def determine_longest(seqids: List[str], sequences: Dict[str, str]) -> str:
     """
     Find the longest sequence in a set of sequences.
@@ -149,6 +155,7 @@ def determine_longest(seqids: List[str], sequences: Dict[str, str]) -> str:
     seqids_tups = [(seqid, sequences[seqid]) for seqid in seqids]
     sorted_tups = sorted(seqids_tups, key=lambda x: len(x[1]), reverse=True)
     return sorted_tups[0][0]
+
 
 def translate_dna_aux(dna_sequence: str, method: str, table_id: int, cds: bool = True) -> Union[Tuple[str, str], str]:
     """
@@ -194,6 +201,7 @@ def translate_dna_aux(dna_sequence: str, method: str, table_id: int, cds: bool =
     except Exception as e:
         return str(e)
 
+
 def translate_dna(dna_sequence: str, table_id: int, min_len: int, cds: bool = True) -> Union[str, Tuple[str, str]]:
     """
     Translates DNA sequence to protein sequence.
@@ -236,6 +244,7 @@ def translate_dna(dna_sequence: str, table_id: int, min_len: int, cds: bool = Tr
 
     return ','.join(exceptions)
 
+
 def read_fasta_file_iterator(file: str) -> Iterator[SeqRecord]:
     """
     Reads fasta files and puts it into a dict.
@@ -251,6 +260,7 @@ def read_fasta_file_iterator(file: str) -> Iterator[SeqRecord]:
         Returns iterator to read fasta file.
     """
     return SeqIO.parse(file, "fasta")
+
 
 def read_fasta_file_dict(file: str) -> Dict[str, Iterator[SeqRecord]]:
     """
@@ -268,6 +278,7 @@ def read_fasta_file_dict(file: str) -> Dict[str, Iterator[SeqRecord]]:
     """
     return SeqIO.to_dict(SeqIO.parse(file, "fasta"))
 
+
 def seq_to_hash(seq: str) -> str:
     """
     Converts a sequence into hash.
@@ -283,6 +294,7 @@ def seq_to_hash(seq: str) -> str:
         Returns a hash string.
     """
     return hashlib.sha256(seq.encode('utf-8')).hexdigest()
+
 
 def hash_sequences(file_path: str) -> Set[str]:
     """
@@ -303,6 +315,7 @@ def hash_sequences(file_path: str) -> Set[str]:
         hash_set.add(seq_to_hash(str(rec.seq)))
     return hash_set
 
+
 def hash_sequence(input_string: str, hash_type: str = 'sha256') -> str:
     """
     Compute hash of an input string.
@@ -321,6 +334,7 @@ def hash_sequence(input_string: str, hash_type: str = 'sha256') -> str:
     """
     hashing_function = getattr(hashlib, hash_type)
     return hashing_function(input_string.encode()).hexdigest()
+
 
 def sequence_lengths(fasta_file: str, hashed: bool = False) -> Dict[str, int]:
     """
@@ -344,6 +358,7 @@ def sequence_lengths(fasta_file: str, hashed: bool = False) -> Dict[str, int]:
     else:
         return {hash_sequence(str(rec.seq)): len(rec.seq) for rec in records}
 
+
 def fasta_stats(fasta_file: str) -> Tuple[str, int, int, int, float]:
     """
     Determine the number of sequences in a FASTA file and length stats.
@@ -365,6 +380,7 @@ def fasta_stats(fasta_file: str) -> Tuple[str, int, int, int, float]:
     total_seqs = len(seq_lengths)
     return fasta_file, total_seqs, min_length, max_length, mean_length
 
+
 def import_sequences(input_file: str) -> Dict[str, str]:
     """
     Import sequences from a FASTA file.
@@ -381,6 +397,7 @@ def import_sequences(input_file: str) -> Dict[str, str]:
     """
     records = sequence_generator(input_file)
     return {rec.id: str(rec.seq.upper()) for rec in records}
+
 
 def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, untras_path: Optional[str], min_len: int, count_seq: bool, translation_table: int, deduplicate: bool = True) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, str]]:
     """
@@ -443,6 +460,7 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, untr
                 untras_file.write(f">{id_s}\n{exceptions_str}\n")
     return translation_dict, protein_hashes, untras_seq
 
+
 def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
     """
     Fetches FASTAs from a file and adds them to a dict.
@@ -468,6 +486,7 @@ def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
         fasta_dict[rec.id] = str(rec.seq)
     return fasta_dict
 
+
 def deduplicate_fasta_dict(fasta_dict: Dict[str, str]) -> Dict[str, str]:
     """
     Deduplicates a dictionary of FASTA sequences. The deduplication is based on the SHA256 hash of the sequences.
@@ -491,6 +510,7 @@ def deduplicate_fasta_dict(fasta_dict: Dict[str, str]) -> Dict[str, str]:
             del fasta_dict[key]
     return fasta_dict
 
+
 def sequence_generator(input_file: str) -> Iterator[SeqRecord]:
     """
     Create a SeqRecord iterator.
@@ -506,6 +526,7 @@ def sequence_generator(input_file: str) -> Iterator[SeqRecord]:
         SeqRecord iterator.
     """
     return SeqIO.parse(input_file, 'fasta')
+
 
 def fasta_str_record(record_template: str, record_data: List[str]) -> str:
     """
@@ -525,6 +546,7 @@ def fasta_str_record(record_template: str, record_data: List[str]) -> str:
     """
     return record_template.format(*record_data)
 
+
 def fasta_lines(template: str, records_data: List[List[str]]) -> List[str]:
     """
     Create a list with FASTA records.
@@ -542,6 +564,7 @@ def fasta_lines(template: str, records_data: List[List[str]]) -> List[str]:
         A list with strings representing FASTA records.
     """
     return [fasta_str_record(template, arg) for arg in records_data]
+
 
 def translate_schema_loci(schema_directory: str, 
                           output_directory: str, 

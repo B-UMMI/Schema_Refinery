@@ -30,6 +30,7 @@ def create_directory(dir: str) -> bool:
     else:
         return False
 
+
 def check_and_delete_file(file: str) -> None:
     """
     Deletes a file based on the input file path.
@@ -45,6 +46,7 @@ def check_and_delete_file(file: str) -> None:
     """
     if os.path.isfile(file):
         os.remove(file)
+
 
 def copy_file(source_file: str, destination_file: str) -> None:
     """
@@ -62,6 +64,7 @@ def copy_file(source_file: str, destination_file: str) -> None:
     None
     """
     shutil.copy(source_file, destination_file)
+
 
 def import_df_from_file(file_path: str, sep: str) -> pd.DataFrame:
     """
@@ -81,6 +84,7 @@ def import_df_from_file(file_path: str, sep: str) -> pd.DataFrame:
     """
     df: pd.DataFrame = pd.read_csv(file_path, sep=sep)
     return df
+
 
 def get_paths_in_directory(directory: str, type_: str) -> List[str]:
     """
@@ -123,6 +127,7 @@ def get_paths_in_directory(directory: str, type_: str) -> List[str]:
     file_paths: List[str] = [os.path.join(directory, item) for item in all_items if if_type(os.path.join(directory, item))]
     
     return file_paths
+
 
 def get_paths_dict(directory: str, type_: str) -> Dict[str, str]:
     """
@@ -169,6 +174,7 @@ def get_paths_dict(directory: str, type_: str) -> Dict[str, str]:
     
     return paths_dict
 
+
 def get_paths_in_directory_with_suffix(directory: str, suffix: str) -> List[str]:
     """
     Get all paths of files in the specified directory that end with a given suffix.
@@ -189,6 +195,7 @@ def get_paths_in_directory_with_suffix(directory: str, suffix: str) -> List[str]
     file_paths: List[str] = [os.path.join(directory, item) for item in all_items if os.path.isfile(os.path.join(directory, item)) and item.endswith(suffix)]
     
     return file_paths
+
 
 def write_dict_to_tsv(file_path: str, data: Dict[str, List[Any]]) -> None:
     """
@@ -211,6 +218,7 @@ def write_dict_to_tsv(file_path: str, data: Dict[str, List[Any]]) -> None:
             row_str: str = '\t'.join(map(str, row))
             f.write(row_str + '\n')
 
+
 def concat_files(source_file: str, destination_file: str) -> None:
     """
     Concatenates the source file to the destination file.
@@ -228,6 +236,7 @@ def concat_files(source_file: str, destination_file: str) -> None:
     """
     with open(destination_file, 'a') as outfile, open(source_file, 'r') as infile:
         shutil.copyfileobj(infile, outfile)
+
 
 def file_basename(file_path: str, file_extension: bool = True) -> str:
     """
@@ -250,6 +259,7 @@ def file_basename(file_path: str, file_extension: bool = True) -> str:
     else:
         return os.path.basename(file_path)
 
+
 def join_paths(parent_path: str, child_paths: List[str]) -> str:
     """
     Create a path by joining a parent directory and a list of child paths.
@@ -268,6 +278,7 @@ def join_paths(parent_path: str, child_paths: List[str]) -> str:
     """
     joined_paths: str = os.path.join(parent_path, *child_paths)
     return joined_paths
+
 
 def read_lines(input_file: str, strip: bool = True, num_lines: Union[int, None] = None) -> List[str]:
     """
@@ -298,6 +309,7 @@ def read_lines(input_file: str, strip: bool = True, num_lines: Union[int, None] 
 
     return lines
 
+
 def write_lines(lines: List[str], output_file: str, joiner: str = '\n', write_mode: str = 'w') -> None:
     """
     Write a list of strings to a file.
@@ -320,6 +332,7 @@ def write_lines(lines: List[str], output_file: str, joiner: str = '\n', write_mo
     """
     joined_lines: str = joiner.join(lines)
     write_to_file(joined_lines, output_file, write_mode, '\n')
+
 
 def write_to_file(text: str, output_file: str, write_mode: str, end_char: str) -> None:
     """
@@ -344,6 +357,7 @@ def write_to_file(text: str, output_file: str, write_mode: str, end_char: str) -
     with open(output_file, write_mode) as out:
         out.write(text + end_char)
 
+
 def read_tabular(input_file: str, delimiter: str = '\t') -> List[List[str]]:
     """
     Read a tabular (TSV) file.
@@ -365,6 +379,7 @@ def read_tabular(input_file: str, delimiter: str = '\t') -> List[List[str]]:
         lines: List[List[str]] = [line for line in reader]
 
     return lines
+
 
 def copy_folder(src_folder: str, dest_folder: str) -> None:
     """
@@ -391,6 +406,7 @@ def copy_folder(src_folder: str, dest_folder: str) -> None:
         os.makedirs(dest_folder)
     
     shutil.copytree(src_folder, dest_folder, dirs_exist_ok=True)
+
 
 def merge_folders(folder1: str, folder2: str, output_folder: str) -> None:
     """
