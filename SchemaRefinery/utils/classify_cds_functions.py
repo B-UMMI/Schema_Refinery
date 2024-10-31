@@ -1,4 +1,5 @@
 import os
+from typing import Dict, List
 
 try:
     from utils import (file_functions as ff,
@@ -13,29 +14,34 @@ except ModuleNotFoundError:
                                         iterable_functions as itf,
                                         kmers_functions as kf,)
 
-def write_dropped_cds_to_file(dropped_cds, results_output):
+def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) -> None:
     """
     Write dropped CDS to file.
 
     Parameters
     ----------
-    dropped_cds : dict
-        The dictionary containing the dropped CDSs.
+    dropped_cds : Dict[str, str]
+        The dictionary containing the dropped CDSs and their reasons.
     results_output : str
         The path where the output will be written.
 
     Returns
     -------
-    None, writes to file.
+    None
+        Writes to file.
     """
-    dropped_cds_output = os.path.join(results_output, 'dropped_cds.tsv')
+    dropped_cds_output: str = os.path.join(results_output, 'dropped_cds.tsv')
     with open(dropped_cds_output, 'w') as dropped_cds_file:
         dropped_cds_file.write('CDS_ID\tReason_for_dropping\n')
         for cds_id, reason in dropped_cds.items():
             dropped_cds_file.write(f"{cds_id}\t{reason}\n")
 
-def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dropped_cds,
-                                all_nucleotide_sequences, results_output):
+def update_ids_and_save_changes(clusters_to_keep: Dict[str, List[str]], 
+                                clusters: Dict[str, List[str]], 
+                                cds_original_ids: Dict[str, List[str]], 
+                                dropped_cds: Dict[str, str],
+                                all_nucleotide_sequences: Dict[str, str], 
+                                results_output: str) -> None:
     """
     Update the IDs based on clustering and joining operations and save the changes.
 
@@ -45,18 +51,23 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
 
     Parameters
     ----------
-    clusters_to_keep : dict
-        A dictionary where each key is a class and each value is a group of CDS to keep.
-    clusters : dict
+    clusters_to_keep : Dict[str, List[str]]
+        A dictionary where each key is a class and each value is a list of CDS to keep.
+    clusters : Dict[str, List[str]]
         A dictionary mapping representative IDs to their cluster members.
-    cds_original_ids : dict
+    cds_original_ids : Dict[str, List[str]]
         A dictionary mapping original IDs to their new IDs after processing.
-    dropped_cds : dict
+    dropped_cds : Dict[str, str]
         A dictionary mapping all of the dropped CDSs to the cause of drop.
-    all_nucleotide_sequences : dict
-        Dict that contains DNA sequences for each CDS.
+    all_nucleotide_sequences : Dict[str, str]
+        A dictionary that contains DNA sequences for each CDS.
     results_output : str
         The directory path where the ID changes file will be saved.
+
+    Returns
+    -------
+    None
+        The function writes the output files to the specified directory.
 
     Notes
     -----
@@ -72,7 +83,7 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
     Assuming the existence of appropriate dictionaries for `clusters_to_keep`, `clusters`, `cds_original_ids`, and a valid
     path for `results_output`, the function can be called as follows:
 
-    >>> update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, '/path/to/output')
+    >>> update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dropped_cds, all_nucleotide_sequences, '/path/to/output')
     
     This would process the IDs as described and save the changes to '/path/to/output/cds_id_changes.tsv'.
     """
@@ -80,7 +91,7 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
     # Iterate through each class and its CDS group
     for class_, cds_group in clusters_to_keep.items():
         for cds in cds_group:
-            main_rep = cds # The main representative ID for the CDS group
+            main_rep: str = cds  # The main representative ID for the CDS group
             
             # If the class is not '1a', treat the CDS as a single-element list
             if class_ != '1a':
@@ -89,12 +100,12 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
                 # For class '1a', get the CDS group from clusters_to_keep
                 cds = clusters_to_keep[class_][cds]
             
-            index = 1  # Initialize an index for creating new IDs
+            index: int = 1  # Initialize an index for creating new IDs
             
             # Iterate through each representative ID in the CDS group
             for rep_id in list(cds):
                 # Get all CDS IDs in the cluster for the representative ID
-                cds_ids = clusters[rep_id]
+                cds_ids: List[str] = clusters[rep_id]
                 # Delete clusters with old IDs
                 del clusters[rep_id]
                 # Create new rep ID
@@ -106,10 +117,10 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
                     if not clusters.get(rep_id):
                         clusters[rep_id] = []
                     # Create a new ID using the main representative ID and the index
-                    new_id = f"{main_rep}_{index}"
+                    new_id: str = f"{main_rep}_{index}"
                     # Update the original ID with the new ID in cds_original_ids
-                    cds_id_first = itf.identify_string_in_dict_get_key(cds_id, cds_original_ids)
-                    cds_id_second = itf.identify_string_in_dict_get_value(cds_id, cds_original_ids)[-1]
+                    cds_id_first: str = itf.identify_string_in_dict_get_key(cds_id, cds_original_ids)
+                    cds_id_second: str = itf.identify_string_in_dict_get_value(cds_id, cds_original_ids)[-1]
                     # Replace in FASTA dict
                     all_nucleotide_sequences[new_id] = all_nucleotide_sequences.pop(cds_id_second)
                     # Add new cluster ID
@@ -118,8 +129,8 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
                     index += 1  # Increment the index for the next ID
             
     # Prepare to write the ID changes to a file
-    tab = "\t"
-    id_changes_file = os.path.join(results_output, 'cds_id_changes.tsv')
+    tab: str = "\t"
+    id_changes_file: str = os.path.join(results_output, 'cds_id_changes.tsv')
     
     # Open the file and write the header and ID changes
     with open(id_changes_file, 'w') as id_changes:
@@ -128,94 +139,125 @@ def update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dr
             # Write each original ID and its changed IDs to the file
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
 
-def remove_dropped_cds_from_analysis(dropped_cds, all_nucleotide_sequences,
-                                     cds_translation_dict, protein_hashes):
+
+def remove_dropped_cds_from_analysis(dropped_cds: Dict[str, str], 
+                                     all_nucleotide_sequences: Dict[str, str],
+                                     cds_translation_dict: Dict[str, str], 
+                                     protein_hashes: Dict[str, List[str]]) -> None:
     """
     Removes dropped CDS from the analysis based on the provided parameters.
 
     Parameters
     ----------
-    dropped_cds : dict
+    dropped_cds : Dict[str, str]
         Dictionary containing dropped CDS with their reasons.
-    not_included_call_nucleotide_sequencesds : dict
+    all_nucleotide_sequences : Dict[str, str]
         Dictionary of allele IDs and their corresponding DNA sequences.
-    cds_translation_dict : dict
+    cds_translation_dict : Dict[str, str]
         Dictionary mapping CDS to their translations.
-    protein_hashes : dict
+    protein_hashes : Dict[str, List[str]]
         Dictionary mapping protein hashes to their associated CDS.
 
     Returns
     -------
     None
+        The function updates the dictionaries in place and does not return any value.
+
+    Notes
+    -----
+    The function iterates through the `dropped_cds` dictionary and removes the dropped CDS from the analysis.
+    It updates the `dropped_cds` dictionary with similar protein IDs, removes the CDS from the `all_nucleotide_sequences`,
+    `cds_translation_dict`, and `protein_hashes` dictionaries, and ensures that protein hashes with no associated CDS
+    are removed from the `protein_hashes` dictionary.
     """
     for dropped_id, reason in list(dropped_cds.items()):
         if cds_translation_dict.get(dropped_id):
-            for similiar_protein_id in itf.identify_string_in_dict_get_value(dropped_id, protein_hashes):
-                dropped_cds[similiar_protein_id] = reason
+            for similar_protein_id in itf.identify_string_in_dict_get_value(dropped_id, protein_hashes):
+                dropped_cds[similar_protein_id] = reason
 
     for dropped_id, reason in list(dropped_cds.items()):
-        #Remove from associated translation hashes dict.
-        translation_hash = itf.identify_string_in_dict_get_key(dropped_id, protein_hashes)
+        # Remove from associated translation hashes dict.
+        translation_hash: str = itf.identify_string_in_dict_get_key(dropped_id, protein_hashes)
         if translation_hash is not None:
             dropped_cds[dropped_id] = reason
             if all_nucleotide_sequences.get(dropped_id):
                 del all_nucleotide_sequences[dropped_id]
-            # If this CDSs is the representative in translation dict
+            # If this CDS is the representative in translation dict
             if cds_translation_dict.get(dropped_id):
                 del cds_translation_dict[dropped_id]
             protein_hashes[itf.identify_string_in_dict_get_key(dropped_id, protein_hashes)].remove(dropped_id)
-            # Remove all hash of the protein if it has no more CDSs associated with it.
+            # Remove all hash of the protein if it has no more CDS associated with it.
             if len(protein_hashes[translation_hash]) == 0:
                 del protein_hashes[translation_hash]
 
 
-def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, all_nucleotide_sequences, prot_len_dict,
-                            cds_translation_dict, protein_hashes, cds_presence_in_genomes,
-                            reps_kmers_sim):
+def replace_ids_in_clusters(clusters: Dict[str, List[str]], 
+                            frequency_cds: Dict[str, int], 
+                            dropped_cds: Dict[str, str], 
+                            all_nucleotide_sequences: Dict[str, str], 
+                            prot_len_dict: Dict[str, int],
+                            cds_translation_dict: Dict[str, str], 
+                            protein_hashes: Dict[str, List[str]], 
+                            cds_presence_in_genomes: Dict[str, List[str]],
+                            reps_kmers_sim: Dict[str, Dict[str, List[int]]]) -> Dict[str, List[str]]:
     """
     Replace the IDs of cluster alleles with new IDs in the format 'cluster_x' and update all relevant dictionaries.
 
     Parameters
     ----------
-    clusters : dict
+    clusters : Dict[str, List[str]]
         Dictionary of clusters with their members.
-    frequency_cds : dict
+    frequency_cds : Dict[str, int]
         Dictionary mapping CDS IDs to their frequencies.
-    dropped_cds : dict
+    dropped_cds : Dict[str, str]
         Dictionary of dropped CDS IDs.
-    all_nucleotide_sequences : dict
+    all_nucleotide_sequences : Dict[str, str]
         Dictionary of allele IDs and their DNA sequences.
-    prot_len_dict : dict
+    prot_len_dict : Dict[str, int]
         Dictionary mapping CDS IDs to their protein lengths.
-    cds_translation_dict : dict
+    cds_translation_dict : Dict[str, str]
         Dictionary mapping CDS IDs to their translation sequences.
-    protein_hashes : dict
+    protein_hashes : Dict[str, List[str]]
         Dictionary mapping protein hashes to lists of CDS IDs.
-    cds_presence_in_genomes : dict
+    cds_presence_in_genomes : Dict[str, List[str]]
         Dictionary mapping CDS IDs to their presence in genomes.
-    reps_kmers_sim : dict
+    reps_kmers_sim : Dict[str, Dict[str, List[int]]]
         Dictionary mapping representative cluster IDs to their k-mer similarities.
 
     Returns
     -------
-    cds_original_ids : dict
+    cds_original_ids : Dict[str, List[str]]
         Dictionary mapping original CDS IDs to their new IDs.
+
+    Notes
+    -----
+    The function iterates through the `clusters` dictionary, replacing the IDs of cluster alleles with new IDs in the format
+    'cluster_x'. It updates all relevant dictionaries (`frequency_cds`, `dropped_cds`, `all_nucleotide_sequences`, `prot_len_dict`,
+    `cds_translation_dict`, `protein_hashes`, `cds_presence_in_genomes`, and `reps_kmers_sim`) with the new IDs.
+
+    Examples
+    --------
+    Assuming the existence of appropriate dictionaries for `clusters`, `frequency_cds`, `dropped_cds`, `all_nucleotide_sequences`,
+    `prot_len_dict`, `cds_translation_dict`, `protein_hashes`, `cds_presence_in_genomes`, and `reps_kmers_sim`, the function can be called as follows:
+
+    >>> replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, all_nucleotide_sequences, prot_len_dict, cds_translation_dict, protein_hashes, cds_presence_in_genomes, reps_kmers_sim)
+    
+    This would process the IDs as described and update all relevant dictionaries.
     """
-    cds_original_ids = {}
-    # Replace the IDS of cluster alleles to x_1 and replace all of the alleles in
-    # the variables.
+    cds_original_ids: Dict[str, List[str]] = {}
+    # Replace the IDs of cluster alleles to x_1 and replace all of the alleles in the variables.
     for cluster, members in list(clusters.items()):
-        i = 1
-        new_members_ids = []
+        i: int = 1
+        new_members_ids: List[str] = []
         for member in list(members):
             # Get the new ID.
-            new_id = f"{cluster}_{i}"
+            new_id: str = f"{cluster}_{i}"
             # Add the new ID to the dict.
             cds_original_ids[member] = [new_id]
             # Replace the old ID with the new ID for frequency_cds.
             frequency_cds[new_id] = frequency_cds.pop(member)
             # Dropped cds
-            dropped_id = itf.identify_string_in_dict_get_key(member, dropped_cds)
+            dropped_id: str = itf.identify_string_in_dict_get_key(member, dropped_cds)
             if dropped_id is not None:
                 dropped_cds[new_id] = dropped_cds.pop(dropped_id)
             # Save the new members IDs.
@@ -223,18 +265,18 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, all_nucleotide
             # Replace the old ID with the new ID for the DNA sequences.
             all_nucleotide_sequences[new_id] = all_nucleotide_sequences.pop(member)
             # Replace in hashes dict
-            translation_hash = itf.identify_string_in_dict_get_key(member, protein_hashes)
+            translation_hash: str = itf.identify_string_in_dict_get_key(member, protein_hashes)
             # Replace in prot_len_dict
             if prot_len_dict.get(member):
                 prot_len_dict[new_id] = prot_len_dict.pop(member)
 
-            index = protein_hashes[translation_hash].index(member)
+            index: int = protein_hashes[translation_hash].index(member)
             # Replace the old ID with the new ID for the translation sequences.
             # Since only representatives are in the dict we first check if it is present
             if cds_translation_dict.get(member):
                 cds_translation_dict[new_id] = cds_translation_dict.pop(member)
-            else: # Add the sequences previousy deduplicated
-                rep_id = protein_hashes[translation_hash][0]
+            else: # Add the sequences previously deduplicated
+                rep_id: str = protein_hashes[translation_hash][0]
                 cds_translation_dict[new_id] = cds_translation_dict[rep_id]
 
             # Replace the value at the found index
@@ -245,15 +287,16 @@ def replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, all_nucleotide
         clusters[cluster] = new_members_ids
     # Change IDs in reps_kmers_sim
     for cluster_id, elements_id in list(reps_kmers_sim.items()):
-        cluster_rep_id = f"{cluster_id}_1"
+        cluster_rep_id: str = f"{cluster_id}_1"
         reps_kmers_sim.setdefault(cluster_rep_id, {})
         for element_id, kmers in elements_id.items():
             if cds_original_ids.get(element_id):
-                new_id = cds_original_ids[element_id][0]
+                new_id: str = cds_original_ids[element_id][0]
             reps_kmers_sim[cluster_rep_id].setdefault(new_id, kmers)
         del reps_kmers_sim[cluster_id]
 
     return cds_original_ids
+
             
 def write_temp_loci(clusters_to_keep, all_nucleotide_sequences, clusters, output_path):
     """
@@ -367,7 +410,6 @@ def write_temp_loci(clusters_to_keep, all_nucleotide_sequences, clusters, output
 
     return temp_fastas_paths
 
-import os
 
 def set_minimum_genomes_threshold(temp_folder, constants):
     """
