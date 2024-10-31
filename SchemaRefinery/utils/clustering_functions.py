@@ -100,6 +100,7 @@ def select_representatives(kmers: Union[List[Tuple[str, int]], Set[Tuple[str, in
             
     return selected_reps
 
+
 def minimizer_clustering(sorted_sequences: Dict[str, str], 
                          word_size: int, 
                          window_size: int, 
@@ -228,6 +229,7 @@ def minimizer_clustering(sorted_sequences: Dict[str, str],
 
     return clusters, reps_sequences, reps_groups, prot_len_dict
 
+
 def cluster_based_on_ids(processed_representatives_dict: Dict[str, str]) -> List[List[str]]:
     """
     Employs networkx to cluster loci based on their connection through ids. e.g x matches with y
@@ -254,6 +256,7 @@ def cluster_based_on_ids(processed_representatives_dict: Dict[str, str]) -> List
     connected: List[List[str]] = [list(component) for component in nx.connected_components(G)]
 
     return connected
+
 
 def cluster_by_ids(list_of_ids: List[List[str]]) -> List[List[str]]:
     """
@@ -289,6 +292,7 @@ def cluster_by_ids(list_of_ids: List[List[str]]) -> List[List[str]]:
     connected: List[List[str]] = [sorted(list(component), key=lambda node: node_order[node]) for component in connected_components]
 
     return connected
+
 
 def cluster_by_ids_bigger_sublists(list_of_ids: List[List[str]]) -> List[List[str]]:
     """
