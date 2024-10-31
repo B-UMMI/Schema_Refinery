@@ -6,6 +6,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (sequence_functions as sf)
 
 def create_schmea_structure(instructions_file, fastas_folder, skip_choices, output_directory):
+    # Get all fastas paths in the fastas folder
     fastas_files = {os.path.basename(fasta_file).split('.')[0]: os.path.join(fastas_folder, fasta_file)
                     for fasta_file in os.listdir(fastas_folder)}
     action_list = {}
@@ -61,3 +62,5 @@ def create_schmea_structure(instructions_file, fastas_folder, skip_choices, outp
                             print(f'File {id} added to {new_file_name} at {output_file}')
                         else:
                             print(f'File {id} not found in the fastas folder')
+            else:
+                print(f"The following IDS: {''.join(ids_list)} Have been removed due to drop action")
