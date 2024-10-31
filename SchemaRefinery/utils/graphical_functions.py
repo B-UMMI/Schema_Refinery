@@ -37,6 +37,7 @@ def render_line_chart(df: pd.DataFrame, output_path: str, columns: List[str], as
         html_path = os.path.join(output_path, f'line_chart_{column_id}.html')
         fig.write_html(html_path)
 
+
 def render_histogram(df: pd.DataFrame, output_path: str, columns: List[str], labels: List[str]) -> None:
     """
     Render histogram for each column name in input.
@@ -69,6 +70,7 @@ def render_histogram(df: pd.DataFrame, output_path: str, columns: List[str], lab
         html_path: str = os.path.join(output_path, f'histogram_{column_id}.html')
         fig.write_html(html_path)
 
+
 def create_graph_trace(
     function: str, 
     x: Optional[Union[pd.DataFrame, List[Any]]] = None, 
@@ -97,18 +99,20 @@ def create_graph_trace(
     go.Figure
         The Plotly figure object containing the plot.
     """
+    function_to_run : Union[go.Box, go.Scatter, go.Histogram, go.Violin]
     if function == 'scatter':
         return go.Scatter(x=x, y=y, name=plotname, mode=mode)
     elif function == 'boxplot':
-        function = go.Box
+        function_to_run = go.Box
     elif function == 'scatterplot':
-        function = go.Scatter
+        function_to_run = go.Scatter
     elif function == 'histogram':
-        function = go.Histogram
+        function_to_run = go.Histogram
     elif function == 'violin':
-        function = go.Violin
+        function_to_run = go.Violin
     
-    return function(x=x, y=y, name=plotname)
+    return function_to_run(x=x, y=y, name=plotname)
+
 
 def create_violin_plot(
     y: Optional[Union[List[Any], pd.Series]] = None, 
@@ -172,6 +176,7 @@ def create_violin_plot(
         spanmode=spanmode, scalegroup=scalegroup
     )
 
+
 def create_box_plot(
     y: Optional[Union[List[Any], pd.Series]] = None, 
     x: Optional[Union[str, int, List[Union[str, int]]]] = None, 
@@ -208,6 +213,7 @@ def create_box_plot(
         boxpoints=boxpoints, jitter=jitter
     )
 
+
 def create_histogram(
     x: Union[List[Any], pd.Series], 
     name: Optional[str] = None, 
@@ -239,6 +245,7 @@ def create_histogram(
     return go.Histogram(
         x=x, xbins=xbins, histnorm=histnorm, orientation=orientation
     )
+
 
 def generate_plot(
     traces: List[go.Figure], 
@@ -277,6 +284,7 @@ def generate_plot(
     
     return fig
 
+
 def write_fig_to_html(fig: go.Figure, output_path: str, filename: str) -> None:
     """
     Writes the fig plotly object to HTML file.
@@ -297,6 +305,7 @@ def write_fig_to_html(fig: go.Figure, output_path: str, filename: str) -> None:
     """
     html_path: str = os.path.join(output_path, f'{filename}.html')
     fig.write_html(html_path)
+
 
 def plotly_update_layout(
     fig: go.Figure, 
@@ -393,6 +402,7 @@ def plotly_update_layout(
         showlegend=showlegend
     )
 
+
 def create_subplots(
     traces: List[go.Figure], 
     rows: int, 
@@ -446,6 +456,7 @@ def create_subplots(
         fig.add_trace(trace, row=row, col=column)
     
     return fig
+
 
 def save_plots_to_html(figures: List[go.Figure], output_path: str, filename: str) -> None:
     """
