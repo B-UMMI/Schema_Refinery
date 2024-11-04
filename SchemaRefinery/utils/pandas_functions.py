@@ -20,7 +20,28 @@ def dict_to_df(dictionary: Dict[str, Any]) -> pd.DataFrame:
     return pd.DataFrame.from_dict(dictionary)
 
 
-def merge_files_into_same_file_by_key(files: List[str], key_to_merge, output_file) -> pd.DataFrame:
+def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, output_file: str) -> pd.DataFrame:
+    """
+    Merge multiple TSV files into a single file based on a common key.
+
+    This function reads multiple TSV files, merges them into a single DataFrame based on a common key,
+    and writes the merged DataFrame to an output TSV file.
+
+    Parameters
+    ----------
+    files : List[str]
+        List of file paths to the TSV files to be merged.
+    key_to_merge : str
+        The key column name to merge the files on.
+    output_file : str
+        The path to the output TSV file where the merged DataFrame will be saved.
+
+    Returns
+    -------
+    pd.DataFrame
+        The merged DataFrame.
+    """
+    # Read all TSV files into a list of DataFrames
     dfs: List[pd.DataFrame] = []
     for file in files:
         current_df: pd.DataFrame = pd.read_csv(file, delimiter='\t', dtype=str)
@@ -32,8 +53,7 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge, output_fil
         suffix = f"_{os.path.basename(files[i]).split('.')[0]}"
         merged_table = pd.merge(merged_table, dfs[i], on=[key_to_merge], how='left', suffixes=('', suffix)).fillna('NA')
     
-
     # Save the merged table to a TSV file
     merged_table.to_csv(output_file, sep='\t', index=False)
 
-    return output_file
+    return merged_table

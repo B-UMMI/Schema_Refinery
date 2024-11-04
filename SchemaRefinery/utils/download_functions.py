@@ -24,7 +24,7 @@ def download_file(url: str, file_name: str, retry: int) -> Union[str, Tuple[str,
     """
 
     tries: int = 0
-    response: Union[str, Tuple[str, http.client.HTTPMessage]] = ('', None)
+    response: Union[str, Tuple[str, http.client.HTTPMessage]] = ''
     while tries < retry:
         try:
             response = urllib.request.urlretrieve(url, file_name)
