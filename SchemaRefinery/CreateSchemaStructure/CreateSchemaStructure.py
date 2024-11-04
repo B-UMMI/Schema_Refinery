@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Dict, List
 
 try:
@@ -53,15 +54,13 @@ def create_schema_structure(instructions_file: str,
             # Save the action and the IDs in the action_list dictionary
             action_list.setdefault(i, {}).update({recommendation: ids_list})
 
+    processed_files: List[str] = []
     # For each action in the action_list dictionary
     for action, recommendations in action_list.items():
         # For each recommendation in the action dictionary
         for recommendation, ids_list in recommendations.items():
-            # If the recommendation is 'Choice' and skip_choices is True, skip the recommendation
-            if skip_choices and recommendation == "Choice":
-                continue
             # If the recommendation is 'Joined'
-            elif recommendation == "Joined":
+            if recommendation == "Joined":
                 new_file_name: str = ids_list[0]
                 output_file: str = os.path.join(output_directory, f'{new_file_name}.fasta')
                 # Write the new FASTA file with the desired outcome
@@ -71,7 +70,8 @@ def create_schema_structure(instructions_file: str,
                     # For each ID in the ids_list
                     for id in ids_list:
                         if id in fastas_files:  # If the ID is in the fastas_files dictionary
-                            fasta_file: str = fastas_files[id]  # Get the FASTA file path
+                            processed_files.append(id) # Add the ID to the processed_files list
+                            fasta_file: str = fastas_files.pop(id)  # Get the FASTA file path
                             fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(fasta_file, out)  # Fetch the FASTA dictionary
                             # For each header and sequence in the FASTA dictionary
                             for header, seq in fasta_dict.items():
@@ -89,5 +89,28 @@ def create_schema_structure(instructions_file: str,
                             print(f'File {id} added to {new_file_name} at {output_file}')
                         else:
                             print(f'File {id} not found in the FASTA folder')
+            # If the recommendation is 'Choice'
+            elif recommendation == "Choice":
+                if skip_choices:
+                    continue
+                else:
+                    for id in ids_list:
+                        if id in processed_files:
+                            continue
+                        else:
+                            processed_files.append(id) # Add the ID to the processed_files list
+                            fasta_file: str = fastas_files.pop(id) # Get the FASTA file path
+                            output_file: str = os.path.join(output_directory, f'{fasta_file}.fasta')
+                            shutil.copy(fasta_file, output_file)
+                            print(f'File {id} copied to {output_file}')
             else:
+                processed_files.append(ids_list[0]) # Add the ID to the processed_files list
+                fasta_file: str = fastas_files.pop(ids_list[0]) # Get the FASTA file path
                 print(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action")
+
+    print("Adding all of the remaining files that were not dropped or had action to do.")
+
+    for id, fasta_file in fastas_files.items():
+        output_file: str = os.path.join(output_directory, f'{id}.fasta')
+        shutil.copy(fasta_file, output_file)
+        print(f'File {id} copied to {output_file}')
