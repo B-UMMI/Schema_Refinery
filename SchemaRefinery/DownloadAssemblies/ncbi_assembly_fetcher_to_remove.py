@@ -18,126 +18,126 @@ import csv
 import time
 import socket
 import argparse
-import urllib.request
 import concurrent.futures
 from itertools import repeat
+from typing import List
 
 try:
     from utils import download_functions as df
 except:
     from SchemaRefinery.utils import download_functions as df
 
-# set socket timeout for urllib calls
+# Set socket timeout for urllib calls
 socket.setdefaulttimeout(30)
 
+# URL to download assembly_summary_refseq.txt
+assembly_summary_refseq: str = 'https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_refseq.txt'
 
-# url to download assembly_summary_refseq.txt
-assembly_summary_refseq = 'https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_refseq.txt'
+def main(input_table: str, output_directory: str, file_extension: str,
+         ftp: List[str], threads: int, species: str, retry: int) -> None:
+    """
+    Main function to handle downloading assemblies based on provided arguments.
 
+    Parameters
+    ----------
+    input_table : str
+        Path to the input table downloaded from NCBI.
+    output_directory : str
+        Path to the directory where the output files will be saved.
+    file_extension : str
+        File extension for the files to be downloaded.
+    ftp : List[str]
+        List of FTP sources to download from (e.g., ['refseq', 'genbank']).
+    threads : int
+        Number of threads to use for downloading.
+    species : str
+        Species name to filter the assemblies.
+    retry : int
+        Maximum number of retries if download fails.
 
-def main(input_table, output_directory, file_extension,
-         ftp, threads, species, retry):
+    Returns
+    -------
+    None
+        The function writes the output files to the specified directory.
+    """
 
     species = species.lower()
 
+    # Create output directory if it does not exist
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    # open table downloaded from NCBI
+    # Open table downloaded from NCBI
     with open(input_table, 'r') as table:
-        lines = list(csv.reader(table, delimiter=','))
+        lines: List[List[str]] = list(csv.reader(table, delimiter=','))
 
-    # get urls for samples that have refseq ftp path
-    refseq_urls = []
-    refseq_assemblies_ids = []
+    # Get URLs for samples that have RefSeq FTP path
+    refseq_urls: List[str] = []
+    refseq_assemblies_ids: List[str] = []
     if 'refseq' in ftp:
-        refseq_urls = [line[15]
-                       for line in lines[1:]
-                       if line[15].strip() != '']
+        refseq_urls = [line[15] for line in lines[1:] if line[15].strip() != '']
+        refseq_assemblies_ids = [url.split('/')[-1] for url in refseq_urls]
+        print('Found URLs for {0} strains in RefSeq.'.format(len(refseq_urls)))
 
-        refseq_assemblies_ids = [url.split('/')[-1]
-                                 for url in refseq_urls]
-
-        print('Found URLs for {0} strains in RefSeq.'
-              ''.format(len(refseq_urls)))
-
-    genbank_urls = []
-    genbank_assemblies_ids = []
+    genbank_urls: List[str] = []
+    genbank_assemblies_ids: List[str] = []
     if 'genbank' in ftp:
-        # get genbank urls
-        # only get if sample is not in refseq list
-        genbank_urls = [line[14]
-                        for line in lines[1:]
-                        if line[14].strip() != '' and line[15] not in refseq_urls]
-
-        genbank_assemblies_ids = [url.split('/')[-1]
-                                  for url in genbank_urls]
-
-        print('Found URLs for {0} strains in GenBank.'
-              ''.format(len(genbank_urls)))
+        # Get GenBank URLs, excluding samples that are also in RefSeq
+        genbank_urls = [line[14] for line in lines[1:] if line[14].strip() != '' and line[15] not in refseq_urls]
+        genbank_assemblies_ids = [url.split('/')[-1] for url in genbank_urls]
+        print('Found URLs for {0} strains in GenBank.'.format(len(genbank_urls)))
 
     print('Downloading assembly_summary_refseq...', end='')
-    assembly_summary_refseq_local = os.path.join(output_directory,
-                                                 'assembly_summary_refseq.txt')
+    assembly_summary_refseq_local: str = os.path.join(output_directory, 'assembly_summary_refseq.txt')
     df.download_file(assembly_summary_refseq, assembly_summary_refseq_local, retry)
     print('done.')
 
-    # open assembly_summary_refseq table 
+    # Open assembly_summary_refseq table
     with open(assembly_summary_refseq_local, 'r') as table1:
-        assembly_summary_lines = list(csv.reader(table1, delimiter='\t'))
+        assembly_summary_lines: List[List[str]] = list(csv.reader(table1, delimiter='\t'))
 
     os.remove(assembly_summary_refseq_local)
 
-    # processing assembly_summary_refseq table
-    # filtering for the species given as argument
-    assembly_latest = []
+    # Process assembly_summary_refseq table, filtering for the species given as argument
+    assembly_latest: List[str] = []
     for row in assembly_summary_lines[1:]:
         if species in row[7].lower():
             assembly_latest.append(row[0])
 
-    # removing suppressed genomes from refseq_assemblies_ids and refseq_urls
-    suppressed = []
+    # Remove suppressed genomes from refseq_assemblies_ids and refseq_urls
+    suppressed: List[int] = []
     for i in refseq_assemblies_ids:
-        processed_id = '_'.join(i.split('_')[0:2])
-
+        processed_id: str = '_'.join(i.split('_')[0:2])
         if processed_id not in assembly_latest:
             suppressed.append(refseq_assemblies_ids.index(i))
 
     print('Found {0} ids suppressed from RefSeq.'.format(len(suppressed)))
 
-    # remove suppressed from lists
-    refseq_assemblies_ids = [j
-                             for i, j in enumerate(refseq_assemblies_ids)
-                             if i not in suppressed]
-    refseq_urls = [j
-                   for i, j in enumerate(refseq_urls)
-                   if i not in suppressed]
+    # Remove suppressed from lists
+    refseq_assemblies_ids = [j for i, j in enumerate(refseq_assemblies_ids) if i not in suppressed]
+    refseq_urls = [j for i, j in enumerate(refseq_urls) if i not in suppressed]
 
-    urls = refseq_urls + genbank_urls
-    assemblies_ids = refseq_assemblies_ids + genbank_assemblies_ids
+    urls: List[str] = refseq_urls + genbank_urls
+    assemblies_ids: List[str] = refseq_assemblies_ids + genbank_assemblies_ids
 
-    # construct FTP URLs
-    ftp_urls = []
+    # Construct FTP URLs
+    ftp_urls: List[str] = []
     for i, url in enumerate(urls):
-        ftp_url = '{0}/{1}_{2}'.format(url,
-                                       assemblies_ids[i],
-                                       file_extension)
+        ftp_url: str = '{0}/{1}_{2}'.format(url, assemblies_ids[i], file_extension)
         ftp_urls.append(ftp_url)
 
-    files_number = len(ftp_urls)
+    files_number: int = len(ftp_urls)
     if files_number == 0:
         sys.exit('No valid ftp links after scanning table.')
 
-    assemblies_ids = ['{0}/{1}_{2}'.format(output_directory, url, file_extension)
-                      for url in assemblies_ids]
+    assemblies_ids = ['{0}/{1}_{2}'.format(output_directory, url, file_extension) for url in assemblies_ids]
 
-    print('\nStarting download of {0} {1} files...'
-          ''.format(files_number, file_extension))
+    print('\nStarting download of {0} {1} files...'.format(files_number, file_extension))
 
-    start = time.time()
+    start: float = time.time()
     # We can use a with statement to ensure threads are cleaned up promptly
-    failures = []
-    success = 0
+    failures: List[str] = []
+    success: int = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         # Start the load operations and mark each future with its URL
         for res in executor.map(df.download_file, ftp_urls, assemblies_ids, repeat(retry)):
@@ -149,16 +149,14 @@ def main(input_table, output_directory, file_extension,
 
     print('\nFailed download for {0} files.'.format(len(failures)))
 
-    end = time.time()
-    delta = end - start
-    minutes = int(delta/60)
-    seconds = delta % 60
+    end: float = time.time()
+    delta: float = end - start
+    minutes: int = int(delta / 60)
+    seconds: float = delta % 60
     print('\nFinished downloading {0}/{1} fasta.gz files.'
-          '\nElapsed Time: {2}m{3:.0f}s'
-          ''.format(files_number-len(failures),
-                    files_number, minutes, seconds))
+          '\nElapsed Time: {2}m{3:.0f}s'.format(files_number - len(failures), files_number, minutes, seconds))
     
-    with open(os.path.join(output_directory,"assemblies_ids_ncbi.tsv"),'w+') as ids_to_tsv:
+    with open(os.path.join(output_directory, "assemblies_ids_ncbi.tsv"), 'w+') as ids_to_tsv:
         ids_to_tsv.write("\n".join(map(str, assemblies_ids)))
 
 
