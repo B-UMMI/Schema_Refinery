@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-"""
 
 import os
 import time
 import argparse
 import concurrent.futures
 from itertools import repeat
+from typing import Any, Dict, List, Union
 import xml.etree.ElementTree as ET
 
 import pandas as pd
@@ -15,7 +14,7 @@ from tqdm import tqdm
 from Bio import Entrez
 
 
-def find_internal_id(query_id):
+def find_internal_id(query_id: str) -> Union[str, int]:
     """
     To extract all metadata from the chosen Biosample it is needed to obtain
     internal id for all of the Biosamples.
@@ -23,170 +22,237 @@ def find_internal_id(query_id):
     This function with an input of Biosample id fetches the internal id in NCBI
     for that Biosample.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     query_id : str
         Biosample id
 
     Returns
     -------
-    internal_id : int
-        internal id used by NCBI entrez
+    Union[str, int]
+        Internal id used by NCBI entrez or "Failed" if an error occurs.
     """
     try:
+        # Perform a search in the "biosample" database for the given query_id
         handle = Entrez.esearch(db="biosample", term=query_id)
+        
+        # Parse the XML response from the search
         tree = ET.parse(handle)
         root = tree.getroot()
 
+        # Iterate over all "IdList" elements in the XML tree
         for id_list in root.iter("IdList"):
-
+            # Iterate over all child elements of the current "IdList" element
             for in_id in id_list:
-
-                return in_id.text
-    except:
+                # Check if the text content of the "Id" element is not None
+                if in_id.text is not None:
+                    # Convert the text content to an integer and return it as the internal ID
+                    return int(in_id.text)
+    except Exception:
+        # Return "Failed" if an exception occurs during the process
         return "Failed"
+    
+    # Return "Failed" if no internal id is found
+    return "Failed"
 
-
-def download_query(internal_id):
+def download_query(internal_id: Union[str, int]) -> Union[ET.Element, str]:
     """
-    This function with and input of an internal id for a Biosample, fetches
+    This function with an input of an internal id for a Biosample, fetches
     the metadata related to that Biosample in xml object tree.
 
-    Parameter
-    ---------
-    internal_id : int
-        internal id used by NCBI entrez
+    Parameters
+    ----------
+    internal_id : Union[str, int]
+        Internal id used by NCBI entrez
 
     Returns
     -------
-    root : object
-        xml tree object
-    internal_id : str
-        internal id of the sample
-    "Failed" : str
-        if errors ocurrs return string "Failed"
+    Union[ET.Element, str]
+        XML tree object or "Failed" if an error occurs.
     """
     try:
-        if "Failed" not in internal_id:
-            handle = Entrez.efetch(db="biosample", id=internal_id)
+        if internal_id != "Failed":
+            # Fetch the metadata for the given internal_id from the "biosample" database
+            handle = Entrez.efetch(db="biosample", id=str(internal_id))
+            
+            # Parse the XML response from the fetch
             tree = ET.parse(handle)
             root = tree.getroot()
-
+            
+            # Return the root element of the XML tree
             return root
         else:
-            return internal_id
-    except:
+            # Return "Failed" if the internal_id is "Failed"
+            return "Failed"
+    except Exception:
+        # Return "Failed" if an exception occurs during the process
         return "Failed"
 
-
-def get_metadata(xml_root):
+def get_metadata(xml_root: Union[ET.Element, str]) -> Dict[str, Any]:
     """
     This function based on input of an xml object tree, extracts relevant
-    metadata inside a dictionary, where key is column and value is metadata
+    metadata inside a dictionary, where key is column and value is metadata.
 
-    Parameter
-    ---------
-
-    xml_root : xml tree object
+    Parameters
+    ----------
+    xml_root : Union[ET.Element, str]
+        XML tree object
 
     Returns
     -------
-    return : dict
-        that contains metadata
+    Dict[str, Any]
+        Dictionary that contains metadata
     """
-    if not "Failed" in xml_root:
-        metadata_dict = {}
+    if isinstance(xml_root, ET.Element):
+        # Initialize an empty dictionary to store metadata
+        metadata_dict: Dict[str, Any] = {}
+        
+        # Update the dictionary with attributes from the root element
         metadata_dict.update(xml_root[0].attrib)
-        metadata_dict.update(xml_root.find(".//Organism").attrib)
+        
+        # Find the "Organism" element in the XML tree
+        organism_element = xml_root.find(".//Organism")
+        if organism_element is not None:
+            # Update the dictionary with attributes from the "Organism" element
+            metadata_dict.update(organism_element.attrib)
+        else:
+            # Print a message if the "Organism" element is not found
+            print("Organism not found in metadata")
 
+        # Iterate over all "Attributes" elements in the XML tree
         for attributes in xml_root.iter('Attributes'):
-
+            # Iterate over all child elements of the current "Attributes" element
             for metadata in attributes:
-                keyname = metadata.attrib['attribute_name']
+                # Get the attribute name
+                keyname: str = metadata.attrib['attribute_name']
+                # Check if there is a harmonized name and use it as the key name
                 if 'harmonized_name' in metadata.attrib:
                     keyname = metadata.attrib['harmonized_name']
+                # Add the metadata to the dictionary
                 metadata_dict[keyname] = metadata.text
 
+        # Return the dictionary containing the metadata
         return metadata_dict
-
     else:
+        # Return a dictionary with "accession" set to "Failed" if xml_root is not an ET.Element
         return {"accession": "Failed"}
 
-
-def write_to_file(metadata_df, output_directory):
+def write_to_file(metadata_df: pd.DataFrame, output_directory: str) -> None:
     """
     Writes dataframe into TSV file format at output directory.
 
-    Parameter
-    ---------
-
-    metadata_df : pandas dataframe object
-    output_directory: str
+    Parameters
+    ----------
+    metadata_df : pd.DataFrame
+        Pandas dataframe object containing metadata.
+    output_directory : str
+        Path to the output directory.
 
     Returns
     -------
-    Creates file in the output directory
+    None
+        Creates file in the output directory.
     """
-    metadata_df.to_csv(os.path.join(output_directory, "metadata.tsv"),
-                       mode='a', header=not os.path.exists(os.path.join(
-                           output_directory, "metadata.tsv")),sep="\t",index=False)
+    # Create the full path for the output file in the specified output directory
+    output_file: str = os.path.join(output_directory, "metadata.tsv")
 
+    # Write the DataFrame to a TSV file
+    # - mode='a' appends to the file if it exists, otherwise creates a new file
+    # - header=not os.path.exists(output_file) writes the header only if the file does not already exist
+    # - sep="\t" specifies that the file should be tab-separated
+    # - index=False ensures that the DataFrame index is not written to the file
+    metadata_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), sep="\t", index=False)
 
-def multi_thread_run(query, retry):
-    """Fetch metadata with multithreading.
+def multi_thread_run(query: str, retry: int) -> Dict[str, Any]:
+    """
+    Fetch metadata with multithreading.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     query : str
         Biosample id
     retry : int
-        number of retries if fetching fails
+        Number of retries if fetching fails
 
     Returns
     -------
-    metadata_dict : dict
-        dict that contains metadata
+    Dict[str, Any]
+        Dictionary that contains metadata
     """
-    rtry = 0
+    # Initialize the retry counter
+    rtry: int = 0
+
+    # Initialize an empty dictionary to store metadata
+    metadata_dict: Dict[str, Any] = {}
+
+    # Loop until the maximum number of retries is reached
     while rtry < retry:
+        # Fetch the metadata by finding the internal ID, downloading the query, and extracting the metadata
         metadata_dict = get_metadata(download_query(find_internal_id(query)))
 
+        # Check if the metadata dictionary contains only one item (indicating a failure)
         if len(metadata_dict) == 1:
+            # Increment the retry counter
             rtry += 1
+            # Wait for 1 second before retrying
             time.sleep(1)
         else:
+            # Break the loop if the metadata dictionary contains more than one item (indicating success)
             break
 
+    # Return the metadata dictionary
     return metadata_dict
 
+def main(id_table_path: str, output_directory: str, email: str, threads: int, api_key: Union[str, None], retry: int) -> None:
+    """
+    Main function to handle fetching metadata based on provided arguments.
 
-def main(id_table_path, output_directory, email, threads, api_key, retry):
+    Parameters
+    ----------
+    id_table_path : str
+        Path to the input table containing Biosample ids.
+    output_directory : str
+        Path to the directory where the output files will be saved.
+    email : str
+        Email address for NCBI Entrez.
+    threads : int
+        Number of threads to use for fetching metadata.
+    api_key : Union[str, None]
+        API key to increase the number of requests.
+    retry : int
+        Number of retries if fetching fails.
+
+    Returns
+    -------
+    None
+        The function writes the output files to the specified directory.
+    """
     Entrez.email = email
 
     # API key to increase number of requests
     if api_key is not None:
         Entrez.api_key = api_key
 
-    # list where all the dictionaries containg metadata are stored
-    metadata_list_dict = []
+    # List where all the dictionaries containing metadata are stored
+    metadata_list_dict: List[Dict[str, Any]] = []
 
     # Read input table to extract ids
     with open(id_table_path, 'r') as infile:
-        queries = infile.read().splitlines()
+        queries: List[str] = infile.read().splitlines()
 
-    failures = []
-    # multithreading function
+    failures: List[Dict[str, Any]] = []
+    # Multithreading function
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-        for res in list(tqdm(executor.map(multi_thread_run, queries, repeat(retry)),total=len(queries))):
+        for res in list(tqdm(executor.map(multi_thread_run, queries, repeat(retry)), total=len(queries))):
             if 'Failed' in res:
                 failures.append(res)
             metadata_list_dict.append(res)
 
-    # convert list of dctionaries to Pandas dataframe
-    # keys are column ids
-    metadata_df = pd.DataFrame(metadata_list_dict)
+    # Convert list of dictionaries to Pandas dataframe
+    # Keys are column ids
+    metadata_df: pd.DataFrame = pd.DataFrame(metadata_list_dict)
 
-    # Organise metadata and associate with input id
+    # Organize metadata and associate with input id
     metadata_df.insert(0, "File", queries)
 
     # Write to TSV in output directory
