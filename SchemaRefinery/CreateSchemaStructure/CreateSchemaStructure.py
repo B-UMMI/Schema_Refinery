@@ -36,7 +36,7 @@ def create_schema_structure(instructions_file: str,
         for fasta_file in os.listdir(fastas_folder)
     }
     action_list: Dict[int, Dict[str, List[str]]] = {}
-    i: int = 1
+    action_id: int = 1
 
     # Read and process the instructions file
     with open(instructions_file, 'r') as f:
@@ -45,18 +45,19 @@ def create_schema_structure(instructions_file: str,
             line = line.strip()
             # Skip empty lines and lines starting with '#'
             if line == '#':
-                i += 1
+                action_id += 1
                 continue
             # Split the line into the action and the IDs
             recommendation, ids = line.split('\t')
             # Split the IDs into a list
             ids_list: List[str] = ids.split(',')
             # Save the action and the IDs in the action_list dictionary
-            action_list.setdefault(i, {}).update({recommendation: ids_list})
+            action_list.setdefault(action_id, {}).update({recommendation: ids_list})
 
     processed_files: List[str] = []
     # For each action in the action_list dictionary
-    for action, recommendations in action_list.items():
+    # Recomendations can be 'Joined', 'Choice' or 'Drop'
+    for action_id, recommendations in action_list.items():
         # For each recommendation in the action dictionary
         for recommendation, ids_list in recommendations.items():
             # If the recommendation is 'Joined'
@@ -109,8 +110,8 @@ def create_schema_structure(instructions_file: str,
                 print(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action")
 
     print("Adding all of the remaining files that were not dropped or had action to do.")
-
+    # For each ID in the fastas_files dictionary
     for id, fasta_file in fastas_files.items():
-        output_file: str = os.path.join(output_directory, f'{id}.fasta')
-        shutil.copy(fasta_file, output_file)
+        output_file: str = os.path.join(output_directory, f'{id}.fasta') # Create the output file path
+        shutil.copy(fasta_file, output_file) # Copy the FASTA file to the output file
         print(f'File {id} copied to {output_file}')
