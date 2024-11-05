@@ -179,6 +179,30 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
 
 def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
                   translation_table: int, cpu: int, processing_mode: str):
+    """
+    Match schemas between query and subject directories.
+
+    Parameters
+    ----------
+    query_schema_directory : str
+        Path to the query schema directory.
+    subject_schema_directory : str
+        Path to the subject schema directory.
+    output_directory : str
+        Path to the output directory.
+    bsr : float
+        BLAST Score Ratio value.
+    translation_table : int
+        Genetic code used for translation.
+    cpu : int
+        Number of CPU cores to use.
+    processing_mode : str
+        Mode of processing.
+
+    Returns
+    -------
+    None
+    """
     # Query schema files
     query_files: Dict[str, str]
     query_files_short: Dict[str, str]
