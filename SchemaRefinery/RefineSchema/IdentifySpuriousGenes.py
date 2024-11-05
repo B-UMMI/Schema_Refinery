@@ -438,6 +438,50 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         genome_presence: int, absolute_size: int, translation_table: int,
         bsr: float, problematic_proportion: float, size_ratio: float,
         run_mode: str, processing_mode: str, cpu: int) -> None:
+    """
+    Main function to identify spurious genes in a schema.
+
+    Parameters
+    ----------
+    schema_directory : str
+        Path to the schema directory.
+    output_directory : str
+        Path to the output directory.
+    allelecall_directory : str
+        Path to the allele call directory.
+    possible_new_loci : str
+        Path to the file with possible new loci.
+    alignment_ratio_threshold : float
+        Threshold for alignment ratio.
+    pident_threshold : float
+        Threshold for percentage identity.
+    clustering_sim : float
+        Similarity threshold for clustering.
+    clustering_cov : float
+        Coverage threshold for clustering.
+    genome_presence : int
+        Minimum genome presence required.
+    absolute_size : int
+        Absolute size threshold.
+    translation_table : int
+        Genetic code used for translation.
+    bsr : float
+        BLAST Score Ratio value.
+    problematic_proportion : float
+        Proportion threshold for problematic genes.
+    size_ratio : float
+        Size ratio threshold.
+    run_mode : str
+        Mode of running the process.
+    processing_mode : str
+        Mode of processing.
+    cpu : int
+        Number of CPU cores to use.
+
+    Returns
+    -------
+    None
+    """
     
     temp_paths: List[str] = [os.path.join(allelecall_directory, "temp"), 
                             os.path.join(allelecall_directory, "unclassified_sequences.fasta"),
