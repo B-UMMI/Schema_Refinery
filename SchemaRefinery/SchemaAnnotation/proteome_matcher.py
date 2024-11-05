@@ -298,7 +298,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                                 max_id_length,
                                                                 cpu)
     print('\n')
-    merge_files = [[], []]
+    merge_files: List[List[str]] = [[], []]
     for file_name, paths in proteomes_data_paths.items():
         if paths[2] is None:
             print(f"\nSkipping proteome file BLAST: {file_name} due to lack of proteins")
@@ -350,9 +350,9 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     for i, proteome_file_id, loci_values in enumerate(list(best_bsr_values_per_proteome_file.items())):
         for loci_id, values in list(loci_values.items()):
             # Find all of the proteins that reps representes
-            proteinid = values[0]
-            bsr_value = values[1]
-            same_protein = same_protein_other_annotations.get(proteinid)
+            proteinid: str = values[0]
+            bsr_value: float = values[1]
+            same_protein: str = same_protein_other_annotations.get(proteinid)
             # Check if the protein is being represented by another sequence
             if same_protein:
                 # For all of the elements that the representative represents add them to the dict
@@ -388,8 +388,8 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 
     for file, loci_results in best_bsr_values_per_proteome_file.items():
         # Create Swiss-Prot and TrEMBL annotations files
-        swiss_prot_annotations = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
-        trembl_annotations = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
+        swiss_prot_annotations: str = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
+        trembl_annotations: str = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
         if file in proteome_ids_to_add:
             merge_files[0].append(swiss_prot_annotations)
             merge_files[1].append(trembl_annotations)
