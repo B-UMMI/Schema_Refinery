@@ -333,7 +333,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
             bsr_value: float = subject_info[1]  # Get the BSR value
             # Check if any element is empty
-            update_cds_info = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
+            update_cds_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
             # Write the annotations to the file
             if len(subject_info[0]) == 2: # If no extra columns are present
                 at.write(f"{loci}\t{subject_id}\t{update_cds_info[:2]}\t{bsr_value}\n")
