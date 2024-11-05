@@ -54,6 +54,7 @@ def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, s
     
     return fasta_files_dict, fasta_files_short_dict
 
+
 def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_files: str,
                              blast_folder: str, self_score_dict: Dict[str, float], max_id_length: int,
                              get_blastp_exec: str, bsr: float, cpu: int) -> Dict[str, Tuple[str, float]]:
@@ -141,6 +142,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
     return best_bsr_values
 
+
 def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float]],
                                      query_translations_paths: Dict[str, str], output_folder: str) -> None:
     """
@@ -174,8 +176,33 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
         for query in not_matched_loci:
             out.write(f'{query}\tNot matched\tNA\n')
 
+
 def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
                   translation_table: int, cpu: int, processing_mode: str):
+    """
+    Match schemas between query and subject directories.
+
+    Parameters
+    ----------
+    query_schema_directory : str
+        Path to the query schema directory.
+    subject_schema_directory : str
+        Path to the subject schema directory.
+    output_directory : str
+        Path to the output directory.
+    bsr : float
+        BLAST Score Ratio value.
+    translation_table : int
+        Genetic code used for translation.
+    cpu : int
+        Number of CPU cores to use.
+    processing_mode : str
+        Mode of processing.
+
+    Returns
+    -------
+    None
+    """
     # Query schema files
     query_files: Dict[str, str]
     query_files_short: Dict[str, str]
