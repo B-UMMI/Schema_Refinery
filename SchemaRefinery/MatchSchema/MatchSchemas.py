@@ -54,6 +54,7 @@ def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, s
     
     return fasta_files_dict, fasta_files_short_dict
 
+
 def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_files: str,
                              blast_folder: str, self_score_dict: Dict[str, float], max_id_length: int,
                              get_blastp_exec: str, bsr: float, cpu: int) -> Dict[str, Tuple[str, float]]:
@@ -141,6 +142,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
     return best_bsr_values
 
+
 def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float]],
                                      query_translations_paths: Dict[str, str], output_folder: str) -> None:
     """
@@ -173,6 +175,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
             out.write(f'{query}\t{match[0]}\t{match[1]}\n')
         for query in not_matched_loci:
             out.write(f'{query}\tNot matched\tNA\n')
+
 
 def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
                   translation_table: int, cpu: int, processing_mode: str):
