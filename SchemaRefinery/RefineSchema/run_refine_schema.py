@@ -45,4 +45,4 @@ def main(schema: str,
         
         print("Identifying spurious loci in the schema...")
         spurious_loci_output: str = os.path.join(output_directory, "spurious_loci")
-        IdentifySpuriousGenes.identify_spurious_genes(schema_path, output_directory, allelecall_directory, possible_new_loci, constants, temp_paths, run_mode, processing_mode, cpu)
+        IdentifySpuriousGenes.identify_spurious_genes(schema, output_directory, allelecall_directory, possible_new_loci, constants, temp_paths, run_mode, processing_mode, cpu)
