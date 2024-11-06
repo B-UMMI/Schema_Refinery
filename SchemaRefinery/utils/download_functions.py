@@ -1,9 +1,10 @@
 import urllib.request
 import time
 import http.client
-from typing import Union, Tuple, Any
+from http.client import HTTPMessage
+from typing import Union, Tuple
 
-def download_file(url: str, file_name: str, retry: int) -> Union[str, Tuple[str, Any]]:
+def download_file(url: str, file_name: str, retry: int) -> tuple[Union[str, tuple[str, HTTPMessage]], str]:
     """
     Downloads a file from the given URL and saves it with the specified file name. Retries the download
     up to the specified number of times if it fails.
@@ -35,4 +36,4 @@ def download_file(url: str, file_name: str, retry: int) -> Union[str, Tuple[str,
             print(f'Retrying {file_name.split("/")[-1]} ...{tries}')
             time.sleep(1)
 
-    return response
+    return response, file_name

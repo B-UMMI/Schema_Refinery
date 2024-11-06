@@ -304,7 +304,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                                 cpu)
     print('\n')
     merge_files: List[List[str]] = [[], []]
-    for i, file_name, paths in enumerate(proteomes_data_paths.items()):
+    for i, (file_name, paths) in enumerate(proteomes_data_paths.items()):
         if paths[2] is None:
             print(f"\nSkipping proteome file BLAST: {file_name} due to lack of proteins")
             continue
@@ -345,11 +345,10 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
             # Write loci that did not match or failed the BSR threshold
             for loci in not_matched_or_bsr_failed_loci:
                 at.write(f"{loci}\tNA\tNA\tNA\tNA\n")
-
         # Save annotations file
         merge_files[i].append(annotations_file)
 
-    for i, proteome_file_id, loci_values in enumerate(list(best_bsr_values_per_proteome_file.items())):
+    for i, (proteome_file_id, loci_values) in enumerate(list(best_bsr_values_per_proteome_file.items())):
         (same_protein_other_annotations, all_alleles) = proteomes_data[i]
         if same_protein_other_annotations is None or all_alleles is None:
             continue
@@ -392,6 +391,8 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     ff.create_directory(trembl_folder)
 
     for file, loci_results in best_bsr_values_per_proteome_file.items():
+        # Save what loci each proteome file matched
+        matched_loci = {'swiss-prot': [], 'trembl': []}
         # Create Swiss-Prot and TrEMBL annotations files
         swiss_prot_annotations: str = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
         trembl_annotations: str = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
@@ -399,6 +400,8 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
             merge_files[0].append(swiss_prot_annotations)
             merge_files[1].append(trembl_annotations)
         with open(swiss_prot_annotations, 'w') as sp, open(trembl_annotations, 'w') as tr:
+            sp.write(header + '\n')
+            tr.write(header + '\n')
             for loci, subject_info in loci_results.items():
                 subject_id = subject_info[0]
                 bsr_value = subject_info[1]
@@ -409,15 +412,26 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                     sname = 'NA'
                 # Write to the appropriate file based on the start of subject_id
                 if subject_id.startswith('sp|'):
+                    matched_loci['swiss-prot'].append(loci)
                     sp.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
                 elif subject_id.startswith('tr|'):
+                    matched_loci['trembl'].append(loci)
                     tr.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+            for proteome_file, loci in matched_loci.items():
+                not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(loci)   
+                for loci in not_matched_or_bsr_failed_loci:
+                    if proteome_file == 'swiss-prot':
+                        sp.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+                    else:
+                        tr.write(f"{loci}\tNA\tNA\tNA\tNA\n")
 
     # Merge all annotations files that user wants
     merged_annotations_file_list = []
     for merge_annotations in merge_files:
-        merged_annotations_file: str = os.path.join(output_directory, 'best_genbank_annotations.tsv')
+        if len(merge_annotations) == 0:
+            continue
+        merged_annotations_file: str = os.path.join(output_directory, f"best_proteomes_annotations_{'swiss_prot' if i == 0 else 'tremble'}.tsv")
         merged_annotations_file_list.append(merged_annotations_file)
         pf.merge_files_into_same_file_by_key(merge_annotations, 'Locus', merged_annotations_file)
 
-    return merged_annotations_file_list[0], merged_annotations_file_list[1]
+    return merged_annotations_file_list

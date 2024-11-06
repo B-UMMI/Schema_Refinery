@@ -11,14 +11,16 @@ try:
                                   proteome_splitter as ps,
                                   proteome_matcher as pm,
                                   genbank_annotations as ga)
-    from utils import (file_functions as ff)
+    from utils import (file_functions as ff,
+                       pandas_functions as upf)
     from MatchSchema import (MatchSchemas as ms)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
                                                 proteome_splitter as ps,
                                                 proteome_matcher as pm,
                                                 genbank_annotations as ga)
-    from SchemaRefinery.utils import (file_functions as ff)
+    from SchemaRefinery.utils import (file_functions as ff,
+                                      pandas_functions as upf)
     from SchemaRefinery.MatchSchema import (MatchSchemas as ms)
 
 def main(args: Namespace) -> None:
@@ -115,36 +117,4 @@ def main(args: Namespace) -> None:
         return None
 
     # Merge all results into a single file
-    dfs: List[pd.DataFrame] = []
-    for file in results_files:
-        current_df: pd.DataFrame = pd.read_csv(file, delimiter='\t', dtype=str)
-        if 'Locus' not in current_df.columns:
-            current_df = current_df.rename({'Locus_ID': 'Locus'}, axis=1)
-        dfs.append(current_df)
-
-    if args.subject_annotations and matched_schemas:
-        # Read TSV with subject schema annotations
-        if args.subject_columns:
-            columns: List[str] = ["Locus" if col == "Locus_ID" else col for col in args.subject_columns]
-            if "Locus" not in columns:
-                columns = ['Locus'] + columns
-
-            match_add: pd.DataFrame = pd.read_csv(args.subject_annotations, delimiter='\t',
-                                                  usecols=columns, dtype=str)
-        else:
-            match_add: pd.DataFrame = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str)
-
-        # Merge columns so that both table to add and reference have locus_ID
-        merged_match: pd.DataFrame = pd.merge(match_add, dfs[-1], on='Locus',
-                                              how='left').fillna('')
-        merged_match = merged_match[merged_match.columns.tolist()[1:]]
-
-        dfs[-1] = merged_match
-
-    # Merge all dataframes based on locus identifier
-    merged_table: pd.DataFrame = reduce(lambda a, b: pd.merge(a, b, on=['Locus'],
-                                                              how='left'), dfs).fillna('')
-
-    # Save the merged table to a TSV file
-    merged_table.to_csv(os.path.join(args.output_directory, 'merged_file.tsv'),
-                        sep='\t', index=False)
+    upf.merge_files_into_same_file_by_key(results_files, 'Locus', os.path.join(args.output_directory, 'merged_file.tsv'))

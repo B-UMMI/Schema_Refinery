@@ -4,6 +4,11 @@ import pickle
 from typing import Dict, Tuple, List
 from Bio import SeqIO
 
+try:
+    from utils.file_functions import create_directory
+except ModuleNotFoundError:
+    from SchemaRefinery.utils.file_functions import create_directory
+
 def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[str, str, str, Dict[str, List[str]]]:
     """
     Split proteome records into Swiss-Prot and TrEMBL records and save them to separate files.
@@ -22,6 +27,7 @@ def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[
     """
     
     split_directory: str = os.path.join(output_directory, 'split_proteomes')
+    create_directory(split_directory)
     # List proteomes in proteome directory
     proteomes: List[str] = [os.path.join(proteomes_directory, f)
                             for f in os.listdir(proteomes_directory)]
