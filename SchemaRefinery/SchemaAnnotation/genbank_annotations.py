@@ -212,7 +212,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, List[Union[str, float]]] = {}
-    best_bsr_values_per_genbank_file: Dict[str, Dict[str, Dict[str, Union[int, float]]]]] = {k: {} for k in all_genbank_files_ids.keys()}
+    best_bsr_values_per_genbank_file: Dict[str, Dict[str, Dict[str, Union[int, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts: int = len(reps_ids)
     i = 1
 

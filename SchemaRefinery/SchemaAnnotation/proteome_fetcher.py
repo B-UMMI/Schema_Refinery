@@ -70,7 +70,10 @@ def proteome_fetcher(proteome_table: str, output_directory: str, threads: int, r
         # Start the load operations and mark each future with its URL
         for res in executor.map(download_file, urls, filepaths, repeat(retry)):
             if 'Failed' in res:
-                failures.append(res)
+                failures.append(res[0])
+            elif os.path.getsize(res[1]) == 0:
+                print(f"Error: The downloaded archive '{res[1]}' is empty.")
+                os.remove(res[1])
             else:
                 success += 1
                 print(f'\rDownloaded {success}/{num_proteomes}', end='')
