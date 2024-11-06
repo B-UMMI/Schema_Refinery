@@ -258,7 +258,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     """
     proteome_matcher_output = os.path.join(output_directory, 'proteome_matcher_output')
     # Create BLAST database files for each proteome
-    proteomes_data_paths: Dict[str, List[str]] = {}
+    proteomes_data_paths: Dict[str, List[Optional[str]]] = {}
     proteomes_data: List[Tuple[Optional[Dict[str, List[str]]], Optional[Dict[str, str]]]] = []
     for proteome_file in proteome_files[:2]:
         # Get proteome file name
@@ -368,7 +368,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                     if proteome_file_id == proteome_file_id_current:
                         continue
                     # Verify if genbank file is in the dict
-                    best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, [id_, bsr_value])
+                    best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, (id_, bsr_value))
             # For clustered elements
             rep_cluster = all_alleles.get(proteinid)
             if rep_cluster:
@@ -380,7 +380,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                     if proteome_file_id == proteome_file_id_current:
                         continue
                     # Verify if genbank file is in the dict
-                    best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, [id_, bsr_value])
+                    best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, (id_, bsr_value))
         
     # Save best annotations per proteome file
     best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
