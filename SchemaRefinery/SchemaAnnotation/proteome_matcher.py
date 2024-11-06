@@ -24,7 +24,7 @@ except ModuleNotFoundError:
                                       pandas_functions as pf)
 
 def create_database_files(proteome_file: str, clustering_sim: float, clustering_cov: float, size_ratio: float,
-                          blast_processing_folder: str) -> Optional[str]:
+                          blast_processing_folder: str) -> Union[tuple[str, Dict[str, List[str]], Dict[str, str]], Tuple[None, None, None]]:
     """
     Create database files from a proteome file by extracting protein sequences, clustering them, and creating a BLAST database.
 
@@ -54,7 +54,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     # Create dictionaries to hashed sequence and its representative ID
     hash_to_rep_id: Dict[str, str] = {}
     # Create dictionaries to store the representatives ID and what it representes
-    same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
+    same_protein_other_annotations: Dict[str, List[str]] = {}
 
     print(f"\nExtracting protein from proteome file: {os.path.basename(proteome_file)}...")
     
@@ -64,7 +64,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     
     if total_proteins == 0:
         print(f"No proteins found in {os.path.basename(proteome_file)}")
-        return None
+        return (None, None, None)
 
     # Process each protein sequence
     for id_, sequence in fasta_dict.items():
@@ -120,15 +120,18 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         
     return blast_db_files, same_protein_other_annotations, all_alleles
 
-def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Dict[str, List[str]],
-                            best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]],
+def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, List[str]],
+                            best_bsr_values_per_proteome_file: Dict[str, Dict[str, Tuple[str, float]]],
                             blast_processing_folder: str, translations_paths: Dict[str, str],
-                            blast_db_files: str, self_score_dict: Dict[str, float], cpu: int, bsr: float) -> None:
+                            blast_db_files: Optional[str], self_score_dict: Dict[str, float], cpu: int,
+                            bsr: float) -> dict[str, Tuple[str, float]]:
     """
     Run BLAST for proteomes to calculate self-scores and BSR values, and save the annotations.
 
     Parameters
     ----------
+    max_id_length : int
+        Maximum length of the ID values
     blast_processing_folder : str
         Path to the folder for BLAST processing.
     translations_paths : Dict[str, str]
@@ -174,7 +177,7 @@ def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Di
                                 translations_paths.keys(),
                                 repeat(blastp_results_folder)):
             # Get the alignments
-            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, float]]]
+            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
 
             # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
@@ -207,11 +210,11 @@ def run_blast_for_proteomes(max_id_length: Dict[str, str], proteome_file_ids: Di
                         
                     # Get best value for genbank file
                     proteome_file: str = itf.identify_string_in_dict_get_key(subject_id, proteome_file_ids)
-                    current_best_in_proteome_file: List[Union[str, float]] = best_bsr_values_per_proteome_file[proteome_file].get(loci)
+                    current_best_in_proteome_file: Optional[Tuple[str, float]] = best_bsr_values_per_proteome_file[proteome_file].get(loci)
                     if current_best_in_proteome_file and bsr_value > current_best_in_proteome_file[1]:
-                        best_bsr_values_per_proteome_file[proteome_file][loci] = [subject_id, bsr_value]
+                        best_bsr_values_per_proteome_file[proteome_file][loci] = (subject_id, bsr_value)
                     else:
-                        best_bsr_values_per_proteome_file[proteome_file][loci] = [subject_id, bsr_value]
+                        best_bsr_values_per_proteome_file[proteome_file][loci] = (subject_id, bsr_value)
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
@@ -222,7 +225,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                     schema_directory: str, output_directory: str, cpu: int, bsr: float, 
                     translation_table: int, clustering_sim: float, 
                     clustering_cov: float, size_ratio: float, run_mode: str,
-                    proteome_ids_to_add: List[str]) -> None:
+                    proteome_ids_to_add: List[str]) -> Tuple[str, str]:
     """
     Match proteomes by creating BLAST database files, translating sequences, and running BLAST.
 
@@ -256,6 +259,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     proteome_matcher_output = os.path.join(output_directory, 'proteome_matcher_output')
     # Create BLAST database files for each proteome
     proteomes_data_paths: Dict[str, List[str]] = {}
+    proteomes_data: List[Tuple[Optional[Dict[str, List[str]]], Optional[Dict[str, str]]]] = []
     for proteome_file in proteome_files[:2]:
         # Get proteome file name
         proteome_file_base: str = os.path.basename(proteome_file)
@@ -274,6 +278,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                             blast_processing_folder)
         # Save paths to proteome file paths
         proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
+        proteomes_data.append((same_protein_other_annotations, all_alleles))
 
     [translation_dict,
      reps_ids,
@@ -299,20 +304,17 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                                 cpu)
     print('\n')
     merge_files: List[List[str]] = [[], []]
-    for file_name, paths in proteomes_data_paths.items():
+    for i, file_name, paths in enumerate(proteomes_data_paths.items()):
         if paths[2] is None:
             print(f"\nSkipping proteome file BLAST: {file_name} due to lack of proteins")
             continue
-
+        # Get proteome file name without extension
         file_name_without_extension: str = file_name.split('.')[0]
         print(f"\nProcessing proteome for: {file_name_without_extension}")
         # Get paths
-        proteome_folder: str
-        blast_processing_folder: str
-        blast_db_files: str
         [proteome_folder, blast_processing_folder, blast_db_files] = paths
         # Run Blasts and save to file
-        best_bsr_values_per_proteome_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in proteome_file_ids.keys()}
+        best_bsr_values_per_proteome_file: Dict[str, Dict[str, Tuple[str, float]]] = {k: {} for k in proteome_file_ids.keys()}
         best_bsr_values = run_blast_for_proteomes(max_id_length,
                                 proteome_file_ids,
                                 best_bsr_values_per_proteome_file,
@@ -348,15 +350,18 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         merge_files[i].append(annotations_file)
 
     for i, proteome_file_id, loci_values in enumerate(list(best_bsr_values_per_proteome_file.items())):
+        (same_protein_other_annotations, all_alleles) = proteomes_data[i]
+        if same_protein_other_annotations is None or all_alleles is None:
+            continue
         for loci_id, values in list(loci_values.items()):
             # Find all of the proteins that reps representes
             proteinid: str = values[0]
-            bsr_value: float = values[1]
-            same_protein: str = same_protein_other_annotations.get(proteinid)
+            bsr_value = values[1]
+            same_protein: Optional[List[str]] = same_protein_other_annotations.get(proteinid)
             # Check if the protein is being represented by another sequence
             if same_protein:
                 # For all of the elements that the representative represents add them to the dict
-                for id_, *info in same_protein:
+                for id_ in same_protein:
                     # Get genbank file for that ID
                     proteome_file_id_current: str = itf.identify_string_in_dict_get_key(id_, proteome_file_ids)
                     # If the genbank file is the same as the one that the representative is in, skip (may be copy protein)
@@ -370,7 +375,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                 for values in rep_cluster:
                     id_ = values[0]
                     # Get genbank file for that ID
-                    proteome_file_id_current: str = itf.identify_string_in_dict_get_key(id_, proteome_file_ids)
+                    proteome_file_id_current = itf.identify_string_in_dict_get_key(id_, proteome_file_ids)
                     # If the genbank file is the same as the one that the representative is in, skip (may be paralogous protein)
                     if proteome_file_id == proteome_file_id_current:
                         continue
@@ -395,11 +400,11 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
             merge_files[1].append(trembl_annotations)
         with open(swiss_prot_annotations, 'w') as sp, open(trembl_annotations, 'w') as tr:
             for loci, subject_info in loci_results.items():
-                subject_id: str = subject_info[0]
-                bsr_value: float = subject_info[1]
-                desc: str = descriptions[subject_id]
-                lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-                sname: str = desc.split('GN=')[1].split(' PE=')[0]
+                subject_id = subject_info[0]
+                bsr_value = subject_info[1]
+                desc = descriptions[subject_id]
+                lname= desc.split(subject_id + ' ')[1].split(' OS=')[0]
+                sname = desc.split('GN=')[1].split(' PE=')[0]
                 if sname == '':
                     sname = 'NA'
                 # Write to the appropriate file based on the start of subject_id
