@@ -1,4 +1,5 @@
 import os
+import shutil
 import pandas as pd
 from functools import reduce
 from typing import Dict, Any, List
@@ -41,12 +42,16 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
     pd.DataFrame
         The merged DataFrame.
     """
+    if len(files) == 1:
+        shutil.copy(files[0], output_file)
+        return None
+
     # Read all TSV files into a list of DataFrames
     dfs: List[pd.DataFrame] = []
     for file in files:
         current_df: pd.DataFrame = pd.read_csv(file, delimiter='\t', dtype=str)
         dfs.append(current_df)
-    
+
     # Merge all dataframes based on the key with custom suffixes
     merged_table: pd.DataFrame = dfs[0]
     for i in range(1, len(dfs)):
@@ -55,5 +60,3 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
     
     # Save the merged table to a TSV file
     merged_table.to_csv(output_file, sep='\t', index=False)
-
-    return merged_table

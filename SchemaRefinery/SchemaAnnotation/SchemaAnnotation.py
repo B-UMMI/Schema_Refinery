@@ -1,4 +1,5 @@
 import os
+import shutil
 import pandas as pd
 from argparse import Namespace
 from functools import reduce
@@ -108,6 +109,10 @@ def main(args: Namespace) -> None:
                                            args.cpu,
                                            args.processing_mode,)
         results_files.append(matched_schemas)
+
+    if len(results_files) == 1:
+        shutil.copy(results_files[0], os.path.join(args.output_directory, 'merged_file.tsv'))
+        return None
 
     # Merge all results into a single file
     dfs: List[pd.DataFrame] = []
