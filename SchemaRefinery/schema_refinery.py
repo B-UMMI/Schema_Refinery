@@ -28,7 +28,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
     from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
-    from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalagousLoci
+    from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
 

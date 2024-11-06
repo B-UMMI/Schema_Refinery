@@ -176,6 +176,8 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
         for query in not_matched_loci:
             out.write(f'{query}\tNot matched\tNA\n')
 
+    return best_blast_matches_file
+
 
 def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
                   translation_table: int, cpu: int, processing_mode: str):
@@ -309,4 +311,6 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
                                                                             bsr,
                                                                             cpu)
 
-    write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
+    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
+
+    return best_blast_matches_file

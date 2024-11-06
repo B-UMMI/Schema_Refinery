@@ -94,11 +94,6 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     str
         Path to the annotations file.
     """
-    
-    # Create output directory for genbank annotations
-    output_directory = os.path.join(output_directory, 'genbank_annotations')
-    ff.create_directory(output_directory)
-
     print("\nLoading GenBank files...")
     # List and sort GenBank files
     gbk_files: List[str] = [os.path.join(genbank_files, f) for f in os.listdir(genbank_files)]
@@ -219,7 +214,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     best_bsr_values: Dict[str, List[Union[str, float]]] = {}
     best_bsr_values_per_genbank_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts: int = len(reps_ids)
-    i: int = 1
+    i = 1
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(
@@ -330,8 +325,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     with open(best_annotations_file, 'w') as at:
         at.write(header)
         for loci, subject_info in best_bsr_values.items():
-            subject_id: str = subject_info[0]  # Get the original ID and not the modified Blast version
-            bsr_value: float = subject_info[1]  # Get the BSR value
+            subject_id = subject_info[0]  # Get the original ID and not the modified Blast version
+            bsr_value = subject_info[1]  # Get the BSR value
             # Check if any element is empty
             update_cds_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_info[0]]]
             # Write the annotations to the file
