@@ -110,7 +110,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Create dictionaries to hashed sequence and its representative ID
     hash_to_rep_id: Dict[str, str] = {}
     # Create dictionaries to store the representatives ID and what it representes
-    same_protein_other_annotations: Dict[str, List[Tuple[str, str, str]]] = {}
+    same_protein_other_annotations: Dict[str, List[Tuple[str, ...]]] = {}
 
     genbank_table_columns: List[str] = ['gene', 'product', 'translation'] + extra_genbank_table_columns
     # Parse GenBank files and extract protein annotations
@@ -212,7 +212,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, List[Union[str, float]]] = {}
-    best_bsr_values_per_genbank_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
+    best_bsr_values_per_genbank_file: Dict[str, Dict[str, Dict[str, Union[int, float]]]]] = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts: int = len(reps_ids)
     i = 1
 
@@ -226,7 +226,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             repeat(blastp_results_folder)
         ):
             # Get the alignments
-            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Union[int, float]]]]
+            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, Union[int, float]]]]]
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
 
             # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
