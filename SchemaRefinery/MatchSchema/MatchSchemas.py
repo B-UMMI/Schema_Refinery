@@ -311,8 +311,8 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
                                                                             blast_db_files,
                                                                             blast_folder,
                                                                             self_score_dict,
-                                                                            get_blastp_exec,
                                                                             max_id_length,
+                                                                            get_blastp_exec,
                                                                             bsr,
                                                                             cpu)
 
