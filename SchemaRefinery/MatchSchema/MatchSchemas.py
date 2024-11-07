@@ -274,7 +274,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
                                                         translation_table,
                                                         False)
         # Write the sequences to the master file
-        with open(master_file_path) as master:
+        with open(master_file_path, 'w') as master:
             for id_, sequence in trans_dict.items():
                 master.write(f">{id_}\n{sequence}\n")
 
