@@ -320,6 +320,16 @@ def schema_annotation() -> None:
                         default='reps',
                         choices=SCHEMA_ANNOTATION_RUN_MODE_CHOICES,
                         help='Mode to run the module: reps or alleles.')
+
+    parser.add_argument('-pm',
+                        '--processing-mode',
+                        type=str,
+                        required=False,
+                        dest='processing_mode',
+                        default='reps_vs_alleles',
+                        choices=PROCESSING_MODE_CHOICES,
+                        help='Mode to run the module for Schema match: reps_vs_reps,'
+                        'reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
     parser.add_argument('-egtc',
                         '--extra_genbank_table_columns',

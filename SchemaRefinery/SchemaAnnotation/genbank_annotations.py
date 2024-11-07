@@ -257,9 +257,10 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     # Check if the BSR value is the best for the locus
                     current_best_bsr: List[Union[str, float]] = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    if current_best_bsr and bsr_value > current_best_bsr[1]:
+                    # We are interested in the best match only
+                    if not current_best_bsr:
                         best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
-                    else:
+                    elif bsr_value > current_best_bsr[1]:
                         best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
 
                     # Get best value for genbank file

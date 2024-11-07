@@ -185,6 +185,7 @@ def identify_paralogous_loci(schema_directory: str,
                         continue
                     # Get the best BSR value between loci
                     # If the BSR is better than the current best, update it
+                    # Since there may be several paralogous we save the various matches
                     subject_loci_id: str = subject_id.split('_')[0]
                     if not best_bsr_values[query_loci_id].get(subject_loci_id):
                         best_bsr_values[query_loci_id][subject_loci_id] = computed_score
