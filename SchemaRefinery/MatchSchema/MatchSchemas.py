@@ -276,14 +276,14 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
                                                         False,
                                                         translation_table,
                                                         False)
-        # Write the sequences to the master file
-        with open(master_file_path, 'w') as master:
-            for id_, sequence in trans_dict.items():
-                master.write(f">{id_}\n{sequence}\n")
 
         # Update the subject translation dictionary
         subject_translation_dict.update(trans_dict)
     
+    # Write the sequences to the master file
+    with open(master_file_path, 'w') as master:
+        for id_, sequence in subject_translation_dict.items():
+            master.write(f">{id_}\n{sequence}\n")
 
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
