@@ -479,6 +479,116 @@ def get_alignments_dict_from_blast_results(
     return alignments_dict, self_scores, alignment_coords_all, alignment_coords_pident
 
 
+def get_alignments_dict_from_blast_results_simplified(
+    blast_results_file: str,
+    pident_threshold: float,
+    get_coords: bool,
+    skip_reverse_alignments: bool
+) -> Tuple[Dict[str, Dict[str, Dict[int, Dict[str, Any]]]], Union[int, Dict[str, int]], Dict[str, Dict[str, Dict[str, List[List[int]]]]], Dict[str, Dict[str, Dict[str, List[List[int]]]]]]:
+    """
+    Reads BLAST results file and extracts the necessary items. Based on input, also fetches the coordinates 
+    based on query sequences and self-score contained inside the BLAST results file.
+
+    Parameters
+    ----------
+    blast_results_file : str
+        Path to the BLAST result file.
+    pident_threshold : float
+        Pident threshold to exclude BLAST results.
+    get_coords : bool
+        Whether to fetch coordinates for the BLAST match.
+    skip_reverse_alignments : bool
+        Whether to skip inverse alignments.
+
+    Returns
+    -------
+    Tuple[Dict[str, Dict[str, Dict[int, Dict[str, Any]]]], Union[int, Dict[str, int]], Dict[str, Dict[str, Dict[str, List[List[int]]]]], Dict[str, Dict[str, Dict[str, List[List[int]]]]]]
+        - alignments_dict: Dictionary containing the results of the BLAST.
+        - alignment_coords_all: Contains the coordinates for the query/subject pair, the coordinates are in reference to the query.
+        - alignment_coords_pident: Contains the coordinates for the query/subject pair, the coordinates are in reference to the query and filtered by pident threshold.
+    """
+
+    alignments_dict: Dict[str, Dict[str, Dict[int, Dict[str, Any]]]] = {}
+    alignment_coords_pident: Dict[str, Dict[str, Dict[str, List[List[int]]]]] = {}
+    alignment_coords_all: Dict[str, Dict[str, Dict[str, List[List[int]]]]] = {}
+
+    with open(blast_results_file, "r") as f:
+        lines: List[str] = f.readlines()
+        i: int = 1
+        for line in lines:
+            # Extract the columns into the variables
+            cols: List[str] = line.strip().split("\t")
+            query: str = cols[0]
+            subject: str = cols[1]
+            query_length: int = int(cols[2])
+            subject_length: int = int(cols[3])
+            query_start: int = int(cols[4])
+            query_end: int = int(cols[5])
+            subject_start: int = int(cols[6])
+            subject_end: int = int(cols[7])
+            length: int = int(cols[8])
+            score: int = int(cols[9])
+            gaps: int = int(cols[10])
+            pident: float = float(cols[11])
+
+            # Save the dict
+            value: Dict[str, Any] = {
+                "query": query,
+                "subject": subject,
+                "query_length": query_length,
+                "subject_length": subject_length,
+                "query_start": query_start,
+                "query_end": query_end,
+                "subject_start": subject_start,
+                "subject_end": subject_end,
+                "length": length,
+                "score": score,
+                "gaps": gaps,
+                "pident": pident
+            }
+
+            if skip_reverse_alignments:
+                if query_start > query_end or subject_start > subject_end:
+                    continue
+
+            if query not in alignments_dict:
+                alignments_dict[query] = {}
+                if get_coords:
+                    alignment_coords_all[query] = {}
+                    alignment_coords_pident[query] = {}
+            if subject not in alignments_dict[query]:
+                # Create and save the first entry of BLAST
+                alignments_dict[query][subject] = {i: value}
+                if get_coords:
+                    alignment_coords_all[query][subject] = {
+                        'query': [[query_start, query_end]], 
+                        'subject': [[subject_start, subject_end]]
+                    }
+                    # Align by pident
+                    if pident >= pident_threshold:
+                        alignment_coords_pident[query][subject] = {
+                            'query': [[query_start, query_end]],
+                            'subject': [[subject_start, subject_end]]
+                        }
+                    else:
+                        alignment_coords_pident[query][subject] = {
+                            'query': [],
+                            'subject': []
+                        }
+            else:
+                # Save the other entries based on total number of entries present to get the ID
+                k: int = max(alignments_dict[query][subject].keys()) + 1
+                alignments_dict[query][subject][k] = value
+                if get_coords:
+                    alignment_coords_all[query][subject]['query'].append([query_start, query_end])
+                    alignment_coords_all[query][subject]['subject'].append([subject_start, subject_end])
+                    # Align by pident
+                    if pident >= pident_threshold:
+                        alignment_coords_pident[query][subject]['query'].append([query_start, query_end])
+                        alignment_coords_pident[query][subject]['subject'].append([subject_start, subject_end])
+
+    return alignments_dict, alignment_coords_all, alignment_coords_pident
+
 def remove_inverse_alignments(
     alignments_dict: Dict[str, Dict[str, Any]], 
     all_representatives_alignments_dict: Dict[str, Dict[str, Any]]

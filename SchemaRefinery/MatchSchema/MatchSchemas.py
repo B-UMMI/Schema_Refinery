@@ -106,7 +106,10 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                                 repeat(blastp_results_folder)):
             # Get the alignments
             filtered_alignments_dict: Dict[str, Dict[str, Dict[str, float]]]
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+            filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results_simplified(res[1],
+                                                                                                        0,
+                                                                                                        False,
+                                                                                                        True)
 
             # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
