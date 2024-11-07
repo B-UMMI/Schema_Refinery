@@ -203,9 +203,10 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
                     # Check if the BSR value is the best for the locus
                     current_best_bsr: Optional[Tuple[str, float]] = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    if current_best_bsr and bsr_value > current_best_bsr[1]:
+                    # We are interested in the best match only
+                    if not current_best_bsr:
                         best_bsr_values[loci] = (subject_id, bsr_value)
-                    else:
+                    elif bsr_value > current_best_bsr[1]:
                         best_bsr_values[loci] = (subject_id, bsr_value)
                         
                     # Get best value for genbank file

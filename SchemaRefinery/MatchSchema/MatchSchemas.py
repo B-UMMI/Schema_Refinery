@@ -135,10 +135,12 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                     # Check if the BSR value is the best for the locus
                     current_best_bsr: Optional[Tuple[str, float]] = best_bsr_values.get(loci)
                     # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    if current_best_bsr and bsr_value > current_best_bsr[1]:
+                    # We are interested in the best match only
+                    if not current_best_bsr:
                         best_bsr_values[loci] = (subject_loci, bsr_value)
-                    else:
+                    elif bsr_value > current_best_bsr[1]:
                         best_bsr_values[loci] = (subject_loci, bsr_value)
+
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
