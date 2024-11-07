@@ -205,6 +205,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     -------
     None
     """
+    print("\nRunning MatchSchemas...")
     # Query schema files
     query_files: Dict[str, str]
     query_files_short: Dict[str, str]
