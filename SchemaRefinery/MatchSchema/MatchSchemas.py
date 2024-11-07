@@ -225,6 +225,8 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     ff.create_directory(blast_folder)
     query_translation_folder: str = os.path.join(output_directory, 'Query_Translation')
     ff.create_directory(query_translation_folder)
+    subject_translation_folder: str = os.path.join(output_directory, 'Subject_Translation')
+    ff.create_directory(subject_translation_folder)
     
     len_query_fastas: int = len(query_fastas)
     len_subject_fasta: int = len(subject_fastas)
@@ -270,7 +272,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         # Save the IDs of the alleles
         subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
         # Create translation file path
-        subject_fasta_translation = os.path.join(query_translation_folder, f"{subject_loci}-translation.fasta")
+        subject_fasta_translation = os.path.join(subject_translation_folder, f"{subject_loci}-translation.fasta")
         # Translate sequences and update translation dictionary
         subject_translations_paths[subject_loci] = subject_fasta_translation
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
