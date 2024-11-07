@@ -228,6 +228,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     query_translation_dict: Dict[str, str] = {}
     query_ids: Dict[str, List[str]] = {}
     query_translations_paths: Dict[str, str] = {}
+    i = 0
     for query_loci, path in query_fastas.items():
         print(f"\rTranslated query loci FASTA: {i}/{len_query_fastas}", end='', flush=True)
         i += 1
