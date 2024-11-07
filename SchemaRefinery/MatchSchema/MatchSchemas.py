@@ -170,7 +170,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
     
     # Write the best BLAST matches to a file
     with open(best_blast_matches_file, 'w') as out:
-        out.write('Query\tBest Match\tBSR\n')
+        out.write('Locus\tBest Match\tBSR\n')
         for query, match in best_bsr_values.items():
             out.write(f'{query}\t{match[0]}\t{match[1]}\n')
         for query in not_matched_loci:
@@ -232,8 +232,8 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     i = 0
     print("\nTranslating sequences for query schema...")
     for query_loci, path in query_fastas.items():
-        print(f"\rTranslated query loci FASTA: {i}/{len_query_fastas}", end='', flush=True)
         i += 1
+        print(f"\rTranslated query loci FASTA: {i}/{len_query_fastas}", end='', flush=True)
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -260,8 +260,8 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     i = 0
     print("\nTranslating sequences for subject schema...")
     for subject_loci, path in subject_fastas.items():
-        print(f"\rTranslated subject loci FASTA: {i}/{len_subject_fasta}", end='', flush=True)
         i += 1
+        print(f"\rTranslated subject loci FASTA: {i}/{len_subject_fasta}", end='', flush=True)
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
