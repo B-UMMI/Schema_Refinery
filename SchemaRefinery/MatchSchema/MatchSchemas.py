@@ -230,6 +230,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     query_ids: Dict[str, List[str]] = {}
     query_translations_paths: Dict[str, str] = {}
     i = 0
+    print("\nTranslating sequences for query schema...")
     for query_loci, path in query_fastas.items():
         print(f"\rTranslated query loci FASTA: {i}/{len_query_fastas}", end='', flush=True)
         i += 1
@@ -256,6 +257,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     subject_ids: Dict[str, List[str]] = {}
     subject_translations_paths: Dict[str, str] = {}
     master_file_path: str = os.path.join(blast_folder, 'master_file.fasta')
+    print("\nTranslating sequences for subject schema...")
     for subject_loci, path in subject_fastas.items():
         print(f"\rTranslated subject loci FASTA: {i}/{len_subject_fasta}", end='', flush=True)
         i += 1
@@ -304,6 +306,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_files, 'prot')
 
     # Run BLAST
+    print("\nRunning BLASTs between schemas...")
     best_bsr_values: Dict[str, Tuple[str, float]] = run_blasts_match_schemas(query_translations_paths,
                                                                             blast_db_files,
                                                                             blast_folder,
