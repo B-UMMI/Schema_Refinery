@@ -31,35 +31,76 @@ def tryeval(val):
 
 
 def check_minimum(value, minimum):
-    """Check if a value is below a threshold value."""
+    """Check if a value is below a threshold value.
 
-    if value < minimum:
-        return False
-    else:
-        return True
+    Parameters
+    ----------
+    value : int or float
+        The value to check.
+    minimum : int or float
+        The minimum threshold value.
+
+    Returns
+    -------
+    bool
+        True if the value is above or equal to the minimum, False otherwise.
+    """
+    return value >= minimum
 
 
 def check_maximum(value, maximum):
-    """Check if a value is above a threshold value."""
+    """Check if a value is above a threshold value.
 
-    if value > maximum:
-        return False
-    else:
-        return True
+    Parameters
+    ----------
+    value : int or float
+        The value to check.
+    maximum : int or float
+        The maximum threshold value.
+
+    Returns
+    -------
+    bool
+        True if the value is below or equal to the maximum, False otherwise.
+    """
+    return value <= maximum
 
 
 def check_value_interval(value, minimum, maximum):
-    """Check if parameter value is contained in interval."""
+    """Check if parameter value is contained in interval.
 
-    if check_minimum(value) and check_maximum(value):
-        return True
-    else:
-        False
+    Parameters
+    ----------
+    value : int or float
+        The value to check.
+    minimum : int or float
+        The minimum threshold value.
+    maximum : int or float
+        The maximum threshold value.
+
+    Returns
+    -------
+    bool
+        True if the value is within the interval [minimum, maximum], False otherwise.
+    """
+    return check_minimum(value, minimum) and check_maximum(value, maximum)
 
 
 def check_value_type(value, expected_type):
-    """Check if parameter is of expected type."""
+    """Check if parameter is of expected type.
 
+    Parameters
+    ----------
+    value : any
+        The value to check.
+    expected_type : type
+        The expected type of the value.
+
+    Returns
+    -------
+    any
+        The converted value if it matches the expected type, None otherwise.
+    """
     try:
         if expected_type is bool:
             converted = tryeval(value)
@@ -74,16 +115,36 @@ def check_value_type(value, expected_type):
 
 
 def check_path(value):
-    """Check if a path exists."""
+    """Check if a path exists.
 
-    if os.path.exists(value):
-        return True
-    else:
-        return False
+    Parameters
+    ----------
+    value : str
+        The path to check.
+
+    Returns
+    -------
+    bool
+        True if the path exists, False otherwise.
+    """
+    return os.path.exists(value)
 
 
 def check_in_list(values, expected_values):
-    """"""
+    """Check if all values are in the expected values list.
+
+    Parameters
+    ----------
+    values : list
+        The list of values to check.
+    expected_values : list
+        The list of expected values.
+
+    Returns
+    -------
+    list or bool
+        The list of values if all are in the expected values, False otherwise.
+    """
     intersection = set.intersection(set(expected_values), set(values))
     if len(intersection) < len(values):
         return False
@@ -91,10 +152,30 @@ def check_in_list(values, expected_values):
         return values
 
 
-def check_parameter(value, validate_type, validate_minimum, validate_maximum,
-                    validate_path, validate_list):
-    """Validate a value passed to a parameter."""
-    
+def check_parameter(value, validate_type=None, validate_minimum=None, validate_maximum=None,
+                    validate_path=False, validate_list=None):
+    """Validate a value passed to a parameter.
+
+    Parameters
+    ----------
+    value : any
+        The value to validate.
+    validate_type : type, optional
+        The expected type of the value.
+    validate_minimum : int or float, optional
+        The minimum threshold value.
+    validate_maximum : int or float, optional
+        The maximum threshold value.
+    validate_path : bool, optional
+        Whether to check if the value is a valid path.
+    validate_list : list, optional
+        The list of expected values.
+
+    Returns
+    -------
+    any
+        The validated value if all checks pass, None otherwise.
+    """
     valid = True
     if validate_type and valid:
         value = check_value_type(value, validate_type)
@@ -102,23 +183,23 @@ def check_parameter(value, validate_type, validate_minimum, validate_maximum,
             valid = False
     if validate_minimum and valid:
         valid_min = check_minimum(value, validate_minimum)
-        if valid_min is None:
+        if not valid_min:
             valid = False
     if validate_maximum and valid:
         valid_max = check_maximum(value, validate_maximum)
-        if valid_max is None:
+        if not valid_max:
             valid = False
     if validate_path and valid:
         valid_path = check_path(value)
-        if valid_path is None:
+        if not valid_path:
             valid = False
     if validate_list and valid:
         value = check_in_list(value.split(','), validate_list)
-        if value is None:
+        if value is False:
             valid = False
 
-    if valid is None:
-        return valid
+    if not valid:
+        return None
     else:
         return value
 
