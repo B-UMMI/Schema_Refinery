@@ -90,6 +90,7 @@ def identify_paralogous_loci(schema_directory: str,
     ff.create_directory(blast_folder)
     translation_folder: str = os.path.join(output_directory, 'Translation')
     ff.create_directory(translation_folder)
+    # Total loci
     len_short_folder: int = len(fasta_files_dict)
     master_file_path: str = os.path.join(blast_folder, 'master_file.fasta')
     query_paths_dict: Dict[str, str] = {}
@@ -100,6 +101,7 @@ def identify_paralogous_loci(schema_directory: str,
         # Get the subject and query FASTA files
         subject_fasta: str = fasta_files_dict[loci] if processing_mode.split('_')[-1] == 'alleles' else fasta_files_short_dict[loci]
         query_fasta: str = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'rep' else fasta_files_dict[loci]
+        # Translation variables
         query_fasta_translation: str = os.path.join(translation_folder, f"{loci}-translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
