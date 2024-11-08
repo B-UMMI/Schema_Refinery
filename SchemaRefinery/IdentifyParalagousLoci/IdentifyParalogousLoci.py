@@ -217,7 +217,7 @@ def identify_paralogous_loci(schema_directory: str,
     paralogous_loci_report_cluster_by_id: str = os.path.join(output_directory, 'paralogous_loci_report_cluster_by_id.tsv')
     with open(paralogous_loci_report_cluster_by_id, 'a') as report_file:
         for cluster in paralogous_list:
-            report_file.write(f"{','.join(cluster)}\n")
+            report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n")
     # Cluster the paralogous loci by id that passed the mode check and write the results to a file
     paralogous_list_mode_check = cf.cluster_by_ids(paralogous_list_mode_check)
     paralogous_loci_report_mode: str = os.path.join(output_directory, 'paralogous_loci_report_mode.tsv')
