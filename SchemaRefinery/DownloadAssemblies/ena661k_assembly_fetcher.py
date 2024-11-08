@@ -26,9 +26,9 @@ from itertools import repeat
 from typing import List, Tuple, Dict, Any
 
 try:
-    from DownloadAssemblies import constants as ct
+    from utils import constants as ct
 except ModuleNotFoundError:
-    from SchemaRefinery.DownloadAssemblies import constants as ct
+    from SchemaRefinery.utils import constants as ct
 
 
 # Increase the field_size_limit to handle large fields in the input file

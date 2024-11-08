@@ -158,8 +158,10 @@ def main(args: Any) -> None:
             if args.api_key is not None:
                 arguments.extend(['--api-key', args.api_key])
 
-            if criteria['file_to_include'] is not None:
+            if criteria is not None and criteria['file_to_include'] is not None:
                 arguments.extend(['--include', ','.join(criteria['file_to_include'])])
+            else:
+                arguments.extend(['--include', 'genome'])
 
             assemblies_zip: str = os.path.join(args.output_directory, 'assemblies.zip')
             arguments.extend(['--filename', assemblies_zip])

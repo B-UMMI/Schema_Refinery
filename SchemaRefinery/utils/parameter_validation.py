@@ -4,9 +4,9 @@ import ast
 import csv
 
 try:
-    from DownloadAssemblies import constants as ct
+    from utils import constants as ct
 except ModuleNotFoundError:
-    from SchemaRefinery.DownloadAssemblies import constants as ct
+    from SchemaRefinery.utils import constants as ct
 
 
 def tryeval(val):

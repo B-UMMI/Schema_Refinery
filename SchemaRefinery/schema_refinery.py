@@ -22,6 +22,7 @@ try:
     from IdentifyParalagousLoci import IdentifyParalogousLoci
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
+    from utils import constants as ct
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -31,22 +32,8 @@ except ModuleNotFoundError:
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
+    from SchemaRefinery.utils import constants as ct
 
-GENBANK_CDS_QUALIFIERS_CHOICES = [
-    "db_xref", "note", "codon_start", "transl_table", "translation", 
-    "locus_tag", "function", "EC_number", "standard_name", "pseudo",
-    "operon", "old_locus_tag", "exception"
-]
-
-PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
-
-IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema']
-
-SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
-
-DATABASE_CHOICES = ['NCBI', 'ENA661K']
-
-SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'uniprot-sparql', 'match-schemas']
 
 def download_assemblies() -> None:
     """
@@ -77,7 +64,7 @@ def download_assemblies() -> None:
                         required=True,
                         dest='database',
                         nargs='+',
-                        choices=DATABASE_CHOICES,
+                        choices=ct.DATABASE_CHOICES,
                         help='Databases from which assemblies will be downloaded.')
 
     parser.add_argument('-o',
@@ -107,7 +94,8 @@ def download_assemblies() -> None:
                         required=False,
                         default=1,
                         dest='threads',
-                        help='Number of threads used for download. You should provide an API key to perform more requests through Entrez.')
+                        help='Number of threads used for download. You should provide an API'
+                        'key to perform more requests through Entrez.')
 
     parser.add_argument('-r',
                         '--retry',
@@ -202,7 +190,7 @@ def schema_annotation() -> None:
                         required=True,
                         dest='annotation_options',
                         nargs='+',
-                        choices=SCHEMA_ANNOTATION_RUNS_CHOICES,
+                        choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
                         help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
 
     parser.add_argument('-pt',
@@ -318,7 +306,7 @@ def schema_annotation() -> None:
                         required=False,
                         dest='run_mode',
                         default='reps',
-                        choices=SCHEMA_ANNOTATION_RUN_MODE_CHOICES,
+                        choices=ct.SCHEMA_ANNOTATION_RUN_MODE_CHOICES,
                         help='Mode to run the module: reps or alleles.')
 
     parser.add_argument('-pm',
@@ -327,7 +315,7 @@ def schema_annotation() -> None:
                         required=False,
                         dest='processing_mode',
                         default='reps_vs_alleles',
-                        choices=PROCESSING_MODE_CHOICES,
+                        choices=ct.PROCESSING_MODE_CHOICES,
                         help='Mode to run the module for Schema match: reps_vs_reps,'
                         'reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
@@ -338,7 +326,7 @@ def schema_annotation() -> None:
                         dest='extra_genbank_table_columns',
                         nargs='+',
                         default=[],
-                        choices=GENBANK_CDS_QUALIFIERS_CHOICES,
+                        choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
 
     parser.add_argument('-gia',
@@ -348,7 +336,7 @@ def schema_annotation() -> None:
                     dest='genbank_ids_to_add',
                     nargs='+',
                     default=[],
-                    choices=GENBANK_CDS_QUALIFIERS_CHOICES,
+                    choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of GenBank IDs to add to final results.')
     
     parser.add_argument('-pia',
@@ -358,7 +346,7 @@ def schema_annotation() -> None:
                     dest='proteome_ids_to_add',
                     nargs='+',
                     default=[],
-                    choices=GENBANK_CDS_QUALIFIERS_CHOICES,
+                    choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of Proteome IDs to add to final results.')
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -502,7 +490,7 @@ def identify_spurious_genes() -> None:
                         required=False,
                         dest='run_mode',
                         default='schema',
-                        choices=IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES,
+                        choices=ct.IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES,
                         help='Run mode for identifying spurious loci.')
 
     parser.add_argument('-pm',
@@ -511,7 +499,7 @@ def identify_spurious_genes() -> None:
                         required=False,
                         dest='processing_mode',
                         default='reps_vs_alleles',
-                        choices=PROCESSING_MODE_CHOICES,
+                        choices=ct.PROCESSING_MODE_CHOICES,
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
 
     parser.add_argument('-c',
@@ -673,7 +661,7 @@ def identify_paralogous_loci() -> None:
                         type=str,
                         required=False,
                         dest='processing_mode',
-                        choices=PROCESSING_MODE_CHOICES,
+                        choices=ct.PROCESSING_MODE_CHOICES,
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
@@ -756,7 +744,7 @@ def match_schemas() -> None:
                         type=str,
                         required=False,
                         dest='processing_mode',
-                        choices=PROCESSING_MODE_CHOICES,
+                        choices=ct.PROCESSING_MODE_CHOICES,
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
