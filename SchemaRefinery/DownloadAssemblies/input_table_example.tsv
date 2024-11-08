@@ -1,0 +1,13 @@
+abundance	0.8
+genome_size	2.0
+size_threshold	0.2
+max_contig_number	150
+known_st	False
+any_quality	False
+ST_list_path	None
+assembly_level	chromosome,complete,contig,scaffold'
+reference	False
+assembly_source	all
+file_to_include	genome,gbff
+verify_status	True
+exclude_atypical	True
