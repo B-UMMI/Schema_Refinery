@@ -20,6 +20,7 @@ try:
     from utils import parameter_validation as pv
     from RefineSchema import IdentifySpuriousGenes
     from IdentifyParalagousLoci import IdentifyParalogousLoci
+    from IdentifyProblematicLoci import IdentifyProblematicLoci
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
     from utils import constants as ct
@@ -30,6 +31,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
+    from SchemaRefinery.IdentifyProblematicLoci import IdentifyProblematicLoci
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
     from SchemaRefinery.utils import constants as ct
@@ -672,6 +674,64 @@ def identify_paralogous_loci() -> None:
     IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
 
+def identify_problematic_loci() -> None:
+    """
+    Parse command-line arguments and initiate the process to identify problematic loci.
+
+    This function sets up an argument parser to handle various command-line
+    options for identifying problematic loci in a schema. It then calls the main
+    function of the IdentifyProblematicLoci class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    
+    # Add arguments to the parser
+    parser.add_argument('-d',
+                        '--distinct-hashtable',
+                        type=str,
+                        required=True,
+                        dest='distinct_hashtable',
+                        help='Path to the distinct.hashtable file containing CDS sequences.')
+    
+    parser.add_argument('-s',
+                        '--schema-directory',
+                        type=str,
+                        required=True,
+                        dest='schema_directory',
+                        help='Path to the directory containing schema loci.')
+    
+    parser.add_argument('-o',
+                        '--output-directory',
+                        type=str,
+                        required=True,
+                        dest='output_directory',
+                        help='Path to the directory where the output file will be saved.')
+    
+    parser.add_argument('-pt',
+                        '--problematic-threshold',
+                        type=float,
+                        required=False,
+                        dest='problematic_threshold',
+                        default=0.1,
+                        help='Threshold for determining if a locus is problematic.')
+    
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Call the main function of the IdentifyProblematicLoci class with the parsed arguments
+    IdentifyProblematicLoci.identify_problematic_loci(**vars(args))
+
+
 def match_schemas() -> None:
     """
     Parse command-line arguments and initiate the process to match schemas.
@@ -768,6 +828,7 @@ def main():
                                         identify_spurious_genes],
                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
                         'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
+                        'IdentifyProblematicLoci': ["Identify problematic loci based on the presence of NIPHs and NIPHEMs.", identify_problematic_loci],
                         'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
