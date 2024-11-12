@@ -1650,7 +1650,8 @@ def count_number_of_reps_and_alleles(clusters_to_keep: Dict[str, Dict[int, List[
                                     drop_possible_loci: Set[int], group_reps_ids: Dict[int, Set[int]], 
                                     group_alleles_ids: Dict[int, Set[int]]) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
     """
-    Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in the drop set.
+    Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in
+    the drop set.
 
     This function iterates through the clusters to keep and counts the number of representatives and alleles
     for each group, updating the provided dictionaries with the results. It excludes groups that are marked
