@@ -174,8 +174,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         # Add again the deduplicated sequences
         for hash, elements in protein_hashes.items():
             deduplicated_protein = all_translation_dict[elements[0]]
+            prot_len = len(deduplicated_protein)
             for element in elements[1:]:
                 all_translation_dict.setdefault(element, deduplicated_protein)
+                prot_len_dict.setdefault(element, prot_len)
 
         # Calculate the total number of clusters
         total_number_clusters: int = len(all_alleles)
@@ -213,7 +215,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         # Update all_alleles with the filtered results
         all_alleles = filtered_alleles
-
+        # Filter also the all_translation_dict dicgt
+        all_translation_dict = {key: value for key, value in all_translation_dict.items() if key in itf.flatten_list(all_alleles.values())}
         print("\nRetrieving kmers similarity and coverage between representatives...")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
         if processing_mode.split('_')[0] == 'alleles':
