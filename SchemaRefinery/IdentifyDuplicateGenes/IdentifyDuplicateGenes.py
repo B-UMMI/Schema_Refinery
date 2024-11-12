@@ -22,7 +22,7 @@ except ModuleNotFoundError:
                                       pandas_functions as pf,
                                       sequence_functions as sf)
 
-def identify_problematic_loci(distinct_hashtable: str, 
+def identify_duplicate_gene(distinct_hashtable: str, 
                               schema_directory: str, 
                               output_directory: str, 
                               problematic_threshold: float) -> None:
@@ -89,9 +89,10 @@ def identify_problematic_loci(distinct_hashtable: str,
             if len(unique_elements) != len(allele_presence_in_genomes):
                 niphems_genomes: List[int] = itf.get_duplicates(allele_presence_in_genomes)
                 niphems_in_loci.setdefault(loci_id, []).extend(niphems_genomes)
-            
+
         # Get shared NIPHs in genomes
         niphs_in_genomes: Set[int] = set(itf.get_shared_elements(temp_niphs_in_loci[loci_id]))
+
         niphs_in_loci.setdefault(loci_id, niphs_in_genomes)
         
         # Get NIPHEMs in genomes
@@ -100,7 +101,7 @@ def identify_problematic_loci(distinct_hashtable: str,
         # Calculate problematic genomes in possible new loci
         problematic_genomes_in_loci: Set[int] = niphs_in_genomes | niphems_in_genomes
         
-        # Calculate total possible new loci genome presence
+        # Calculate total genome presence
         total_loci_genome_presence[loci_id] = len(set(itf.flatten_list(temp_niphs_in_loci[loci_id].values())))
         
         # Calculate problematic proportion
@@ -110,7 +111,7 @@ def identify_problematic_loci(distinct_hashtable: str,
     # Write the groups that were removed due to the presence of NIPHs or NIPHEMs
     niphems_and_niphs_file: str = os.path.join(output_directory, 'niphems_and_niphs_groups.tsv')
     with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
-        niphems_and_niphs.write('Group_ID\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
-        for group, proportion in problematic_loci.items():
-            outcome: str = 'Drop' if proportion >= problematic_threshold else 'Kept'
-            niphems_and_niphs.write(f"{group}\t{proportion}\t{outcome}\n")
+        niphems_and_niphs.write('Loci\tcount_of_NIPHEMs\tcount_of_NIPHs\tTotal_genomes\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
+        for loci_id, proportion in problematic_loci.items():
+            outcome: str = 'Drop' if proportion >= problematic_threshold else 'Keep'
+            niphems_and_niphs.write(f"{loci_id}\t{len(niphems_in_loci[loci_id])}\t{len(set(itf.get_shared_elements(temp_niphs_in_loci[loci_id])))}\t{total_loci_genome_presence[loci_id]}\t{proportion}\t{outcome}\n")

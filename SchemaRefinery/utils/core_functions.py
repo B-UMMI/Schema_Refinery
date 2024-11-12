@@ -186,13 +186,15 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
                 sim: Union[float, str]
                 cov: Union[float, str]
                 sim, cov = reps_kmers_sim[query][subject]
+                sim = round(sim, 2)
+                cov = round(cov, 2)
             else:
                 sim = 0
                 cov = 0
         else:
             sim = '-'
             cov = '-'
-        return round(sim, 2), round(cov, 2)
+        return sim, cov
 
     def get_bsr_value(bsr_values: Dict[str, Dict[str, float]], 
                       query: str, subject: str) -> float:

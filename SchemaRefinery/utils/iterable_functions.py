@@ -765,7 +765,7 @@ def get_common_elements_in_lists(list_of_lists: List[List[Any]]) -> List[Any]:
     return list(intersection_set)
 
 
-def get_shared_elements(dict_: Dict[str, List[Any]]) -> List[Any]:
+def get_shared_elements(dict_: Dict[str, Set[Any]]) -> List[Any]:
     """
     Identify elements that appear in at least two lists within a dictionary.
 
@@ -779,9 +779,15 @@ def get_shared_elements(dict_: Dict[str, List[Any]]) -> List[Any]:
     list
         A list containing elements that appear in at least two lists within the dictionary.
     """
-    all_elements = [elem for sublist in dict_.values() for elem in sublist]
+    # Flatten all sets into a single list
+    all_elements = [elem for subset in dict_.values() for elem in subset]
+    
+    # Count the occurrences of each element
     element_counts = Counter(all_elements)
+    
+    # Identify elements that appear in at least two sets
     shared_elements = [elem for elem, count in element_counts.items() if count >= 2]
+    
     return shared_elements
 
 
