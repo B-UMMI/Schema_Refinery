@@ -478,14 +478,6 @@ def identify_spurious_genes() -> None:
                         default=0.8,
                         help='Size ratio to consider alleles as the same locus.')
     
-    parser.add_argument('-pp',
-                        '--problematic_proportion',
-                        type=float,
-                        required=False,
-                        dest='problematic_proportion',
-                        default=0,
-                        help='Proportion of problematic (NIPHS and NIPHEMS) CDSs per loci allowed.')
-    
     parser.add_argument('-m',
                         '--run-mode',
                         type=str,

@@ -674,7 +674,7 @@ def cluster_by_minimizers(all_translation_dict: Dict[str, str],
         constants[3],
         constants[4],
         True,
-        constants[9]
+        constants[8]
     )
 
     return all_alleles, reps_sequences, reps_groups, prot_len_dict

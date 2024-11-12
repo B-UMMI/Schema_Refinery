@@ -505,7 +505,7 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
     classes_outcome: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
     pident: float = constants[1]
     bsr: float = constants[7]
-    size_ratio: float = 1 - constants[9]
+    size_ratio: float = 1 - constants[8]
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():

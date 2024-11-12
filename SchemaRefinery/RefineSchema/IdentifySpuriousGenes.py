@@ -436,8 +436,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         possible_new_loci: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim: float, clustering_cov:float,
         genome_presence: int, absolute_size: int, translation_table: int,
-        bsr: float, problematic_proportion: float, size_ratio: float,
-        run_mode: str, processing_mode: str, cpu: int) -> None:
+        bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int) -> None:
     """
     Main function to identify spurious genes in a schema.
 
@@ -467,8 +466,6 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Genetic code used for translation.
     bsr : float
         BLAST Score Ratio value.
-    problematic_proportion : float
-        Proportion threshold for problematic genes.
     size_ratio : float
         Size ratio threshold.
     run_mode : str
@@ -496,7 +493,6 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
                 absolute_size,
                 translation_table,
                 bsr,
-                problematic_proportion,
                 size_ratio]
     
     if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
