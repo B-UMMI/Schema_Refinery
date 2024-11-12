@@ -112,5 +112,5 @@ def identify_problematic_loci(distinct_hashtable: str,
     with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
         niphems_and_niphs.write('Group_ID\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
         for group, proportion in problematic_loci.items():
-            outcome: str = 'Dropped' if proportion >= problematic_threshold else 'Kept'
+            outcome: str = 'Drop' if proportion >= problematic_threshold else 'Kept'
             niphems_and_niphs.write(f"{group}\t{proportion}\t{outcome}\n")
