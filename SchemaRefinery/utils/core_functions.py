@@ -192,7 +192,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
         else:
             sim = '-'
             cov = '-'
-        return sim, cov
+        return round(sim, 2), round(cov, 2)
 
     def get_bsr_value(bsr_values: Dict[str, Dict[str, float]], 
                       query: str, subject: str) -> float:
