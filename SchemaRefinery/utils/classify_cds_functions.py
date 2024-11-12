@@ -286,14 +286,15 @@ def replace_ids_in_clusters(clusters: Dict[str, List[str]],
             i += 1
         clusters[cluster] = new_members_ids
     # Change IDs in reps_kmers_sim
-    for cluster_id, elements_id in list(reps_kmers_sim.items()):
-        cluster_rep_id: str = f"{cluster_id}_1"
-        reps_kmers_sim.setdefault(cluster_rep_id, {})
+    for cds_id, elements_id in list(reps_kmers_sim.items()):
+        print(cds_id)
+        new_id_key = cds_original_ids.get(cds_id)[0]
+        reps_kmers_sim.setdefault(new_id_key, {})
         for element_id, kmers in elements_id.items():
             if cds_original_ids.get(element_id):
                 new_id: str = cds_original_ids[element_id][0]
-            reps_kmers_sim[cluster_rep_id].setdefault(new_id, kmers)
-        del reps_kmers_sim[cluster_id]
+            reps_kmers_sim[new_id_key].setdefault(new_id, kmers)
+        del reps_kmers_sim[cds_id]
 
     return cds_original_ids
 
