@@ -1,5 +1,6 @@
 import os
 import concurrent.futures
+import pandas as pd
 from itertools import repeat
 from typing import Dict, Any, List, Tuple, Union, Optional, Set
 
@@ -558,119 +559,59 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
     return classes_outcome
 
 
-def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
-                                         constants: Tuple[Any, ...]) -> Tuple[str, ...]:
+def sort_blast_results_by_classes(representative_blast_results, classes_outcome):
     """
-    Separates BLAST results into predefined classes based on specific criteria.
-
-    This function iterates through BLAST results and classifies each result into a specific class
-    based on criteria such as global alignment percentage, bit score ratio (bsr), and frequency ratios
-    between query and subject CDS in genomes. The classification is done by updating the results
-    dictionary with a new key-value pair indicating the class of each BLAST result.
+    Sorts BLAST results by classes based on the alignment score.
+    
+    This function organizes BLAST results into a sorted structure according to predefined classes.
+    It ensures that for each query, the results are grouped by the class of the alignment, prioritizing
+    the classes as specified in the `classes_outcome` list.
 
     Parameters
     ----------
-    representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
-        A nested dictionary where the first level keys are query sequence IDs, the second level keys
-        are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
-        result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
-        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
-    constants : Tuple[Any, ...]
-        A collection of constants used in the classification criteria. Specifically, `constants[1]`
-        is used as a threshold for the percentage identity (pident) in one of the classification conditions.
+    representative_blast_results : dict
+        A dictionary where each key is a query identifier and each value is another dictionary.
+        The inner dictionary's keys are subject identifiers, and values are lists containing
+        details of the match, where the second element is a dictionary with the key 'class'
+        indicating the class of the alignment.
+    classes_outcome : tuple
+        A list of possible classes outcomes to sort the BLAST results into. The order in this list
+        determines the priority of the classes when organizing the results.
 
     Returns
     -------
-    Tuple[str, ...]
-        A tuple of class identifiers indicating the order of priority for the classes.
+    sorted_blast_dict : dict
+        A dictionary structured similarly to `representative_blast_results`, but sorted such that
+        all results for a given query are grouped by their class as determined by the highest
+        scoring alignment.
 
     Notes
     -----
-    - The function modifies `representative_blast_results` in place by adding a 'class' key to each
-      BLASTN result dictionary.
-    - The classification logic is based on a combination of alignment quality metrics and frequency
-      ratios, with specific thresholds and conditions determining the class assignment.
-    - The function assumes that `constants` provides necessary thresholds for classification and
-      that its elements are accessed by index.
+    - The function assumes that each match list in the values of `representative_blast_results`
+      contains at least one element, which is a dictionary with a 'class' key.
+    - It creates a temporary dictionary to first group results by class, then consolidates these
+      into the final sorted dictionary to be returned.
     """
-    
-    def add_class_to_dict(class_name: str) -> None:
-        """
-        Adds a class identifier to a BLAST result within the representative_blast_results dictionary.
-
-        This helper function is used to update the BLASTN result dictionaries with a 'class' key,
-        assigning the specified class identifier based on the classification logic in the outer function.
-
-        Parameters
-        ----------
-        class_name : str
-            The class identifier to be added to the BLASTN result. This should be one of the values
-            from the classes_outcome tuple defined in the outer function.
-
-        Notes
-        -----
-        - This function directly modifies the `representative_blast_results` dictionary from the outer
-          scope, specifically adding or updating the 'class' key for a BLASTN result.
-        - It is designed to be used only within the `separate_blastn_results_into_classes` function.
-        """
-        representative_blast_results[query][id_subject][id_].update({'class': class_name})
-
-    # Define classes based on priority
-    classes_outcome: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
-    pident: float = constants[1]
-    bsr: float = constants[7]
-    size_ratio: float = 1 - constants[9]
+    sorted_blast_dict = {}
+    temp_dict = {k: {} for k in classes_outcome}
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
-            for id_, blastn_entry in matches.items():
-                # Calculate the frequency ratio
-                query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
-                subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
-                
-                # If one of the frequencies is 0, set the ratio to 0.1 if the other frequency is 10 times greater
-                if query_freq == 0 or subject_freq == 0:
-                    freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
-                else:
-                    freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
-                
-                # Classify based on global_palign_all_min and bsr
-                global_palign_all_min: float = blastn_entry['global_palign_all_min']
-                bsr_value: float = blastn_entry['bsr']
-                pident_value: float = blastn_entry['pident']
-                global_palign_pident_max: float = blastn_entry['global_palign_pident_max']
-                
-                if global_palign_all_min >= size_ratio:
-                    if bsr_value >= bsr:
-                        # Add to class '1a' if bsr is greater than or equal to bsr value
-                        add_class_to_dict('1a')
-                    elif freq_ratio <= 0.1:
-                        # Add to class '1b' if frequency ratio is less than or equal to 0.1
-                        add_class_to_dict('1b')
-                    else:
-                        # Add to class '1c' if none of the above conditions are met
-                        add_class_to_dict('1c')
-                elif 0.4 <= global_palign_all_min < size_ratio:
-                    if pident_value >= pident:
-                        if global_palign_pident_max >= size_ratio:
-                            # Add to class '2a' or '2b' based on frequency ratio
-                            add_class_to_dict('2a' if freq_ratio <= 0.1 else '2b')
-                        else:
-                            # Add to class '3a' or '3b' based on frequency ratio
-                            add_class_to_dict('3a' if freq_ratio <= 0.1 else '3b')
-                    else:
-                        if global_palign_pident_max >= size_ratio:
-                            # Add to class '4a' or '4b' based on frequency ratio
-                            add_class_to_dict('4a' if freq_ratio <= 0.1 else '4b')
-                        else:
-                            # Add to class '4c' if none of the above conditions are met
-                            add_class_to_dict('4c')
-                else:
-                    # Add to class '5' for everything that is unrelated
-                    add_class_to_dict('5')
-
-    return classes_outcome
+            # Class of the alignment with biggest score.
+            class_ = matches[1]['class']
+            if not temp_dict[class_].get(query):
+                temp_dict[class_][query] = {}
+            temp_dict[class_][query][id_subject] = matches
+    
+    for class_, sorted_blast_reps in temp_dict.items():
+        for query, rep_blast_result in sorted_blast_reps.items():
+            if not sorted_blast_dict.get(query):
+                sorted_blast_dict[query] = {}
+            for id_subject, matches in rep_blast_result.items():
+                    sorted_blast_dict[query][id_subject] = matches
+    
+    return sorted_blast_dict
 
 
 def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Any]]], 
@@ -838,7 +779,7 @@ def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, 
 
 def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_by_class: Dict[str, Dict[str, int]], 
                     frequency_in_genomes: Dict[str, int], clusters_to_keep: Dict[str, List[str]], 
-                    drop_possible_loci: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
+                    dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
     """
     Extracts and organizes results from process_classes.
 
@@ -852,7 +793,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         A dictionary containing the frequency of the query and subject in genomes.
     clusters_to_keep : Dict[str, List[str]]
         A dictionary containing identifiers to check for a joined condition.
-    drop_possible_loci : List[str]
+    dropped_loci_ids : List[str]
         A list of possible loci to drop.
     classes_outcome : List[str]
         A list of class outcomes.
@@ -910,7 +851,13 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         """
         key_extractor = lambda v: v[3]
         additional_condition = lambda v: '*' in v[4][0] or '*' in v[4][1]
-        return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) for v in processed_results.values() if v[0] not in ['1a','4c','5'] or ((itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list) and additional_condition(v)) or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list) and additional_condition(v)))]), 1)}
+        return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) 
+                                                                          for v in processed_results.values()
+                                                                          if v[0] not in ['1a', '1b', '2a', '3a', '4a', '4c','5']
+                                                                          or ((itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list)
+                                                                               and additional_condition(v))
+                                                                               or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list)
+                                                                                   and additional_condition(v)))]), 1)}
     
     def process_id(id_: str, to_cluster_list: Dict[int, List[str]], clusters_to_keep: Dict[str, List[str]]) -> Tuple[str, bool, bool]:
         """
@@ -1019,8 +966,8 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
         if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
     
-        if_query_dropped: bool = (joined_query_id or query_id) in drop_possible_loci
-        if_subject_dropped: bool = (joined_subject_id or subject_id) in drop_possible_loci
+        if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
+        if_subject_dropped: bool = (joined_subject_id or subject_id) in dropped_loci_ids
 
         choice_query_id: str = itf.identify_string_in_dict_get_key(query_id, choice)
         choice_subject_id: str = itf.identify_string_in_dict_get_key(subject_id, choice)
@@ -1059,12 +1006,12 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
                     add_to_recommendations('Choice', query_to_write, key, recommendations, choice_query_id)
                     add_to_recommendations('Choice', subject_to_write, key, recommendations, choice_subject_id)
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
-                if query_id in drop_possible_loci:
+                if query_id in dropped_loci_ids:
                     if not if_joined_query and not if_query_in_choice:
                         add_to_recommendations('Drop', query_to_write, key, recommendations)
                         dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
-                elif subject_id in drop_possible_loci:
+                elif subject_id in dropped_loci_ids:
                     if not if_joined_subject and not if_subject_in_choice:
                         add_to_recommendations('Drop', subject_to_write, key, recommendations)
                         dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
@@ -1148,7 +1095,6 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     for key, related in list(related_clusters.items()):
         for index, r in enumerate(list(related)):
             if reverse_matches:
-                r = list(r)
                 r.insert(4, '-')
                 r.insert(5, '-')
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
@@ -1165,7 +1111,9 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
             if (query, subject) not in itf.flatten_list(reported_cases.values()):
                 reported_cases.setdefault(key, []).append((subject, query))
             elif reverse_matches:
-                sublist_index: int = itf.find_sublist_index([[itf.remove_by_regex(i, r"\*") for i in l[:2]] for l in related_clusters[key]], [subject, query])
+                sublist_index: int = itf.find_sublist_index([[itf.remove_by_regex(i, r"\*")
+                                                              for i in l[:2]]
+                                                              for l in related_clusters[key]], [subject, query])
                 insert: str = r[2] if r[2] is not None else '-'
                 related[sublist_index][4] = insert
                 insert = r[3] if r[3] is not None else '-'
