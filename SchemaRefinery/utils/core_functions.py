@@ -1176,7 +1176,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
                     count_results_by_cluster_file.write(f"\t{query_class_count}|{total_count_origin}|{subject_class_count}|{total_count_inverse}")
 
             count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\n")
-            count_results_by_cluster_file.write('\n#')
+            count_results_by_cluster_file.write('#\n')
 
 
 def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to_keep: Dict[str, List[str]], 
