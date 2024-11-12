@@ -92,6 +92,7 @@ def identify_duplicate_gene(distinct_hashtable: str,
 
         # Get shared NIPHs in genomes
         niphs_in_genomes: Set[int] = set(itf.get_shared_elements(temp_niphs_in_loci[loci_id]))
+
         niphs_in_loci.setdefault(loci_id, niphs_in_genomes)
         
         # Get NIPHEMs in genomes
@@ -100,7 +101,7 @@ def identify_duplicate_gene(distinct_hashtable: str,
         # Calculate problematic genomes in possible new loci
         problematic_genomes_in_loci: Set[int] = niphs_in_genomes | niphems_in_genomes
         
-        # Calculate total possible new loci genome presence
+        # Calculate total genome presence
         total_loci_genome_presence[loci_id] = len(set(itf.flatten_list(temp_niphs_in_loci[loci_id].values())))
         
         # Calculate problematic proportion
