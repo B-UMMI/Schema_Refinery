@@ -155,6 +155,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_translation_dict: Dict[str, str]
         protein_hashes: Dict[str, str]
         cds_translation_size: Dict[str, int]
+        # Dedulicate protein sequences, this is done order to cluster sequences without problems of similiar
+        # having same proteins and make it quicker
         all_translation_dict, protein_hashes, cds_translation_size = ccf.translate_and_deduplicate_cds(
                                                                                                     all_nucleotide_sequences,
                                                                                                     initial_processing_output,
@@ -162,16 +164,22 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                                                 )
 
         print("\nExtracting minimizers for the translated sequences and clustering...")
+        # Remove CDS that did not pass filtering criteria
         all_translation_dict = ccf.remove_dropped_cds(all_translation_dict, dropped_alleles, protein_hashes)
+        # sort proteins by size
         all_translation_dict = ccf.sort_by_protein_size(all_translation_dict)
+        # Set types
         all_alleles: Dict[str, List[str]]
         reps_sequences: Dict[str, str]
         reps_groups: Dict[str, List[str]]
         prot_len_dict: Dict[str, int]
+        # Run clustering by minimizers
         all_alleles, reps_sequences, reps_groups, prot_len_dict = ccf.cluster_by_minimizers(all_translation_dict, constants)
+        # Reformat all_alleles
         all_alleles = ccf.reformat_clusters(all_alleles, protein_hashes)
 
-        # Add again the deduplicated sequences
+        # Add again the deduplicated sequences (Since we run dna alleles, further down the pipeline
+        # we would require the protein for each DNA even though they were deduplicated)
         for hash, elements in protein_hashes.items():
             deduplicated_protein = all_translation_dict[elements[0]]
             prot_len = len(deduplicated_protein)
@@ -248,13 +256,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     # Process loci
     else:
+        # If we want to run with new possible loci, we merge everything together and run
         if possible_new_loci:
             ff.merge_folders(schema_directory, possible_new_loci, schema_folder)
         else:
             ff.copy_folder(schema_directory, schema_folder)
 
-        dropped_alleles: Dict[str, str] = {}
-
+        dropped_alleles: Dict[str, str] = {} # Empty dict to store dropped alleles
+        # Get all the relevant data
         (all_nucleotide_sequences,
         master_file_path,
         all_translation_dict,
@@ -306,6 +315,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                            constants)
     
     print("\nProcessing classes...")
+    # Sort each entry based on their assigned classes
     sorted_blast_dict: Dict[str, Any] = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
@@ -315,6 +325,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     reps_and_alleles_ids: Dict[str, Any]
     drop_mark: Dict[str, Any]
     all_relationships: Dict[str, Any]
+    # Process and extract relevant information from the blast results
     (processed_results,
      count_results_by_class,
      count_results_by_class_with_inverse,
@@ -338,12 +349,12 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         # Open dict to store IDs of the reps and alleles
         group_reps_ids: Dict[str, Any] = {}
         group_alleles_ids: Dict[str, Any] = {}
-
-        cof.count_number_of_reps_and_alleles(clusters_to_keep,
-                                            all_alleles,
-                                            dropped_loci_ids,
-                                            group_reps_ids,
-                                            group_alleles_ids)
+        # Count the number of reps and alleles again because clusters were joined
+        group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(clusters_to_keep,
+                                                                                all_alleles,
+                                                                                dropped_loci_ids,
+                                                                                group_reps_ids,
+                                                                                group_alleles_ids)
 
         print("\nAdd remaining cluster that didn't match by BLASTn...")
         # Add cluster not matched by BLASTn
@@ -381,12 +392,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                 reverse_matches,
                                 classes_outcome,
                                 results_output)
-    
-    add_group_column: bool
-    if run_mode != 'unclassified_cds':
-        add_group_column = True
-    else:
-        add_group_column = False
 
     # Get all of the CDS that matched with loci
     is_matched: Dict[str, Any]
@@ -394,13 +399,13 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
                                                     clusters_to_keep,
                                                     sorted_blast_dict)
+
     print("\nWriting classes and cluster results to files...")
     report_file_path: str = os.path.join(blast_results, 'blast_all_matches.tsv')
     # Write all of the BLASTn results to a file.
     cof.alignment_dict_to_file(representative_blast_results,
                                report_file_path,
-                               'w',
-                               add_group_column)
+                               'w')
 
     cof.write_processed_results_to_file(clusters_to_keep,
                                     representative_blast_results,
