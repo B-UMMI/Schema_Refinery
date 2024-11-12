@@ -392,12 +392,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                 reverse_matches,
                                 classes_outcome,
                                 results_output)
-    
-    add_group_column: bool
-    if run_mode != 'unclassified_cds':
-        add_group_column = True
-    else:
-        add_group_column = False
 
     # Get all of the CDS that matched with loci
     is_matched: Dict[str, Any]
@@ -405,13 +399,13 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
                                                     clusters_to_keep,
                                                     sorted_blast_dict)
+
     print("\nWriting classes and cluster results to files...")
     report_file_path: str = os.path.join(blast_results, 'blast_all_matches.tsv')
     # Write all of the BLASTn results to a file.
     cof.alignment_dict_to_file(representative_blast_results,
                                report_file_path,
-                               'w',
-                               add_group_column)
+                               'w')
 
     cof.write_processed_results_to_file(clusters_to_keep,
                                     representative_blast_results,

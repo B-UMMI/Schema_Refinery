@@ -26,7 +26,7 @@ except ModuleNotFoundError:
                                       sequence_functions as sf)
 
 def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
-                           file_path: str, write_type: str, add_group_column: bool = False) -> None:
+                           file_path: str, write_type: str) -> None:
     """
     Writes alignment data to a file from a nested dictionary structure.
 
@@ -43,8 +43,6 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
         The path to the file where the alignment data should be written or appended.
     write_type : str
         Specifies whether to create a new file ('w') and write the data or to append ('a') the data to an existing file.
-    add_group_column : bool, optional
-        Indicates whether to add a 'CDS_group' column to the header of the output file. Defaults to False.
 
     Returns
     -------
@@ -53,8 +51,6 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
 
     Notes
     -----
-    - The function constructs a header for the output file based on the alignment data structure and the `add_group_column`
-    parameter.
     - It iterates over the nested dictionary structure to write each piece of alignment data to the file, formatting
     each row as tab-separated values.
     - This function is useful for exporting BLAST alignment results to a file for further analysis or reporting.
@@ -84,11 +80,6 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
                         'Global_palign_pident_max\t',
                         'Palign_local_min\t',
                         'Class\n']
-
-    # Add 'CDS_group' column if specified
-    if add_group_column:
-        header[-1] = 'CDS_group\t'
-        header.append('Class\n')
 
     # Write or append to the file
     with open(file_path, write_type) as report_file:
@@ -1502,8 +1493,6 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
     blast_results_by_class_output: str = os.path.join(output_path, 'blast_results_by_class')
     ff.create_directory(blast_results_by_class_output)
 
-    add_group_column: bool = True if 'loci_vs_cds' else False
-
     # Process clusters
     for class_, cds in clusters_to_keep.items():
         if class_ == 'Retained_not_matched_by_blastn':
@@ -1546,7 +1535,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
                 }
 
             report_file_path: str = os.path.join(blast_by_cluster_output, f"blast_{cluster_type}_{cluster_id}.tsv")
-            alignment_dict_to_file(write_dict, report_file_path, 'w', add_group_column)
+            alignment_dict_to_file(write_dict, report_file_path, 'w')
 
     # Process classes
     for class_ in classes_outcome:
@@ -1558,7 +1547,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
             for query, subjects in representative_blast_results.items()
         }
         report_file_path: str = os.path.join(blast_results_by_class_output, f"blastn_group_{class_}.tsv")
-        alignment_dict_to_file(write_dict, report_file_path, 'w', add_group_column)
+        alignment_dict_to_file(write_dict, report_file_path, 'w')
 
 
 def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: Dict[str, Dict[str, int]], 
