@@ -20,7 +20,7 @@ try:
     from utils import parameter_validation as pv
     from RefineSchema import IdentifySpuriousGenes
     from IdentifyParalagousLoci import IdentifyParalogousLoci
-    from IdentifyProblematicLoci import IdentifyProblematicLoci
+    from IdentifyDuplicateGenes import IdentifyDuplicateGenes
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
     from utils import constants as ct
@@ -31,7 +31,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
-    from SchemaRefinery.IdentifyProblematicLoci import IdentifyProblematicLoci
+    from SchemaRefinery.IdentifyDuplicateGenes import IdentifyDuplicateGenes
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
     from SchemaRefinery.utils import constants as ct
@@ -666,7 +666,7 @@ def identify_paralogous_loci() -> None:
     IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
 
-def identify_problematic_loci() -> None:
+def identify_duplicate_gene() -> None:
     """
     Parse command-line arguments and initiate the process to identify problematic loci.
 
@@ -721,7 +721,7 @@ def identify_problematic_loci() -> None:
     args = parser.parse_args()
 
     # Call the main function of the IdentifyProblematicLoci class with the parsed arguments
-    IdentifyProblematicLoci.identify_problematic_loci(**vars(args))
+    IdentifyDuplicateGenes.identify_duplicate_gene(**vars(args))
 
 
 def match_schemas() -> None:
@@ -820,7 +820,7 @@ def main():
                                         identify_spurious_genes],
                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
                         'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
-                        'IdentifyProblematicLoci': ["Identify problematic loci based on the presence of NIPHs and NIPHEMs.", identify_problematic_loci],
+                        'IdentifyDuplicateGenes': ["Identify problematic loci based on the presence of NIPHs and NIPHEMs.", identify_duplicate_gene],
                         'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
