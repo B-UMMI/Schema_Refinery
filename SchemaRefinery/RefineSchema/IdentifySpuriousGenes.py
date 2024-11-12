@@ -171,6 +171,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_alleles, reps_sequences, reps_groups, prot_len_dict = ccf.cluster_by_minimizers(all_translation_dict, constants)
         all_alleles = ccf.reformat_clusters(all_alleles, protein_hashes)
 
+        # Add again the deduplicated sequences
+        for hash, elements in protein_hashes.items():
+            deduplicated_protein = all_translation_dict[elements[0]]
+            prot_len = len(deduplicated_protein)
+            for element in elements[1:]:
+                all_translation_dict.setdefault(element, deduplicated_protein)
+                prot_len_dict.setdefault(element, prot_len)
+
         # Calculate the total number of clusters
         total_number_clusters: int = len(all_alleles)
         print(f"{len(all_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
@@ -207,11 +215,19 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         # Update all_alleles with the filtered results
         all_alleles = filtered_alleles
-
+        # Filter also the all_translation_dict dicgt
+        all_translation_dict = {key: value for key, value in all_translation_dict.items() if key in itf.flatten_list(all_alleles.values())}
         print("\nRetrieving kmers similarity and coverage between representatives...")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
-        reps_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(reps_translation_dict, reps_groups, prot_len_dict)
+        if processing_mode.split('_')[0] == 'alleles':
+            trans_dict = all_translation_dict
+        else:
+            trans_dict = reps_translation_dict
+        # Calculate kmers similiarity
+        reps_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(trans_dict, reps_groups, prot_len_dict)
 
+        # Remove filtered out elements from reps_kmers_sim
+        reps_kmers_sim = {key: value for key, value in reps_kmers_sim.items() if key in itf.flatten_list(all_alleles.values())}
         print("\nReplacing CDSs IDs with the cluster representative ID...")
         cds_original_ids: Dict[str, str] = ccf.replace_ids_in_clusters(all_alleles,
                                                     frequency_cds,
@@ -225,7 +241,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         to_blast_paths: List[str]
         master_file_path: str
-        to_blast_paths, master_file_path = ccf.create_blast_files(representatives_blastn_folder, all_alleles, all_nucleotide_sequences, processing_mode)
+        to_blast_paths, master_file_path = ccf.create_blast_files(representatives_blastn_folder,
+                                                                  all_alleles,
+                                                                  all_nucleotide_sequences,
+                                                                  processing_mode)
 
     # Process loci
     else:
@@ -436,8 +455,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         possible_new_loci: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim: float, clustering_cov:float,
         genome_presence: int, absolute_size: int, translation_table: int,
-        bsr: float, problematic_proportion: float, size_ratio: float,
-        run_mode: str, processing_mode: str, cpu: int) -> None:
+        bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int) -> None:
     """
     Main function to identify spurious genes in a schema.
 
@@ -467,8 +485,6 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Genetic code used for translation.
     bsr : float
         BLAST Score Ratio value.
-    problematic_proportion : float
-        Proportion threshold for problematic genes.
     size_ratio : float
         Size ratio threshold.
     run_mode : str
@@ -496,7 +512,6 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
                 absolute_size,
                 translation_table,
                 bsr,
-                problematic_proportion,
                 size_ratio]
     
     if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):

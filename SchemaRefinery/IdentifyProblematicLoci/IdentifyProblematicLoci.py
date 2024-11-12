@@ -22,7 +22,7 @@ except ModuleNotFoundError:
                                       pandas_functions as pf,
                                       sequence_functions as sf)
 
-def identify_problematic_loci(distinct_hastable: str, 
+def identify_problematic_loci(distinct_hashtable: str, 
                               schema_directory: str, 
                               output_directory: str, 
                               problematic_threshold: float) -> None:
@@ -35,7 +35,7 @@ def identify_problematic_loci(distinct_hastable: str,
 
     Parameters
     ----------
-    distinct_hastable : str
+    distinct_hashtable : str
         Path to the distinct.hashtable file containing CDS sequences.
     schema_directory : str
         Path to the directory containing schema loci.
@@ -59,7 +59,7 @@ def identify_problematic_loci(distinct_hastable: str,
     print('Identifying problematic loci based on the presence of NIPHs and NIPHEMs...')
     print("Importing DNA hashes and the genomes where they are identified...")
     # Decode the CDS sequences from the provided file
-    decoded_sequences_ids: Dict[str, List[Any]] = itf.decode_CDS_sequences_ids(distinct_hastable)
+    decoded_sequences_ids: Dict[str, List[Any]] = itf.decode_CDS_sequences_ids(distinct_hashtable)
 
     # Initialize dictionaries to store NIPHEMs and NIPHs in possible new loci
     niphems_in_loci: Dict[int, List[int]] = {}
@@ -112,5 +112,5 @@ def identify_problematic_loci(distinct_hastable: str,
     with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
         niphems_and_niphs.write('Group_ID\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
         for group, proportion in problematic_loci.items():
-            outcome: str = 'Dropped' if proportion >= problematic_threshold else 'Kept'
+            outcome: str = 'Drop' if proportion >= problematic_threshold else 'Kept'
             niphems_and_niphs.write(f"{group}\t{proportion}\t{outcome}\n")
