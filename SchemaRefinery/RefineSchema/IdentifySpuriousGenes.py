@@ -223,6 +223,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             trans_dict = all_translation_dict
         else:
             trans_dict = reps_translation_dict
+        # Calculate kmers similiarity
         reps_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(trans_dict, reps_groups, prot_len_dict)
 
         # Remove filtered out elements from reps_kmers_sim
