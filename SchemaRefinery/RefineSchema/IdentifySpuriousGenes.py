@@ -76,8 +76,9 @@ def create_directories(output_directory: str, run_mode: str) -> List[Optional[st
     return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
 
 
-def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str, possible_new_loci: str, 
-                            constants: List[Any], temp_paths: List[str], run_mode: str, processing_mode: str, cpu: int) -> None:
+def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
+                            possible_new_loci: str, constants: List[Any], temp_paths: List[str],
+                            run_mode: str, processing_mode: str, cpu: int, no_cleanup: bool) -> None:
     """
     Identify spurious genes in the given schema.
 
@@ -383,15 +384,17 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     print("\nWriting count_results_by_cluster.tsv, related_matches.tsv files"
           " and recommendations.tsv...")
     reverse_matches: bool = True
-    cof.write_blast_summary_results(related_clusters,
-                                count_results_by_class_with_inverse,
-                                group_reps_ids,
-                                group_alleles_ids,
-                                frequency_in_genomes,
-                                recommendations,
-                                reverse_matches,
-                                classes_outcome,
-                                results_output)
+    (related_matches_path,
+     count_results_by_cluster_path,
+     recommendations_file_path) = cof.write_blast_summary_results(related_clusters,
+                                                                count_results_by_class_with_inverse,
+                                                                group_reps_ids,
+                                                                group_alleles_ids,
+                                                                frequency_in_genomes,
+                                                                recommendations,
+                                                                reverse_matches,
+                                                                classes_outcome,
+                                                                output_directory)
 
     # Get all of the CDS that matched with loci
     is_matched: Dict[str, Any]
@@ -429,7 +432,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     print("\nWriting dropped possible new loci to file...")
     cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                 dropped_alleles,
-                                                results_output)
+                                                output_directory)
 
     cof.print_classifications_results(clusters_to_keep,
                                         dropped_loci_ids,
@@ -455,12 +458,18 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             cof.create_graphs(file,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
+    
+    if not no_cleanup:
+        print("\nCleaning up temporary files...")
+        # Remove temporary files
+        ff.cleanup(output_directory, [related_matches_path, count_results_by_cluster_path, recommendations_file_path])
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
         possible_new_loci: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim: float, clustering_cov:float,
         genome_presence: int, absolute_size: int, translation_table: int,
-        bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int) -> None:
+        bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
+        no_cleanup: bool) -> None:
     """
     Main function to identify spurious genes in a schema.
 
@@ -532,4 +541,5 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
                 temp_paths,
                 run_mode,
                 processing_mode,
-                cpu)
+                cpu,
+                no_cleanup)

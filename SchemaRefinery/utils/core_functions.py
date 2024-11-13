@@ -1023,10 +1023,15 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
     return related_clusters, recommendations
 
 
-def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]]], count_results_by_class: Dict[str, Dict[str, Tuple[int, int]]], 
-                                group_reps_ids: Dict[str, List[str]], group_alleles_ids: Dict[str, List[str]], 
-                                frequency_in_genomes: Dict[str, int], recommendations: Dict[str, Dict[str, List[str]]], 
-                                reverse_matches: bool, classes_outcome: Tuple[str, ...], results_output: str) -> None:
+def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]]],
+                                count_results_by_class: Dict[str, Dict[str, Tuple[int, int]]], 
+                                group_reps_ids: Dict[str, List[str]],
+                                group_alleles_ids: Dict[str, List[str]], 
+                                frequency_in_genomes: Dict[str, int],
+                                recommendations: Dict[str, Dict[str, List[str]]], 
+                                reverse_matches: bool,
+                                classes_outcome: Tuple[str, ...],
+                                output_directory: str) -> Tuple[str]:
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -1072,8 +1077,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     """
     
     # Write the recommendations to the output file
-    recommendations_file: str = os.path.join(results_output, "recommendations.tsv")
-    with open(recommendations_file, 'w') as recommendations_report_file:
+    recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
+    with open(recommendations_file_path, 'w') as recommendations_report_file:
         recommendations_report_file.write("Recommendation\tID\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
@@ -1114,8 +1119,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
                 related.remove(r)
 
     # Write the results to the output files
-    related_matches: str = os.path.join(results_output, "related_matches.tsv")
-    with open(related_matches, 'w') as related_matches_file:
+    related_matches_path: str = os.path.join(output_directory, "related_matches.tsv")
+    with open(related_matches_path, 'w') as related_matches_file:
         related_matches_file.write("Query\tSubject\tClass\tClass_count" +
                                     ("\tInverse_class\tInverse_class_count" if reverse_matches else "") +
                                     "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject"
@@ -1128,8 +1133,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     
     # Write the count results to the output file
     tab: str = '\t'
-    count_results_by_cluster: str = os.path.join(results_output, "count_results_by_cluster.tsv")
-    with open(count_results_by_cluster, 'w') as count_results_by_cluster_file:
+    count_results_by_cluster_path: str = os.path.join(output_directory, "count_results_by_cluster.tsv")
+    with open(count_results_by_cluster_path, 'w') as count_results_by_cluster_file:
         count_results_by_cluster_file.write("Query"
                                             "\tSubject"
                                             f"\t{tab.join(classes_outcome)}"
@@ -1168,6 +1173,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
 
             count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\n")
             count_results_by_cluster_file.write('#\n')
+
+    return (related_matches_path, count_results_by_cluster_path, recommendations_file_path)
 
 
 def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to_keep: Dict[str, List[str]], 
@@ -2035,7 +2042,7 @@ def identify_problematic_new_loci(clusters_to_keep: Dict[str, Dict[int, List[int
 
 
 def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], dropped_cds: Dict[str, str], 
-                                            results_output: str) -> None:
+                                            output_directory: str) -> None:
     """
     Write the dropped possible new loci to a file with the reasons for dropping them.
 
@@ -2064,7 +2071,7 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     - Finally, it writes the locus IDs and their drop reasons to the output file.
     """
     # Construct the output file path
-    drop_possible_loci_output: str = os.path.join(results_output, 'drop_possible_new_loci.tsv')
+    drop_possible_loci_output: str = os.path.join(output_directory, 'drop_possible_new_loci.tsv')
     
     # Create a dictionary mapping locus IDs to their drop reasons
     locus_drop_reason: Dict[str, str] = {cds.split('_')[0]: reason 
