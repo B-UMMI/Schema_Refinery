@@ -23,7 +23,8 @@ try:
     from IdentifyDuplicateGenes import IdentifyDuplicateGenes
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
-    from utils import constants as ct
+    from utils import (constants as ct,
+                       validation as val)
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -34,7 +35,8 @@ except ModuleNotFoundError:
     from SchemaRefinery.IdentifyDuplicateGenes import IdentifyDuplicateGenes
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
-    from SchemaRefinery.utils import constants as ct
+    from SchemaRefinery.utils import (constants as ct,
+                                      validation as val)
 
 
 def download_assemblies() -> None:
@@ -224,21 +226,6 @@ def schema_annotation() -> None:
                         dest='subject_schema',
                         help='Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.')
 
-    parser.add_argument('-sa',
-                        '--subject-annotations',
-                        type=str,
-                        required=False,
-                        dest='subject_annotations',
-                        help='Annotations of the subject schema.')
-
-    parser.add_argument('-sc',
-                        '--subject-columns',
-                        type=str,
-                        required=False,
-                        nargs='+',
-                        dest='subject_columns',
-                        help='Columns from the subject schema annotations to merge into the new schema annotations.')
-
     parser.add_argument('--bsr',
                         type=float,
                         required=False,
@@ -316,7 +303,7 @@ def schema_annotation() -> None:
                         type=str,
                         required=False,
                         dest='processing_mode',
-                        default='reps_vs_alleles',
+                        default=None,
                         choices=ct.PROCESSING_MODE_CHOICES,
                         help='Mode to run the module for Schema match: reps_vs_reps,'
                         'reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
@@ -338,7 +325,6 @@ def schema_annotation() -> None:
                     dest='genbank_ids_to_add',
                     nargs='+',
                     default=[],
-                    choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of GenBank IDs to add to final results.')
     
     parser.add_argument('-pia',
@@ -348,7 +334,6 @@ def schema_annotation() -> None:
                     dest='proteome_ids_to_add',
                     nargs='+',
                     default=[],
-                    choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of Proteome IDs to add to final results.')
 
     parser.add_argument('--nocleanup',
@@ -360,6 +345,7 @@ def schema_annotation() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    val.validate_schema_annotation_module_arguments(args)
     # Call the main function of the SchemaAnnotation class with the parsed arguments
     SchemaAnnotation.main(args)
 

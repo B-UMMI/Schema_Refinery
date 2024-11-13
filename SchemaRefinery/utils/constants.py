@@ -39,7 +39,7 @@ SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
 DATABASE_CHOICES = ['NCBI', 'ENA661K']
 
-SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'uniprot-sparql', 'match-schemas']
+SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'match-schemas']
 
 # Default values for Schema Refinery's donwload_assemblies module
 
