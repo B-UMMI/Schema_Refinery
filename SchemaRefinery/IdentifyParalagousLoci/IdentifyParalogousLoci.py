@@ -95,32 +95,38 @@ def identify_paralogous_loci(schema_directory: str,
     len_short_folder: int = len(fasta_files_dict)
     master_file_path: str = os.path.join(blast_folder, 'master_file.fasta')
     query_paths_dict: Dict[str, str] = {}
-    protein_size_mode_dict: Dict[str, int] = {}
+    all_loci_allele_size_stats = {}
     i: int = 1
     # Translate the sequences that are to be used in the BLASTp search
     for loci in fasta_files_dict:
         # Get the subject and query FASTA files
         subject_fasta: str = fasta_files_dict[loci] if processing_mode.split('_')[-1] == 'alleles' else fasta_files_short_dict[loci]
         query_fasta: str = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'rep' else fasta_files_dict[loci]
+        fetch_size_fasta: str = fasta_files_dict[loci]
         # Translation variables
         query_fasta_translation: str = os.path.join(translation_folder, f"{loci}-translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
         print(f"\rTranslated loci FASTA: {i}/{len_short_folder}", end='', flush=True)
         i += 1
+        # Get the sizes for each loci (all alleles)
+        loci_allele_size: List[int] = []
+        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(fetch_size_fasta, False)
+        for allele_id, sequence in fasta_dict.items():
+            loci_allele_size.append(len(sequence))
+
+        # Calculate the mode of the lengths of the sequences
+        if loci_allele_size:
+            all_loci_allele_size_stats[loci] = (min(loci_allele_size)/3, max(loci_allele_size)/3, statistics.mode(loci_allele_size)/3, statistics.mean(loci_allele_size)/3)
+    
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(query_fasta, False)
         # Write the sequences to the query file
         with open(query_fasta_translation, 'w') as query_file:
-            loci_allele_size: List[int] = []
             for allele_id, sequence in fasta_dict.items():
-                loci_allele_size.append(len(sequence))
                 protseq: str = sf.translate_sequence(str(sequence), translation_table)
                 query_file.write(f">{allele_id}\n{str(protseq)}\n")
 
-        # Calculate the mode of the lengths of the sequences
-        if loci_allele_size:
-            protein_size_mode_dict[loci] = statistics.mode(loci_allele_size)
         # Get the fasta sequences for the subject
         fasta_dict = sf.fetch_fasta_dict(subject_fasta, False)
         # Write the sequences to the master file
@@ -129,7 +135,6 @@ def identify_paralogous_loci(schema_directory: str,
             for allele_id, sequence in fasta_dict.items():
                 protseq = sf.translate_sequence(str(sequence), translation_table)
                 master_file.write(f">{allele_id}\n{str(protseq)}\n")
-
     # For better prints
     max_id_length: int = len(max(query_paths_dict.keys(), key=len))
     # Blast executable
@@ -210,7 +215,7 @@ def identify_paralogous_loci(schema_directory: str,
         for query_loci_id, subject_dict in best_bsr_values.items():
             for subject_loci_id, computed_score in subject_dict.items():
                 paralogous_list.append((query_loci_id, subject_loci_id))
-                mode_check: bool = stats.modes_within_value(protein_size_mode_dict[query_loci_id], protein_size_mode_dict[subject_loci_id], size_threshold)
+                mode_check: bool = stats.modes_within_value(all_loci_allele_size_stats[query_loci_id][2], all_loci_allele_size_stats[subject_loci_id][2], size_threshold)
                 report_file.write(f"{query_loci_id}\t{subject_loci_id}\t{computed_score}\t{mode_check}\n")
                 
                 if mode_check:

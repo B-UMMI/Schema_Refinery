@@ -177,11 +177,8 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
     with open(best_blast_matches_file, 'w') as out:
         out.write('Locus\tBest Match\tBSR\n')
         for query, match in best_bsr_values.items():
-            for i, (subject, computed_score) in enumerate(match.items()):
-                if i == 0:
-                    out.write(f"{query}\t{subject}\t{computed_score}\n")
-                else:
-                    out.write(f"{''}\t{subject}\t{computed_score}\n")
+            for subject, computed_score in match.items():
+                out.write(f"{query}\t{subject}\t{computed_score}\n")
         for query in not_matched_loci:
             out.write(f'{query}\tNot matched\tNA\n')
 
