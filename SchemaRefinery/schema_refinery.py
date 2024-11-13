@@ -350,6 +350,13 @@ def schema_annotation() -> None:
                     default=[],
                     choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of Proteome IDs to add to final results.')
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 

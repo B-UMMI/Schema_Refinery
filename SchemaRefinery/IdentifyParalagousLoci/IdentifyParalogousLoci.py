@@ -227,7 +227,7 @@ def identify_paralogous_loci(schema_directory: str,
     with open(paralogous_loci_report_mode, 'a') as report_file:
         for cluster in paralogous_list_mode_check:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
-
+    # Clean up temporary files
     if not no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files

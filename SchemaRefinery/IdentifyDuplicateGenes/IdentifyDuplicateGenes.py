@@ -116,7 +116,7 @@ def identify_duplicate_gene(distinct_hashtable: str,
         for loci_id, proportion in problematic_loci.items():
             outcome: str = 'Drop' if proportion >= problematic_threshold else 'Keep'
             niphems_and_niphs.write(f"{loci_id}\t{len(niphems_in_loci[loci_id])}\t{len(set(itf.get_shared_elements(temp_niphs_in_loci[loci_id])))}\t{total_loci_genome_presence[loci_id]}\t{proportion}\t{outcome}\n")
-
+    # Clean up temporary files
     if not no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files

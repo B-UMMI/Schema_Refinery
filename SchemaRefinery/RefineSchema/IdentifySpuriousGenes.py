@@ -458,7 +458,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             cof.create_graphs(file,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
-    
+    # Clean up temporary files
     if not no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files
