@@ -118,6 +118,6 @@ def identify_duplicate_gene(distinct_hashtable: str,
             niphems_and_niphs.write(f"{loci_id}\t{len(niphems_in_loci[loci_id])}\t{len(set(itf.get_shared_elements(temp_niphs_in_loci[loci_id])))}\t{total_loci_genome_presence[loci_id]}\t{proportion}\t{outcome}\n")
 
     if not no_cleanup:
-        print("Cleaning up temporary files...")
+        print("\nCleaning up temporary files...")
         # Remove temporary files
         ff.cleanup(output_directory, [niphems_and_niphs_file])

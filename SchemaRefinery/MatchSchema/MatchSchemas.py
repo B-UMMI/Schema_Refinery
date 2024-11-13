@@ -327,7 +327,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
     # Clean up
     if not no_cleanup:
-        print("Cleaning up temporary files...")
+        print("\nCleaning up temporary files...")
         # Remove temporary files
         ff.cleanup(output_directory, [best_blast_matches_file])
 

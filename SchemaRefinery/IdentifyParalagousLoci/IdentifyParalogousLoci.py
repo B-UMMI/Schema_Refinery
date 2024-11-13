@@ -31,7 +31,8 @@ def identify_paralogous_loci(schema_directory: str,
                              bsr: float,
                              translation_table: int, 
                              size_threshold: float, 
-                             processing_mode: str) -> None:
+                             processing_mode: str,
+                             no_cleanup: bool) -> None:
     """
     Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
 
@@ -226,3 +227,8 @@ def identify_paralogous_loci(schema_directory: str,
     with open(paralogous_loci_report_mode, 'a') as report_file:
         for cluster in paralogous_list_mode_check:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
+
+    if not no_cleanup:
+        print("\nCleaning up temporary files...")
+        # Remove temporary files
+        ff.cleanup(output_directory, [paralogous_loci_report, paralogous_loci_report_cluster_by_id, paralogous_loci_report_mode])

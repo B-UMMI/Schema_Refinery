@@ -658,7 +658,13 @@ def identify_paralogous_loci() -> None:
                         choices=ct.PROCESSING_MODE_CHOICES,
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-    
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
