@@ -149,7 +149,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
 
 def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float]],
-                                     query_translations_paths: Dict[str, str], output_folder: str) -> None:
+                                     query_translations_paths: Dict[str, str], output_folder: str) -> str:
     """
     Write the best BLAST matches to a file.
 
@@ -185,7 +185,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
 
 
 def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
-                  translation_table: int, cpu: int, processing_mode: str):
+                  translation_table: int, cpu: int, processing_mode: str, no_cleanup: bool) -> str:
     """
     Match schemas between query and subject directories.
 
@@ -323,7 +323,12 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
                                                                             get_blastp_exec,
                                                                             bsr,
                                                                             cpu)
-
+    # Write the best BLAST matches to a file
     best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
+    # Clean up temporary files
+    if not no_cleanup:
+        print("\nCleaning up temporary files...")
+        # Remove temporary files
+        ff.cleanup(output_directory, [best_blast_matches_file])
 
     return best_blast_matches_file

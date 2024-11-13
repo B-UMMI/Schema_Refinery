@@ -112,9 +112,16 @@ def main(args: Namespace) -> None:
                                            args.processing_mode,)
         results_files.append(matched_schemas)
 
+    merged_file_path = os.path.join(args.output_directory, 'merged_file.tsv')
+    # If only one result file is present, copy it to the output directory
     if len(results_files) == 1:
-        shutil.copy(results_files[0], os.path.join(args.output_directory, 'merged_file.tsv'))
+        shutil.copy(results_files[0], merged_file_path)
         return None
 
     # Merge all results into a single file
-    upf.merge_files_into_same_file_by_key(results_files, 'Locus', os.path.join(args.output_directory, 'merged_file.tsv'))
+    upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
+    # Clean up temporary files
+    if not args.no_cleanup:
+        print("\nCleaning up temporary files...")
+        # Remove temporary files
+        ff.cleanup(args.output_directory, [merged_file_path])

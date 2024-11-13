@@ -350,6 +350,13 @@ def schema_annotation() -> None:
                     default=[],
                     choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                     help='List of Proteome IDs to add to final results.')
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -503,6 +510,12 @@ def identify_spurious_genes() -> None:
                         dest='cpu',
                         default=1, 
                         help='Number of CPUs to run BLAST instances.')
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -658,7 +671,13 @@ def identify_paralogous_loci() -> None:
                         choices=ct.PROCESSING_MODE_CHOICES,
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-    
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -716,7 +735,13 @@ def identify_duplicate_gene() -> None:
                         dest='problematic_threshold',
                         default=0.1,
                         help='Threshold for determining if a locus is problematic.')
-    
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -800,6 +825,12 @@ def match_schemas() -> None:
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
