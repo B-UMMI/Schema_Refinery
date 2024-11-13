@@ -68,6 +68,7 @@ def identify_duplicate_gene(distinct_hashtable: str,
     temp_niphs_in_loci: Dict[int, Dict[int, Set[int]]] = {}
     total_loci_genome_presence: Dict[int, int] = {}
     problematic_loci: Dict[int, float] = {}
+    total_problematic_genomes_in_loci = {}
 
     # Fetch schema loci to a dictionary
     fastas_dict: Dict[int, Dict[int, str]] = sf.fetch_loci_to_dict(schema_directory)
@@ -101,6 +102,8 @@ def identify_duplicate_gene(distinct_hashtable: str,
         
         # Calculate problematic genomes in possible new loci
         problematic_genomes_in_loci: Set[int] = niphs_in_genomes | niphems_in_genomes
+
+        total_problematic_genomes_in_loci[loci_id] = problematic_genomes_in_loci
         
         # Calculate total genome presence
         total_loci_genome_presence[loci_id] = len(set(itf.flatten_list(temp_niphs_in_loci[loci_id].values())))
@@ -112,10 +115,10 @@ def identify_duplicate_gene(distinct_hashtable: str,
     # Write the groups that were removed due to the presence of NIPHs or NIPHEMs
     niphems_and_niphs_file: str = os.path.join(output_directory, 'niphems_and_niphs_groups.tsv')
     with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
-        niphems_and_niphs.write('Loci\tcount_of_NIPHEMs\tcount_of_NIPHs\tTotal_genomes\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
+        niphems_and_niphs.write('Loci\tcount_of_NIPHEMs\tcount_of_NIPHs\tTotal_unique_problematic_genomes\tTotal_genomes\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
         for loci_id, proportion in problematic_loci.items():
             outcome: str = 'Drop' if proportion >= problematic_threshold else 'Keep'
-            niphems_and_niphs.write(f"{loci_id}\t{len(niphems_in_loci[loci_id])}\t{len(set(itf.get_shared_elements(temp_niphs_in_loci[loci_id])))}\t{total_loci_genome_presence[loci_id]}\t{proportion}\t{outcome}\n")
+            niphems_and_niphs.write(f"{loci_id}\t{len(niphems_in_loci[loci_id])}\t{len(set(itf.get_shared_elements(temp_niphs_in_loci[loci_id])))}\t{len(total_problematic_genomes_in_loci[loci_id])}\t{total_loci_genome_presence[loci_id]}\t{proportion}\t{outcome}\n")
     # Clean up temporary files
     if not no_cleanup:
         print("\nCleaning up temporary files...")
