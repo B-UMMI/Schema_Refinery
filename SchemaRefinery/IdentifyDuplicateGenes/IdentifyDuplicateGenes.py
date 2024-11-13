@@ -120,4 +120,4 @@ def identify_duplicate_gene(distinct_hashtable: str,
     if not no_cleanup:
         print("Cleaning up temporary files...")
         # Remove temporary files
-        lf.remove_files([distinct_hashtable])
+        ff.cleanup(output_directory, [niphems_and_niphs_file])

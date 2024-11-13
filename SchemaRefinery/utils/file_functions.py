@@ -485,7 +485,5 @@ def cleanup(directory: str, exclude: List[str]) -> None:
         if item not in exclude:
             if os.path.isfile(item_path) or os.path.islink(item_path):
                 os.remove(item_path)
-                print(f"Removed file: {item_path}")
             elif os.path.isdir(item_path):
                 shutil.rmtree(item_path)
-                print(f"Removed directory: {item_path}")
