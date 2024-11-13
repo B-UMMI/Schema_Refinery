@@ -39,3 +39,21 @@ def validate_python_version(minimum_version: Tuple[int, int, int] = ct.MIN_PYTHO
         sys.exit(0)
 
     return python_version
+
+def validate_schema_annotation_module_arguments(args: dict) -> None:
+    """
+    Validate the arguments passed to the schema annotation module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid.
+    """
+    if not args.processing_mode and args.subject_schema:
+        sys.exit("-pm --processing-mode is required when you want to add match with subject schema.")
+    
+    if args.processing_mode and not args.subject_schema:
+        sys.exit("-ss --subject_schema is required when you want to add processing mode.")
+
+    if not args.extra_genbank_table_columns and args.genbank_files:
+        sys.exit("-ss --subject_schema is required when you want to add processing mode.")
