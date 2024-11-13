@@ -114,32 +114,32 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
             # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
                 # Get the loci name
-                loci: str = query.split('_')[0]
+                query_loci_id: str = query.split('_')[0]
+
+                best_bsr_values.setdefault(query_loci_id, {})
                 # Create the dict of the query
                 bsr_values.setdefault(query, {})
                 for subject_id, results in subjects_dict.items():
-                    subject_loci = subject_id.split('_')[0]
+                    subject_loci_id = subject_id.split('_')[0]
                     # Highest score (First one)
                     subject_score: float = next(iter(results.values()))['score']
                     # Calculate BSR value
-                    bsr_value: float = bf.compute_bsr(subject_score, self_score_dict[query])
+                    computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
                     # Check if the BSR value is higher than the threshold
-                    if bsr_value >= bsr:
+                    if computed_score >= bsr:
                         # Round BSR values if they are superior to 1.0 to 1 decimal place
-                        if bsr_value > 1.0:
-                            bsr_value = round(bsr_value, 1)
+                        if computed_score > 1.0:
+                            computed_score = round(computed_score, 1)
                         # Save all of the different matches that this query had and their BSR values
-                        bsr_values[query].update({subject_id: bsr_value})
+                        bsr_values[query].update({subject_id: computed_score})
                     else:
                         continue
-                    # Check if the BSR value is the best for the locus
-                    current_best_bsr: Optional[Tuple[str, float]] = best_bsr_values.get(loci)
-                    # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    # We are interested in the best match only
-                    if not current_best_bsr:
-                        best_bsr_values[loci] = (subject_loci, bsr_value)
-                    elif bsr_value > current_best_bsr[1]:
-                        best_bsr_values[loci] = (subject_loci, bsr_value)
+                    # Save the best match for each query and subject matches
+                    subject_loci_id: str = subject_id.split('_')[0]
+                    if not best_bsr_values[query_loci_id].get(subject_loci_id):
+                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+                    elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
+                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
 
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
@@ -177,7 +177,11 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float
     with open(best_blast_matches_file, 'w') as out:
         out.write('Locus\tBest Match\tBSR\n')
         for query, match in best_bsr_values.items():
-            out.write(f'{query}\t{match[0]}\t{match[1]}\n')
+            for i, (subject, computed_score) in enumerate(match.items()):
+                if i == 0:
+                    out.write(f"{query}\t{subject}\t{computed_score}\n")
+                else:
+                    out.write(f"{''}\t{subject}\t{computed_score}\n")
         for query in not_matched_loci:
             out.write(f'{query}\tNot matched\tNA\n')
 
