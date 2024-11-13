@@ -25,7 +25,8 @@ except ModuleNotFoundError:
 def identify_duplicate_gene(distinct_hashtable: str, 
                               schema_directory: str, 
                               output_directory: str, 
-                              problematic_threshold: float) -> None:
+                              problematic_threshold: float,
+                              no_cleanup: bool) -> None:
     """
     Identify problematic loci based on the presence of NIPHs and NIPHEMs.
 
@@ -115,3 +116,8 @@ def identify_duplicate_gene(distinct_hashtable: str,
         for loci_id, proportion in problematic_loci.items():
             outcome: str = 'Drop' if proportion >= problematic_threshold else 'Keep'
             niphems_and_niphs.write(f"{loci_id}\t{len(niphems_in_loci[loci_id])}\t{len(set(itf.get_shared_elements(temp_niphs_in_loci[loci_id])))}\t{total_loci_genome_presence[loci_id]}\t{proportion}\t{outcome}\n")
+
+    if not no_cleanup:
+        print("Cleaning up temporary files...")
+        # Remove temporary files
+        lf.remove_files([distinct_hashtable])

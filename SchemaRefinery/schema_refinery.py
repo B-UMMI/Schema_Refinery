@@ -716,7 +716,13 @@ def identify_duplicate_gene() -> None:
                         dest='problematic_threshold',
                         default=0.1,
                         help='Threshold for determining if a locus is problematic.')
-    
+
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -800,6 +806,12 @@ def match_schemas() -> None:
                         default='alleles_vs_alleles',
                         help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
