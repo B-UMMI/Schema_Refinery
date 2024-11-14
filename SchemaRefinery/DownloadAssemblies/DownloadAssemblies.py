@@ -81,6 +81,7 @@ def main(args: Any) -> None:
         if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
             sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
     else:
+        print("\nNo filtering criteria provided.")
         criteria = None
 
     # Create output directory if it does not exist

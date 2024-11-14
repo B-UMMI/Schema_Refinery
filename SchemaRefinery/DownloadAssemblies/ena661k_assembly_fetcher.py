@@ -260,50 +260,52 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
 
     # Get all ids
     all_sample_ids: List[str] = [line[0] for line in taxon_lines]
+    if criteria is not None:
+        # Filter based on genome size
+        if criteria['genome_size'] is not None and criteria['size_threshold'] is not None:
+            bot_limit: float = criteria['genome_size'] - (criteria['genome_size'] * criteria['size_threshold'])
+            top_limit: float = criteria['genome_size'] + (criteria['genome_size'] * criteria['size_threshold'])
+            size_index: int = metadata_header.index('total_length')
+            taxon_lines = [line for line in taxon_lines if int(line[size_index]) >= bot_limit and int(line[size_index]) <= top_limit]
 
-    # Filter based on genome size
-    if criteria['genome_size'] is not None and criteria['size_threshold'] is not None:
-        bot_limit: float = criteria['genome_size'] - (criteria['genome_size'] * criteria['size_threshold'])
-        top_limit: float = criteria['genome_size'] + (criteria['genome_size'] * criteria['size_threshold'])
-        size_index: int = metadata_header.index('total_length')
-        taxon_lines = [line for line in taxon_lines if int(line[size_index]) >= bot_limit and int(line[size_index]) <= top_limit]
+            print('{0} with genome size >= {1} and <= {2}.'.format(len(taxon_lines), bot_limit, top_limit))
 
-        print('{0} with genome size >= {1} and <= {2}.'.format(len(taxon_lines), bot_limit, top_limit))
+        # Filter based on taxon abundance
+        if criteria['abundance'] is not None:
+            abundance_index: int = metadata_header.index('adjust_abundance')
+            taxon_lines = [line for line in taxon_lines if float(line[abundance_index]) >= criteria['abundance']]
 
-    # Filter based on taxon abundance
-    if criteria['abundance'] is not None:
-        abundance_index: int = metadata_header.index('adjust_abundance')
-        taxon_lines = [line for line in taxon_lines if float(line[abundance_index]) >= criteria['abundance']]
+            print('{0} with abundance >= {1}.'.format(len(taxon_lines), criteria['abundance']))
 
-        print('{0} with abundance >= {1}.'.format(len(taxon_lines), criteria['abundance']))
+        # Filter based on number of contigs
+        if criteria['max_contig_number'] is not None:
+            contigs_index: int = metadata_header.index('total_contigs')
+            taxon_lines = [line for line in taxon_lines if int(line[contigs_index]) <= criteria['max_contig_number']]
 
-    # Filter based on number of contigs
-    if criteria['max_contig_number'] is not None:
-        contigs_index: int = metadata_header.index('total_contigs')
-        taxon_lines = [line for line in taxon_lines if int(line[contigs_index]) <= criteria['max_contig_number']]
+            print('{0} with <= {1} contigs.'.format(len(taxon_lines), criteria['max_contig_number']))
 
-        print('{0} with <= {1} contigs.'.format(len(taxon_lines), criteria['max_contig_number']))
+        # Filter based on known ST
+        if criteria['known_st'] is True:
+            st_index: int = metadata_header.index('mlst')
+            taxon_lines = [line for line in taxon_lines if line[st_index] != '-']
 
-    # Filter based on known ST
-    if criteria['known_st'] is True:
-        st_index: int = metadata_header.index('mlst')
-        taxon_lines = [line for line in taxon_lines if line[st_index] != '-']
+            print('{0} with known ST.'.format(len(taxon_lines)))
 
-        print('{0} with known ST.'.format(len(taxon_lines)))
+        if criteria['ST_list_path'] is not None:
+            with open(criteria['ST_list_path'], 'r', encoding='utf-8') as desired_st:
+                d_st: List[str] = desired_st.read().splitlines()
+                st_index = metadata_header.index('mlst')
+                taxon_lines = [line for line in taxon_lines if line[st_index] in d_st]
+                print('{0} with desired ST'.format(len(taxon_lines)))
 
-    if criteria['ST_list_path'] is not None:
-        with open(criteria['ST_list_path'], 'r', encoding='utf-8') as desired_st:
-            d_st: List[str] = desired_st.read().splitlines()
-            st_index = metadata_header.index('mlst')
-            taxon_lines = [line for line in taxon_lines if line[st_index] in d_st]
-            print('{0} with desired ST'.format(len(taxon_lines)))
+        # Filter based on quality level
+        if criteria['any_quality'] is False:
+            quality_index: int = metadata_header.index('high_quality')
+            taxon_lines = [line for line in taxon_lines if line[quality_index] == 'TRUE']
 
-    # Filter based on quality level
-    if criteria['any_quality'] is False:
-        quality_index: int = metadata_header.index('high_quality')
-        taxon_lines = [line for line in taxon_lines if line[quality_index] == 'TRUE']
-
-        print('{0} with high quality.'.format(len(taxon_lines)))
+            print('{0} with high quality.'.format(len(taxon_lines)))
+    else:
+        print('No filtering criteria provided.')
 
     # Get sample identifiers
     sample_ids: List[str] = [line[0] for line in taxon_lines]
