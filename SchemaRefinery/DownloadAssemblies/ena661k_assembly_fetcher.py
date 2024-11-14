@@ -304,8 +304,6 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
             taxon_lines = [line for line in taxon_lines if line[quality_index] == 'TRUE']
 
             print('{0} with high quality.'.format(len(taxon_lines)))
-    else:
-        print('No filtering criteria provided.')
 
     # Get sample identifiers
     sample_ids: List[str] = [line[0] for line in taxon_lines]
@@ -329,7 +327,10 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
     if len(sample_ids) == 0:
         sys.exit('\nNo assemblies meet the desired filtering criteria.')
     else:
-        print('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+        if criteria is not None:
+            print('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+        else:
+            print("No filtering criteria were provided. All samples were selected.")
 
     selected_file: str = os.path.join(metadata_directory, 'selected_samples.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
