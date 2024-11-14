@@ -181,13 +181,16 @@ def main(args: Any) -> None:
             # If not using conda, use output directory instead
             sr_path = os.path.join(args.output_directory, 'ena661k_files')
 
-        metadata_directory = ena661k_assembly_fetcher.main(sr_path,
-                                                           args.taxon,
-                                                           args.output_directory,
-                                                           args.download,
-                                                           criteria,
-                                                           args.retry,
-                                                           args.threads)
+        failed_to_download, metadata_directory = ena661k_assembly_fetcher.main(sr_path,
+                                                                            args.taxon,
+                                                                            args.output_directory,
+                                                                            args.download,
+                                                                            criteria,
+                                                                            args.retry,
+                                                                            args.threads)
+        # Write failed to download to a file
+        with open(os.path.join(metadata_directory, 'failed_to_download.tsv'), 'w') as failed_file:
+            failed_file.write("\n".join(failed_to_download) + '\n')
 
     if args.fetch_metadata:
         linked_ids_file: str = os.path.join(metadata_directory, 'id_matches.tsv')
@@ -199,7 +202,8 @@ def main(args: Any) -> None:
                              args.email,
                              args.threads,
                              args.retry,
-                             args.api_key)
+                             args.api_key,
+                             failed_to_download)
 
         # Fetch BioSample identifiers
         biosamples: List[str] = pd.read_csv(linked_ids_file, delimiter='\t')['BioSample'].values.tolist()

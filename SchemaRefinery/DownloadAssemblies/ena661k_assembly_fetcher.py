@@ -385,7 +385,8 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
                     failed += 1
             print(f'\nFailed download for {failed} files.')
 
-    return metadata_directory
+    failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
+    return failed_to_download, metadata_directory
 
 
 def parse_arguments():
