@@ -169,18 +169,20 @@ def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = Tru
                 urllib.request.urlretrieve(file_url, out_file, handle_progress)
         except Exception:
             time.sleep(1)
-        tries += 1
-
-        if os.path.isfile(out_file):
-            if verify:
-                if check_download(out_file, original_hash, True):
+            tries += 1
+        else:
+            # Check if the file was downloaded successfully
+            if os.path.isfile(out_file):
+                if verify:
+                    if check_download(out_file, original_hash, True):
+                        downloaded = True
+                else:
                     downloaded = True
-            else:
-                downloaded = True
 
     return downloaded
 
-def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, criteria: Dict[str, Any], retry: int, threads: int) -> str:
+def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
+         criteria: Dict[str, Any], retry: int, threads: int) -> str:
     """
     Main function to handle downloading assemblies based on provided arguments.
 
@@ -311,16 +313,16 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
     # Assemblies that failed filtering criteria
     failed_list: List[str] = [x for x in all_sample_ids if x not in sample_ids]
 
-    metadata_directory: str = os.path.join(output_directory, 'metadata_ena661k')
-    if not os.path.exists(metadata_directory):
-        os.mkdir(metadata_directory)
+    ena_metadata_directory: str = os.path.join(output_directory, 'metadata_ena661k')
+    if not os.path.exists(ena_metadata_directory):
+        os.mkdir(ena_metadata_directory)
 
     # Write failed and accepted ids to file
-    valid_ids_file: str = os.path.join(metadata_directory, "assemblies_ids_to_download.tsv")
-    with open(valid_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
+    ena_valid_ids_file: str = os.path.join(ena_metadata_directory, "assemblies_ids_to_download.tsv")
+    with open(ena_valid_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(sample_ids) + '\n')
 
-    failed_ids_file: str = os.path.join(metadata_directory, "id_failed_criteria.tsv")
+    failed_ids_file: str = os.path.join(ena_metadata_directory, "id_failed_criteria.tsv")
     with open(failed_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(failed_list) + '\n')
 
@@ -332,7 +334,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
         else:
             print("No filtering criteria were provided. All samples were selected.")
 
-    selected_file: str = os.path.join(metadata_directory, 'selected_samples.tsv')
+    selected_file: str = os.path.join(ena_metadata_directory, 'selected_samples.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
         selected_lines: List[str] = ['\t'.join(line) for line in [metadata_header] + taxon_lines]
         selected_text: str = '\n'.join(selected_lines)
@@ -387,7 +389,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
             print(f'\nFailed download for {failed} files.')
 
     failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
-    return failed_to_download, metadata_directory
+    return failed_to_download, ena_metadata_directory, ena_valid_ids_file
 
 
 def parse_arguments():

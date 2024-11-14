@@ -328,8 +328,7 @@ def multi_threading(i: str, retry: int) -> Tuple[str, List[str]]:
     return i, identifiers
 
 
-def main(input_file: str, output_file: str, email: str, threads: int, retry: int, api_key: Optional[str],
-         failed_to_download: List[str]) -> None:
+def main(input_file: str, output_file: str, email: str, threads: int, retry: int, api_key: Optional[str]) -> None:
     """
     Main function of ncbi_linked_ids.py, this function links the input ids to
     other ids present in the databases.
@@ -357,9 +356,6 @@ def main(input_file: str, output_file: str, email: str, threads: int, retry: int
     # Read identifiers
     with open(input_file, 'r', encoding='utf-8') as infile:
         identifiers: List[str] = infile.read().splitlines()
-
-    # Remove failed to download identifiers
-    identifiers = list(set(identifiers) - set(failed_to_download))
 
     # Define email to make requests
     Entrez.email = email
