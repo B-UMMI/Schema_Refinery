@@ -12,11 +12,13 @@ try:
     from DownloadAssemblies import ncbi_datasets_summary
     from DownloadAssemblies import ncbi_linked_ids
     from DownloadAssemblies import fetch_metadata
+    from utils import file_functions as ff
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import ena661k_assembly_fetcher
     from SchemaRefinery.DownloadAssemblies import ncbi_datasets_summary
     from SchemaRefinery.DownloadAssemblies import ncbi_linked_ids
     from SchemaRefinery.DownloadAssemblies import fetch_metadata
+    from SchemaRefinery.utils import file_functions as ff
 
 
 def find_local_conda_env() -> str:
@@ -54,6 +56,10 @@ def find_local_conda_env() -> str:
     # Return the path to the 'ena661k_files' folder inside the environment
     return os.path.join(sr_path, 'ena661k_files')
 
+def remove_failed_ids(df: pd.DataFrame, failed_ids: List[str]) -> pd.DataFrame:
+    return df[~df[0].isin(failed_ids)]
+
+
 def main(args: Any) -> None:
     """
     Main function to handle downloading assemblies based on provided arguments.
@@ -81,6 +87,7 @@ def main(args: Any) -> None:
         if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
             sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
     else:
+        print("\nNo filtering criteria provided.")
         criteria = None
 
     # Create output directory if it does not exist
@@ -131,17 +138,17 @@ def main(args: Any) -> None:
 
             print(f"\n{len(assembly_ids)} passed filtering criteria.")
 
-        metadata_directory: str = os.path.join(args.output_directory, 'metadata_ncbi')
-        if not os.path.exists(metadata_directory):
-            os.mkdir(metadata_directory)
+        ncbi_metadata_directory: str = os.path.join(args.output_directory, 'metadata_ncbi')
+        if not os.path.exists(ncbi_metadata_directory):
+            os.mkdir(ncbi_metadata_directory)
 
         # Save IDs to download
-        valid_ids_file: str = os.path.join(metadata_directory, "assemblies_ids_to_download.tsv")
-        with open(valid_ids_file, 'w', encoding='utf-8') as ids_to_txt:
+        ncbi_valid_ids_file: str = os.path.join(ncbi_metadata_directory, "assemblies_ids_to_download.tsv")
+        with open(ncbi_valid_ids_file, 'w', encoding='utf-8') as ids_to_txt:
             ids_to_txt.write("\n".join(assembly_ids) + '\n')
 
         # Save IDs that failed criteria
-        failed_ids_file: str = os.path.join(metadata_directory, "id_failed_criteria.tsv")
+        failed_ids_file: str = os.path.join(ncbi_metadata_directory, "id_failed_criteria.tsv")
         with open(failed_ids_file, 'w', encoding='utf-8') as ids_to_txt:
             ids_to_txt.write("\n".join(failed) + '\n')
 
@@ -153,7 +160,7 @@ def main(args: Any) -> None:
         # Download assemblies
         if args.download:
             # Build initial arguments for the subprocess run of datasets
-            arguments: List[str] = ['datasets', 'download', 'genome', 'accession', '--inputfile', valid_ids_file]
+            arguments: List[str] = ['datasets', 'download', 'genome', 'accession', '--inputfile', ncbi_valid_ids_file]
 
             if args.api_key is not None:
                 arguments.extend(['--api-key', args.api_key])
@@ -169,7 +176,9 @@ def main(args: Any) -> None:
             subprocess.run(arguments, check=False)
         else:
             print("\nThe list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(valid_ids_file))
-
+    else:
+        ncbi_metadata_directory = None
+        ncbi_valid_ids_file = None
     # Download from ENA661K
     if 'ENA661K' in args.database:
         # Path for ena661k files
@@ -180,18 +189,52 @@ def main(args: Any) -> None:
             # If not using conda, use output directory instead
             sr_path = os.path.join(args.output_directory, 'ena661k_files')
 
-        metadata_directory = ena661k_assembly_fetcher.main(sr_path,
-                                                           args.taxon,
-                                                           args.output_directory,
-                                                           args.download,
-                                                           criteria,
-                                                           args.retry,
-                                                           args.threads)
+        [failed_to_download,
+         ena_metadata_directory,
+         ena_valid_ids_file] = ena661k_assembly_fetcher.main(sr_path,
+                                                            args.taxon,
+                                                            args.output_directory,
+                                                            args.download,
+                                                            criteria,
+                                                            args.retry,
+                                                            args.threads)
+    else:
+        ena_metadata_directory = None
+        failed_to_download = None
+        ena_valid_ids_file = None
 
     if args.fetch_metadata:
-        linked_ids_file: str = os.path.join(metadata_directory, 'id_matches.tsv')
-        ids_file: str = os.path.join(metadata_directory, 'assemblies_ids_to_download.tsv')
+        all_metadata_directory: str = os.path.join(args.output_directory, 'metadata_all')
+        if not os.path.exists(all_metadata_directory):
+            ff.create_directory(all_metadata_directory)
+        linked_ids_file: str = os.path.join(all_metadata_directory, 'id_matches.tsv')
+        ids_file = os.path.join(all_metadata_directory, 'ids_fetched.tsv')
+        # Merge NCBI and ENA valid IDs
+        if ncbi_valid_ids_file and ena_valid_ids_file:
+            # Both files are not None, merge them
+            ncbi_df = pd.read_csv(ncbi_valid_ids_file, delimiter='\t', header=None)
+            ena_df = pd.read_csv(ena_valid_ids_file, delimiter='\t', header=None)
+            # Remove failed_to_download IDs
+            ena_df = remove_failed_ids(ena_df, failed_to_download)
+            # Merge the two dataframes
+            merged_df = pd.concat([ncbi_df, ena_df], ignore_index=True)
+            # Save to file
+            merged_df.to_csv(ids_file, sep='\t', index=False, header=False)
+        elif ncbi_valid_ids_file:
+            # Only NCBI file is valid
+            ncbi_df = pd.read_csv(ncbi_valid_ids_file, delimiter='\t', header=None)
+            # Remove failed_to_download IDs
+            ncbi_df.to_csv(ids_file, sep='\t', index=False, header=False)
+        elif ena_valid_ids_file:
+            # Only ENA file is valid
+            ena_df = pd.read_csv(ena_valid_ids_file, delimiter='\t', header=None)
+            # Remove failed_to_download IDs
+            ena_df = remove_failed_ids(ena_df, failed_to_download)
+            # Save to file
+            ena_df.to_csv(ids_file, sep='\t', index=False, header=False)
 
+
+        ncbi_valid_ids_file
         print("\nFetching RefSeq, Genbank and SRA IDs linked to the BioSample ID...")
         ncbi_linked_ids.main(ids_file,
                              linked_ids_file,
@@ -205,13 +248,13 @@ def main(args: Any) -> None:
         # Exclude samples without BioSample identifier
         biosamples = [i for i in biosamples if isinstance(i, str)]
         # Save BioSample identifiers to file
-        biosample_file: str = os.path.join(metadata_directory, 'biosamples.tsv')
+        biosample_file: str = os.path.join(all_metadata_directory, 'biosamples.tsv')
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples) + '\n')
 
         print("\nFetching metadata associated to the BioSample ID...")
         fetch_metadata.main(biosample_file,
-                            metadata_directory,
+                            all_metadata_directory,
                             args.email,
                             args.threads,
                             args.api_key,

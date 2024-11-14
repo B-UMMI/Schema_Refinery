@@ -169,18 +169,20 @@ def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = Tru
                 urllib.request.urlretrieve(file_url, out_file, handle_progress)
         except Exception:
             time.sleep(1)
-        tries += 1
-
-        if os.path.isfile(out_file):
-            if verify:
-                if check_download(out_file, original_hash, True):
+            tries += 1
+        else:
+            # Check if the file was downloaded successfully
+            if os.path.isfile(out_file):
+                if verify:
+                    if check_download(out_file, original_hash, True):
+                        downloaded = True
+                else:
                     downloaded = True
-            else:
-                downloaded = True
 
     return downloaded
 
-def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, criteria: Dict[str, Any], retry: int, threads: int) -> str:
+def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
+         criteria: Dict[str, Any], retry: int, threads: int) -> str:
     """
     Main function to handle downloading assemblies based on provided arguments.
 
@@ -260,50 +262,50 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
 
     # Get all ids
     all_sample_ids: List[str] = [line[0] for line in taxon_lines]
+    if criteria is not None:
+        # Filter based on genome size
+        if criteria['genome_size'] is not None and criteria['size_threshold'] is not None:
+            bot_limit: float = criteria['genome_size'] - (criteria['genome_size'] * criteria['size_threshold'])
+            top_limit: float = criteria['genome_size'] + (criteria['genome_size'] * criteria['size_threshold'])
+            size_index: int = metadata_header.index('total_length')
+            taxon_lines = [line for line in taxon_lines if int(line[size_index]) >= bot_limit and int(line[size_index]) <= top_limit]
 
-    # Filter based on genome size
-    if criteria['genome_size'] is not None and criteria['size_threshold'] is not None:
-        bot_limit: float = criteria['genome_size'] - (criteria['genome_size'] * criteria['size_threshold'])
-        top_limit: float = criteria['genome_size'] + (criteria['genome_size'] * criteria['size_threshold'])
-        size_index: int = metadata_header.index('total_length')
-        taxon_lines = [line for line in taxon_lines if int(line[size_index]) >= bot_limit and int(line[size_index]) <= top_limit]
+            print('{0} with genome size >= {1} and <= {2}.'.format(len(taxon_lines), bot_limit, top_limit))
 
-        print('{0} with genome size >= {1} and <= {2}.'.format(len(taxon_lines), bot_limit, top_limit))
+        # Filter based on taxon abundance
+        if criteria['abundance'] is not None:
+            abundance_index: int = metadata_header.index('adjust_abundance')
+            taxon_lines = [line for line in taxon_lines if float(line[abundance_index]) >= criteria['abundance']]
 
-    # Filter based on taxon abundance
-    if criteria['abundance'] is not None:
-        abundance_index: int = metadata_header.index('adjust_abundance')
-        taxon_lines = [line for line in taxon_lines if float(line[abundance_index]) >= criteria['abundance']]
+            print('{0} with abundance >= {1}.'.format(len(taxon_lines), criteria['abundance']))
 
-        print('{0} with abundance >= {1}.'.format(len(taxon_lines), criteria['abundance']))
+        # Filter based on number of contigs
+        if criteria['max_contig_number'] is not None:
+            contigs_index: int = metadata_header.index('total_contigs')
+            taxon_lines = [line for line in taxon_lines if int(line[contigs_index]) <= criteria['max_contig_number']]
 
-    # Filter based on number of contigs
-    if criteria['max_contig_number'] is not None:
-        contigs_index: int = metadata_header.index('total_contigs')
-        taxon_lines = [line for line in taxon_lines if int(line[contigs_index]) <= criteria['max_contig_number']]
+            print('{0} with <= {1} contigs.'.format(len(taxon_lines), criteria['max_contig_number']))
 
-        print('{0} with <= {1} contigs.'.format(len(taxon_lines), criteria['max_contig_number']))
+        # Filter based on known ST
+        if criteria['known_st'] is True:
+            st_index: int = metadata_header.index('mlst')
+            taxon_lines = [line for line in taxon_lines if line[st_index] != '-']
 
-    # Filter based on known ST
-    if criteria['known_st'] is True:
-        st_index: int = metadata_header.index('mlst')
-        taxon_lines = [line for line in taxon_lines if line[st_index] != '-']
+            print('{0} with known ST.'.format(len(taxon_lines)))
 
-        print('{0} with known ST.'.format(len(taxon_lines)))
+        if criteria['ST_list_path'] is not None:
+            with open(criteria['ST_list_path'], 'r', encoding='utf-8') as desired_st:
+                d_st: List[str] = desired_st.read().splitlines()
+                st_index = metadata_header.index('mlst')
+                taxon_lines = [line for line in taxon_lines if line[st_index] in d_st]
+                print('{0} with desired ST'.format(len(taxon_lines)))
 
-    if criteria['ST_list_path'] is not None:
-        with open(criteria['ST_list_path'], 'r', encoding='utf-8') as desired_st:
-            d_st: List[str] = desired_st.read().splitlines()
-            st_index = metadata_header.index('mlst')
-            taxon_lines = [line for line in taxon_lines if line[st_index] in d_st]
-            print('{0} with desired ST'.format(len(taxon_lines)))
+        # Filter based on quality level
+        if criteria['any_quality'] is False:
+            quality_index: int = metadata_header.index('high_quality')
+            taxon_lines = [line for line in taxon_lines if line[quality_index] == 'TRUE']
 
-    # Filter based on quality level
-    if criteria['any_quality'] is False:
-        quality_index: int = metadata_header.index('high_quality')
-        taxon_lines = [line for line in taxon_lines if line[quality_index] == 'TRUE']
-
-        print('{0} with high quality.'.format(len(taxon_lines)))
+            print('{0} with high quality.'.format(len(taxon_lines)))
 
     # Get sample identifiers
     sample_ids: List[str] = [line[0] for line in taxon_lines]
@@ -311,25 +313,28 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
     # Assemblies that failed filtering criteria
     failed_list: List[str] = [x for x in all_sample_ids if x not in sample_ids]
 
-    metadata_directory: str = os.path.join(output_directory, 'metadata_ena661k')
-    if not os.path.exists(metadata_directory):
-        os.mkdir(metadata_directory)
+    ena_metadata_directory: str = os.path.join(output_directory, 'metadata_ena661k')
+    if not os.path.exists(ena_metadata_directory):
+        os.mkdir(ena_metadata_directory)
 
     # Write failed and accepted ids to file
-    valid_ids_file: str = os.path.join(metadata_directory, "assemblies_ids_to_download.tsv")
-    with open(valid_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
+    ena_valid_ids_file: str = os.path.join(ena_metadata_directory, "assemblies_ids_to_download.tsv")
+    with open(ena_valid_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(sample_ids) + '\n')
 
-    failed_ids_file: str = os.path.join(metadata_directory, "id_failed_criteria.tsv")
+    failed_ids_file: str = os.path.join(ena_metadata_directory, "id_failed_criteria.tsv")
     with open(failed_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(failed_list) + '\n')
 
     if len(sample_ids) == 0:
         sys.exit('\nNo assemblies meet the desired filtering criteria.')
     else:
-        print('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+        if criteria is not None:
+            print('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+        else:
+            print("No filtering criteria were provided. All samples were selected.")
 
-    selected_file: str = os.path.join(metadata_directory, 'selected_samples.tsv')
+    selected_file: str = os.path.join(ena_metadata_directory, 'selected_samples.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
         selected_lines: List[str] = ['\t'.join(line) for line in [metadata_header] + taxon_lines]
         selected_text: str = '\n'.join(selected_lines)
@@ -383,7 +388,8 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool, cr
                     failed += 1
             print(f'\nFailed download for {failed} files.')
 
-    return metadata_directory
+    failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
+    return failed_to_download, ena_metadata_directory, ena_valid_ids_file
 
 
 def parse_arguments():
