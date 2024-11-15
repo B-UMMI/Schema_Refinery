@@ -404,4 +404,4 @@ def main(input_file: str, linked_ids_file: str, email: str, threads: int, retry:
                     else:
                         outfile.write(f"{id}\t{id}\t\n")
                 else:
-                    outfile.write(f"{id}\t\t{id}\n")
+                    outfile.write(f"{id}\t\t\t{id}\n")
