@@ -113,72 +113,76 @@ def main(args: Any) -> None:
             # Fetch from taxon identifier
             metadata = ncbi_datasets_summary.fetch_metadata(None, args.taxon, criteria, args.api_key)
             if metadata['total_count'] == 0:
-                os.sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
-            assembly_ids = [sample['accession'] for sample in metadata['reports']]
-
-        total_ids: int = len(assembly_ids)
-        failed: List[str] = []
-        passed: List[str] = []
-
-        if criteria is not None:
-            # Validate assemblies
-            if metadata['total_count'] > 0:
-                for sample in metadata['reports']:
-                    current_accession: str = sample['accession']
-                    valid: bool = ncbi_datasets_summary.verify_assembly(sample,
-                                                                        criteria['size_threshold'],
-                                                                        criteria['max_contig_number'],
-                                                                        criteria['genome_size'],
-                                                                        criteria['verify_status'])
-                    if valid:
-                        passed.append(current_accession)
-                    else:
-                        failed.append(current_accession)
-                assembly_ids = passed
-
-            print(f"\n{len(assembly_ids)} passed filtering criteria.")
-
-        ncbi_metadata_directory: str = os.path.join(args.output_directory, 'metadata_ncbi')
-        if not os.path.exists(ncbi_metadata_directory):
-            os.mkdir(ncbi_metadata_directory)
-
-        # Save IDs to download
-        ncbi_valid_ids_file: str = os.path.join(ncbi_metadata_directory, "assemblies_ids_to_download.tsv")
-        with open(ncbi_valid_ids_file, 'w', encoding='utf-8') as ids_to_txt:
-            ids_to_txt.write("\n".join(assembly_ids) + '\n')
-
-        # Save IDs that failed criteria
-        failed_ids_file: str = os.path.join(ncbi_metadata_directory, "id_failed_criteria.tsv")
-        with open(failed_ids_file, 'w', encoding='utf-8') as ids_to_txt:
-            ids_to_txt.write("\n".join(failed) + '\n')
-
-        # If any assembly passed filtering criteria
-        if len(assembly_ids) == 0:
-            print("\nNo assemblies meet the desired filtering criteria.")
-            sys.exit("\nAssemblies that failed are in the following TSV file: {}".format(failed_ids_file))
-
-        # Download assemblies
-        if args.download:
-            # Build initial arguments for the subprocess run of datasets
-            arguments: List[str] = ['datasets', 'download', 'genome', 'accession', '--inputfile', ncbi_valid_ids_file]
-
-            if args.api_key is not None:
-                arguments.extend(['--api-key', args.api_key])
-
-            if criteria is not None and criteria['file_to_include'] is not None:
-                arguments.extend(['--include', ','.join(criteria['file_to_include'])])
+                print("\nNo assemblies that satisfy the selected criteria were found for NCBI.")
+                continue_run = False
             else:
-                arguments.extend(['--include', 'genome'])
+                continue_run = True
+            assembly_ids = [sample['accession'] for sample in metadata['reports']]
+        
+        if continue_run:
+            total_ids: int = len(assembly_ids)
+            failed: List[str] = []
+            passed: List[str] = []
 
-            assemblies_zip: str = os.path.join(args.output_directory, 'assemblies.zip')
-            arguments.extend(['--filename', assemblies_zip])
-            print("\nDownloading assemblies...")
-            subprocess.run(arguments, check=False)
+            if criteria is not None:
+                # Validate assemblies
+                if metadata['total_count'] > 0:
+                    for sample in metadata['reports']:
+                        current_accession: str = sample['accession']
+                        valid: bool = ncbi_datasets_summary.verify_assembly(sample,
+                                                                            criteria['size_threshold'],
+                                                                            criteria['max_contig_number'],
+                                                                            criteria['genome_size'],
+                                                                            criteria['verify_status'])
+                        if valid:
+                            passed.append(current_accession)
+                        else:
+                            failed.append(current_accession)
+                    assembly_ids = passed
+
+                print(f"\n{len(assembly_ids)} passed filtering criteria.")
+
+            ncbi_metadata_directory: str = os.path.join(args.output_directory, 'metadata_ncbi')
+            if not os.path.exists(ncbi_metadata_directory):
+                os.mkdir(ncbi_metadata_directory)
+
+            # Save IDs to download
+            ncbi_valid_ids_file: str = os.path.join(ncbi_metadata_directory, "assemblies_ids_to_download.tsv")
+            with open(ncbi_valid_ids_file, 'w', encoding='utf-8') as ids_to_txt:
+                ids_to_txt.write("\n".join(assembly_ids) + '\n')
+
+            # Save IDs that failed criteria
+            failed_ids_file: str = os.path.join(ncbi_metadata_directory, "id_failed_criteria.tsv")
+            with open(failed_ids_file, 'w', encoding='utf-8') as ids_to_txt:
+                ids_to_txt.write("\n".join(failed) + '\n')
+
+            # If any assembly passed filtering criteria
+            if len(assembly_ids) == 0:
+                print("\nNo assemblies meet the desired filtering criteria.")
+                sys.exit("\nAssemblies that failed are in the following TSV file: {}".format(failed_ids_file))
+
+            # Download assemblies
+            if args.download:
+                # Build initial arguments for the subprocess run of datasets
+                arguments: List[str] = ['datasets', 'download', 'genome', 'accession', '--inputfile', ncbi_valid_ids_file]
+
+                if args.api_key is not None:
+                    arguments.extend(['--api-key', args.api_key])
+
+                if criteria is not None and criteria['file_to_include'] is not None:
+                    arguments.extend(['--include', ','.join(criteria['file_to_include'])])
+                else:
+                    arguments.extend(['--include', 'genome'])
+
+                assemblies_zip: str = os.path.join(args.output_directory, 'assemblies.zip')
+                arguments.extend(['--filename', assemblies_zip])
+                print("\nDownloading assemblies...")
+                subprocess.run(arguments, check=False)
+            else:
+                print("\nThe list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(valid_ids_file))
         else:
-            print("\nThe list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(valid_ids_file))
-    else:
-        ncbi_metadata_directory = None
-        ncbi_valid_ids_file = None
+            ncbi_metadata_directory = None
+            ncbi_valid_ids_file = None
     # Download from ENA661K
     if 'ENA661K' in args.database:
         # Path for ena661k files

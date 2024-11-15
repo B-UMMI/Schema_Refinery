@@ -176,6 +176,8 @@ def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = Tru
                 if verify:
                     if check_download(out_file, original_hash, True):
                         downloaded = True
+                    else:
+                        tries += 1
                 else:
                     downloaded = True
 
@@ -319,7 +321,8 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
 
     # Write failed and accepted ids to file
     ena_valid_ids_file: str = os.path.join(ena_metadata_directory, "assemblies_ids_to_download.tsv")
-    with open(ena_valid_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
+    write_type = 'a' if os.path.exists(ena_valid_ids_file) else 'w+'
+    with open(ena_valid_ids_file, write_type, encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(sample_ids) + '\n')
 
     failed_ids_file: str = os.path.join(ena_metadata_directory, "id_failed_criteria.tsv")
@@ -330,9 +333,9 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         sys.exit('\nNo assemblies meet the desired filtering criteria.')
     else:
         if criteria is not None:
-            print('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+            print('\nSelected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
         else:
-            print("No filtering criteria were provided. All samples were selected.")
+            print("\nNo filtering criteria were provided. All samples were selected.")
 
     selected_file: str = os.path.join(ena_metadata_directory, 'selected_samples.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
