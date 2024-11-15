@@ -332,9 +332,9 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         sys.exit('\nNo assemblies meet the desired filtering criteria.')
     else:
         if criteria is not None:
-            print('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+            print('\nSelected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
         else:
-            print("No filtering criteria were provided. All samples were selected.")
+            print("\nNo filtering criteria were provided. All samples were selected.")
 
     selected_file: str = os.path.join(ena_metadata_directory, 'selected_samples.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
