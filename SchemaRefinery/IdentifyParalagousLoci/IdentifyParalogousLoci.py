@@ -117,7 +117,10 @@ def identify_paralogous_loci(schema_directory: str,
 
         # Calculate the mode of the lengths of the sequences
         if loci_allele_size:
-            all_loci_allele_size_stats[loci] = (min(loci_allele_size)/3, max(loci_allele_size)/3, statistics.mode(loci_allele_size)/3, statistics.mean(loci_allele_size)/3)
+            all_loci_allele_size_stats[loci] = (min(loci_allele_size)/3,
+                                                max(loci_allele_size)/3,
+                                                statistics.mode(loci_allele_size)/3,
+                                                statistics.mean(loci_allele_size)/3)
     
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(query_fasta, False)
@@ -171,7 +174,13 @@ def identify_paralogous_loci(schema_directory: str,
                                 query_paths_dict.keys(),
                                 itertools.repeat(blast_output_folder)):
             
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1],
+                                                                                          0,
+                                                                                          True,
+                                                                                          False,
+                                                                                          True,
+                                                                                          True,
+                                                                                          False)
 
             # Since BLAST may find several local alignments choose the largest one to calculate BSR.
             for query, subjects_dict in filtered_alignments_dict.items():
@@ -217,7 +226,9 @@ def identify_paralogous_loci(schema_directory: str,
             for subject_loci_id, computed_score in subject_dict.items():
                 paralogous_list.append((query_loci_id, subject_loci_id))
                 # Verify if the mode of the allele sizes is within the threshold
-                mode_check: bool = stats.modes_within_value(all_loci_allele_size_stats[query_loci_id][2], all_loci_allele_size_stats[subject_loci_id][2], size_threshold)
+                mode_check: bool = stats.modes_within_value(all_loci_allele_size_stats[query_loci_id][2],
+                                                            all_loci_allele_size_stats[subject_loci_id][2],
+                                                            size_threshold)
                 # Verify if the minimum and maximum values of the allele sizes are within the threshold
                 min_threshold_check: bool
                 max_threshold_check: bool
