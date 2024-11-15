@@ -177,7 +177,7 @@ def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = Tru
                     if check_download(out_file, original_hash, True):
                         downloaded = True
                 else:
-                    downloaded = True
+                    downloaded = False
 
     return downloaded
 
