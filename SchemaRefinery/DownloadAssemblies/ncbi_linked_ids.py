@@ -398,4 +398,10 @@ def main(input_file: str, linked_ids_file: str, email: str, threads: int, retry:
                 processed_ids.append(input_id)
             not_matched_ids = set(dict_identifiers[database]) - set(processed_ids)
             for id in not_matched_ids:
-                outfile.write(f"{id}\t\t\t\n")
+                if database == 'assembly':
+                    if determine_id_type(id) == 'refseq':
+                        outfile.write(f"{id}{id}\t\t\n")
+                    else:
+                        outfile.write(f"{id}\t{id}\t\n")
+                else:
+                    outfile.write(f"{id}\t\t{id}\n")
