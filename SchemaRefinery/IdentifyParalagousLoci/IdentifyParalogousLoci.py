@@ -221,7 +221,12 @@ def identify_paralogous_loci(schema_directory: str,
                 # Verify if the minimum and maximum values of the allele sizes are within the threshold
                 min_threshold_check: bool
                 max_threshold_check: bool
-                min_threshold_check, max_threshold_check = stats.two_sets_within_min_max_threshold([all_loci_allele_size_stats[query_loci_id][0], all_loci_allele_size_stats[query_loci_id][1]], [all_loci_allele_size_stats[subject_loci_id][0], all_loci_allele_size_stats[subject_loci_id][1]], size_threshold)
+                [min_threshold_check,
+                 max_threshold_check] = stats.two_sets_within_min_max_threshold([all_loci_allele_size_stats[query_loci_id][0],
+                                                                                 all_loci_allele_size_stats[query_loci_id][1]],
+                                                                                 [all_loci_allele_size_stats[subject_loci_id][0],
+                                                                                  all_loci_allele_size_stats[subject_loci_id][1]],
+                                                                                  size_threshold)
                 report_file.write(f"{query_loci_id}\t{subject_loci_id}\t{computed_score}\t{mode_check}\t{min_threshold_check}\t{max_threshold_check}\n")
                 
                 if mode_check:
