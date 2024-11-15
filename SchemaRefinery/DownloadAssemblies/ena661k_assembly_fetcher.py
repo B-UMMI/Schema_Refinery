@@ -321,7 +321,8 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
 
     # Write failed and accepted ids to file
     ena_valid_ids_file: str = os.path.join(ena_metadata_directory, "assemblies_ids_to_download.tsv")
-    with open(ena_valid_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
+    write_type = 'a' if os.path.exists(ena_valid_ids_file) else 'w+'
+    with open(ena_valid_ids_file, write_type, encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(sample_ids) + '\n')
 
     failed_ids_file: str = os.path.join(ena_metadata_directory, "id_failed_criteria.tsv")
