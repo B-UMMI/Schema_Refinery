@@ -366,6 +366,7 @@ def main(input_file: str, linked_ids_file: str, email: str, threads: int, retry:
 
     database_identifiers: Dict[str, List[str]] = {}
 
+    print('\nFetching internal IDs identifiers...')
     internal_dict_identifiers: Dict[str, List[List[str]]] = {}
     ids_matches: Dict[str, Dict[str, Dict[str, str]]] = {database: {} for database in dict_identifiers.keys()}
     for database, ids in dict_identifiers.items():
@@ -375,11 +376,13 @@ def main(input_file: str, linked_ids_file: str, email: str, threads: int, retry:
                 if record:
                     internal_dict_identifiers.setdefault(database, []).append(list(record['IdList']))
     
+    print('\nFetching linked IDs...')
     for database, ids in internal_dict_identifiers.items():
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             for linked_ids in list(executor.map(fetch_linked_ids, ids, repeat(retry), repeat(database))):
                 ids_matches[database].update(linked_ids)
 
+    print("\nWriting output file...")
     # Write output table
     output_header: str = 'InputID\tRefSeq\tGenBank\tBioSample\n'
     processed_ids: List[str] = []
