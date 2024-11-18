@@ -217,7 +217,6 @@ def identify_paralogous_loci(schema_directory: str,
     
     paralogous_loci_report: str = os.path.join(output_directory, 'paralogous_loci_report.tsv')
     paralogous_list: List[Tuple[str, str]] = []
-    paralogous_list_mode_check: List[Tuple[str, str]] = []
     # Write the report file with all of the paralogous loci results
     with open(paralogous_loci_report, 'w') as report_file:
         report_file.write("Query_loci_id\t"
