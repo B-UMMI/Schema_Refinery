@@ -32,4 +32,4 @@ def if_loci_intersect(set1: List[float], set2: List[float]):
 
 def calculate_loci_distance(set1: List[float], set2: List[float], threshold: float):
     
-    return abs(set1[0] - set2[1]) / abs(set2[0] - set1[1]) <= threshold * max(abs(set1[2] / set2[2]), abs(set2[2] / set1[2]))
+    return min(abs(set1[0] - set2[1]), abs(set2[0] - set1[1])) <= max(set1[2], set2[2]) * threshold
