@@ -218,32 +218,46 @@ def identify_paralogous_loci(schema_directory: str,
     paralogous_loci_report: str = os.path.join(output_directory, 'paralogous_loci_report.tsv')
     paralogous_list: List[Tuple[str, str]] = []
     paralogous_list_mode_check: List[Tuple[str, str]] = []
-    paralogous_list_all_check: List[Tuple[str, str]] = []
     # Write the report file with all of the paralogous loci results
     with open(paralogous_loci_report, 'w') as report_file:
-        report_file.write("Query_loci_id\tSubject_loci_id\tBSR\tMode_check\tMin_threshold_check\tMax_threshold_check\n")
+        report_file.write("Query_loci_id\t"
+                          "Subject_loci_id\t"
+                          "BSR\t"
+                          "if_loci_intersect\t"
+                          "if_close_distance\t"
+                          "Loci_min_allele_size\t"
+                          "Loci_max_allele_size\t"
+                          "Loci_mode_allele_size\t"
+                          "Loci_mean_allele_size\t"
+                          "\n")
+        # Check if the loci are paralogous
         for query_loci_id, subject_dict in best_bsr_values.items():
             for subject_loci_id, computed_score in subject_dict.items():
                 paralogous_list.append((query_loci_id, subject_loci_id))
-                # Verify if the mode of the allele sizes is within the threshold
-                mode_check: bool = stats.modes_within_value(all_loci_allele_size_stats[query_loci_id][2],
-                                                            all_loci_allele_size_stats[subject_loci_id][2],
-                                                            size_threshold)
-                # Verify if the minimum and maximum values of the allele sizes are within the threshold
-                min_threshold_check: bool
-                max_threshold_check: bool
-                [min_threshold_check,
-                 max_threshold_check] = stats.two_sets_within_min_max_threshold([all_loci_allele_size_stats[query_loci_id][0],
-                                                                                 all_loci_allele_size_stats[query_loci_id][1]],
-                                                                                 [all_loci_allele_size_stats[subject_loci_id][0],
-                                                                                  all_loci_allele_size_stats[subject_loci_id][1]],
-                                                                                  size_threshold)
-                report_file.write(f"{query_loci_id}\t{subject_loci_id}\t{computed_score}\t{mode_check}\t{min_threshold_check}\t{max_threshold_check}\n")
+
+                if_loci_intersect = stats.if_loci_intersect([all_loci_allele_size_stats[query_loci_id][:2]],
+                                                        [all_loci_allele_size_stats[subject_loci_id][:2]])
                 
-                if mode_check:
-                    paralogous_list_mode_check.append((query_loci_id, subject_loci_id))
-                if min_threshold_check and max_threshold_check and mode_check:
-                    paralogous_list_all_check.append((query_loci_id, subject_loci_id))
+                if not if_loci_intersect:
+                    if_close_distance = stats.calculate_loci_distance([all_loci_allele_size_stats[query_loci_id][:3]],
+                                                                        [all_loci_allele_size_stats[subject_loci_id][:3]],
+                                                                        size_threshold)
+                else:
+                    if_close_distance = True
+
+                report_file.write(f"{query_loci_id}\t"
+                                  f"{subject_loci_id}\t"
+                                  f"{computed_score}\t"
+                                  f"{if_loci_intersect}\t"
+                                  f"{if_close_distance}\t"
+                                  f"{all_loci_allele_size_stats[query_loci_id][0]}|{all_loci_allele_size_stats[subject_loci_id][0]}\t"
+                                  f"{all_loci_allele_size_stats[query_loci_id][1]}|{all_loci_allele_size_stats[subject_loci_id][1]}\t"
+                                  f"{all_loci_allele_size_stats[query_loci_id][2]}|{all_loci_allele_size_stats[subject_loci_id][2]}\t"
+                                  f"{all_loci_allele_size_stats[query_loci_id][3]}|{all_loci_allele_size_stats[subject_loci_id][3]}\t"
+                                  "\n")
+                
+                if if_loci_intersect or if_close_distance:
+                    paralogous_list_check.append((query_loci_id, subject_loci_id))
 
     # Cluster the paralogous loci by id and write the results to a file
     paralogous_list = cf.cluster_by_ids(paralogous_list)
@@ -253,17 +267,10 @@ def identify_paralogous_loci(schema_directory: str,
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 
     # Cluster the paralogous loci by id that passed the mode check and write the results to a file
-    paralogous_list_mode_check = cf.cluster_by_ids(paralogous_list_mode_check)
+    paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
     paralogous_loci_report_mode: str = os.path.join(output_directory, 'paralogous_loci_report_mode.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
-        for cluster in paralogous_list_mode_check:
-            report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
-
-    # Cluster the paralogous loci by id that passed all checks and write the results to a file
-    paralogous_list_all_check = cf.cluster_by_ids(paralogous_list_all_check)
-    paralogous_loci_report_all_check: str = os.path.join(output_directory, 'paralogous_loci_report_all_check.tsv')
-    with open(paralogous_loci_report_all_check, 'w') as report_file:
-        for cluster in paralogous_list_all_check:
+        for cluster in paralogous_list_check:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 
     # Clean up temporary files
@@ -272,5 +279,4 @@ def identify_paralogous_loci(schema_directory: str,
         # Remove temporary files
         ff.cleanup(output_directory, [paralogous_loci_report,
                                       paralogous_loci_report_cluster_by_id,
-                                      paralogous_loci_report_mode,
-                                      paralogous_loci_report_all_check,])
+                                      paralogous_list_check,])
