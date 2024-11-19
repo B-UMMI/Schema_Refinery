@@ -17,7 +17,6 @@ import argparse
 try:
     from DownloadAssemblies import DownloadAssemblies
     from SchemaAnnotation import SchemaAnnotation
-    from utils import parameter_validation as pv
     from RefineSchema import IdentifySpuriousGenes
     from IdentifyParalagousLoci import IdentifyParalogousLoci
     from AdaptLoci import AdaptLoci
@@ -28,7 +27,6 @@ try:
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
-    from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
     from SchemaRefinery.AdaptLoci import AdaptLoci
@@ -124,7 +122,7 @@ def download_assemblies() -> None:
 
     parser.add_argument('-f',
                         '--filtering-criteria',
-                        type=pv.validate_criteria_file,
+                        type=val.validate_criteria_file,
                         required=False,
                         dest='filtering_criteria',
                         help='TSV file containing filtering parameters applied before assembly download.')
