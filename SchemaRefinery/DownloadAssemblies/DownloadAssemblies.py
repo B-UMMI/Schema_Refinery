@@ -174,7 +174,7 @@ def main(args: Any) -> None:
                 else:
                     arguments.extend(['--include', 'genome'])
 
-                assemblies_zip: str = os.path.join(args.output_directory, 'assemblies.zip')
+                assemblies_zip: str = os.path.join(args.output_directory, 'assemblies_ncbi.zip')
                 arguments.extend(['--filename', assemblies_zip])
                 print("\nDownloading assemblies...")
                 subprocess.run(arguments, check=False)
@@ -183,6 +183,7 @@ def main(args: Any) -> None:
         else:
             ncbi_metadata_directory = None
             ncbi_valid_ids_file = None
+            assemblies_zip = None
     # Download from ENA661K
     if 'ENA661K' in args.database:
         # Path for ena661k files
@@ -195,7 +196,9 @@ def main(args: Any) -> None:
 
         [failed_to_download,
          ena_metadata_directory,
-         ena_valid_ids_file] = ena661k_assembly_fetcher.main(sr_path,
+         ena_valid_ids_file,
+         assemblies_directory,
+         selected_file_ena661k] = ena661k_assembly_fetcher.main(sr_path,
                                                             args.taxon,
                                                             args.output_directory,
                                                             args.download,
@@ -206,6 +209,8 @@ def main(args: Any) -> None:
         ena_metadata_directory = None
         failed_to_download = None
         ena_valid_ids_file = None
+        assemblies_directory = None
+        selected_file_ena661k = None
 
     if args.fetch_metadata:
         all_metadata_directory: str = os.path.join(args.output_directory, 'metadata_all')
@@ -252,7 +257,7 @@ def main(args: Any) -> None:
         # Exclude samples without BioSample identifier
         biosamples = [i for i in biosamples if isinstance(i, str)]
         # Save BioSample identifiers to file
-        biosample_file: str = os.path.join(all_metadata_directory, 'biosample_biosamples.tsv')
+        biosample_file: str = os.path.join(all_metadata_directory, 'metadata_biosamples.tsv')
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples) + '\n')
 
@@ -263,3 +268,10 @@ def main(args: Any) -> None:
                             args.threads,
                             args.api_key,
                             args.retry)
+    else:
+        all_metadata_directory = None
+        
+    if not args.no_cleanup:
+        print("\nCleaning up temporary files...")
+        # Remove temporary files
+        ff.cleanup(args.output_directory, [all_metadata_directory, assemblies_directory, assemblies_zip, selected_file_ena661k])

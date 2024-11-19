@@ -145,6 +145,12 @@ def download_assemblies() -> None:
                         dest='input_table',
                         help='Text file with a list of accession numbers for the NCBI Assembly database.')
 
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 

@@ -87,7 +87,7 @@ Outputs
 
 .. code-block:: bash
     OutputFolderName
-    ├── assemblies.zip # -db NCBI --download
+    ├── assemblies_ncbi.zip # -db NCBI --download
     ├── ena661k_assemblies # -db ENA661 --download
         ├── x.contigs.fa.gz
         ├── y.contigs.fa.gz
@@ -97,7 +97,7 @@ Outputs
         |── biosamples.tsv
         |── id_matches.tsv
         |── all_ids_fetched.tsv
-        └── biosample_biosamples.tsv
+        └── metadata_biosamples.tsv
     |── selected_samples_ena661k.tsv # -db ENA661k
     ├── metadata_ncbi # -db NCBI --nocleanup
         |── assemblies_ids_to_download.tsv
