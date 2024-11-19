@@ -392,6 +392,11 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
             print(f'\nFailed download for {failed} files.')
 
     failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
+    # Write failed downloads to file
+    failed_path = os.path.join(ena_metadata_directory, 'failed_to_download.tsv')
+    with open(failed_path, 'w', encoding='utf-8') as failed_file:
+        failed_file.write('\n'.join(failed_to_download) + '\n')
+
     return failed_to_download, ena_metadata_directory, ena_valid_ids_file, assemblies_directory, selected_file_ena661k
 
 

@@ -104,5 +104,6 @@ Outputs
         └── id_failed_criteria.tsv
     └── metadata_ena661k # -db ENA661k --nocleanup
         |── assemblies_ids_to_download.tsv
+        |── failed_to_download.tsv
         └── id_failed_criteria.tsv
         
