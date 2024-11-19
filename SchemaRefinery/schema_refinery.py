@@ -107,14 +107,14 @@ def download_assemblies() -> None:
                         required=False,
                         dest='retry',
                         default=7,
-                        help='Maximum number of retries when a download fails.')
+                        help='Maximum number of retries when a download or request fails.')
 
     parser.add_argument('-k',
                         '--api-key',
                         type=str,
                         required=False,
                         dest='api_key',
-                        help='Personal API key provided to the NCBI. If not set, only 3 requests per second are allowed. With a valid API key the limit increases to 10 requests per second.')
+                        help='Personal API key provided to the NCBI. If not set, only 3 requests per second are allowed through Entrez. With a valid API key the limit increases to 10 requests per second.')
 
     parser.add_argument('-fm',
                         '--fetch-metadata',

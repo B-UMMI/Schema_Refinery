@@ -337,7 +337,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         else:
             print("\nNo filtering criteria were provided. All samples were selected.")
 
-    selected_file: str = os.path.join(ena_metadata_directory, 'selected_samples.tsv')
+    selected_file: str = os.path.join(output_directory, 'selected_samples_ena661k.tsv')
     with open(selected_file, 'w', encoding='utf-8') as outfile:
         selected_lines: List[str] = ['\t'.join(line) for line in [metadata_header] + taxon_lines]
         selected_text: str = '\n'.join(selected_lines)

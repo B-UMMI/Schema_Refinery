@@ -212,7 +212,7 @@ def main(args: Any) -> None:
         if not os.path.exists(all_metadata_directory):
             ff.create_directory(all_metadata_directory)
         linked_ids_file: str = os.path.join(all_metadata_directory, 'id_matches.tsv')
-        ids_file = os.path.join(all_metadata_directory, 'ids_fetched.tsv')
+        ids_file = os.path.join(all_metadata_directory, 'all_ids_fetched.tsv')
         # Merge NCBI and ENA valid IDs
         if ncbi_valid_ids_file and ena_valid_ids_file:
             # Both files are not None, merge them
@@ -252,7 +252,7 @@ def main(args: Any) -> None:
         # Exclude samples without BioSample identifier
         biosamples = [i for i in biosamples if isinstance(i, str)]
         # Save BioSample identifiers to file
-        biosample_file: str = os.path.join(all_metadata_directory, 'biosamples.tsv')
+        biosample_file: str = os.path.join(all_metadata_directory, 'biosample_biosamples.tsv')
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples) + '\n')
 
