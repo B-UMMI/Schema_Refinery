@@ -104,30 +104,37 @@ def validate_schema_annotation_module_arguments(args: dict) -> None:
     # Verify if files or directories exist
     verify_schema_sctructure(args.schema_directory)
 
+    # Verify if files or directories exist
     if args.proteome_table:
         verify_path_exists(args.proteome_table, 'file')
 
+    # Verify if files or directories exist
     if args.genbank_files:
+        # Verify if files or directories exist
         verify_path_exists(args.genbank_files, 'directory')
-
+        # Verify if the GenBank files directory is empty
         if_genbank_files_empty = not os.listdir(args.genbank_files)
         if if_genbank_files_empty:
             sys.exit("\nError: The GenBank files directory is empty.")
 
+    # Verify if files or directories exist
     if args.chewie_annotations:
         for annotation in args.chewie_annotations:
             verify_path_exists(annotation, 'file')
 
     if args.subject_schema:
         verify_path_exists(args.subject_schema, 'directory')
-    
+
+    # Check for mutually inclusive options
     if not args.processing_mode and args.subject_schema:
         verify_path_exists(args.subject_schema, 'directory')
         sys.exit("-pm --processing-mode is required when you want to add match with subject schema.")
-    
+
+    # Check for mutually inclusive options
     if args.processing_mode and not args.subject_schema:
         sys.exit("-ss --subject_schema is required when you want to add processing mode.")
 
+    # Check for mutually inclusive options
     if not args.extra_genbank_table_columns and args.genbank_files:
         sys.exit("-ss --subject_schema is required when you want to add processing mode.")
 
@@ -141,8 +148,11 @@ def validate_download_assemblies_module_arguments(args: dict) -> None:
         - If the arguments are invalid
     """
     verify_schema_sctructure(args.schema_directory)
-    
-        # Check for mutually exclusive options
+    # Verify if files or directories exist
+    if args.input_table:
+        verify_path_exists(args.input_table, 'file')
+
+    # Check for mutually exclusive options
     if args.input_table is not None and args.taxon is not None:
         sys.exit("\nError: Downloading from input table or downloading by taxon are mutually exclusive.")
 
@@ -161,4 +171,3 @@ def validate_download_assemblies_module_arguments(args: dict) -> None:
             sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
     else:
         print("\nNo filtering criteria provided.")
-        criteria = None

@@ -94,6 +94,9 @@ def main(args: Any) -> None:
     args : Any
         Command-line arguments passed to the script.
     """
+    # Create criteria dictionary
+    criteria: Dict[str, Any] = args.criteria
+
     # Create output directory if it does not exist
     if not os.path.isdir(args.output_directory):
         os.mkdir(args.output_directory)
