@@ -102,6 +102,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         Mode of processing.
     cpu : int
         Number of CPUs to use.
+    no_cleanup : bool
+        Flag to indicate whether to clean up temporary files.
 
     Returns
     -------
@@ -156,7 +158,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_translation_dict: Dict[str, str]
         protein_hashes: Dict[str, str]
         cds_translation_size: Dict[str, int]
-        # Dedulicate protein sequences, this is done order to cluster sequences without problems of similiar
+        # Deduplicate protein sequences to cluster sequences without problems of similar
         # having same proteins and make it quicker
         all_translation_dict, protein_hashes, cds_translation_size = ccf.translate_and_deduplicate_cds(
                                                                                                     all_nucleotide_sequences,
@@ -167,7 +169,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         print("\nExtracting minimizers for the translated sequences and clustering...")
         # Remove CDS that did not pass filtering criteria
         all_translation_dict = ccf.remove_dropped_cds(all_translation_dict, dropped_alleles, protein_hashes)
-        # sort proteins by size
+        # Sort proteins by size
         all_translation_dict = ccf.sort_by_protein_size(all_translation_dict)
         # Set types
         all_alleles: Dict[str, List[str]]
@@ -224,7 +226,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         # Update all_alleles with the filtered results
         all_alleles = filtered_alleles
-        # Filter also the all_translation_dict dicgt
+        # Filter also the all_translation_dict dict
         all_translation_dict = {key: value for key, value in all_translation_dict.items() if key in itf.flatten_list(all_alleles.values())}
         print("\nRetrieving kmers similarity and coverage between representatives...")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
@@ -232,7 +234,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             trans_dict = all_translation_dict
         else:
             trans_dict = reps_translation_dict
-        # Calculate kmers similiarity
+        # Calculate kmers similarity
         reps_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(trans_dict, reps_groups, prot_len_dict)
 
         # Remove filtered out elements from reps_kmers_sim
@@ -374,6 +376,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     print("\nExtracting results...")
     related_clusters: Dict[str, Any]
     recommendations: Dict[str, Any]
+    # Extract the results from the processed results
     related_clusters, recommendations = cof.extract_results(processed_results,
                                                             count_results_by_class,
                                                             frequency_in_genomes,
@@ -383,6 +386,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nWriting count_results_by_cluster.tsv, related_matches.tsv files"
           " and recommendations.tsv...")
+    # Write the results to files and return the paths to the files.
     reverse_matches: bool = True
     (related_matches_path,
      count_results_by_cluster_path,
@@ -396,7 +400,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                 classes_outcome,
                                                                 output_directory)
 
-    # Get all of the CDS that matched with loci
+    # Get all of the CDS that matched with loci or loci matched with loci
     is_matched: Dict[str, Any]
     is_matched_alleles: Dict[str, Any]
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
@@ -405,11 +409,11 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nWriting classes and cluster results to files...")
     report_file_path: str = os.path.join(blast_results, 'blast_all_matches.tsv')
-    # Write all of the BLASTn results to a file.
+    # Write all of the alignments results to a file.
     cof.alignment_dict_to_file(representative_blast_results,
                                report_file_path,
                                'w')
-
+    # Write the processed results to a file alignments by clusters and classes.
     cof.write_processed_results_to_file(clusters_to_keep,
                                     representative_blast_results,
                                     classes_outcome,
@@ -420,6 +424,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     if run_mode == 'unclassified_cds':
         print("\nUpdating IDs and saving changes in cds_id_changes.tsv...")
+        # Update the IDs and save the changes in a file.
         ccf.update_ids_and_save_changes(clusters_to_keep,
                                     all_alleles,
                                     cds_original_ids,
@@ -427,18 +432,20 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                     all_nucleotide_sequences,
                                     results_output)
         print("\nWriting dropped CDSs to file...")
+        # Write the dropped CDS to a file.
         ccf.write_dropped_cds_to_file(dropped_alleles, results_output)
 
     print("\nWriting dropped possible new loci to file...")
+    # Write the dropped possible new loci to a file.
     cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                 dropped_alleles,
                                                 output_directory)
-
+    # Print the classification results
     cof.print_classifications_results(clusters_to_keep,
                                         dropped_loci_ids,
                                         to_blast_paths,
                                         all_alleles)
-
+    # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
         print("\nWriting temp loci file...")
         ccf.write_temp_loci(clusters_to_keep, all_nucleotide_sequences, all_alleles, results_output)
@@ -463,6 +470,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         print("\nCleaning up temporary files...")
         # Remove temporary files
         ff.cleanup(output_directory, [related_matches_path, count_results_by_cluster_path, recommendations_file_path])
+
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
         possible_new_loci: str, alignment_ratio_threshold: float, 

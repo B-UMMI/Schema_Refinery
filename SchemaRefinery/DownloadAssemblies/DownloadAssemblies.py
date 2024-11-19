@@ -57,6 +57,31 @@ def find_local_conda_env() -> str:
     return os.path.join(sr_path, 'ena661k_files')
 
 def remove_failed_ids(df: pd.DataFrame, failed_ids: List[str]) -> pd.DataFrame:
+    """
+    Remove rows from a DataFrame that contain failed IDs.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame from which to remove rows.
+    failed_ids : list of str
+        The list of IDs that failed and need to be removed from the DataFrame.
+
+    Returns
+    -------
+    pd.DataFrame
+        A new DataFrame with the rows containing failed IDs removed.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({0: ['ID1', 'ID2', 'ID3', 'ID4']})
+    >>> failed_ids = ['ID2', 'ID4']
+    >>> remove_failed_ids(df, failed_ids)
+         0
+    0  ID1
+    2  ID3
+    """
+    # Filter the DataFrame to exclude rows where the first column contains any of the failed IDs
     return df[~df[0].isin(failed_ids)]
 
 
@@ -69,26 +94,11 @@ def main(args: Any) -> None:
     args : Any
         Command-line arguments passed to the script.
     """
-    # Check for mutually exclusive options
-    if args.input_table is not None and args.taxon is not None:
-        sys.exit("\nError: Downloading from input table or downloading by taxon are mutually exclusive.")
-
-    # Ensure that either input table or taxon name is provided
-    if args.input_table is None and args.taxon is None:
-        sys.exit("\nError: Must provide an input table or a taxon name.")
-
-    # Ensure that ENA661K is not used with an input table
-    if args.input_table is not None and 'ENA661K' in args.database:
-        sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
-
-    # Handle filtering criteria
-    if args.filtering_criteria:
-        criteria: Dict[str, Any] = args.filtering_criteria
-        if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
-            sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
+    # Create criteria dictionary
+    if args.criteria:
+        criteria: Dict[str, Any] = args.criteria
     else:
-        print("\nNo filtering criteria provided.")
-        criteria = None
+        print("No criteria provided. Fetching all assemblies.")
 
     # Create output directory if it does not exist
     if not os.path.isdir(args.output_directory):
