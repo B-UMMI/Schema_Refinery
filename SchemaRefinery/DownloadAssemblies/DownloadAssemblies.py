@@ -56,7 +56,6 @@ def find_local_conda_env() -> str:
     # Return the path to the 'ena661k_files' folder inside the environment
     return os.path.join(sr_path, 'ena661k_files')
 
-
 def remove_failed_ids(df: pd.DataFrame, failed_ids: List[str]) -> pd.DataFrame:
     """
     Remove rows from a DataFrame that contain failed IDs.
