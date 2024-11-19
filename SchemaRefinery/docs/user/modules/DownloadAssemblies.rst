@@ -18,7 +18,7 @@ The `DownloadAssemblies` module can be used as follows:
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm
+    SR DownloadAssemblies -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
 
 Command-Line Arguments
 ----------------------
@@ -61,26 +61,48 @@ Command-Line Arguments
 -i, --input-table
     (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
 
+Filtering criteria example
+--------------------------
+Filtering criteria file should be a TSV file with the following columns:
+.. code-block:: tsv
+
+    abundance\t0.8
+    genome_size\t2000000
+    size_threshold\t0.2
+    max_contig_number\t150
+    known_st\tFalse
+    any_quality\tFalse
+    ST_list_path\tNone
+    assembly_level\tchromosome,complete,contig,scaffold
+    reference\tFalse
+    assembly_source\tall
+    file_to_include\tgenome,gbff
+    verify_status\tTrue
+    exclude_atypical\tTrue
+
+Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
+
 Outputs
 -------
 
 .. code-block:: bash
     OutputFolderName
-    ├── assemblies.zip
-    ├── ena661k_assemblies
+    ├── assemblies.zip # -db NCBI --download
+    ├── ena661k_assemblies # -db ENA661 --download
         ├── x.contigs.fa.gz
         ├── y.contigs.fa.gz
-        └── z.contigs.fa.gz
+        |── z.contigs.fa.gz
+        └── ...
     ├── metadata_all # -fm
         |── biosamples.tsv
         |── id_matches.tsv
         |── all_ids_fetched.tsv
         └── biosample_biosamples.tsv
-    |── selected_samples_ena661k.tsv
-    ├── metadata_ncbi # --nocleanup
+    |── selected_samples_ena661k.tsv # -db ENA661k
+    ├── metadata_ncbi # -db NCBI --nocleanup
         |── assemblies_ids_to_download.tsv
         └── id_failed_criteria.tsv
-    └── metadata_ena661k # --nocleanup
+    └── metadata_ena661k # -db ENA661k --nocleanup
         |── assemblies_ids_to_download.tsv
         └── id_failed_criteria.tsv
         
