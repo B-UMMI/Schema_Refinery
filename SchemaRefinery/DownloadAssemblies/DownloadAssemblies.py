@@ -95,7 +95,10 @@ def main(args: Any) -> None:
         Command-line arguments passed to the script.
     """
     # Create criteria dictionary
-    criteria: Dict[str, Any] = args.criteria
+    if args.criteria:
+        criteria: Dict[str, Any] = args.criteria
+    else:
+        print("No criteria provided. Fetching all assemblies.")
 
     # Create output directory if it does not exist
     if not os.path.isdir(args.output_directory):

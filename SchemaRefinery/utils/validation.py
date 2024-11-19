@@ -414,5 +414,3 @@ def validate_download_assemblies_module_arguments(args: dict) -> None:
         criteria: Dict[str, Any] = args.filtering_criteria
         if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
             sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
-    else:
-        print("\nNo filtering criteria provided.")
