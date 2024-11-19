@@ -94,27 +94,6 @@ def main(args: Any) -> None:
     args : Any
         Command-line arguments passed to the script.
     """
-    # Check for mutually exclusive options
-    if args.input_table is not None and args.taxon is not None:
-        sys.exit("\nError: Downloading from input table or downloading by taxon are mutually exclusive.")
-
-    # Ensure that either input table or taxon name is provided
-    if args.input_table is None and args.taxon is None:
-        sys.exit("\nError: Must provide an input table or a taxon name.")
-
-    # Ensure that ENA661K is not used with an input table
-    if args.input_table is not None and 'ENA661K' in args.database:
-        sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
-
-    # Handle filtering criteria
-    if args.filtering_criteria:
-        criteria: Dict[str, Any] = args.filtering_criteria
-        if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
-            sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
-    else:
-        print("\nNo filtering criteria provided.")
-        criteria = None
-
     # Create output directory if it does not exist
     if not os.path.isdir(args.output_directory):
         os.mkdir(args.output_directory)

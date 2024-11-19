@@ -20,7 +20,6 @@ try:
     from utils import parameter_validation as pv
     from RefineSchema import IdentifySpuriousGenes
     from IdentifyParalagousLoci import IdentifyParalogousLoci
-    from RefineSchema import IdentifyDuplicateGenes
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
     from utils import (constants as ct,
@@ -32,7 +31,6 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import parameter_validation as pv
     from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
-    from SchemaRefinery.IdentifyDuplicateGenes import IdentifyDuplicateGenes
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
     from SchemaRefinery.utils import (constants as ct,
@@ -153,6 +151,8 @@ def download_assemblies() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    val.validate_download_assemblies_module_arguments(args)
 
     # Call the main function of the DownloadAssemblies class with the parsed arguments
     DownloadAssemblies.main(args)
