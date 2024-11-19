@@ -12,8 +12,8 @@ Code documentation
 """
 
 # GitHub repository and contacts
-repository = 'https://github.com/B-UMMI/Schema_Refinery'
-contacts = 'imm-bioinfo@medicina.ulisboa.pt'
+REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'
+CONTACTS = 'imm-bioinfo@medicina.ulisboa.pt'
 
 # minimum Python version
 MIN_PYTHON = [(3, 6, 0), '3.6.0']
@@ -41,8 +41,7 @@ DATABASE_CHOICES = ['NCBI', 'ENA661K']
 
 SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'match-schemas']
 
-# Default values for Schema Refinery's donwload_assemblies module
-
+# Default values for Schema Refinery's DownloadAssemblies module
 FILTERING_CRITERIA = ['abundance', 'genome_size', 'size_threshold',
                       'max_contig_number', 'known_st', 'any_quality',
                       'ST_list_path', 'assembly_level', 'reference',
