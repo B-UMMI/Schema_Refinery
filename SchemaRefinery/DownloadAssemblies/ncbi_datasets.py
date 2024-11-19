@@ -150,7 +150,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
         total_ids: int = len(assembly_ids)
         failed: List[str] = []
         passed: List[str] = []
-
+        passed_metadata: List[Dict[str, Any]] = []
         if criteria is not None:
             # Validate assemblies
             if metadata['total_count'] > 0:
@@ -163,6 +163,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
                                                 criteria['verify_status'])
                     if valid:
                         passed.append(current_accession)
+                        passed_metadata.append(sample)
                     else:
                         failed.append(current_accession)
                 assembly_ids = passed
