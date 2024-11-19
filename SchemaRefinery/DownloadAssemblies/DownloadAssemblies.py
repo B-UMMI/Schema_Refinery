@@ -95,9 +95,10 @@ def main(args: Any) -> None:
         Command-line arguments passed to the script.
     """
     # Create criteria dictionary
-    if args.criteria:
-        criteria: Dict[str, Any] = args.criteria
+    if args.filtering_criteria:
+        criteria: Dict[str, Any] = args.filtering_criteria
     else:
+        criteria = None
         print("No criteria provided. Fetching all assemblies.")
 
     # Create output directory if it does not exist
@@ -141,7 +142,7 @@ def main(args: Any) -> None:
                                                             args.threads)
     else:
         ena_metadata_directory = None
-        failed_to_download = None
+        failed_to_download = []
         ena_valid_ids_file = None
         assemblies_directory = None
         selected_file_ena661k = None
@@ -191,7 +192,7 @@ def main(args: Any) -> None:
         # Exclude samples without BioSample identifier
         biosamples = [i for i in biosamples if isinstance(i, str)]
         # Save BioSample identifiers to file
-        biosample_file: str = os.path.join(all_metadata_directory, 'metadata_biosamples.tsv')
+        biosample_file: str = os.path.join(all_metadata_directory, 'biosamples_ids.tsv')
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples) + '\n')
 

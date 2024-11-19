@@ -6,11 +6,11 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
 try:
-    from RefineSchema.constants import DNA_BASES
-    from utils import (file_functions as ff,)
+    from utils import (file_functions as ff,
+                       constants as ct)
 except ModuleNotFoundError:
-    from SchemaRefinery.RefineSchema.constants import DNA_BASES
-    from SchemaRefinery.utils import (file_functions as ff,)
+    from SchemaRefinery.utils import (file_functions as ff,
+                                      constants as ct)
 
 def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) -> bool:
     """
@@ -227,7 +227,7 @@ def translate_dna(dna_sequence: str, table_id: int, min_len: int, cds: bool = Tr
     coding_strands = ['sense', 'antisense', 'revsense', 'revantisense']
     translating_methods = ['original', 'revcomp', 'rev', 'revrevcomp']
 
-    if not check_str_alphabet(original_seq, DNA_BASES):
+    if not check_str_alphabet(original_seq, ct.DNA_BASES):
         exceptions.append('ambiguous or invalid characters')
 
     if not check_str_multiple(original_seq, 3):

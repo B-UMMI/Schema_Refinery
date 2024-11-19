@@ -14,7 +14,7 @@ import json
 import subprocess
 import os
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 def verify_assembly(metadata_assembly: Dict[str, Any], size_threshold: Optional[float], max_contig_number: Optional[int],
@@ -67,7 +67,8 @@ def verify_assembly(metadata_assembly: Dict[str, Any], size_threshold: Optional[
     return True
 
 
-def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: Optional[Dict[str, Any]], api_key: Optional[str]) -> Dict[str, Any]:
+def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: Optional[Dict[str, Any]],
+                   api_key: Optional[str]) -> Dict[str, Any]:
     """
     This function based on an input id fetches JSON object (dict) for all assemblies.
 
@@ -119,7 +120,7 @@ def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: 
     return metadata
 
 def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Dict[str, Any]],
-         output_directory: str, download: bool, api_key: Optional[str]) -> Tuple[str, str, str]:
+         output_directory: str, download: bool, api_key: Optional[str]) -> Tuple[str, str, Union[str, None]]:
     # Handle NCBI Genome Assembly and Annotation report
     if input_table is not None:
         # Read TSV file containing NCBI report
@@ -142,6 +143,8 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
         else:
             continue_run = True
         assembly_ids = [sample['accession'] for sample in metadata['reports']]
+
+        assemblies_zip: Union[str, None] = None
     
     if continue_run:
         total_ids: int = len(assembly_ids)
@@ -198,7 +201,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
             else:
                 arguments.extend(['--include', 'genome'])
 
-            assemblies_zip: str = os.path.join(output_directory, 'assemblies_ncbi.zip')
+            assemblies_zip = os.path.join(output_directory, 'assemblies_ncbi.zip')
             arguments.extend(['--filename', assemblies_zip])
             print("\nDownloading assemblies...")
             subprocess.run(arguments, check=False)

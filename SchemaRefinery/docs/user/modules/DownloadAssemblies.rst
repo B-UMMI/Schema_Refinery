@@ -94,7 +94,7 @@ Outputs
         |── z.contigs.fa.gz
         └── ...
     ├── metadata_all # -fm
-        |── biosamples.tsv
+        |── biosamples_ids.tsv
         |── id_matches.tsv
         |── all_ids_fetched.tsv
         └── metadata_biosamples.tsv
