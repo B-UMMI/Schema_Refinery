@@ -337,8 +337,8 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         else:
             print("\nNo filtering criteria were provided. All samples were selected.")
 
-    selected_file: str = os.path.join(ena_metadata_directory, 'selected_samples.tsv')
-    with open(selected_file, 'w', encoding='utf-8') as outfile:
+    selected_file_ena661k: str = os.path.join(output_directory, 'selected_samples_ena661k.tsv')
+    with open(selected_file_ena661k, 'w', encoding='utf-8') as outfile:
         selected_lines: List[str] = ['\t'.join(line) for line in [metadata_header] + taxon_lines]
         selected_text: str = '\n'.join(selected_lines)
         outfile.write(selected_text + '\n')
@@ -392,7 +392,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
             print(f'\nFailed download for {failed} files.')
 
     failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
-    return failed_to_download, ena_metadata_directory, ena_valid_ids_file
+    return failed_to_download, ena_metadata_directory, ena_valid_ids_file, assemblies_directory, selected_file_ena661k
 
 
 def parse_arguments():
