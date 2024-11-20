@@ -807,57 +807,45 @@ def convert_set_elements_to_strings(input_set: Set[Any]) -> Set[str]:
     """
     return {str(element) for element in input_set}
 
-def identify_dict_structure(dicts: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Recursively merges keys from a list of dictionaries into a single dictionary.
 
-    This function takes a list of dictionaries and merges all the keys, including nested keys,
-    into a single dictionary. The keys are represented in a dot-separated format to indicate
-    the hierarchy.
+def identify_dict_structure(list_of_dicts: List[Dict[str, Any]]) -> Dict[str, None]:
+    """
+    Identify all keys present in a list of dictionaries, including nested dictionaries.
 
     Parameters
     ----------
-    dicts : List[Dict[str, Any]]
-        A list of dictionaries to merge keys from.
+    list_of_dicts : list of dict
+        The list of dictionaries to analyze.
 
     Returns
     -------
-    Dict[str, Any]
-        A dictionary containing all the merged keys from the input dictionaries.
+    dict
+        A dictionary where keys are all unique keys present in the list of dictionaries, including nested dictionaries, and values are None.
+
+    Raises
+    ------
+    TypeError
+        If list_of_dicts is not a list of dictionaries.
     """
-    merged: Dict[str, Any] = {}
+    if not isinstance(list_of_dicts, list):
+        raise TypeError("list_of_dicts must be a list")
+    if not all(isinstance(d, dict) for d in list_of_dicts):
+        raise TypeError("all elements in list_of_dicts must be dictionaries")
 
-    def merge(d: Dict[str, Any], parent_key: str = '') -> None:
-        """
-        Recursively merges keys from a dictionary into the merged dictionary.
+    keys: Dict[str, None] = {}
 
-        Parameters
-        ----------
-        d : Dict[str, Any]
-            The dictionary to merge keys from.
-        parent_key : str, optional
-            The parent key to use for dot-separated key representation (default is '').
-        """
+    def extract_keys(d: Dict[str, Any], parent_key: str = '') -> None:
         for key, value in d.items():
-            # Create a dot-separated key if parent_key is provided
             full_key = f"{parent_key}.{key}" if parent_key else key
+            keys[full_key] = None
             if isinstance(value, dict):
-                # Recursively merge keys from nested dictionaries
-                merge(value, full_key)
-            elif isinstance(value, list):
-                # Handle lists of dictionaries
-                if value and isinstance(value[0], dict):
-                    for item in value:
-                        merge(item, full_key)
-                else:
-                    # Handle lists of non-dictionary items
-                    merged[full_key] = None
-            else:
-                # Add the key to the merged dictionary
-                merged[full_key] = None
+                extract_keys(value, full_key)
+            elif isinstance(value, list) or isinstance(value, tuple):
+                for item in value:
+                    if isinstance(item, dict):
+                        extract_keys(item, full_key)
 
-    # Merge keys from each dictionary in the list
-    for d in dicts:
-        merge(d)
+    for dictionary in list_of_dicts:
+        extract_keys(dictionary)
 
-    return merged
+    return keys
