@@ -392,7 +392,6 @@ def validate_download_assemblies_module_arguments(args: dict) -> None:
     SystemExit
         - If the arguments are invalid
     """
-    verify_schema_sctructure(args.schema_directory)
     # Verify if files or directories exist
     if args.input_table:
         verify_path_exists(args.input_table, 'file')

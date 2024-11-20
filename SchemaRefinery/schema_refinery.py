@@ -86,7 +86,7 @@ def download_assemblies() -> None:
                         type=str,
                         required=False,
                         dest='taxon',
-                        help='Scientific name of the taxon.')
+                        help='Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.')
 
     parser.add_argument('-th',
                         '--threads',

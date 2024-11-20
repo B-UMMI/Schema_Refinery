@@ -1,11 +1,11 @@
 from copy import deepcopy
 from typing import List, Tuple, Dict, Any, Set, Union
 try:
-    from RefineSchema.constants import MAX_GAP_UNITS
-    from utils import iterable_functions as itf
+    from utils import (iterable_functions as itf,
+                       constants as ct)
 except ModuleNotFoundError:
-    from SchemaRefinery.RefineSchema.constants import MAX_GAP_UNITS
-    from SchemaRefinery.utils import iterable_functions as itf
+    from SchemaRefinery.utils import (iterable_functions as itf,
+                                      constants as ct)
 
 def join_intervals(alignments: List[List[Any]]) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
@@ -52,7 +52,7 @@ def join_intervals(alignments: List[List[Any]]) -> Tuple[List[str], List[Dict[st
             first = start_stop_list_for_processing[i]
             second = start_stop_list_for_processing[i + 1]
 
-            if second["start"] - first["stop"] <= MAX_GAP_UNITS:
+            if second["start"] - first["stop"] <= ct.MAX_GAP_UNITS:
                 new_last: int = max(first["stop"], second["stop"])
                 new_first: int = min(first["start"], second["start"])
 

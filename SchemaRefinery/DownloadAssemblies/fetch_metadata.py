@@ -154,7 +154,7 @@ def write_to_file(metadata_df: pd.DataFrame, output_directory: str) -> None:
         Creates file in the output directory.
     """
     # Create the full path for the output file in the specified output directory
-    output_file: str = os.path.join(output_directory, "metadata.tsv")
+    output_file: str = os.path.join(output_directory, "metadata_biosamples.tsv")
 
     # Write the DataFrame to a TSV file
     # - mode='a' appends to the file if it exists, otherwise creates a new file

@@ -337,7 +337,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         else:
             print("\nNo filtering criteria were provided. All samples were selected.")
 
-    selected_file_ena661k: str = os.path.join(output_directory, 'selected_samples_ena661k.tsv')
+    selected_file_ena661k: str = os.path.join(output_directory, 'assemblies_metadata_ena661k.tsv')
     with open(selected_file_ena661k, 'w', encoding='utf-8') as outfile:
         selected_lines: List[str] = ['\t'.join(line) for line in [metadata_header] + taxon_lines]
         selected_text: str = '\n'.join(selected_lines)
@@ -390,12 +390,15 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
                 else:
                     failed += 1
             print(f'\nFailed download for {failed} files.')
-
-    failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
-    # Write failed downloads to file
-    failed_path = os.path.join(ena_metadata_directory, 'failed_to_download.tsv')
-    with open(failed_path, 'w', encoding='utf-8') as failed_file:
-        failed_file.write('\n'.join(failed_to_download) + '\n')
+        
+        failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
+        # Write failed downloads to file
+        failed_path = os.path.join(ena_metadata_directory, 'failed_to_download.tsv')
+        with open(failed_path, 'w', encoding='utf-8') as failed_file:
+            failed_file.write('\n'.join(failed_to_download) + '\n')
+    else:
+        assemblies_directory = None
+        failed_to_download = []
 
     return failed_to_download, ena_metadata_directory, ena_valid_ids_file, assemblies_directory, selected_file_ena661k
 
