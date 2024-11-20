@@ -807,7 +807,7 @@ def convert_set_elements_to_strings(input_set: Set[Any]) -> Set[str]:
     """
     return {str(element) for element in input_set}
 
-def merge_keys(dicts: List[Dict[str, Any]]) -> Dict[str, Any]:
+def identify_dict_structure(dicts: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Recursively merges keys from a list of dictionaries into a single dictionary.
 
