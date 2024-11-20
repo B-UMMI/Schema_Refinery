@@ -206,7 +206,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
                                 "total_ungapped_length\n"
             )
             # Loop through metadata and write to file
-            # HINT: you can see all available keys the whole set of assemblies by using merge_keys(metadata[reports])
+            # HINT: you can see all available keys the whole set of assemblies by using itf.merge_keys(metadata[reports])
             for sample in metadata['reports']:
                 assembly_info = sample.get('assembly_info', {})
                 biosample = assembly_info.get('biosample', {})
