@@ -14,8 +14,11 @@ import json
 import subprocess
 import os
 import sys
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TypedDict
 
+class Metadata(TypedDict):
+    total_count: int
+    reports: List[Dict[str, Any]]
 
 def verify_assembly(metadata_assembly: Dict[str, Any], size_threshold: Optional[float], max_contig_number: Optional[int],
                     genome_size: Optional[int], verify_status: Optional[bool]) -> bool:
@@ -68,7 +71,7 @@ def verify_assembly(metadata_assembly: Dict[str, Any], size_threshold: Optional[
 
 
 def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: Optional[Dict[str, Any]],
-                   api_key: Optional[str]) -> Dict[str, Any]:
+                   api_key: Optional[str]) -> Metadata:
     """
     This function based on an input id fetches JSON object (dict) for all assemblies.
 
@@ -115,7 +118,7 @@ def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: 
     metadata_process: subprocess.CompletedProcess = subprocess.run(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
 
     # Parse the JSON output
-    metadata: Dict[str, Any] = json.loads(metadata_process.stdout)
+    metadata: Metadata = json.loads(metadata_process.stdout)
 
     return metadata
 
@@ -131,7 +134,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
             print("No assembly identifiers provided.")
 
         if criteria is not None:
-            metadata: Dict[str, Any] = fetch_metadata(input_table, None, criteria, api_key)
+            metadata: Metadata = fetch_metadata(input_table, None, criteria, api_key)
             if metadata['total_count'] == 0:
                 sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
     else:
@@ -150,7 +153,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
         total_ids: int = len(assembly_ids)
         failed: List[str] = []
         passed: List[str] = []
-        passed_metadata: List[Dict[str, Any]] = []
+        passed_metadata: List[Dict[str, Any]] = [] #TODO: write passed metadata to a file
         if criteria is not None:
             # Validate assemblies
             if metadata['total_count'] > 0:
@@ -162,17 +165,93 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
                                                 criteria['genome_size'],
                                                 criteria['verify_status'])
                     if valid:
+                        # Append to passed list
                         passed.append(current_accession)
+                        # Append metadata to list
                         passed_metadata.append(sample)
                     else:
                         failed.append(current_accession)
+                # Update assembly_ids to only include passed assemblies
                 assembly_ids = passed
+                metadata = {'total_count': len(assembly_ids), 'reports': passed_metadata}
 
             print(f"\n{len(assembly_ids)} passed filtering criteria.")
 
         ncbi_metadata_directory: str = os.path.join(output_directory, 'metadata_ncbi')
         if not os.path.exists(ncbi_metadata_directory):
             os.mkdir(ncbi_metadata_directory)
+
+        metadata_file: str = os.path.join(ncbi_metadata_directory, 'metadata.tsv')
+        with open(metadata_file, 'w', encoding='utf-8') as metadata_tsv:
+            # Write header
+            metadata_tsv.write(
+                                "ID\t"
+                                "assembly_level\t"
+                                "biosample_ID\t"
+                                "bioproject_ID\t"
+                                "taxon\t"
+                                "submission_date\t"
+                                "contig_l50\t"
+                                "contig_n50\t"
+                                "gc_count\t"
+                                "gc_percent\t"
+                                "genome_coverage\t"
+                                "number_of_component_sequences\t"
+                                "number_of_contigs\t"
+                                "number_of_scaffolds\t"
+                                "scaffold_l50\t"
+                                "scaffold_n50\t"
+                                "total_number_of_chromosomes\t"
+                                "total_sequence_length\t"
+                                "total_ungapped_length\n"
+            )
+            for sample in metadata['reports']:
+                assembly_info = sample.get('assembly_info', {})
+                biosample = assembly_info.get('biosample', {})
+                assembly_stats = sample.get('assembly_stats', {})
+                data = {
+                    "ID": sample.get('accession', 'NA'),
+                    "assembly_level": assembly_info.get('assembly_level', 'NA'),
+                    "biosample_ID": biosample.get('accession', 'NA'),
+                    "bioproject_IDs": assembly_info.get('bioproject_accession', 'NA'),
+                    "taxon": sample.get('organism', {}).get('organism_name', 'NA'),
+                    "submission_date": biosample.get('submission_date', 'NA'),
+                    "contig_l50": assembly_stats.get('contig_l50', 'NA'),
+                    "contig_n50": assembly_stats.get('contig_n50', 'NA'),
+                    "gc_count": assembly_stats.get('gc_count', 'NA'),
+                    "gc_percent": assembly_stats.get('gc_percent', 'NA'),
+                    "genome_coverage": assembly_stats.get('genome_coverage', 'NA'),
+                    "number_of_component_sequences": assembly_stats.get('number_of_component_sequences', 'NA'),
+                    "number_of_contigs": assembly_stats.get('number_of_contigs', 'NA'),
+                    "number_of_scaffolds": assembly_stats.get('number_of_scaffolds', 'NA'),
+                    "scaffold_l50": assembly_stats.get('scaffold_l50', 'NA'),
+                    "scaffold_n50": assembly_stats.get('scaffold_n50', 'NA'),
+                    "total_number_of_chromosomes": assembly_stats.get('total_number_of_chromosomes', 'NA'),
+                    "total_sequence_length": assembly_stats.get('total_sequence_length', 'NA'),
+                    "total_ungapped_length": assembly_stats.get('total_ungapped_length', 'NA')
+                }
+                # Write data to file
+                metadata_tsv.write(
+                                f"{data['ID']}\t"
+                                f"{data['assembly_level']}\t"
+                                f"{data['biosample_ID']}\t"
+                                f"{data['bioproject_IDs']}\t"
+                                f"{data['taxon']}\t"
+                                f"{data['submission_date']}\t"
+                                f"{data['contig_l50']}\t"
+                                f"{data['contig_n50']}\t"
+                                f"{data['gc_count']}\t"
+                                f"{data['gc_percent']}\t"
+                                f"{data['genome_coverage']}\t"
+                                f"{data['number_of_component_sequences']}\t"
+                                f"{data['number_of_contigs']}\t"
+                                f"{data['number_of_scaffolds']}\t"
+                                f"{data['scaffold_l50']}\t"
+                                f"{data['scaffold_n50']}\t"
+                                f"{data['total_number_of_chromosomes']}\t"
+                                f"{data['total_sequence_length']}\t"
+                                f"{data['total_ungapped_length']}\n"
+                            )
 
         # Save IDs to download
         ncbi_valid_ids_file: str = os.path.join(ncbi_metadata_directory, "assemblies_ids_to_download.tsv")
