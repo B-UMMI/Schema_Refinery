@@ -18,7 +18,7 @@ The `DownloadAssemblies` module can be used as follows:
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
+    SR DownloadAssemblies -t "Streptococcus pyogenes" -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
 
 Command-Line Arguments
 ----------------------
@@ -84,7 +84,7 @@ Note: The filtering criteria file is only applicable to certain databases e.g ST
 
 Outputs
 -------
-
+Folder and file structure for the output directory of the `DownloadAssemblies` module is shown below. The output directory contains the following files and folders:
 .. code-block:: bash
     OutputFolderName
     ├── assemblies_ncbi.zip # -db NCBI --download
@@ -106,4 +106,44 @@ Outputs
         |── assemblies_ids_to_download.tsv
         |── failed_to_download.tsv
         └── id_failed_criteria.tsv
-        
+
+Output files and folders description:
+
+assemblies_ncbi.zip
+    Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
+
+ena661k_assemblies: Folder containing the assemblies downloaded from ENA661K.
+    x.contigs.fa.gz
+        Gzipped FASTA file containing the contigs for the assembly.
+    y.contigs.fa.gz
+        Gzipped FASTA file containing the contigs for the assembly.
+    z.contigs.fa.gz
+        Gzipped FASTA file containing the contigs for the assembly.
+    ...
+
+metadata_all: Folder containing all the metadata downloaded from NCBI and ENA661K.
+    biosamples_ids.tsv
+        TSV file containing the BioSample IDs for the assemblies.
+    id_matches.tsv
+        TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
+    all_ids_fetched.tsv
+        TSV file containing all the IDs fetched from the database.
+    metadata_biosamples.tsv
+        TSV file containing the metadata for the BioSamples.
+
+selected_samples_ena661k.tsv
+    TSV file containing the selected samples from the ENA661K database.
+
+metadata_ncbi: Folder containing metadata related NCBI run.
+    assemblies_ids_to_download.tsv
+        TSV file containing the assembly IDs to download.
+    id_failed_criteria.tsv
+        TSV file containing the assembly IDs that failed the filtering criteria.
+
+metadata_ena661k: Folder containing metadata related to ENA661K run.
+    assemblies_ids_to_download.tsv
+        TSV file containing the assembly IDs to download.
+    failed_to_download.tsv
+        TSV file containing the assembly IDs that failed to download.
+    id_failed_criteria.tsv
+        TSV file containing the assembly IDs that failed the filtering criteria.
