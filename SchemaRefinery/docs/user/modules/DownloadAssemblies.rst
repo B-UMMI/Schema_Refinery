@@ -34,7 +34,7 @@ Command-Line Arguments
     (Required) Email provided to Entrez.
 
 -t, --taxon
-    (Optional) Scientific name of the taxon.
+    (Optional) Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.
     Type: str
 
 -th, --threads
