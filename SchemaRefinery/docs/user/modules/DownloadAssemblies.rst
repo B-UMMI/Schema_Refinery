@@ -1,4 +1,4 @@
-DownloadAssemblies - Download assemblies from specified databases
+DownloadAssemblies - Download assembliesand their metadata from specified databases
 ===============================================================
 
 Description
@@ -132,6 +132,7 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
         └── id_failed_criteria.tsv
 
 Output files and folders description:
+-------------------------------------
 
 **assemblies_ncbi.zip**
     Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
