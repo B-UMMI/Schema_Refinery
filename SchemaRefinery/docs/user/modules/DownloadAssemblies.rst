@@ -11,6 +11,29 @@ Assemblies can be download based on the taxon name or IDs table provided by the 
 filtering criteria file to filter the assemblies before downloading. The user can also download BioSample metadata
 for the assemblies if the flag is provided.
 
+Overview
+--------
+
+The `DownloadAssemblies` module is designed to facilitate the download of genomic assemblies from specified databases.
+It supports parallel downloads, filtering based on user-defined criteria, and the retrieval of associated metadata.
+
+Features
+--------
+
+- Parallel downloading of assemblies using multiple threads.
+- Support for downloading from NCBI and ENA661 databases.
+- Filtering of assemblies based on criteria such as genome size, contig number, and assembly level.
+- Retrieval of BioSample metadata for downloaded assemblies.
+- Option to download assemblies based on taxon name or a provided IDs table.
+
+Dependencies
+------------
+
+- Python 3.9 or higher
+- Requests library (`pip install requests`)
+- Biopython library (`pip install biopython`)
+- NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+
 Usage
 -----
 
@@ -109,41 +132,67 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
 
 Output files and folders description:
 
-assemblies_ncbi.zip
+**assemblies_ncbi.zip**
     Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
 
-ena661k_assemblies: Folder containing the assemblies downloaded from ENA661K.
-    x.contigs.fa.gz
+**ena661k_assemblies:** Folder containing the assemblies downloaded from ENA661K.
+    **x.contigs.fa.gz**
         Gzipped FASTA file containing the contigs for the assembly.
-    y.contigs.fa.gz
+    **y.contigs.fa.gz**
         Gzipped FASTA file containing the contigs for the assembly.
-    z.contigs.fa.gz
+    **z.contigs.fa.gz**
         Gzipped FASTA file containing the contigs for the assembly.
-    ...
+    **...**
 
-metadata_all: Folder containing all the metadata downloaded from NCBI and ENA661K.
-    biosamples_ids.tsv
+**metadata_all:** Folder containing all the metadata downloaded from NCBI and ENA661K.
+    **biosamples_ids.tsv**
         TSV file containing the BioSample IDs for the assemblies.
-    id_matches.tsv
+    **id_matches.tsv**
         TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
-    all_ids_fetched.tsv
+    **all_ids_fetched.tsv**
         TSV file containing all the IDs fetched from the database.
-    metadata_biosamples.tsv
+    **metadata_biosamples.tsv**
         TSV file containing the metadata for the BioSamples.
 
-selected_samples_ena661k.tsv
+**selected_samples_ena661k.tsv**
     TSV file containing the selected samples from the ENA661K database.
 
-metadata_ncbi: Folder containing metadata related NCBI run.
-    assemblies_ids_to_download.tsv
+**metadata_ncbi:** Folder containing metadata related NCBI run.
+    **assemblies_ids_to_download.tsv**
         TSV file containing the assembly IDs to download.
-    id_failed_criteria.tsv
+    **id_failed_criteria.tsv**
         TSV file containing the assembly IDs that failed the filtering criteria.
 
-metadata_ena661k: Folder containing metadata related to ENA661K run.
-    assemblies_ids_to_download.tsv
+**metadata_ena661k:** Folder containing metadata related to ENA661K run.
+    **assemblies_ids_to_download.tsv**
         TSV file containing the assembly IDs to download.
-    failed_to_download.tsv
+    **failed_to_download.tsv**
         TSV file containing the assembly IDs that failed to download.
-    id_failed_criteria.tsv
+    **id_failed_criteria.tsv**
         TSV file containing the assembly IDs that failed the filtering criteria.
+    
+Examples
+--------
+
+Here are some example commands to use the `DownloadAssemblies` module:
+
+.. code-block:: bash
+
+    # Download assemblies from NCBI for a specific taxon
+    SR DownloadAssemblies -t "Escherichia coli" -db NCBI -o /path/to/output -e email@example.com -th 4 --download
+
+    # Download assemblies from ENA661K using an IDs table
+    SR DownloadAssemblies -db ENA661K -o /path/to/output -e email@example.com -th 4 --download -i ids_table.tsv
+
+    # Download assemblies from both NCBI and ENA661K with filtering criteria
+    SR DownloadAssemblies -t "Streptococcus pyogenes" -db NCBI ENA661K -o /path/to/output -e email@example.com -th 4 -fm --download
+
+Troubleshooting
+---------------
+
+If you encounter issues while using the `DownloadAssemblies` module, consider the following troubleshooting steps:
+
+- Ensure that you have a stable internet connection.
+- Verify that your email and API key (if provided) are correct.
+- Check the output directory for any error logs or messages.
+- Increase the number of retries using the `-r` or `--retry` option if downloads are failing.

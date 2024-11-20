@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import subprocess
 import pandas as pd
 from typing import Any, Dict, List
