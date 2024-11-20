@@ -121,7 +121,8 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
         |── id_matches.tsv
         |── all_ids_fetched.tsv
         └── metadata_biosamples.tsv
-    |── selected_samples_ena661k.tsv # -db ENA661k
+    |── assemblies_metadata_ena661k.tsv # -db ENA661k
+    |── assemblies_metadata_ncbi.tsv # -db NCBI
     ├── metadata_ncbi # -db NCBI --nocleanup
         |── assemblies_ids_to_download.tsv
         └── id_failed_criteria.tsv
@@ -154,8 +155,11 @@ Output files and folders description:
     **metadata_biosamples.tsv**
         TSV file containing the metadata for the BioSamples.
 
-**selected_samples_ena661k.tsv**
+**assemblies_metadata_ena661k.tsv**
     TSV file containing the selected samples from the ENA661K database.
+
+**assemblies_metadata_ncbi.tsv**
+    TSV file containing the metadata for the assemblies downloaded from NCBI.
 
 **metadata_ncbi:** Folder containing metadata related NCBI run.
     **assemblies_ids_to_download.tsv**

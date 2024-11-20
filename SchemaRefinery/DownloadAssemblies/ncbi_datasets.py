@@ -181,7 +181,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
         if not os.path.exists(ncbi_metadata_directory):
             os.mkdir(ncbi_metadata_directory)
 
-        metadata_file: str = os.path.join(ncbi_metadata_directory, 'metadata.tsv')
+        metadata_file: str = os.path.join(output_directory, 'assemblies_metadata_ncbi.tsv')
         with open(metadata_file, 'w', encoding='utf-8') as metadata_tsv:
             # Write header
             metadata_tsv.write(
