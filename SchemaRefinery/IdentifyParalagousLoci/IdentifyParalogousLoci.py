@@ -104,7 +104,7 @@ def identify_paralogous_loci(schema_directory: str,
         query_fasta: str = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'rep' else fasta_files_dict[loci]
         fetch_size_fasta: str = fasta_files_dict[loci]
         # Translation variables
-        query_fasta_translation: str = os.path.join(translation_folder, f"{loci}-translation.fasta")
+        query_fasta_translation: str = os.path.join(translation_folder, f"{loci}_translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
         print(f"\rTranslated loci FASTA: {i}/{len_short_folder}", end='', flush=True)

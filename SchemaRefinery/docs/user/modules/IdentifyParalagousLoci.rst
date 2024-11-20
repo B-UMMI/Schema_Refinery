@@ -75,15 +75,15 @@ Folder and file structure for the output directory of the `IdentifyParalogousLoc
             ├── blast_results_z.tsv
             └── ...
         ├── master_file.fasta
-        ├── self-score-folder
+        ├── self_score_folder
             ├── blast_results_x.tsv
             ├── blast_results_y.tsv
             ├── blast_results_z.tsv
             └── ...
         └── Translation
-            ├── x-translation.fasta
-            ├── y-translation.fasta
-            ├── z-translation.fasta
+            ├── x_translation.fasta
+            ├── y_translation.fasta
+            ├── z_translation.fasta
             └── ...
     ├── paralogous_loci_report.tsv
     ├── paralogous_loci_report_cluster_by_id.tsv
