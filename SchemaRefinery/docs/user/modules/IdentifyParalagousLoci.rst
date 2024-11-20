@@ -67,8 +67,21 @@ Outputs
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
 .. code-block:: bash
     OutputFolderName
-    ├── Blast
-    │   ├── Blast_db_prot
+    ├── Blast # --nocleanup
+        ├── Blast_db_prot
+        ├── Blast_output
+            ├── blast_results_x.tsv
+            ├── blast_results_y.tsv
+            ├── blast_results_z.tsv
+            └── ...
+        ├── master_file.fasta
+        └── self-score-folder
+            ├── blast_results_x.tsv
+            ├── blast_results_y.tsv
+            ├── blast_results_z.tsv
+            └── ...
+    ├── paralogous_loci_report.tsv
+
 
 Examples
 --------

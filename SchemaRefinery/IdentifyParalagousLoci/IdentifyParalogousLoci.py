@@ -234,12 +234,12 @@ def identify_paralogous_loci(schema_directory: str,
             for subject_loci_id, computed_score in subject_dict.items():
                 paralogous_list.append((query_loci_id, subject_loci_id))
 
-                if_loci_intersect = stats.if_loci_intersect([all_loci_allele_size_stats[query_loci_id][:2]],
-                                                        [all_loci_allele_size_stats[subject_loci_id][:2]])
+                if_loci_intersect = stats.if_loci_intersect(all_loci_allele_size_stats[query_loci_id][:2],
+                                                        all_loci_allele_size_stats[subject_loci_id][:2])
                 
                 if not if_loci_intersect:
-                    if_close_distance = stats.calculate_loci_distance([all_loci_allele_size_stats[query_loci_id][:3]],
-                                                                        [all_loci_allele_size_stats[subject_loci_id][:3]],
+                    if_close_distance = stats.calculate_loci_distance(all_loci_allele_size_stats[query_loci_id][:3],
+                                                                        all_loci_allele_size_stats[subject_loci_id][:3],
                                                                         size_threshold)
                 else:
                     if_close_distance = True

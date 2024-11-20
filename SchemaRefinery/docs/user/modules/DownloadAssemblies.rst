@@ -1,5 +1,5 @@
 DownloadAssemblies - Download assembliesand their metadata from specified databases
-===============================================================
+====================================================================================
 
 Description
 -----------
@@ -117,9 +117,9 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
         |── z.contigs.fa.gz
         └── ...
     ├── metadata_all # -fm
-        |── biosamples_ids.tsv
-        |── id_matches.tsv
-        |── all_ids_fetched.tsv
+        ├── biosamples_ids.tsv
+        ├── id_matches.tsv
+        ├── all_ids_fetched.tsv
         └── metadata_biosamples.tsv
     |── assemblies_metadata_ena661k.tsv # -db ENA661k
     |── assemblies_metadata_ncbi.tsv # -db NCBI
