@@ -124,29 +124,29 @@ Output files and folders description:
             Protein Taxonomy Organism file. Contains organism-specific taxonomy information for the sequences in the protein database.
     **Blast_output:** Folder containing the BLASTp output files.
         **blast_results_x.tsv**
-            TSV file containing the BLASTp results for the assembly x.
+            TSV file containing the BLASTp results for the locus x.
         **blast_results_y.tsv**
-            TSV file containing the BLASTp results for the assembly y.
+            TSV file containing the BLASTp results for the locus y.
         **blast_results_z.tsv**
-            TSV file containing the BLASTp results for the assembly z.
+            TSV file containing the BLASTp results for the locus z.
         **...** All of the other TSV BLASTp results files.
     **master_file.fasta**
         FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
     **self_score_folder:** Folder containing the self-score BLAST results.
         **blast_results_x.tsv**
-            TSV file containing the BLASTp results for the assembly x.
+            TSV file containing the BLASTp results for self-score for the locus x.
         **blast_results_y.tsv**
-            TSV file containing the BLASTp results for the assembly y.
+            TSV file containing the BLASTp results for self-score for the locus y.
         **blast_results_z.tsv**
-            TSV file containing the BLASTp results for the assembly z.
+            TSV file containing the BLASTp results for self-score for the locus z.
         **...** All of the other TSV BLASTp results files.
     **Translation:** Folder containing the translation files.
         **x_translation.fasta**
-            FASTA file containing the translation for the assembly x.
+            FASTA file containing the translation for the locus x.
         **y_translation.fasta**
-            FASTA file containing the translation for the assembly y.
+            FASTA file containing the translation for the locus y.
         **z_translation.fasta**
-            FASTA file containing the translation for the assembly z.
+            FASTA file containing the translation for the locus z.
         **...** All of the other translation files.
 
 **paralogous_loci_report.tsv**
