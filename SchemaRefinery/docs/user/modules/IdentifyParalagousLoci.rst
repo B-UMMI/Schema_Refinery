@@ -102,8 +102,8 @@ Folder and file structure for the output directory of the `IdentifyParalogousLoc
 
 Output files and folders description:
 -------------------------------------
-**Blast:** Folder containing BLAST database, BLAST output files, master file, self-score folder, and translation files.
-    **Blast_db_prot:** Folder containing the BLAST database.
+**Blast:** Folder containing BLASTp database, BLASTp output files, master file, self-score folder, and translation files.
+    **Blast_db_prot:** Folder containing the BLASTp database.
         **Blast_db_protein.pdb**
             Position-specific Data Base file. Contains position-specific scoring matrices (PSSMs) used in PSI-BLAST searches.
         **Blast_db_protein.phr**
@@ -122,24 +122,24 @@ Output files and folders description:
             Protein Taxonomy File. Contains taxonomy information for the sequences in the protein database.
         **Blast_db_protein.pto**
             Protein Taxonomy Organism file. Contains organism-specific taxonomy information for the sequences in the protein database.
-    **Blast_output:** Folder containing the BLAST output files.
+    **Blast_output:** Folder containing the BLASTp output files.
         **blast_results_x.tsv**
-            TSV file containing the BLAST results for the assembly x.
+            TSV file containing the BLASTp results for the assembly x.
         **blast_results_y.tsv**
-            TSV file containing the BLAST results for the assembly y.
+            TSV file containing the BLASTp results for the assembly y.
         **blast_results_z.tsv**
-            TSV file containing the BLAST results for the assembly z.
-        **...** All of the other TSV BLAST results files.
+            TSV file containing the BLASTp results for the assembly z.
+        **...** All of the other TSV BLASTp results files.
     **master_file.fasta**
         FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
     **self_score_folder:** Folder containing the self-score BLAST results.
         **blast_results_x.tsv**
-            TSV file containing the BLAST results for the assembly x.
+            TSV file containing the BLASTp results for the assembly x.
         **blast_results_y.tsv**
-            TSV file containing the BLAST results for the assembly y.
+            TSV file containing the BLASTp results for the assembly y.
         **blast_results_z.tsv**
-            TSV file containing the BLAST results for the assembly z.
-        **...** All of the other TSV BLAST results files.
+            TSV file containing the BLASTp results for the assembly z.
+        **...** All of the other TSV BLASTp results files.
     **Translation:** Folder containing the translation files.
         **x_translation.fasta**
             FASTA file containing the translation for the assembly x.

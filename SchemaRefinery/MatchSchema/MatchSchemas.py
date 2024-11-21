@@ -226,9 +226,9 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     # Create the output directory
     blast_folder: str = os.path.join(output_directory, 'Blast')
     ff.create_directory(blast_folder)
-    query_translation_folder: str = os.path.join(output_directory, 'Query_Translation')
+    query_translation_folder: str = os.path.join(blast_folder, 'Query_Translation')
     ff.create_directory(query_translation_folder)
-    subject_translation_folder: str = os.path.join(output_directory, 'Subject_Translation')
+    subject_translation_folder: str = os.path.join(blast_folder, 'Subject_Translation')
     ff.create_directory(subject_translation_folder)
     
     len_query_fastas: int = len(query_fastas)
@@ -247,7 +247,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         # Save the IDs of the alleles
         query_ids.setdefault(query_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
         # Create translation file path
-        query_fasta_translation = os.path.join(query_translation_folder, f"{query_loci}-translation.fasta")
+        query_fasta_translation = os.path.join(query_translation_folder, f"{query_loci}_translation.fasta")
         # Translate sequences and update translation dictionary
         query_translations_paths[query_loci] = query_fasta_translation
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
@@ -275,7 +275,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         # Save the IDs of the alleles
         subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
         # Create translation file path
-        subject_fasta_translation = os.path.join(subject_translation_folder, f"{subject_loci}-translation.fasta")
+        subject_fasta_translation = os.path.join(subject_translation_folder, f"{subject_loci}_translation.fasta")
         # Translate sequences and update translation dictionary
         subject_translations_paths[subject_loci] = subject_fasta_translation
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
