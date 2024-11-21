@@ -93,7 +93,40 @@ Folder and file structure for the output directory of the `IdentifyParalogousLoc
 Output files and folders description:
 -------------------------------------
 **Blast:** Folder containing BLAST database, BLAST output files, master file, self-score folder, and translation files.
+    **Blast_db_prot:** Folder containing the BLAST database.
+    **Blast_output:** Folder containing the BLAST output files.
+        **blast_results_x.tsv**
+            TSV file containing the BLAST results for the assembly x.
+        **blast_results_y.tsv**
+            TSV file containing the BLAST results for the assembly y.
+        **blast_results_z.tsv**
+            TSV file containing the BLAST results for the assembly z.
+        **...** All of the other TSV BLAST results files.
+    **master_file.fasta**
+        FASTA file containing tall of the protein sequences used in the analysis (used to create BLAST DB).
+    **self_score_folder:** Folder containing the self-score BLAST results.
+        **blast_results_x.tsv**
+            TSV file containing the BLAST results for the assembly x.
+        **blast_results_y.tsv**
+            TSV file containing the BLAST results for the assembly y.
+        **blast_results_z.tsv**
+            TSV file containing the BLAST results for the assembly z.
+        **...** All of the other TSV BLAST results files.
+    **Translation:** Folder containing the translation files.
+        **x_translation.fasta**
+            FASTA file containing the translation for the assembly x.
+        **y_translation.fasta**
+            FASTA file containing the translation for the assembly y.
+        **z_translation.fasta**
+            FASTA file containing the translation for the assembly z.
+        **...** All of the other translation files.
 
+**paralogous_loci_report.tsv**
+    TSV file containing the report of the paralogous loci.
+**paralogous_loci_report_cluster_by_id.tsv**
+    TSV file containing the report of the paralogous loci clustered by ID.
+**paralogous_loci_report_passed_all_checks.tsv**
+    TSV file containing the report of the paralogous loci clustered by ID that passed all checks.
 
 Examples
 --------
