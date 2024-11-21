@@ -27,7 +27,7 @@ The `IdentifyParalogousLoci` module can be used as follows:
 
 .. code-block:: bash
 
-    python schema_refinery.py -s /path/to/schema -o /path/to/output -c 4 -b 0.6 -tt 11 -st 0.2 -pm alleles_vs_alleles --nocleanup
+    SR -s /path/to/schema -o /path/to/output -c 4 -b 0.6 -tt 11 -st 0.2 -pm alleles_vs_alleles --nocleanup
 
 Command-Line Arguments
 ----------------------
@@ -65,7 +65,6 @@ Command-Line Arguments
 Outputs
 -------
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
-.. code-block:: bash
 
 .. code-block:: bash
 
@@ -165,10 +164,10 @@ Here are some example commands to use the `IdentifyParalogousLoci` module:
 .. code-block:: bash
 
     # Identify paralogous loci using default parameters
-    python schema_refinery.py -s /path/to/schema -o /path/to/output
+    SR -s /path/to/schema -o /path/to/output
 
     # Identify paralogous loci with custom parameters
-    python schema_refinery.py -s /path/to/schema -o /path/to/output -c 4 -b 0.7 -tt 1 -st 0.3 -pm reps_vs_reps --nocleanup
+    SR -s /path/to/schema -o /path/to/output -c 4 -b 0.7 -tt 1 -st 0.3 -pm reps_vs_reps --nocleanup
 
 Troubleshooting
 ---------------
