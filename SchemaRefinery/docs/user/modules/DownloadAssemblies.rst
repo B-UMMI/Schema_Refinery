@@ -109,26 +109,27 @@ Outputs
 -------
 Folder and file structure for the output directory of the `DownloadAssemblies` module is shown below. The output directory contains the following files and folders:
 .. code-block:: bash
+
     OutputFolderName
     ├── assemblies_ncbi.zip # -db NCBI --download
     ├── ena661k_assemblies # -db ENA661 --download
-        ├── x.contigs.fa.gz
-        ├── y.contigs.fa.gz
-        |── z.contigs.fa.gz
-        └── ...
+    │   ├── x.contigs.fa.gz
+    │   ├── y.contigs.fa.gz
+    │   ├── z.contigs.fa.gz
+    │   └── ...
     ├── metadata_all # -fm
-        ├── biosamples_ids.tsv
-        ├── id_matches.tsv
-        ├── all_ids_fetched.tsv
-        └── metadata_biosamples.tsv
-    |── assemblies_metadata_ena661k.tsv # -db ENA661k
-    |── assemblies_metadata_ncbi.tsv # -db NCBI
+    │   ├── biosamples_ids.tsv
+    │   ├── id_matches.tsv
+    │   ├── all_ids_fetched.tsv
+    │   └── metadata_biosamples.tsv
+    ├── assemblies_metadata_ena661k.tsv # -db ENA661k
+    ├── assemblies_metadata_ncbi.tsv # -db NCBI
     ├── metadata_ncbi # -db NCBI --nocleanup
-        |── assemblies_ids_to_download.tsv
-        └── id_failed_criteria.tsv
+    │   ├── assemblies_ids_to_download.tsv
+    │   └── id_failed_criteria.tsv
     └── metadata_ena661k # -db ENA661k --nocleanup
-        |── assemblies_ids_to_download.tsv
-        |── failed_to_download.tsv
+        ├── assemblies_ids_to_download.tsv
+        ├── failed_to_download.tsv
         └── id_failed_criteria.tsv
 
 Output files and folders description:
