@@ -67,9 +67,20 @@ Outputs
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
 .. code-block:: bash
 
+.. code-block:: bash
+
     OutputFolderName
     ├── Blast # --nocleanup
     │   ├── Blast_db_prot
+    │   │   ├── Blast_db_protein.pdb
+    │   │   ├── Blast_db_protein.phr
+    │   │   ├── Blast_db_protein.pin
+    │   │   ├── Blast_db_protein.pog
+    │   │   ├── Blast_db_protein.pos
+    │   │   ├── Blast_db_protein.pot
+    │   │   ├── Blast_db_protein.psq
+    │   │   ├── Blast_db_protein.ptf
+    │   │   └── Blast_db_protein.pto
     │   ├── Blast_output
     │   │   ├── blast_results_x.tsv
     │   │   ├── blast_results_y.tsv
@@ -94,6 +105,24 @@ Output files and folders description:
 -------------------------------------
 **Blast:** Folder containing BLAST database, BLAST output files, master file, self-score folder, and translation files.
     **Blast_db_prot:** Folder containing the BLAST database.
+        **Blast_db_protein.pdb**
+            Position-specific Data Base file. Contains position-specific scoring matrices (PSSMs) used in PSI-BLAST searches.
+        **Blast_db_protein.phr**
+            Protein Header Record file. Contains the header information for each sequence in the protein database.
+        **Blast_db_protein.pin**
+            Protein Index file. Contains the index of the sequences in the protein database.
+        **Blast_db_protein.pog**
+            Protein Organism Group file. Contains information about the taxonomic grouping of the sequences in the protein database.
+        **Blast_db_protein.pos**
+            Protein Organism Sequence file. Contains the actual sequence data for the protein database.
+        **Blast_db_protein.pot**
+            Protein Organism Taxonomy file. Contains taxonomic information for the sequences in the protein database.
+        **Blast_db_protein.psq**
+            Protein Sequence Query file. Contains the sequence data in a format optimized for BLAST searches.
+        **Blast_db_protein.ptf**
+            Protein Taxonomy File. Contains taxonomy information for the sequences in the protein database.
+        **Blast_db_protein.pto**
+            Protein Taxonomy Organism file. Contains organism-specific taxonomy information for the sequences in the protein database.
     **Blast_output:** Folder containing the BLAST output files.
         **blast_results_x.tsv**
             TSV file containing the BLAST results for the assembly x.
@@ -103,7 +132,7 @@ Output files and folders description:
             TSV file containing the BLAST results for the assembly z.
         **...** All of the other TSV BLAST results files.
     **master_file.fasta**
-        FASTA file containing tall of the protein sequences used in the analysis (used to create BLAST DB).
+        FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
     **self_score_folder:** Folder containing the self-score BLAST results.
         **blast_results_x.tsv**
             TSV file containing the BLAST results for the assembly x.
