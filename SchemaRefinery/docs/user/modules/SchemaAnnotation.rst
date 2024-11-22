@@ -144,6 +144,10 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │   │   │   ├── blast_results_x.tsv
     │   │   │   ├── blast_results_y.tsv
     │   │   │   └── ...
+    │   └── reps_translations
+    │       ├── x_translation.fasta
+    │       ├── y_translation.fasta
+    │       └── ...
     
 
 Examples
