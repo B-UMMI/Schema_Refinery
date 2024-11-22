@@ -319,7 +319,6 @@ def schema_annotation() -> None:
                         dest='extra_genbank_table_columns',
                         nargs='+',
                         default=[],
-                        choices=ct.GENBANK_CDS_QUALIFIERS_CHOICES,
                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
 
     parser.add_argument('-gia',
