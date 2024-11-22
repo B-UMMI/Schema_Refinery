@@ -148,6 +148,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── x_translation.fasta
     │       ├── y_translation.fasta
     │       └── ...
+    ├── matched_schemas # --nocleanup
     
 
 Examples
