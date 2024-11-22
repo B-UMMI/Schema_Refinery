@@ -111,6 +111,41 @@ Command-Line Arguments
 --nocleanup
     (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Outputs
+-------
+Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
+
+.. code-block:: bash
+    OutputFolderName
+    ├── genbank_annotations # --nocleanup
+    │   ├── best_annotations_all_genbank_files
+    │   │   └──best_genbank_annotations.tsv
+    │   ├── best_annotations_per_genbank_file
+    │   │   ├── genbank_file_x_annotations.tsv
+    │   │   ├── genbank_file_y_annotations.tsv
+    │   │   └── ...
+    │   ├── best_genbank_annotations.tsv
+    │   ├── blast_processing
+    │   │   ├── blast_db
+    │   │   │   ├── blast_db_protein.pdb
+    │   │   │   ├── blast_db_protein.phr
+    │   │   │   ├── blast_db_protein.pin
+    │   │   │   ├── blast_db_protein.pog
+    │   │   │   ├── blast_db_protein.pos
+    │   │   │   ├── blast_db_protein.pot
+    │   │   │   ├── blast_db_protein.psq
+    │   │   │   ├── blast_db_protein.ptf
+    │   │   │   └── blast_db_protein.pto
+    │   │   ├── blastp_results
+    │   │   │   ├── blast_results_x.tsv
+    │   │   │   ├── blast_results_y.tsv
+    │   │   │   └── ...
+    │   │   ├── self_score_folder
+    │   │   │   ├── blast_results_x.tsv
+    │   │   │   ├── blast_results_y.tsv
+    │   │   │   └── ...
+    
+
 Examples
 --------
 
