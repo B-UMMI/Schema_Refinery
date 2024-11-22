@@ -1,12 +1,12 @@
-AdaptLoci - Adapt loci in a schema
-==================================
+AdaptLoci - Adapt fastas into a chewBBACA schema
+================================================
 
 Description
 -----------
 
 The `AdaptLoci` module parses command-line arguments and initiates the process to adapt loci. This module sets up an argument parser to handle various command-line options for adapting loci and then calls the main function of the `AdaptLoci` class with the parsed arguments.
 
-The `AdaptLoci` takes as input a set of fastas and returns a chewBBACA schema.
+The `AdaptLoci` module processes the input FASTA files to identify and adapt loci, ensuring they are compatible with the chewBBACA schema format.
 
 Features
 --------
