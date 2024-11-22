@@ -28,7 +28,7 @@ The `AdaptLoci` module can be used as follows:
 
 .. code-block:: bash
 
-    python schema_refinery.py -i /path/to/input_file.tsv -o /path/to/output -c 4 -b 0.6 -tt 11
+    SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output -c 4 -b 0.6 -tt 11
 
 Command-Line Arguments
 ----------------------
@@ -89,10 +89,10 @@ Here are some example commands to use the `AdaptLoci` module:
 .. code-block:: bash
 
     # Adapt loci using default parameters
-    python schema_refinery.py -i /path/to/input_file.tsv -o /path/to/output
+    SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output
 
     # Adapt loci with custom parameters
-    python schema_refinery.py -i /path/to/input_file.tsv -o /path/to/output -c 4 -b 0.7 -tt 1
+    SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output -c 4 -b 0.7 -tt 4
 
 Troubleshooting
 ---------------
