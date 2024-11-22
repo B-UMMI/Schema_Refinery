@@ -17,7 +17,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.6 or higher
+- Python 3.9 or higher
 - Biopython library (`pip install biopython`)
 
 Usage
@@ -27,7 +27,7 @@ The `MatchSchemas` module can be used as follows:
 
 .. code-block:: bash
 
-    SR -qs /path/to/query_schema -ss /path/to/subject_schema -o /path/to/output -c 4 -b 0.6 -tt 11 -pm alleles_vs_alleles --nocleanup
+    SR MatchSchemas -qs /path/to/query_schema -ss /path/to/subject_schema -o /path/to/output -c 4 -b 0.6 -tt 11 -pm alleles_vs_alleles --nocleanup
 
 Command-Line Arguments
 ----------------------
@@ -104,63 +104,64 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
 
 Output files and folders description:
 -------------------------------------
-**Blast:** Folder containing BLASTp database, BLASTp output files, master file, self-score folder, and translation files.
-    **Blast_db_prot:** Folder containing the BLASTp database.
-        **Blast_db_protein.pdb**
-            Position-specific Data Base file. Contains position-specific scoring matrices (PSSMs) used in PSI-BLAST searches.
-        **Blast_db_protein.phr**
-            Protein Header Record file. Contains the header information for each sequence in the protein database.
-        **Blast_db_protein.pin**
-            Protein Index file. Contains the index of the sequences in the protein database.
-        **Blast_db_protein.pog**
-            Protein Organism Group file. Contains information about the taxonomic grouping of the sequences in the protein database.
-        **Blast_db_protein.pos**
-            Protein Organism Sequence file. Contains the actual sequence data for the protein database.
-        **Blast_db_protein.pot**
-            Protein Organism Taxonomy file. Contains taxonomic information for the sequences in the protein database.
-        **Blast_db_protein.psq**
-            Protein Sequence Query file. Contains the sequence data in a format optimized for BLAST searches.
-        **Blast_db_protein.ptf**
-            Protein Taxonomy File. Contains taxonomy information for the sequences in the protein database.
-        **Blast_db_protein.pto**
-            Protein Taxonomy Organism file. Contains organism-specific taxonomy information for the sequences in the protein database.
-    **blastp_results:** Folder containing the BLASTp output files.
-        **blast_results_x.tsv**
-            TSV file containing the BLASTp results for the locus x.
-        **blast_results_y.tsv**
-            TSV file containing the BLASTp results for the locus y.
-        **blast_results_z.tsv**
-            TSV file containing the BLASTp results for the locus z.
-        **...** All of the other TSV BLASTp results files.
-    **master_file.fasta**
-        FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
-    **Query_Translation:** Folder containing the translation files.
-        **query_x_translation.fasta**
-            FASTA file containing the translation for the locus x.
-        **query_y_translation.fasta**
-            FASTA file containing the translation for the locus y.
-        **query_z_translation.fasta**
-            FASTA file containing the translation for the locus z.
-        **...** All of the other translation files.
-    **Subject_Translation:** Folder containing the translation files.
-        **subject_x_translation.fasta**
-            FASTA file containing the translation for the locus x.
-        **subject_y_translation.fasta**
-            FASTA file containing the translation for the locus y.
-        **subject_z_translation.fasta**
-            FASTA file containing the translation for the locus z.
-        **...** All of the other translation files.
-    **self_score_folder:** Folder containing the self-score BLAST results.
-        **blast_results_x.tsv**
-            TSV file containing the BLASTp results for self-score for the locus x.
-        **blast_results_y.tsv**
-            TSV file containing the BLASTp results for self-score for the locus y.
-        **blast_results_z.tsv**
-            TSV file containing the BLASTp results for self-score for the locus z.
-        **...** All of the other TSV BLASTp results files.
+**OutputFolderName**: The folder where the output files are stored.
+    **Blast:** Folder containing BLASTp database, BLASTp output files, master file, self-score folder, and translation files.
+        **Blast_db_prot:** Folder containing the BLASTp database.
+            **Blast_db_protein.pdb**
+                Position-specific Data Base file. Contains position-specific scoring matrices (PSSMs) used in PSI-BLAST searches.
+            **Blast_db_protein.phr**
+                Protein Header Record file. Contains the header information for each sequence in the protein database.
+            **Blast_db_protein.pin**
+                Protein Index file. Contains the index of the sequences in the protein database.
+            **Blast_db_protein.pog**
+                Protein Organism Group file. Contains information about the taxonomic grouping of the sequences in the protein database.
+            **Blast_db_protein.pos**
+                Protein Organism Sequence file. Contains the actual sequence data for the protein database.
+            **Blast_db_protein.pot**
+                Protein Organism Taxonomy file. Contains taxonomic information for the sequences in the protein database.
+            **Blast_db_protein.psq**
+                Protein Sequence Query file. Contains the sequence data in a format optimized for BLAST searches.
+            **Blast_db_protein.ptf**
+                Protein Taxonomy File. Contains taxonomy information for the sequences in the protein database.
+            **Blast_db_protein.pto**
+                Protein Taxonomy Organism file. Contains organism-specific taxonomy information for the sequences in the protein database.
+        **blastp_results:** Folder containing the BLASTp output files.
+            **blast_results_x.tsv**
+                TSV file containing the BLASTp results for the locus x.
+            **blast_results_y.tsv**
+                TSV file containing the BLASTp results for the locus y.
+            **blast_results_z.tsv**
+                TSV file containing the BLASTp results for the locus z.
+            **...** All of the other TSV BLASTp results files.
+        **master_file.fasta**
+            FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
+        **Query_Translation:** Folder containing the translation files.
+            **query_x_translation.fasta**
+                FASTA file containing the translation for the locus x.
+            **query_y_translation.fasta**
+                FASTA file containing the translation for the locus y.
+            **query_z_translation.fasta**
+                FASTA file containing the translation for the locus z.
+            **...** All of the other translation files.
+        **Subject_Translation:** Folder containing the translation files.
+            **subject_x_translation.fasta**
+                FASTA file containing the translation for the locus x.
+            **subject_y_translation.fasta**
+                FASTA file containing the translation for the locus y.
+            **subject_z_translation.fasta**
+                FASTA file containing the translation for the locus z.
+            **...** All of the other translation files.
+        **self_score_folder:** Folder containing the self-score BLAST results.
+            **blast_results_x.tsv**
+                TSV file containing the BLASTp results for self-score for the locus x.
+            **blast_results_y.tsv**
+                TSV file containing the BLASTp results for self-score for the locus y.
+            **blast_results_z.tsv**
+                TSV file containing the BLASTp results for self-score for the locus z.
+            **...** All of the other TSV BLASTp for self-score results files.
 
-**best_blast_matches.tsv**
-    TSV file containing the best BLAST matches for the query and subject schemas.
+    **best_blast_matches.tsv**
+        TSV file containing the best BLAST matches for the query and subject schemas.
 
 Examples
 --------
@@ -170,17 +171,16 @@ Here are some example commands to use the `MatchSchemas` module:
 .. code-block:: bash
 
     # Match schemas using default parameters
-    SR -qs /path/to/query_schema -ss /path/to/subject_schema -o /path/to/output
+    SR MatchSchemas -qs /path/to/query_schema -ss /path/to/subject_schema -o /path/to/output
 
     # Match schemas with custom parameters
-    SR -qs /path/to/query_schema -ss /path/to/subject_schema -o /path/to/output -c 4 -b 0.7 -tt 1 -pm reps_vs_reps --nocleanup
+    SR MatchSchemas -qs /path/to/query_schema -ss /path/to/subject_schema -o /path/to/output -c 4 -b 0.7 -tt 4 -pm reps_vs_reps --nocleanup
 
 Troubleshooting
 ---------------
 
 If you encounter issues while using the `MatchSchemas` module, consider the following troubleshooting steps:
 
-- Ensure that you have a stable internet connection.
 - Verify that the paths to the query and subject schema directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.

@@ -17,7 +17,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.6 or higher
+- Python 3.9 or higher
 - Biopython library (`pip install biopython`)
 
 Usage
@@ -27,7 +27,7 @@ The `IdentifyParalogousLoci` module can be used as follows:
 
 .. code-block:: bash
 
-    SR -s /path/to/schema -o /path/to/output -c 4 -b 0.6 -tt 11 -st 0.2 -pm alleles_vs_alleles --nocleanup
+    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output -c 4 -b 0.6 -tt 11 -st 0.2 -pm alleles_vs_alleles --nocleanup
 
 Command-Line Arguments
 ----------------------
@@ -139,7 +139,7 @@ Output files and folders description:
             TSV file containing the BLASTp results for self-score for the locus y.
         **blast_results_z.tsv**
             TSV file containing the BLASTp results for self-score for the locus z.
-        **...** All of the other TSV BLASTp results files.
+        **...** All of the other TSV BLASTp for self-score results files.
     **Translation:** Folder containing the translation files.
         **x_translation.fasta**
             FASTA file containing the translation for the locus x.
@@ -164,10 +164,10 @@ Here are some example commands to use the `IdentifyParalogousLoci` module:
 .. code-block:: bash
 
     # Identify paralogous loci using default parameters
-    SR -s /path/to/schema -o /path/to/output
+    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output
 
     # Identify paralogous loci with custom parameters
-    SR -s /path/to/schema -o /path/to/output -c 4 -b 0.7 -tt 1 -st 0.3 -pm reps_vs_reps --nocleanup
+    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output -c 4 -b 0.7 -tt 4 -st 0.3 -pm reps_vs_reps --nocleanup
 
 Troubleshooting
 ---------------
