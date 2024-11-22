@@ -81,7 +81,6 @@ Output files and folders description:
         **z_short.fasta**: The short fasta file containing the loci.
         **...**: Other short fasta files containing the loci.
 
-
 Examples
 --------
 

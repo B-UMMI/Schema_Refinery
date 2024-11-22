@@ -134,48 +134,48 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
 
 Output files and folders description:
 -------------------------------------
+**OutputFolderName**: The folder where the output files are stored.
+    **assemblies_ncbi.zip**
+        Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
 
-**assemblies_ncbi.zip**
-    Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
+    **ena661k_assemblies:** Folder containing the assemblies downloaded from ENA661K.
+        **x.contigs.fa.gz**
+            Gzipped FASTA file containing the contigs for the assembly.
+        **y.contigs.fa.gz**
+            Gzipped FASTA file containing the contigs for the assembly.
+        **z.contigs.fa.gz**
+            Gzipped FASTA file containing the contigs for the assembly.
+        **...**
 
-**ena661k_assemblies:** Folder containing the assemblies downloaded from ENA661K.
-    **x.contigs.fa.gz**
-        Gzipped FASTA file containing the contigs for the assembly.
-    **y.contigs.fa.gz**
-        Gzipped FASTA file containing the contigs for the assembly.
-    **z.contigs.fa.gz**
-        Gzipped FASTA file containing the contigs for the assembly.
-    **...**
+    **metadata_all:** Folder containing all the metadata downloaded from NCBI and ENA661K.
+        **biosamples_ids.tsv**
+            TSV file containing the BioSample IDs for the assemblies.
+        **id_matches.tsv**
+            TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
+        **all_ids_fetched.tsv**
+            TSV file containing all the IDs fetched from the database.
+        **metadata_biosamples.tsv**
+            TSV file containing the metadata for the BioSamples.
 
-**metadata_all:** Folder containing all the metadata downloaded from NCBI and ENA661K.
-    **biosamples_ids.tsv**
-        TSV file containing the BioSample IDs for the assemblies.
-    **id_matches.tsv**
-        TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
-    **all_ids_fetched.tsv**
-        TSV file containing all the IDs fetched from the database.
-    **metadata_biosamples.tsv**
-        TSV file containing the metadata for the BioSamples.
+    **assemblies_metadata_ena661k.tsv**
+        TSV file containing the selected samples from the ENA661K database.
 
-**assemblies_metadata_ena661k.tsv**
-    TSV file containing the selected samples from the ENA661K database.
+    **assemblies_metadata_ncbi.tsv**
+        TSV file containing the metadata for the assemblies downloaded from NCBI.
 
-**assemblies_metadata_ncbi.tsv**
-    TSV file containing the metadata for the assemblies downloaded from NCBI.
+    **metadata_ncbi:** Folder containing metadata related NCBI run.
+        **assemblies_ids_to_download.tsv**
+            TSV file containing the assembly IDs to download.
+        **id_failed_criteria.tsv**
+            TSV file containing the assembly IDs that failed the filtering criteria.
 
-**metadata_ncbi:** Folder containing metadata related NCBI run.
-    **assemblies_ids_to_download.tsv**
-        TSV file containing the assembly IDs to download.
-    **id_failed_criteria.tsv**
-        TSV file containing the assembly IDs that failed the filtering criteria.
-
-**metadata_ena661k:** Folder containing metadata related to ENA661K run.
-    **assemblies_ids_to_download.tsv**
-        TSV file containing the assembly IDs to download.
-    **failed_to_download.tsv**
-        TSV file containing the assembly IDs that failed to download.
-    **id_failed_criteria.tsv**
-        TSV file containing the assembly IDs that failed the filtering criteria.
+    **metadata_ena661k:** Folder containing metadata related to ENA661K run.
+        **assemblies_ids_to_download.tsv**
+            TSV file containing the assembly IDs to download.
+        **failed_to_download.tsv**
+            TSV file containing the assembly IDs that failed to download.
+        **id_failed_criteria.tsv**
+            TSV file containing the assembly IDs that failed the filtering criteria.
     
 Examples
 --------
