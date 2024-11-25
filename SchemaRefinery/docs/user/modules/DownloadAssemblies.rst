@@ -155,14 +155,14 @@ Output files and folders description:
 
     **assemblies_metadata_ncbi.tsv**: TSV file containing the metadata for the assemblies downloaded from NCBI.
 
-    **metadata_ncbi**: Folder containing metadata related to the NCBI run.
-        **assemblies_ids_to_download.tsv**: TSV file containing the assembly IDs to download.
-        **id_failed_criteria.tsv**: TSV file containing the assembly IDs that failed the filtering criteria.
+    metadata_ncbi: Folder containing metadata related to the NCBI run.
+        assemblies_ids_to_download.tsv: TSV file containing the assembly IDs to download.
+        id_failed_criteria.tsv: TSV file containing the assembly IDs that failed the filtering criteria.
 
-    **metadata_ena661k**: Folder containing metadata related to the ENA661K run.
-        **assemblies_ids_to_download.tsv**: TSV file containing the assembly IDs to download.
-        **failed_to_download.tsv**: TSV file containing the assembly IDs that failed to download.
-        **id_failed_criteria.tsv**: TSV file containing the assembly IDs that failed the filtering criteria.
+    metadata_ena661k: Folder containing metadata related to the ENA661K run.
+        assemblies_ids_to_download.tsv: TSV file containing the assembly IDs to download.
+        failed_to_download.tsv: TSV file containing the assembly IDs that failed to download.
+        id_failed_criteria.tsv: TSV file containing the assembly IDs that failed the filtering criteria.
     
 Examples
 --------
