@@ -376,20 +376,20 @@ def write_temp_loci(clusters_to_keep: Dict[str, List[str]],
 
     temp_fastas_paths: Dict[str, str] = {}
     print("Writing FASTA and additional files for possible new loci...")
-    temp_fastas: str = os.path.join(output_path, 'temp_fastas')
-    ff.create_directory(temp_fastas)
+    temp_fastas_folder: str = os.path.join(output_path, 'temp_fastas')
+    ff.create_directory(temp_fastas_folder)
     # Process each class and CDS list in clusters_to_keep
     for class_, cds_list in clusters_to_keep.items():
-        write_possible_new_loci(class_, cds_list, temp_fastas,
+        write_possible_new_loci(class_, cds_list, temp_fastas_folder,
                                 temp_fastas_paths, all_nucleotide_sequences,
                                 clusters)
         
-    fastas_path_txt: str = os.path.join(output_path, "temp_fastas_path.txt")
-    with open(fastas_path_txt, 'w') as fastas_path:
+    fastas_paths_txt: str = os.path.join(output_path, "temp_fastas_path.txt")
+    with open(fastas_paths_txt, 'w') as fastas_path:
         for path in temp_fastas_paths.values():
             fastas_path.write(path + '\n')
 
-    return temp_fastas_paths
+    return temp_fastas_paths, fastas_paths_txt, temp_fastas_folder
 
 
 def set_minimum_genomes_threshold(temp_folder: str, constants: List[Union[int, float]]) -> None:

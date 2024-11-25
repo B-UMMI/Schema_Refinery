@@ -448,7 +448,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
         print("\nWriting temp loci file...")
-        ccf.write_temp_loci(clusters_to_keep, all_nucleotide_sequences, all_alleles, results_output)
+        temp_fastas_paths, fastas_paths_txt, temp_fastas_folder = ccf.write_temp_loci(clusters_to_keep,
+                                                                                all_nucleotide_sequences,
+                                                                                all_alleles,
+                                                                                output_directory)
 
         print("\nCreate graphs for the BLAST results...")
         cds_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
@@ -469,7 +472,12 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     if not no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files
-        ff.cleanup(output_directory, [related_matches_path, count_results_by_cluster_path, recommendations_file_path, drop_possible_loci_output])
+        ff.cleanup(output_directory, [related_matches_path,
+                                      count_results_by_cluster_path,
+                                      recommendations_file_path,
+                                      drop_possible_loci_output,
+                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                      fastas_paths_txt if run_mode == 'unclassified_cds' else None,])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
