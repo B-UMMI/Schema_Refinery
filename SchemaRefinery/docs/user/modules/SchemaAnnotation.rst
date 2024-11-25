@@ -40,7 +40,7 @@ Command-Line Arguments
 
 -ao, --annotation-options
     (Required) Annotation options to run.
-    Choices: uniprot-proteomes, genbank-files, uniprot-sparql, match-schemas.
+    Choices: uniprot-proteomes, genbank-files, match-schemas.
 
 -pt, --proteome-table
     (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
@@ -118,7 +118,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
 .. code-block:: bash
 
     OutputFolderName
-    ├── genbank_annotations # --nocleanup
+    ├── genbank_annotations # --nocleanup -ao genbank-files -gf path/to/genbank/files
     │   ├── best_annotations_all_genbank_files
     │   │   └── best_genbank_annotations.tsv
     │   ├── best_annotations_per_genbank_file
@@ -149,7 +149,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── x_translation.fasta
     │       ├── y_translation.fasta
     │       └── ...
-    ├── matched_schemas # --nocleanup
+    ├── matched_schemas # --nocleanup -ao match-schemas -ss path/to/subject/schema
     │   ├── best_blast_matches.tsv
     │   ├── blast_processing
     │   │   ├── blast_db
@@ -180,7 +180,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── y_translation.fasta
     │       └── ...
     ├── merged_file.tsv
-    └── uniprot_annotations # --nocleanup
+    └── uniprot_annotations # --nocleanup -ao uniprot-proteomes -pt path/to/proteome/table
         ├── best_proteomes_annotations_swiss_prot.tsv
         ├── best_proteomes_annotations_trEMBL.tsv
         ├── proteome_matcher_output
@@ -240,6 +240,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
 
 Output files and folders description:
 -------------------------------------
+
 **OutputFolderName**: The folder where the output files are stored.
 
     **genbank_annotations**: Folder containing GenBank annotations.

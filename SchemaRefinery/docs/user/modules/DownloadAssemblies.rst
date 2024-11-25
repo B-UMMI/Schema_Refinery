@@ -134,6 +134,7 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
 
 Output files and folders description:
 -------------------------------------
+
 **OutputFolderName**: The folder where the output files are stored.
     **assemblies_ncbi.zip**
         Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
