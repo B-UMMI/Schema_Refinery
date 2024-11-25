@@ -103,7 +103,7 @@ Outputs
 .. code-block:: bash
 
     OutputFolderName
-    ├── 1_schema_processing
+    ├── 1_schema_processing # --nocleanup
     │   ├── master.fasta
     │   ├── schema
     │   │   ├── loci_x.fasta
@@ -122,7 +122,7 @@ Outputs
     │       ├── loci_x.fasta
     │       ├── new_loci_y.fasta
     │       └── ...
-    ├── 2_BLAST_processing
+    ├── 2_BLAST_processing # --nocleanup
     │   ├── 1_BLASTn_processing
     │   │   ├── blast_db_nucl
     │   │   │   ├── Blast_db_nucleotide.ndb
@@ -151,7 +151,7 @@ Outputs
     │           ├── blast_results_x.tsv
     │           ├── blast_results_y.tsv
     │           └── ...
-    ├── 3_processing_results
+    ├── 3_processing_results # --nocleanup
     │   └── blast_results
     │       ├── blast_all_matches.tsv
     │       ├── blast_by_cluster
@@ -168,6 +168,44 @@ Outputs
     └── related_matches.tsv
 
 **For --run-mode unclassified_cds:**
+.. code-block:: bash
+
+    OutputFolderName
+    ├── 1_CDS_processing # --nocleanup
+    │   ├── CDS_not_found.fasta
+    │   └── CDS_not_found_translation.fasta
+    ├── 2_BLAST_processing # --nocleanup
+    │   ├── 1_BLASTn_processing
+    │   │   ├── blast_db_nucl
+    │   │   │   ├── Blast_db_nucleotide.ndb
+    │   │   │   ├── Blast_db_nucleotide.nhr
+    │   │   │   ├── Blast_db_nucleotide.nin
+    │   │   │   ├── Blast_db_nucleotide.nog
+    │   │   │   ├── Blast_db_nucleotide.nsd
+    │   │   │   ├── Blast_db_nucleotide.nsi
+    │   │   │   ├── Blast_db_nucleotide.nsq
+    │   │   │   ├── Blast_db_nucleotide.ntf
+    │   │   │   └── Blast_db_nucleotide.nto
+    │   │   └── BLASTn_results
+    │   │       ├── blast_results_x.tsv
+    │   │       ├── blast_results_y.tsv
+    │   │       └── ...
+    │   └── 2_BLASTp_processing
+    │       ├── blastn_results_matches_translations
+    │       │   ├── cluster_matches_translation_x.tsv
+    │       │   ├── cluster_matches_translation_y.tsv
+    │       │   └── ...
+    │       ├── BLASTp_results
+    │       │   ├── blast_results_x.tsv
+    │       │   ├── blast_results_y.tsv
+    │       │   └── ...
+    │       └── BLASTp_results_self_score_results
+    │           ├── blast_results_x.tsv
+    │           ├── blast_results_y.tsv
+    │           └── ...
+    ├── 3_processing_results # --nocleanup
+
+
 Examples
 --------
 
