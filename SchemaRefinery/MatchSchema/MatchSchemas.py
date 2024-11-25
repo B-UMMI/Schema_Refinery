@@ -224,7 +224,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     query_fastas: Dict[str, str] = query_files if processing_mode.split('_')[0] == 'alleles' else query_files_short
     subject_fastas: Dict[str, str] = subject_files_short if processing_mode.split('_')[-1] == 'rep' else subject_files
     # Create the output directory
-    blast_folder: str = os.path.join(output_directory, 'Blast')
+    blast_folder: str = os.path.join(output_directory, 'blast_processing')
     ff.create_directory(blast_folder)
     query_translation_folder: str = os.path.join(blast_folder, 'Query_Translation')
     ff.create_directory(query_translation_folder)

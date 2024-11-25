@@ -149,6 +149,40 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── y_translation.fasta
     │       └── ...
     ├── matched_schemas # --nocleanup
+    │   ├── best_blast_matches.tsv
+    │   ├── blast_processing
+    │   │   ├── blast_db
+    │   │   │   ├── blast_db_protein.pdb
+    │   │   │   ├── blast_db_protein.phr
+    │   │   │   ├── blast_db_protein.pin
+    │   │   │   ├── blast_db_protein.pog
+    │   │   │   ├── blast_db_protein.pos
+    │   │   │   ├── blast_db_protein.pot
+    │   │   │   ├── blast_db_protein.psq
+    │   │   │   ├── blast_db_protein.ptf
+    │   │   │   └── blast_db_protein.pto
+    │   │   ├── blastp_results
+    │   │   │   ├── blast_results_x.tsv
+    │   │   │   ├── blast_results_y.tsv
+    │   │   │   └── ...
+    │   │   ├── master_file.fasta
+    │   │   ├── self_score_folder
+    │   │   │   ├── blast_results_x.tsv
+    │   │   │   ├── blast_results_y.tsv
+    │   │   │   └── ...
+    │   ├── Query_Translation
+    │   │   ├── x_translation.fasta
+    │   │   ├── y_translation.fasta
+    │   │   └── ...
+    │   └── Subject_Translation
+    │       ├── x_translation.fasta
+    │       ├── y_translation.fasta
+    │       └── ...
+    ├── merged_file.tsv
+    ├── uniprot_annotations # --nocleanup
+    │   ├── best_proteomes_annotations_swiss_prot.tsv
+    │   ├── best_proteomes_annotations_trEMBL.tsv
+    │   ├── proteome_matcher_output
     
 
 Examples
