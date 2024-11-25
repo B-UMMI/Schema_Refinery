@@ -116,10 +116,11 @@ Outputs
 Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
 
 .. code-block:: bash
+
     OutputFolderName
     ├── genbank_annotations # --nocleanup
     │   ├── best_annotations_all_genbank_files
-    │   │   └──best_genbank_annotations.tsv
+    │   │   └── best_genbank_annotations.tsv
     │   ├── best_annotations_per_genbank_file
     │   │   ├── genbank_file_x_annotations.tsv
     │   │   ├── genbank_file_y_annotations.tsv
@@ -179,11 +180,66 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── y_translation.fasta
     │       └── ...
     ├── merged_file.tsv
-    ├── uniprot_annotations # --nocleanup
-    │   ├── best_proteomes_annotations_swiss_prot.tsv
-    │   ├── best_proteomes_annotations_trEMBL.tsv
-    │   ├── proteome_matcher_output
-    
+    └── uniprot_annotations # --nocleanup
+        ├── best_proteomes_annotations_swiss_prot.tsv
+        ├── best_proteomes_annotations_trEMBL.tsv
+        ├── proteome_matcher_output
+        │   ├── best_annotations_per_proteome_file
+        │   │   ├── Swiss-Prot
+        │   │   │   ├── proteome_file_x_Swiss-Prot_annotations.tsv
+        │   │   │   ├── proteome_file_y_Swiss-Prot_annotations.tsv
+        │   │   │   └── ...
+        │   │   └── TrEMBL
+        │   │       ├── proteome_file_x_TrEMBL_annotations.tsv
+        │   │       ├── proteome_file_y_TrEMBL_annotations.tsv
+        │   │       └── ...
+        │   ├── reps_translations
+        │   │   ├── x_translation.fasta
+        │   │   ├── y_translation.fasta
+        │   │   └── ...
+        │   ├── self_score_folder
+        │   │   ├── blast_results_x.tsv
+        │   │   ├── blast_results_y.tsv
+        │   │   └── ...
+        ├── swiss_prots_processing
+        │   ├── blast_processing
+        │   │   ├── blast_db
+        │   │   │   ├── blast_db_protein.pdb
+        │   │   │   ├── blast_db_protein.phr
+        │   │   │   ├── blast_db_protein.pin
+        │   │   │   ├── blast_db_protein.pog
+        │   │   │   ├── blast_db_protein.pos
+        │   │   │   ├── blast_db_protein.pot
+        │   │   │   ├── blast_db_protein.psq
+        │   │   │   ├── blast_db_protein.ptf
+        │   │   │   └── blast_db_protein.pto
+        │   │   ├── blastp_results
+        │   │   │   ├── blast_results_x.tsv
+        │   │   │   ├── blast_results_y.tsv
+        │   │   │   └── ...
+        │   │   └── swiss_prots.fasta
+        │   └── swiss_prots_annotations.tsv
+        └── trembl_prots_processing
+            ├── blast_processing
+            │   ├── blast_db
+            │   │   ├── blast_db_protein.pdb
+            │   │   ├── blast_db_protein.phr
+            │   │   ├── blast_db_protein.pin
+            │   │   ├── blast_db_protein.pog
+            │   │   ├── blast_db_protein.pos
+            │   │   ├── blast_db_protein.pot
+            │   │   ├── blast_db_protein.psq
+            │   │   ├── blast_db_protein.ptf
+            │   │   └── blast_db_protein.pto
+            │   ├── blastp_results
+            │   │   ├── blast_results_x.tsv
+            │   │   ├── blast_results_y.tsv
+            │   │   └── ...
+            │   └── trembl_prots.fasta
+            └── trembl_prots_annotations.tsv    
+
+Output files and folders description:
+-------------------------------------
 
 Examples
 --------
