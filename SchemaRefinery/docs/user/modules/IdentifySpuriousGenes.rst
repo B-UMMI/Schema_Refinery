@@ -98,14 +98,8 @@ Command-Line Arguments
 
 Outputs
 -------
-Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
-
-    Outputs
--------
-Folder and file structure for the output directory of the `IdentifySpuriousGenes` module is shown below. The output directory contains the following files and folders:
-
+**For --run-mode schema:**
 .. code-block:: bash
 
     OutputFolderName
@@ -173,6 +167,7 @@ Folder and file structure for the output directory of the `IdentifySpuriousGenes
     ├── recommendations.tsv
     └── related_matches.tsv
 
+**For --run-mode unclassified_cds:**
 Examples
 --------
 
