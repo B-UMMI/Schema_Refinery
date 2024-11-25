@@ -17,7 +17,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.6 or higher
+- Python 3.9 or higher
 - Biopython library (`pip install biopython`)
 
 Usage
@@ -27,7 +27,7 @@ The `IdentifySpuriousGenes` module can be used as follows:
 
 .. code-block:: bash
 
-    python schema_refinery.py -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
+    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
 
 Command-Line Arguments
 ----------------------
@@ -81,7 +81,7 @@ Command-Line Arguments
 
 -m, --run-mode
     (Optional) Run mode for identifying spurious loci.
-    Choices: schema, loci_vs_cds
+    Choices: unclassified_cds, schema
     Default: schema
 
 -pm, --processing-mode
@@ -96,6 +96,83 @@ Command-Line Arguments
 --nocleanup
     (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Outputs
+-------
+Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
+
+.. code-block:: bash
+
+    Outputs
+-------
+Folder and file structure for the output directory of the `IdentifySpuriousGenes` module is shown below. The output directory contains the following files and folders:
+
+.. code-block:: bash
+
+    OutputFolderName
+    ├── 1_schema_processing
+    │   ├── master.fasta
+    │   ├── schema
+    │   │   ├── loci_x.fasta
+    │   │   ├── new_loci_y.fasta
+    │   │   ├── ...
+    │   │   ├── loci_modes
+    │   │   ├── species.trn
+    │   │   ├── pre_computed
+    │   │   │   ├── DNAtable1
+    │   │   │   └── PROTEINtable1
+    │   │   └── short
+    │   │       ├── loci_x.fasta
+    │   │       ├── new_loci_y.fasta
+    │   │       └── ...
+    │   └── schema_translation_folder
+    │       ├── loci_x.fasta
+    │       ├── new_loci_y.fasta
+    │       └── ...
+    ├── 2_BLAST_processing
+    │   ├── 1_BLASTn_processing
+    │   │   ├── blast_db_nucl
+    │   │   │   ├── Blast_db_nucleotide.ndb
+    │   │   │   ├── Blast_db_nucleotide.nhr
+    │   │   │   ├── Blast_db_nucleotide.nin
+    │   │   │   ├── Blast_db_nucleotide.nog
+    │   │   │   ├── Blast_db_nucleotide.nsd
+    │   │   │   ├── Blast_db_nucleotide.nsi
+    │   │   │   ├── Blast_db_nucleotide.nsq
+    │   │   │   ├── Blast_db_nucleotide.ntf
+    │   │   │   └── Blast_db_nucleotide.nto
+    │   │   └── BLASTn_results
+    │   │       ├── blast_results_x.tsv
+    │   │       ├── blast_results_y.tsv
+    │   │       └── ...
+    │   └── 2_BLASTp_processing
+    │       ├── blastn_results_matches_translations
+    │       │   ├── cluster_matches_translation_x.tsv
+    │       │   ├── cluster_matches_translation_y.tsv
+    │       │   └── ...
+    │       ├── BLASTp_results
+    │       │   ├── blast_results_x.tsv
+    │       │   ├── blast_results_y.tsv
+    │       │   └── ...
+    │       └── BLASTp_results_self_score_results
+    │           ├── blast_results_x.tsv
+    │           ├── blast_results_y.tsv
+    │           └── ...
+    ├── 3_processing_results
+    │   └── blast_results
+    │       ├── blast_all_matches.tsv
+    │       ├── blast_by_cluster
+    │       │   ├── cluster_x.tsv
+    │       │   ├── cluster_y.tsv
+    │       │   └── ...
+    │       └── blast_results_by_class
+    │           ├── class_1.tsv
+    │           ├── class_2.tsv
+    │           └── ...
+    ├── count_results_by_cluster.tsv
+    ├── drop_loci_reason.tsv
+    ├── recommendations.tsv
+    └── related_matches.tsv
+
 Examples
 --------
 
@@ -104,10 +181,10 @@ Here are some example commands to use the `IdentifySpuriousGenes` module:
 .. code-block:: bash
 
     # Identify spurious genes using default parameters
-    python schema_refinery.py -s /path/to/schema -o /path/to/output -a /path/to/allelecall
+    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall
 
     # Identify spurious genes with custom parameters
-    python schema_refinery.py -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
+    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
 
 Troubleshooting
 ---------------

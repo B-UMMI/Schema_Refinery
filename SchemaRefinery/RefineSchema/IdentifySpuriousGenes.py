@@ -52,7 +52,7 @@ def create_directories(output_directory: str, run_mode: str) -> List[Optional[st
         schema_folder = None
     else:
         initial_processing_output = os.path.join(output_directory, '1_schema_processing')
-        schema_folder = os.path.join(initial_processing_output, 'new_schema')
+        schema_folder = os.path.join(initial_processing_output, 'schema')
         ff.create_directory(schema_folder)
 
     # Create BLAST processing directories
@@ -437,9 +437,9 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nWriting dropped possible new loci to file...")
     # Write the dropped possible new loci to a file.
-    cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
-                                                dropped_alleles,
-                                                output_directory)
+    drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
+                                                                        dropped_alleles,
+                                                                        output_directory)
     # Print the classification results
     cof.print_classifications_results(clusters_to_keep,
                                         dropped_loci_ids,
@@ -469,7 +469,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     if not no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files
-        ff.cleanup(output_directory, [related_matches_path, count_results_by_cluster_path, recommendations_file_path])
+        ff.cleanup(output_directory, [related_matches_path, count_results_by_cluster_path, recommendations_file_path, drop_possible_loci_output])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
@@ -540,9 +540,8 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
                     "was run using --no-cleanup and --output-unclassified flag.")
 
-    unclassified_cds_output: str = os.path.join(output_directory, "unclassified_cds_processing" if run_mode == 'unclassified_cds' else 'schema_processing') 
     identify_spurious_genes(schema_directory,
-                unclassified_cds_output,
+                output_directory,
                 allelecall_directory,
                 possible_new_loci,
                 constants,

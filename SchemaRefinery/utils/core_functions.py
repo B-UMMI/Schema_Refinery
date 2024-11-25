@@ -2071,7 +2071,7 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     - Finally, it writes the locus IDs and their drop reasons to the output file.
     """
     # Construct the output file path
-    drop_possible_loci_output: str = os.path.join(output_directory, 'drop_possible_new_loci.tsv')
+    drop_possible_loci_output: str = os.path.join(output_directory, 'drop_loci_reason.tsv')
     
     # Create a dictionary mapping locus IDs to their drop reasons
     locus_drop_reason: Dict[str, str] = {cds.split('_')[0]: reason 
@@ -2082,3 +2082,5 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
         drop_possible_loci_file.write('Possible_new_loci_ID\tDrop_Reason\n')
         for locus in drop_possible_loci:
             drop_possible_loci_file.write(f"{locus}\t{locus_drop_reason[locus]}\n")
+    
+    return drop_possible_loci_output
