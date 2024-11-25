@@ -103,7 +103,7 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     └── best_blast_matches.tsv
 
 Output files and folders description:
--------
+-------------------------------------
 
 **OutputFolderName**: The folder where the output files are stored.
 
