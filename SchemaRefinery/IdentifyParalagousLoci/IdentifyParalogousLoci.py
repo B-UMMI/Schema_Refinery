@@ -89,7 +89,7 @@ def identify_paralogous_loci(schema_directory: str,
     }
     blast_folder: str = os.path.join(output_directory, 'Blast')
     ff.create_directory(blast_folder)
-    translation_folder: str = os.path.join(output_directory, 'Translation')
+    translation_folder: str = os.path.join(blast_folder, 'Translation')
     ff.create_directory(translation_folder)
     # Total loci
     len_short_folder: int = len(fasta_files_dict)
@@ -104,7 +104,7 @@ def identify_paralogous_loci(schema_directory: str,
         query_fasta: str = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'rep' else fasta_files_dict[loci]
         fetch_size_fasta: str = fasta_files_dict[loci]
         # Translation variables
-        query_fasta_translation: str = os.path.join(translation_folder, f"{loci}-translation.fasta")
+        query_fasta_translation: str = os.path.join(translation_folder, f"{loci}_translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
         print(f"\rTranslated loci FASTA: {i}/{len_short_folder}", end='', flush=True)
@@ -117,9 +117,9 @@ def identify_paralogous_loci(schema_directory: str,
 
         # Calculate the mode of the lengths of the sequences
         if loci_allele_size:
-            all_loci_allele_size_stats[loci] = (min(loci_allele_size)/3,
-                                                max(loci_allele_size)/3,
-                                                statistics.mode(loci_allele_size)/3,
+            all_loci_allele_size_stats[loci] = (int(min(loci_allele_size)/3),
+                                                int(max(loci_allele_size)/3),
+                                                int(statistics.mode(loci_allele_size)/3),
                                                 statistics.mean(loci_allele_size)/3)
     
         # Get the fasta sequences for the query
@@ -217,6 +217,7 @@ def identify_paralogous_loci(schema_directory: str,
     
     paralogous_loci_report: str = os.path.join(output_directory, 'paralogous_loci_report.tsv')
     paralogous_list: List[Tuple[str, str]] = []
+    paralogous_list_check: List[Tuple[str, str]] = []
     # Write the report file with all of the paralogous loci results
     with open(paralogous_loci_report, 'w') as report_file:
         report_file.write("Query_loci_id\t"
@@ -234,13 +235,13 @@ def identify_paralogous_loci(schema_directory: str,
             for subject_loci_id, computed_score in subject_dict.items():
                 paralogous_list.append((query_loci_id, subject_loci_id))
 
-                if_loci_intersect = stats.if_loci_intersect([all_loci_allele_size_stats[query_loci_id][:2]],
-                                                        [all_loci_allele_size_stats[subject_loci_id][:2]])
+                if_loci_intersect = stats.if_loci_intersect(all_loci_allele_size_stats[query_loci_id][:2],
+                                                        all_loci_allele_size_stats[subject_loci_id][:2])
                 
                 if not if_loci_intersect:
-                    if_close_distance = stats.calculate_loci_distance([all_loci_allele_size_stats[query_loci_id][:3]],
-                                                                        [all_loci_allele_size_stats[subject_loci_id][:3]],
-                                                                        size_threshold)
+                    if_close_distance = stats.calculate_loci_distance(all_loci_allele_size_stats[query_loci_id][:3],
+                                                                    all_loci_allele_size_stats[subject_loci_id][:3],
+                                                                    size_threshold)
                 else:
                     if_close_distance = True
 
@@ -267,7 +268,7 @@ def identify_paralogous_loci(schema_directory: str,
 
     # Cluster the paralogous loci by id that passed the mode check and write the results to a file
     paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
-    paralogous_loci_report_mode: str = os.path.join(output_directory, 'paralogous_loci_report_mode.tsv')
+    paralogous_loci_report_mode: str = os.path.join(output_directory, 'paralogous_loci_report_passed_all_checks.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
         for cluster in paralogous_list_check:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")

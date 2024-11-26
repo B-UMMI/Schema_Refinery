@@ -408,7 +408,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     """
     
     # Self-score folder
-    self_score_folder: str = os.path.join(output_folder, 'self-score-folder')
+    self_score_folder: str = os.path.join(output_folder, 'self_score_folder')
     ff.create_directory(self_score_folder)
 
     self_score_dict: Dict[str, Any] = {}

@@ -642,7 +642,7 @@ def translate_schema_loci(schema_directory: str,
         reps_ids.setdefault(loci, []).extend(fasta_dict.keys())
         
         # Translate sequences and update translation dictionary
-        trans_path_file: str = os.path.join(reps_translations_folder, f"{loci}.fasta")
+        trans_path_file: str = os.path.join(reps_translations_folder, f"{loci}_translation.fasta")
         
         # Save translation paths
         translations_paths[loci] = trans_path_file

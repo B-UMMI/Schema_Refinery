@@ -1,5 +1,7 @@
-DownloadAssemblies - Download assemblies from specified databases
-===============================================================
+.. _DownloadAssemblies:
+
+DownloadAssemblies - Download assembliesand their metadata from specified databases
+====================================================================================
 
 Description
 -----------
@@ -109,71 +111,60 @@ Outputs
 -------
 Folder and file structure for the output directory of the `DownloadAssemblies` module is shown below. The output directory contains the following files and folders:
 .. code-block:: bash
+
     OutputFolderName
     ├── assemblies_ncbi.zip # -db NCBI --download
     ├── ena661k_assemblies # -db ENA661 --download
-        ├── x.contigs.fa.gz
-        ├── y.contigs.fa.gz
-        |── z.contigs.fa.gz
-        └── ...
+    │   ├── x.contigs.fa.gz
+    │   ├── y.contigs.fa.gz
+    │   ├── z.contigs.fa.gz
+    │   └── ...
     ├── metadata_all # -fm
-        |── biosamples_ids.tsv
-        |── id_matches.tsv
-        |── all_ids_fetched.tsv
-        └── metadata_biosamples.tsv
-    |── assemblies_metadata_ena661k.tsv # -db ENA661k
-    |── assemblies_metadata_ncbi.tsv # -db NCBI
+    │   ├── biosamples_ids.tsv
+    │   ├── id_matches.tsv
+    │   ├── all_ids_fetched.tsv
+    │   └── metadata_biosamples.tsv
+    ├── assemblies_metadata_ena661k.tsv # -db ENA661k
+    ├── assemblies_metadata_ncbi.tsv # -db NCBI
     ├── metadata_ncbi # -db NCBI --nocleanup
-        |── assemblies_ids_to_download.tsv
-        └── id_failed_criteria.tsv
+    │   ├── assemblies_ids_to_download.tsv
+    │   └── id_failed_criteria.tsv
     └── metadata_ena661k # -db ENA661k --nocleanup
-        |── assemblies_ids_to_download.tsv
-        |── failed_to_download.tsv
+        ├── assemblies_ids_to_download.tsv
+        ├── failed_to_download.tsv
         └── id_failed_criteria.tsv
 
 Output files and folders description:
+-------------------------------------
 
-**assemblies_ncbi.zip**
-    Zip file containing all the assemblies and extra information that user wants downloaded from NCBI.
+**OutputFolderName**: The folder where the output files are stored.
 
-**ena661k_assemblies:** Folder containing the assemblies downloaded from ENA661K.
-    **x.contigs.fa.gz**
-        Gzipped FASTA file containing the contigs for the assembly.
-    **y.contigs.fa.gz**
-        Gzipped FASTA file containing the contigs for the assembly.
-    **z.contigs.fa.gz**
-        Gzipped FASTA file containing the contigs for the assembly.
-    **...**
+    **assemblies_ncbi.zip**: Zip file containing all the assemblies and extra information that the user wants downloaded from NCBI.
 
-**metadata_all:** Folder containing all the metadata downloaded from NCBI and ENA661K.
-    **biosamples_ids.tsv**
-        TSV file containing the BioSample IDs for the assemblies.
-    **id_matches.tsv**
-        TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
-    **all_ids_fetched.tsv**
-        TSV file containing all the IDs fetched from the database.
-    **metadata_biosamples.tsv**
-        TSV file containing the metadata for the BioSamples.
+    **ena661k_assemblies**: Folder containing the assemblies downloaded from ENA661K.
+        **x.contigs.fa.gz**: Gzipped FASTA file containing the contigs for the assembly x.
+        **y.contigs.fa.gz**: Gzipped FASTA file containing the contigs for the assembly y.
+        **z.contigs.fa.gz**: Gzipped FASTA file containing the contigs for the assembly z.
+        **...**: Other gzipped FASTA files for the assemblies.
 
-**assemblies_metadata_ena661k.tsv**
-    TSV file containing the selected samples from the ENA661K database.
+    **metadata_all**: Folder containing all the metadata downloaded from NCBI and ENA661K.
+        **biosamples_ids.tsv**: TSV file containing the BioSample IDs for the assemblies.
+        **id_matches.tsv**: TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
+        **all_ids_fetched.tsv**: TSV file containing all the IDs fetched from the database.
+        **metadata_biosamples.tsv**: TSV file containing the metadata for the BioSamples.
 
-**assemblies_metadata_ncbi.tsv**
-    TSV file containing the metadata for the assemblies downloaded from NCBI.
+    **assemblies_metadata_ena661k.tsv**: TSV file containing the selected samples from the ENA661K database.
 
-**metadata_ncbi:** Folder containing metadata related NCBI run.
-    **assemblies_ids_to_download.tsv**
-        TSV file containing the assembly IDs to download.
-    **id_failed_criteria.tsv**
-        TSV file containing the assembly IDs that failed the filtering criteria.
+    **assemblies_metadata_ncbi.tsv**: TSV file containing the metadata for the assemblies downloaded from NCBI.
 
-**metadata_ena661k:** Folder containing metadata related to ENA661K run.
-    **assemblies_ids_to_download.tsv**
-        TSV file containing the assembly IDs to download.
-    **failed_to_download.tsv**
-        TSV file containing the assembly IDs that failed to download.
-    **id_failed_criteria.tsv**
-        TSV file containing the assembly IDs that failed the filtering criteria.
+    metadata_ncbi: Folder containing metadata related to the NCBI run.
+        assemblies_ids_to_download.tsv: TSV file containing the assembly IDs to download.
+        id_failed_criteria.tsv: TSV file containing the assembly IDs that failed the filtering criteria.
+
+    metadata_ena661k: Folder containing metadata related to the ENA661K run.
+        assemblies_ids_to_download.tsv: TSV file containing the assembly IDs to download.
+        failed_to_download.tsv: TSV file containing the assembly IDs that failed to download.
+        id_failed_criteria.tsv: TSV file containing the assembly IDs that failed the filtering criteria.
     
 Examples
 --------

@@ -24,12 +24,10 @@ SOCKET_TIMEOUT = 30
 # URL template for proteome download
 PROTEOME_TEMPLATE_URL = 'https://rest.uniprot.org/uniprotkb/stream?query=proteome:{0}&format=fasta&compressed=true'
 
+# DNA bases
+DNA_BASES = ['A', 'T', 'C', 'G']
+
 # Schema Refinery's default values
-GENBANK_CDS_QUALIFIERS_CHOICES = [
-    "db_xref", "note", "codon_start", "transl_table", "translation", 
-    "locus_tag", "function", "EC_number", "standard_name", "pseudo",
-    "operon", "old_locus_tag", "exception"
-]
 
 PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
 
