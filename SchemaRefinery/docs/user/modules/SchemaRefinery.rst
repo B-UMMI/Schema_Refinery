@@ -44,6 +44,11 @@ Current implementation of `SchemaRefinery` is available as a Python package avai
 
         python setup.py install
 
+7. **Verify Installation**: Verify the installation by running the following command:
+    
+        .. code-block:: bash
+    
+            SR --help
 
 Modules
 -------
