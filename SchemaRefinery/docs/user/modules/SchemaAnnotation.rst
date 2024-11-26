@@ -1,3 +1,5 @@
+.. _SchemaAnnotation:
+
 SchemaAnnotation - Annotate schemas in a directory
 ==================================================
 
