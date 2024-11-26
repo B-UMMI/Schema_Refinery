@@ -11,11 +11,12 @@ Modules
 
 The repository includes the following main modules:
 
-1. **IdentifyParalogousLoci**: Identifies paralogous loci in a schema.
-2. **IdentifySpuriousGenes**: Identifies spurious genes in a schema.
-3. **SchemaAnnotation**: Annotates schemas with additional information.
-4. **MatchSchemas**: Matches schemas in a directory.
-5. **DownloadAssemblies**: Downloads genomic assemblies from various databases.
+1. **:ref:`IdentifyParalogousLoci <identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
+2. **:ref:`IdentifySpuriousGenes <identify_spurious_genes>`**: Identifies spurious genes in a schema.
+3. **:ref:`SchemaAnnotation <schema_annotation>`**: Annotates schemas with additional information.
+4. **:ref:`MatchSchemas <match_schemas>`**: Matches schemas in a directory.
+5. **:ref:`DownloadAssemblies <download_assemblies>`**: Downloads genomic assemblies from various databases.
+6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in a schema.
 
 Dependencies
 ------------
@@ -24,42 +25,42 @@ Dependencies
 - Biopython library (`pip install biopython`)
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
 
-Usage
------
+Modules
+-------
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-### IdentifyParalogousLoci
+### :ref:`IdentifyParalogousLoci <identify_paralogous_loci>`
 
 .. code-block:: bash
 
     SR IdentifyParalogousLoci --help
 
-### IdentifySpuriousGenes
+### :ref:`IdentifySpuriousGenes <identify_spurious_genes>`
 
 .. code-block:: bash
 
     SR IdentifySpuriousGenes --help
 
-### SchemaAnnotation
+### :ref:`SchemaAnnotation <schema_annotation>`
 
 .. code-block:: bash
 
     SR SchemaAnnotation --help
 
-### MatchSchemas
+### :ref:`MatchSchemas <match_schemas>`
 
 .. code-block:: bash
 
     SR MatchSchemas --help
 
-### DownloadAssemblies
+### :ref:`DownloadAssemblies <download_assemblies>`
 
 .. code-block:: bash
 
     SR DownloadAssemblies --help
 
-### AdaptLoci
+### :ref:`AdaptLoci <adapt_loci>`
 
 .. code-block:: bash
 
