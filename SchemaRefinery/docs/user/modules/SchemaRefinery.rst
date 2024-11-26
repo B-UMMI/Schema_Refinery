@@ -6,6 +6,45 @@ Description
 
 The `SchemaRefinery` repository contains tools and modules for refining genomic schemas. These tools help in identifying paralogous loci, spurious genes, and annotating schemas. The repository supports various genomic data processing tasks and provides configurable parameters for different processes.
 
+Installation
+------------
+Current implementation of `SchemaRefinery` is available as a Python package available at `SchemaRefinery GitHub repository <https://github.com/MForofontov/Schema_Refinery>`_. To install the package, run the following command:
+
+1. **Install Python**: Ensure you have Python 3.9 or higher installed. You can download Python from the official website: https://www.python.org/downloads/
+
+2. **Install Git**: If you don't have Git installed, you can install it using the following command:
+
+    .. code-block:: bash
+
+        sudo apt-get install git # For Debian-based systems
+        sudo yum install git # For Red Hat-based systems
+        brew install git # For macOS
+
+3. **Clone the Repository**: Clone the `SchemaRefinery` repository from GitHub:
+
+    .. code-block:: bash
+
+        git clone https://github.com/MForofontov/Schema_Refinery.git # Clone the repository
+
+4. **Change Directory**: Navigate to the cloned repository:
+
+    .. code-block:: bash
+
+        cd Schema_Refinery # Change directory to the repository
+
+5. **Install Dependencies**: Install the required Python packages:
+
+    .. code-block:: bash
+
+        pip install biopython
+
+6. **Install the Package**: Install the `SchemaRefinery` package:
+    
+    .. code-block:: bash
+
+        python setup.py install
+
+
 Modules
 -------
 
@@ -21,7 +60,7 @@ The repository includes the following main modules:
 Dependencies
 ------------
 
-- Python 3.6 or higher
+- Python 3.9 or higher
 - Biopython library (`pip install biopython`)
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
 
