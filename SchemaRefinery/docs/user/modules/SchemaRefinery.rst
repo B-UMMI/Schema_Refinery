@@ -69,8 +69,8 @@ Dependencies
 - Biopython library (`pip install biopython`)
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
 
-Modules
--------
+Modules Usage
+-------------
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
@@ -109,3 +109,20 @@ Each module can be used independently by running the corresponding script with t
 .. code-block:: bash
 
     SR AdaptLoci --help
+
+Troubleshooting
+---------------
+
+If you encounter issues while using the modules, consider the following troubleshooting steps:
+
+- Verify that the paths to the schema, output, and other directories are correct.
+- Check the output directory for any error logs or messages.
+- Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- Ensure that you have a stable internet connection.
+
+if the issue persists, please report it to the development team using github issues.
+
+Contact Information
+-------------------
+
+For support or to report issues, please contact the development team at github issues in `SchemaRefinery GitHub repository <https://github.com/MForofontov/Schema_Refinery>`_.
