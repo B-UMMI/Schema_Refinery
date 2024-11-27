@@ -87,16 +87,16 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │   │   ├── blast_results_z.tsv
     │   │   └── ...
     │   ├── master_file.fasta
-    |   ├── Query_Translation
-    |   │   ├── query_translations_x.fasta
-    |   │   ├── query_translations_y.fasta
-    |   │   ├── query_translations_z.fasta
-    |   │   └── ...
+    │   ├── Query_Translation
+    │   │   ├── query_translations_x.fasta
+    │   │   ├── query_translations_y.fasta
+    │   │   ├── query_translations_z.fasta
+    │   │   └── ...
     │   ├── Subject_Translation
-    |   │   ├── subject_translations_x.fasta
-    |   │   ├── subject_translations_y.fasta
-    |   │   ├── subject_translations_z.fasta
-    |   │   └── ...
+    │   │   ├── subject_translations_x.fasta
+    │   │   ├── subject_translations_y.fasta
+    │   │   ├── subject_translations_z.fasta
+    │   │   └── ...
     │   └── self_score_folder
     │       ├── blast_results_x.tsv
     │       ├── blast_results_y.tsv
