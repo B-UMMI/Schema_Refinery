@@ -398,9 +398,9 @@ Report files description
     :widths: 15, 15, 20, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
 
     x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
-    #
+    #,
     x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
-    #
+    #,
     x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
     ...
 
@@ -432,16 +432,16 @@ columns description:
     Possible_new_loci_ID: The identifier for the possible new locus.
     Drop_Reason: The reason for dropping the locus.
 
-.. csv-table:: Recommendations
+.. csv-table:: **recommendations.tsv**
     :header: "Recommendation", "ID"
     :widths: 20, 80
 
     Joined_x, x,y,z
     Choice, x,u,t
     Drop, j
-    #,
+    #, ""
     Joined_a, a,b,c
-    #,
+    #, ""
     Drop, k
     ...
 
