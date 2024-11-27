@@ -91,7 +91,7 @@ Examples
 
 Here are some example commands to use the `AdaptLoci` module:
 
-.. code-block:: bash
+::
 
     # Adapt loci using default parameters
     SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output
