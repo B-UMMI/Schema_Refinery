@@ -407,6 +407,7 @@ Report files description
 columns description:
 
 ::
+
     Query: The query locus.
     Subject: The subject locus.
     1a-5: The count of the loci in the cluster, interpret the values as this, for x query and y subject class 1a '378|1024|-|1024', x has 378 matches out of 1024 to y that are class 1a and while y has no matches '-' out of 1024 to x.
@@ -431,7 +432,6 @@ columns description:
     Possible_new_loci_ID: The identifier for the possible new locus.
     Drop_Reason: The reason for dropping the locus.
 
-
 .. csv-table:: **recommendations.tsv**
     :header: "Recommendation", "ID"
     :widths: 20, 20
@@ -451,7 +451,6 @@ columns description:
 
     Recommendation: The type of recommendation (e.g., Joined, Choice, Drop).
     ID: A comma-separated list of identifiers for the loci that are recommended.
-
 
 .. csv-table:: **related_matches.tsv**
     :header: "Query", "Subject", "Class", "Class_count", "Inverse_class", "Inverse_class_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject", "alleles_used_to_blast_count", "alleles_blasted_against_count"
