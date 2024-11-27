@@ -146,6 +146,7 @@ Report files description
 **paralogous_loci_report.tsv**
 
 ::
+
     Query_loci_id                Subject_loci_id               BSR                  if_loci_intersect  if_close_distance  Loci_min_allele_size  Loci_max_allele_size  Loci_mode_allele_size  Loci_mean_allele_size
     x                            y                             0.7360028348688873   False              False              416.0|1349.0          544.0|1645.0          515.0|1628.0            476.75|1615.125
     x                            z                             0.6146651702207258   False              True               416.0|599.0           544.0|738.0           515.0|738.0             476.75|720.625
