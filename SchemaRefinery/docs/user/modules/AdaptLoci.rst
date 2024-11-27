@@ -35,23 +35,25 @@ The `AdaptLoci` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--i, --input_file
-    (Required) TSV file with the loci path to be adapted.
+::
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -i, --input_file
+        (Required) TSV file with the loci path to be adapted.
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
+
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
 Outputs
 -------

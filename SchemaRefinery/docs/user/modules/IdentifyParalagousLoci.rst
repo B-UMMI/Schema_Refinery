@@ -33,36 +33,37 @@ The `IdentifyParalogousLoci` module can be used as follows:
 
 Command-Line Arguments
 ----------------------
+::
 
--s, --schema-directory
-    (Required) Folder that contains the schema to identify paralogous loci.
+    -s, --schema-directory
+        (Required) Folder that contains the schema to identify paralogous loci.
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
--st, --size_threshold
-    (Optional) Size threshold to consider two paralogous loci as similar.
-    Default: 0.2
+    -st, --size_threshold
+        (Optional) Size threshold to consider two paralogous loci as similar.
+        Default: 0.2
 
--pm, --processing-mode
-    (Optional) Mode to run the module.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: alleles_vs_alleles
+    -pm, --processing-mode
+        (Optional) Mode to run the module.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: alleles_vs_alleles
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------

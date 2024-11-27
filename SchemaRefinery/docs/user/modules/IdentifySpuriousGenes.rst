@@ -34,69 +34,71 @@ The `IdentifySpuriousGenes` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--s, --schema-directory
-    (Required) Path to the created schema directory.
+::
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -s, --schema-directory
+        (Required) Path to the created schema directory.
 
--a, --allelecall-directory
-    (Required) Path to the directory that contains allele call directory that was run with --no-cleanup.
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--pnl, --possible-new-loci
-    (Optional) Path to the directory that contains possible new loci.
+    -a, --allelecall-directory
+        (Required) Path to the directory that contains allele call directory that was run with --no-cleanup.
 
--at, --alignment_ratio_threshold
-    (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
-    Default: 0.9
+    -pnl, --possible-new-loci
+        (Optional) Path to the directory that contains possible new loci.
 
--pt, --pident_threshold
-    (Optional) Threshold value for pident values used to identify spurious CDS (int 0-100).
-    Default: 90
+    -at, --alignment_ratio_threshold
+        (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
+        Default: 0.9
 
--cs, --clustering-sim
-    (Optional) Similarity value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -pt, --pident_threshold
+        (Optional) Threshold value for pident values used to identify spurious CDS (int 0-100).
+        Default: 90
 
--cc, --clustering-cov
-    (Optional) Coverage value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -cs, --clustering-sim
+        (Optional) Similarity value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--gp, --genome_presence
-    (Optional) The minimum number of genomes specific cluster of CDS must be present in order to be considered.
+    -cc, --clustering-cov
+        (Optional) Coverage value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--as, --absolute_size
-    (Optional) Size of the CDS to consider processing.
-    Default: 201
+    -gp, --genome_presence
+        (Optional) The minimum number of genomes specific cluster of CDS must be present in order to be considered.
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -as, --absolute_size
+        (Optional) Size of the CDS to consider processing.
+        Default: 201
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
--sr, --size_ratio
-    (Optional) Size ratio to consider alleles as the same locus.
-    Default: 0.8
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
 
--m, --run-mode
-    (Optional) Run mode for identifying spurious loci.
-    Choices: unclassified_cds, schema
-    Default: schema
+    -sr, --size_ratio
+        (Optional) Size ratio to consider alleles as the same locus.
+        Default: 0.8
 
--pm, --processing-mode
-    (Optional) Mode to run the module.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: reps_vs_alleles
+    -m, --run-mode
+        (Optional) Run mode for identifying spurious loci.
+        Choices: unclassified_cds, schema
+        Default: schema
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -pm, --processing-mode
+        (Optional) Mode to run the module.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: reps_vs_alleles
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
+
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------

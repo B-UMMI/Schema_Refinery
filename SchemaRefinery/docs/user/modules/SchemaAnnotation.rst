@@ -34,84 +34,86 @@ The `SchemaAnnotation` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--s, --schema-directory
-    (Required) Path to the schema's directory.
+::
 
--o, --output-directory
-    (Required) Path to the output directory where to save the files.
+    -s, --schema-directory
+        (Required) Path to the schema's directory.
 
--ao, --annotation-options
-    (Required) Annotation options to run.
-    Choices: uniprot-proteomes, genbank-files, match-schemas.
+    -o, --output-directory
+        (Required) Path to the output directory where to save the files.
 
--pt, --proteome-table
-    (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
+    -ao, --annotation-options
+        (Required) Annotation options to run.
+        Choices: uniprot-proteomes, genbank-files, match-schemas.
 
--gf, --genbank-files
-    (Optional) Path to the directory that contains Genbank files with annotations to extract.
+    -pt, --proteome-table
+        (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
 
--ca, --chewie-annotations
-    (Optional) File with the results from chewBBACA UniprotFinder module.
+    -gf, --genbank-files
+        (Optional) Path to the directory that contains Genbank files with annotations to extract.
 
--ss, --subject-schema
-    (Optional) Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.
+    -ca, --chewie-annotations
+        (Optional) File with the results from chewBBACA UniprotFinder module.
 
---bsr
-    (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus.
-    Default: 0.6
+    -ss, --subject-schema
+        (Optional) Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.
 
--t, --threads
-    (Optional) Number of threads for concurrent download.
-    Default: 1
+    --bsr
+        (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus.
+        Default: 0.6
 
--c, --cpu
-    (Optional) Number of CPU cores for multiprocessing.
-    Default: 1
+    -t, --threads
+        (Optional) Number of threads for concurrent download.
+        Default: 1
 
--r, --retry
-    (Optional) Maximum number of retries when a download fails.
-    Default: 7
+    -c, --cpu
+        (Optional) Number of CPU cores for multiprocessing.
+        Default: 1
 
--tt, --translation-table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -r, --retry
+        (Optional) Maximum number of retries when a download fails.
+        Default: 7
 
--cs, --clustering-sim
-    (Optional) Similarity value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -tt, --translation-table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
--cc, --clustering-cov
-    (Optional) Coverage value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -cs, --clustering-sim
+        (Optional) Similarity value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--sr, --size_ratio
-    (Optional) Size ratio to consider alleles as the same locus.
-    Default: 0.8
+    -cc, --clustering-cov
+        (Optional) Coverage value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--rm, --run-mode
-    (Optional) Mode to run the module.
-    Choices: reps, alleles.
-    Default: reps
+    -sr, --size_ratio
+        (Optional) Size ratio to consider alleles as the same locus.
+        Default: 0.8
 
--pm, --processing-mode
-    (Optional) Mode to run the module for Schema match.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: None
+    -rm, --run-mode
+        (Optional) Mode to run the module.
+        Choices: reps, alleles.
+        Default: reps
 
--egtc, --extra_genbank_table_columns
-    (Optional) List of columns to add to annotation file.
-    Default: []
+    -pm, --processing-mode
+        (Optional) Mode to run the module for Schema match.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: None
 
--gia, --genbank-ids-to-add
-    (Optional) List of GenBank IDs to add to final results.
-    Default: []
+    -egtc, --extra_genbank_table_columns
+        (Optional) List of columns to add to annotation file.
+        Default: []
 
--pia, --proteome-ids-to-add
-    (Optional) List of Proteome IDs to add to final results.
-    Default: []
+    -gia, --genbank-ids-to-add
+        (Optional) List of GenBank IDs to add to final results.
+        Default: []
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    -pia, --proteome-ids-to-add
+        (Optional) List of Proteome IDs to add to final results.
+        Default: []
+
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------
