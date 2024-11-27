@@ -395,7 +395,7 @@ Report files description
 
 .. csv-table:: **count_results_by_cluster.tsv**
     :header: "Query", "Subject", "1a", "1b", "2a", "3a", "2b", "1c", "3b", "4a", "4b", "4c", "5", "Representatives_count", "Alelles_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject"
-    :widths: 15, 15, 15, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
+    :widths: 15, 15, 20, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
 
     x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
     #
@@ -430,6 +430,7 @@ columns description:
 
     Possible_new_loci_ID: The identifier for the possible new locus.
     Drop_Reason: The reason for dropping the locus.
+
 
 .. csv-table:: **recommendations.tsv**
     :header: "Recommendation", "ID"
