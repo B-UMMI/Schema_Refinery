@@ -1079,7 +1079,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     # Write the recommendations to the output file
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
     with open(recommendations_file_path, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Recommendation\tID\n")
+        recommendations_report_file.write("Recommendation\tIDs\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
                 category = category.split('_')[0] if 'Choice' in category else category

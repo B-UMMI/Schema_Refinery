@@ -433,7 +433,7 @@ columns description:
     Drop_Reason: The reason for dropping the locus.
 
 .. csv-table:: **recommendations.tsv**
-    :header: "Recommendation", "ID"
+    :header: "Recommendation", "IDs"
     :widths: 20, 80
 
     Joined_x, "x,y,z"
@@ -450,7 +450,7 @@ columns description:
 ::
 
     Recommendation: The type of recommendation (e.g., Joined, Choice, Drop).
-    ID: A comma-separated list of identifiers for the loci that are recommended.
+    IDs: A comma-separated list of identifiers for the loci that are recommended.
 
 .. csv-table:: **related_matches.tsv**
     :header: "Query", "Subject", "Class", "Class_count", "Inverse_class", "Inverse_class_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject", "alleles_used_to_blast_count", "alleles_blasted_against_count"
