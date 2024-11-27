@@ -203,7 +203,7 @@ Since there are two run modes, the output directory structure will vary based on
     │   │       ├── blast_results_x.tsv
     │   │       ├── blast_results_y.tsv
     │   │       └── ...
-    │   └── 2_BLASTp_processing
+    │   ├── 2_BLASTp_processing
     │       ├── blastn_results_matches_translations
     │       │   ├── cluster_matches_translation_x.tsv
     │       │   ├── cluster_matches_translation_y.tsv
