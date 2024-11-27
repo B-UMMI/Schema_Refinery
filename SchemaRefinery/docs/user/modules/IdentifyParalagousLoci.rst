@@ -143,16 +143,14 @@ Output files and folders description:
 Report files description
 ------------------------
 
-**paralogous_loci_report.tsv**:
-This files contains all matches between loci with over X of BSR. The columns in the file are as follows:
+.. csv-table:: **paralogous_loci_report.tsv**
+   :header: "Query_loci_id", "Subject_loci_id", "BSR", "if_loci_intersect", "if_close_distance", "Loci_min_allele_size", "Loci_max_allele_size", "Loci_mode_allele_size", "Loci_mean_allele_size"
+   :widths: 20, 20, 10, 10, 10, 20, 20, 20, 20
 
-::
-
-    Query_loci_id                Subject_loci_id               BSR                  if_loci_intersect  if_close_distance  Loci_min_allele_size  Loci_max_allele_size  Loci_mode_allele_size  Loci_mean_allele_size
-    x                            a                             0.7360028348688873   False              False              416.0|1349.0          544.0|1645.0          515.0|1628.0            476.75|1615.125
-    x                            b                             0.6146651702207258   False              True               416.0|599.0           544.0|738.0           515.0|738.0             476.75|720.625
-    x                            c                             0.6523642732049036   True               True               416.0|466.0           544.0|547.0           515.0|547.0             476.75|512.5714285714286
-    ...
+   x, a, 0.7360028348688873, False, False, 416.0|1349.0, 544.0|1645.0, 515.0|1628.0, 476.75|1615.125
+   x, b, 0.6146651702207258, False, True, 416.0|599.0, 544.0|738.0, 515.0|738.0, 476.75|720.625
+   x, c, 0.6523642732049036, True, True, 416.0|466.0, 544.0|547.0, 515.0|547.0, 476.75|512.5714285714286
+   ...
 
 columns description:
 
@@ -167,32 +165,25 @@ columns description:
     Loci_mode_allele_size: The mode allele size of the loci, query and subject values are separated by '|'.
     Loci_mean_allele_size: The mean allele size of the loci, query and subject values are separated by '|'.
 
-**paralogous_loci_report_cluster_by_id.tsv**
+.. csv-table:: **paralogous_loci_report_cluster_by_id.tsv**
+   :header: "Joined_loci_id", "Clustered_loci_ids"
+   :widths: 20, 80
 
-::
-
-    Joined_loci_id                Clustered_loci_ids
-    x                             x,a,b,c
-    #	
-    y                             y,d,e,f
-    #	
-    z                             z,g,h
-    ...
+   x, x,a,b,c
+   y, y,d,e,f
+   z, z,g,h
+   ...
 
 columns description:
 
+.. csv-table:: **paralogous_loci_report_passed_all_checks.tsv**
+   :header: "Joined_loci_id", "Clustered_loci_ids"
+   :widths: 20, 80
 
-**paralogous_loci_report_passed_all_checks.tsv**:
-
-::
-
-        Joined_loci_id                Clustered_loci_ids
-        x                             x,b,c
-        #	
-        y                             y,d
-        #	
-        z                             z,h
-        ...
+   x, x,b,c
+   y, y,d
+   z, z,h
+   ...
 
 Examples
 --------

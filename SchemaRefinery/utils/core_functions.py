@@ -1124,7 +1124,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
         related_matches_file.write("Query\tSubject\tClass\tClass_count" +
                                     ("\tInverse_class\tInverse_class_count" if reverse_matches else "") +
                                     "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject"
-                                    "\tRepresentatives_count\tAlelles_count\n")
+                                    "\alleles_used_to_blast_count\alleles_blasted_against_count\n")
         for related in related_clusters.values():
             for r in related:
                 related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
@@ -1138,8 +1138,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
         count_results_by_cluster_file.write("Query"
                                             "\tSubject"
                                             f"\t{tab.join(classes_outcome)}"
-                                            "\tRepresentatives_count"
-                                            "\tAlelles_count"
+                                            "\alleles_used_to_blast_count"
+                                            "\alleles_blasted_against_count"
                                             "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class.items():

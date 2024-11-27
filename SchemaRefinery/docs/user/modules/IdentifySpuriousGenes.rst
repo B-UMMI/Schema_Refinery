@@ -393,15 +393,91 @@ OutputFolderName: The folder where the output files are stored.
 Report files description
 ------------------------
 
-**count_results_by_cluster.tsv**:
+.. csv-table:: **count_results_by_cluster.tsv**
+    :header: "Query", "Subject", "1a", "1b", "2a", "3a", "2b", "1c", "3b", "4a", "4b", "4c", "5", "Representatives_count", "Alelles_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject"
+    :widths: 15, 15, 15, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
 
-.. csv-table:: Count Results by Cluster
-   :header: "Query", "Subject", "1a", "1b", "2a", "3a", "2b", "1c", "3b", "4a", "4b", "4c", "5", "Representatives_count", "Alelles_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject"
-   :widths: 15, 15, 10, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
+    x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
+    #
+    x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
+    #
+    x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
+    ...
 
-   x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
-   x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
-   x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
+columns description:
+
+::
+    Query: The query locus.
+    Subject: The subject locus.
+    1a-5: The count of the loci in the cluster, interpret the values as this, for x query and y subject class 1a '378|1024|-|1024', x has 378 matches out of 1024 to y that are class 1a and while y has no matches '-' out of 1024 to x.
+    alleles_used_to_blast_count: The count of alleles used to blast.
+    alleles_blasted_against_count: The count of alleles blasted against.
+    Frequency_in_genomes_query: The frequency of the query locus in genomes.
+    Frequency_in_genomes_subject: The frequency of the subject locus in genomes.
+
+.. csv-table:: **drop_loci_reason.tsv**
+    :header: "Possible_new_loci_ID", "Drop_Reason"
+    :widths: 40, 60
+
+    x, Dropped_due_to_smaller_genome_presence_than_matched_cluster
+    y, Dropped_due_to_smaller_genome_presence_than_matched_cluster
+    z, Dropped_due_to_smaller_genome_presence_than_matched_cluster
+    ...
+
+columns description:
+
+::
+
+    Possible_new_loci_ID: The identifier for the possible new locus.
+    Drop_Reason: The reason for dropping the locus.
+
+.. csv-table:: **recommendations.tsv**
+    :header: "Recommendation", "ID"
+    :widths: 20, 80
+
+    Joined_x, x,y,z,
+    Choice, x,u,t
+    Drop, j
+    #,
+    Joined_a, a,b,c
+    #,
+    ...
+
+columns description:
+
+::
+
+    Recommendation: The type of recommendation (e.g., Joined, Choice, Drop).
+    ID: A comma-separated list of identifiers for the loci that are recommended.
+
+
+.. csv-table:: **count_results_by_cluster.tsv**
+    :header: "Query", "Subject", "Class", "Class_count", "Inverse_class", "Inverse_class_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject", "alleles_used_to_blast_count", "alleles_blasted_against_count"
+    :widths: 20, 20, 10, 10, 10, 10, 20, 20, 20, 20
+
+    x, y, 1a, 378/1024, 1c, 1024/1024, 223, 133, 16|64, 16|64
+    x, z, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
+    x, w, 1a, 6/224, 1a, 1/224, 223, 221, 16|14, 16|14
+    #
+    a, b, 1a, 378/1024, 1c, 1024/1024, 223, 133, 16|64, 16|64
+    a, c, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
+    #
+    ...
+    
+columns description:
+
+::
+    
+    Query: The query locus.
+    Subject: The subject locus.
+    Class: The best class of the matches for that loci.
+    Class_count: The count of matches of the loci in the class.
+    Inverse_class: The best class of the inverse match for those loci.
+    Inverse_class_count: The count of inverse matches of the loci in that class.
+    Frequency_in_genomes_query: The frequency of the query locus in genomes.
+    Frequency_in_genomes_subject: The frequency of the subject locus in genomes.
+    alleles_used_to_blast_count: The count of alleles used to blast.
+    alleles_blasted_against_count: The count of alleles blasted against.
 
 Examples
 --------
