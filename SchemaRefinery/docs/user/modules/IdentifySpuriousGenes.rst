@@ -105,7 +105,6 @@ Folder and file structure for the output directory of the `IdentifySpuriousGenes
 Since there are two run modes, the output directory structure will vary based on the run mode selected.
 
 **For --run-mode schema:**
-.. code-block:: bash
 
 .. code-block:: bash
 
@@ -181,6 +180,7 @@ Since there are two run modes, the output directory structure will vary based on
     └── related_matches.tsv
 
 **For --run-mode unclassified_cds:**
+
 .. code-block:: bash
 
     OutputFolderName
