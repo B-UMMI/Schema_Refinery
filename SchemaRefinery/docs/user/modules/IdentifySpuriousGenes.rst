@@ -434,7 +434,7 @@ columns description:
 
 .. csv-table:: **recommendations.tsv**
     :header: "Recommendation", "ID"
-    :widths: 20, 80
+    :widths: 20, 20
 
     Joined_x, x,y,z
     Choice, x,u,t
@@ -453,7 +453,7 @@ columns description:
     ID: A comma-separated list of identifiers for the loci that are recommended.
 
 
-.. csv-table:: **count_results_by_cluster.tsv**
+.. csv-table:: **related_matches.tsv**
     :header: "Query", "Subject", "Class", "Class_count", "Inverse_class", "Inverse_class_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject", "alleles_used_to_blast_count", "alleles_blasted_against_count"
     :widths: 20, 20, 10, 10, 10, 10, 20, 20, 20, 20
 
@@ -463,7 +463,6 @@ columns description:
     #
     a, b, 1a, 378/1024, 1c, 1024/1024, 223, 133, 16|64, 16|64
     a, c, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
-    #
     ...
     
 columns description:
