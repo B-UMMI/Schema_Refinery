@@ -68,7 +68,7 @@ Outputs
 -------
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── Blast # --nocleanup

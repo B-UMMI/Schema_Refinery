@@ -106,7 +106,7 @@ Since there are two run modes, the output directory structure will vary based on
 
 **For --run-mode schema:**
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── 1_schema_processing # --nocleanup
@@ -181,7 +181,7 @@ Since there are two run modes, the output directory structure will vary based on
 
 **For --run-mode unclassified_cds:**
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── 1_CDS_processing # --nocleanup

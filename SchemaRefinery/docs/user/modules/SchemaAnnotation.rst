@@ -117,7 +117,7 @@ Outputs
 -------
 Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── genbank_annotations # --nocleanup -ao genbank-files -gf path/to/genbank/files

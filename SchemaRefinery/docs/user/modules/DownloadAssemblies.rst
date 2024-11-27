@@ -89,21 +89,22 @@ Command-Line Arguments
 Filtering criteria example
 --------------------------
 Filtering criteria file should be a TSV file with the following columns:
+
 .. code-block:: tsv
 
-    abundance\t0.8
-    genome_size\t2000000
-    size_threshold\t0.2
-    max_contig_number\t150
-    known_st\tFalse
-    any_quality\tFalse
-    ST_list_path\tNone
-    assembly_level\tchromosome,complete,contig,scaffold
-    reference\tFalse
-    assembly_source\tall
-    file_to_include\tgenome,gbff
-    verify_status\tTrue
-    exclude_atypical\tTrue
+    abundance   0.8
+    genome_size 2000000
+    size_threshold  0.2
+    max_contig_number   150
+    known_st    False
+    any_quality False
+    ST_list_path    None
+    assembly_level  chromosome,complete,contig,scaffold
+    reference   False
+    assembly_source all
+    file_to_include genome,gbff
+    verify_status   True
+    exclude_atypical    True
 
 Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
 
@@ -111,7 +112,7 @@ Outputs
 -------
 Folder and file structure for the output directory of the `DownloadAssemblies` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── assemblies_ncbi.zip # -db NCBI --download

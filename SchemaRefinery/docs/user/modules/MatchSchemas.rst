@@ -34,40 +34,42 @@ The `MatchSchemas` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--qs, --query-schema-directory
-    (Required) Folder that contains the query schema.
+::
 
--ss, --subject-schema-directory
-    (Required) Folder that contains the subject schema.
+    -qs, --query-schema-directory
+        (Required) Folder that contains the query schema.
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -ss, --subject-schema-directory
+        (Required) Folder that contains the subject schema.
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
 
--pm, --processing-mode
-    (Optional) Mode to run the module.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: alleles_vs_alleles
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    -pm, --processing-mode
+        (Optional) Mode to run the module.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: alleles_vs_alleles
+
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------
 Folder and file structure for the output directory of the `MatchSchemas` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── Blast # --nocleanup
