@@ -436,12 +436,13 @@ columns description:
     :header: "Recommendation", "ID"
     :widths: 20, 80
 
-    Joined_x, x,y,z,
+    Joined_x, x,y,z
     Choice, x,u,t
     Drop, j
-    #,
+    #
     Joined_a, a,b,c
-    #,
+    #
+    Drop, k
     ...
 
 columns description:
