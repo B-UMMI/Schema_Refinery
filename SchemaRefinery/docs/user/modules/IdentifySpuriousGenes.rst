@@ -432,16 +432,16 @@ columns description:
     Possible_new_loci_ID: The identifier for the possible new locus.
     Drop_Reason: The reason for dropping the locus.
 
-.. csv-table:: **recommendations.tsv**
+.. csv-table:: Recommendations
     :header: "Recommendation", "ID"
-    :widths: 20, 20
+    :widths: 20, 80
 
     Joined_x, x,y,z
     Choice, x,u,t
     Drop, j
-    #
+    #,
     Joined_a, a,b,c
-    #
+    #,
     Drop, k
     ...
 
