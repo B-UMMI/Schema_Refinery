@@ -260,9 +260,11 @@ def identify_paralogous_loci(schema_directory: str,
                     paralogous_list_check.append((query_loci_id, subject_loci_id))
 
     # Cluster the paralogous loci by id and write the results to a file
+    header: str = "Joined_loci_id\Clustered_loci_ids\n"
     paralogous_list = cf.cluster_by_ids(paralogous_list)
     paralogous_loci_report_cluster_by_id: str = os.path.join(output_directory, 'paralogous_loci_report_cluster_by_id.tsv')
     with open(paralogous_loci_report_cluster_by_id, 'w') as report_file:
+        report_file.write(header)
         for cluster in paralogous_list:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 
@@ -270,6 +272,7 @@ def identify_paralogous_loci(schema_directory: str,
     paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
     paralogous_loci_report_mode: str = os.path.join(output_directory, 'paralogous_loci_report_passed_all_checks.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
+        report_file.write(header)
         for cluster in paralogous_list_check:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 

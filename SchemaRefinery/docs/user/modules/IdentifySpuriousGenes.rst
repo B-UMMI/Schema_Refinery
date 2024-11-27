@@ -390,6 +390,19 @@ OutputFolderName: The folder where the output files are stored.
         **...**: Other temporary FASTA files.
     **temp_fastas_path.txt**: Text file containing paths to temporary FASTA files.
 
+Report files description
+------------------------
+
+**count_results_by_cluster.tsv**:
+
+.. csv-table:: Count Results by Cluster
+   :header: "Query", "Subject", "1a", "1b", "2a", "3a", "2b", "1c", "3b", "4a", "4b", "4c", "5", "Representatives_count", "Alelles_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject"
+   :widths: 15, 15, 10, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
+
+   x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
+   x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
+   x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
+
 Examples
 --------
 
