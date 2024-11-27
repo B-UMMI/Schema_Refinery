@@ -107,6 +107,8 @@ Since there are two run modes, the output directory structure will vary based on
 **For --run-mode schema:**
 .. code-block:: bash
 
+.. code-block:: bash
+
     OutputFolderName
     ├── 1_schema_processing # --nocleanup
     │   ├── master.fasta
@@ -157,16 +159,22 @@ Since there are two run modes, the output directory structure will vary based on
     │           ├── blast_results_y.tsv
     │           └── ...
     ├── 3_processing_results # --nocleanup
-    │   └── blast_results
-    │       ├── blast_all_matches.tsv
-    │       ├── blast_by_cluster
-    │       │   ├── cluster_x.tsv
-    │       │   ├── cluster_y.tsv
-    │       │   └── ...
-    │       └── blast_results_by_class
-    │           ├── class_1.tsv
-    │           ├── class_2.tsv
-    │           └── ...
+    │   ├── blast_results
+    │   │   ├── blast_all_matches.tsv
+    │   │   ├── blast_by_cluster
+    │   │   │   ├── cluster_x.tsv
+    │   │   │   ├── cluster_y.tsv
+    │   │   │   └── ...
+    │   │   └── blast_results_by_class
+    │   │       ├── class_1.tsv
+    │   │       ├── class_2.tsv
+    │   │       └── ...
+    │   ├── cds_id_changes.tsv
+    │   ├── dropped_cds.tsv
+    │   └── Graph_folder
+    │       ├── All_of_CDS_graphs.html
+    │       ├── graphs_class_1a.html
+    │       └── ...
     ├── count_results_by_cluster.tsv
     ├── drop_loci_reason.tsv
     ├── recommendations.tsv
