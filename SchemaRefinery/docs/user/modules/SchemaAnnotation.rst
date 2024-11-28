@@ -387,16 +387,16 @@ columns description:
 ::
 
     Locus: The locus from the query schema.
-    Protein_ID: The identifier for the protein.
-    Protein_product: The product of the protein.
-    Protein_short_name: The short name of the protein.
-    BSR: The BLAST Score Ratio for the protein.
-    genebank_origin_id: The GenBank origin ID.
-    genebank_origin_product: The product of the GenBank origin.
-    genebank_origin_name: The name of the GenBank origin.
-    BSR_best_genbank_annotations: The BSR value for the best GenBank annotations.
-    Best Match: The best match for the locus.
-    BSR_best_blast_matches: The BSR value for the best BLAST matches.
+    Uniprot_protein_ID: The identifier for the protein.
+    Uniprot_protein_product: The product of the protein.
+    Uniprot_protein_short_name: The short name of the protein.
+    Uniprot_BSR: The BLAST Score Ratio for the protein.
+    genebank_ID: The GenBank origin ID.
+    genebank_product: The product of the GenBank origin.
+    genebank_name: The name of the GenBank origin.
+    genebank_BSR: The BSR value for the best GenBank annotations.
+    best_matched_loci: The best match for the locus.
+    best_matched_loci_BSR: The BSR value for the best BLAST matches.
 
 Examples
 --------
