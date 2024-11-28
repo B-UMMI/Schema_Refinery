@@ -146,6 +146,27 @@ Output files and folders description:
 
     **best_blast_matches.tsv**: TSV file containing the best BLAST matches for the query and subject schemas.
 
+Report files description
+------------------------
+
+.. csv-table:: **best_blast_matches.tsv**
+    :header: "Locus", "Best Match", "BSR"
+    :widths: 30, 30, 10
+
+    x, y, 0.8
+    z, a, 1.0
+    b, c, 0.965
+    d, e, 0.94
+    ...
+
+columns description:
+
+::
+    
+    Locus: The locus from the query schema.
+    Best Match: The best match for the locus from the subject schema.
+    BSR: The BSR value for the best match.
+
 Examples
 --------
 
