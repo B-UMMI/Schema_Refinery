@@ -479,6 +479,14 @@ columns description:
     alleles_used_to_blast_count: The count of alleles used to blast.
     alleles_blasted_against_count: The count of alleles blasted against.
 
+**temp_fastas_path.txt**:
+::
+
+    /path/to/temp_fastas/cluster_x.fasta
+    /path/to/temp_fastas/cluster_y.fasta
+    /path/to/temp_fastas/cluster_z.fasta
+    ...
+
 Examples
 --------
 
