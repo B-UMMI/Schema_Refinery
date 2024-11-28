@@ -119,4 +119,4 @@ if the issue persists, please report it to the development team using github iss
 
 ## Contact Information
 
-For support or to report issues, please contact the development team at GitHub issues in [SchemaRefinery GitHub repository](https://github.com/MForofontov/Schema_Refinery).
+For support or to report issues, please contact the development team at GitHub issues in [SchemaRefinery GitHub repository](https://github.com/B-UMMI/Schema_Refinery).
