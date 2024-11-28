@@ -60,7 +60,7 @@ The repository includes the following main modules:
 3. **:ref:`SchemaAnnotation <schema_annotation>`**: Annotates schemas with additional information.
 4. **:ref:`MatchSchemas <match_schemas>`**: Matches schemas in a directory.
 5. **:ref:`DownloadAssemblies <download_assemblies>`**: Downloads genomic assemblies from various databases.
-6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in a schema.
+6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in fasta format to a schema format.
 
 Dependencies
 ------------

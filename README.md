@@ -57,7 +57,7 @@ The repository includes the following main modules:
 3. **[SchemaAnnotation](#schemaannotation)**: Annotates schemas with additional information.
 4. **[MatchSchemas](#matchschemas)**: Matches schemas in a directory.
 5. **[DownloadAssemblies](#downloadassemblies)**: Downloads genomic assemblies from various databases.
-6. **[AdaptLoci](#adaptloci)**: Adapts loci in a schema.
+6. **[AdaptLoci](#adaptloci)**: Adapts loci in fasta format to a schema format.
 
 ## Dependencies
 
