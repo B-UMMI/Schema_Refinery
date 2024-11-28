@@ -122,6 +122,22 @@ If you encounter issues while using the modules, consider the following troubles
 
 if the issue persists, please report it to the development team using github issues.
 
+Contributing
+------------
+
+We welcome contributions to the SchemaRefinery project. If you would like to contribute, please follow these steps:
+
+1. Fork the repository on GitHub.
+2. Create a new branch for your feature or bugfix.
+3. Make your changes and commit them with a clear message.
+4. Push your changes to your forked repository.
+5. Create a pull request to the main repository.
+
+License
+-------
+
+This project is licensed under the MIT License. See the `LICENSE <https://opensource.org/license/mit>`_ file for details.
+
 Contact Information
 -------------------
 
