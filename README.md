@@ -6,7 +6,7 @@ The `SchemaRefinery` repository contains tools and modules for refining genomic 
 
 ## Installation
 
-Current implementation of `SchemaRefinery` is available as a Python package available at [SchemaRefinery GitHub repository](https://github.com/MForofontov/Schema_Refinery). To install the package, run the following command:
+Current implementation of `SchemaRefinery` is available as a Python package available at [SchemaRefinery GitHub repository](https://github.com/B-UMMI/Schema_Refinery). To install the package, run the following command:
 
 1. **Install Python**: Ensure you have Python 3.9 or higher installed. You can download Python from the [official website](https://www.python.org/downloads/).
 
