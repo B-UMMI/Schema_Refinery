@@ -1050,16 +1050,16 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
                 if not if_query_dropped and not if_subject_dropped and not if_same_joined:
                     # If not already reported (other Joined elements already reported with Joined ID)
                     if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
-                        add_to_recommendations(f'Choice{results[0]}', query_to_write, key, recommendations, choice_id)
-                        add_to_recommendations(f'Choice{results[0]}', subject_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice_{results[0]}', query_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice_{results[0]}', subject_to_write, key, recommendations, choice_id)
             # Process cases where some ID is dropped
             elif results[0] in ['1b', '2a', '3a', '4a']:
                 # If it is part of a joined cluster and it gets dropped, add to the recommendations
                 if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]) and not if_same_joined:
                     # If not already reported (other Joined elements already reported with Joined ID)
                     if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
-                        add_to_recommendations(f'Choice{results[0]}', query_to_write, key, recommendations, choice_id)
-                        add_to_recommendations(f'Choice{results[0]}', subject_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice_{results[0]}', query_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice_{results[0]}', subject_to_write, key, recommendations, choice_id)
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
                 if if_query_dropped:
                     if not if_joined_query and not if_query_in_choice:
