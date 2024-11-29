@@ -438,7 +438,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
 
 
 def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
-                                         constants: Tuple[Any, ...]) -> Tuple[str, ...]:
+                                         constants: Tuple[Any, ...], classes_outcome: List[str]) -> Tuple[str, ...]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
 
@@ -494,8 +494,6 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
         """
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
 
-    # Define classes based on priority
-    classes_outcome: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
     pident: float = constants[1]
     bsr: float = constants[7]
     size_ratio: float = 1 - constants[8]
@@ -512,6 +510,7 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
                 if query_freq == 0 or subject_freq == 0:
                     freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
                 else:
+                    # Calculate the frequency ratio
                     freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
                 
                 # Classify based on global_palign_all_min and bsr

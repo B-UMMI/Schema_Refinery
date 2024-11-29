@@ -13,7 +13,8 @@ try:
                        blast_functions as bf,
                        linux_functions as lf,
                        classify_cds_functions as ccf,
-                       schema_classification_functions as scf)
+                       schema_classification_functions as scf,
+                       constants as ct)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
@@ -22,7 +23,8 @@ except ModuleNotFoundError:
                                         blast_functions as bf,
                                         linux_functions as lf,
                                         classify_cds_functions as ccf,
-                                        schema_classification_functions as scf)
+                                        schema_classification_functions as scf,
+                                        constants as ct)
 
 def create_directories(output_directory: str, run_mode: str) -> List[Optional[str]]:
     """
@@ -315,7 +317,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     print("\nFiltering BLAST results into classes...")
     # Separate results into different classes.
     classes_outcome: Dict[str, Any] = cof.separate_blastn_results_into_classes(representative_blast_results,
-                                                           constants)
+                                                           constants, ct.CLASSES_OUTCOMES)
     
     print("\nProcessing classes...")
     # Sort each entry based on their assigned classes

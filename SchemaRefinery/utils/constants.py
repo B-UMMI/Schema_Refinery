@@ -11,6 +11,8 @@ Code documentation
 ------------------
 """
 
+from typing import Tuple
+
 # GitHub repository and contacts
 REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'
 CONTACTS = 'imm-bioinfo@medicina.ulisboa.pt'
@@ -99,3 +101,7 @@ EBI_FTP = 'http://ftp.ebi.ac.uk'
 ASSEMBLY_FTP_PATH = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/sampleid_assembly_paths.txt'
 ASSEMBLY_METADATA_PATH = 'https://figshare.com/ndownloader/files/26578601'
 FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checklist.chk'
+
+# IdentifyingSpuriousLoci module
+
+CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
