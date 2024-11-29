@@ -842,12 +842,14 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
             A dictionary where each key is an integer starting from 1, and each value is a cluster of data
             selected based on the given conditions and the to_cluster_list.
         """
+        # Extract the key (loci/CDS IDs) from the processed results
         key_extractor = lambda v: v[3]
+        # Additional condition for the choice data (* means Dropped loci ID)
         additional_condition = lambda v: '*' in v[4][0] or '*' in v[4][1]
 
-        classes_to_fetch_choice = ['1c', '2b', '3b']
+        classes_to_fetch_choice = ['1c', '2b', '3b'] # Classes of choice
         choices_to_cluster = {keys: [] for keys in classes_to_fetch_choice}
-
+        # For each choice class, select every entry ID that are part of the same to_cluster_list and share similiar class.
         for v in processed_results.values():
             for class_ in classes_to_fetch_choice:
                 if v[0] == class_ or (itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list) and additional_condition(v)) or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list) and additional_condition(v)):
@@ -858,6 +860,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         
         clustered_choices = {}
         i = 0
+        # Cluster the selected choices
         for cluster_choice in choices_to_cluster.values():
             clustered = cf.cluster_by_ids(cluster_choice)
             for cluster in clustered:
@@ -865,16 +868,6 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
                 i += 1
 
         return clustered_choices
-    
-        """
-        return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) 
-                                                                    for v in processed_results.values()
-                                                                    if v[0] not in ['1a', '1b', '2a', '3a', '4a', '4c','5']
-                                                                    or ((itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list)
-                                                                        and additional_condition(v))
-                                                                        or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list)
-                                                                            and additional_condition(v)))]), 1)
-        """
 
     def process_id(id_: str, to_cluster_list: Dict[int, List[str]], clusters_to_keep: Dict[str, List[str]]) -> Tuple[str, bool, bool]:
         """
