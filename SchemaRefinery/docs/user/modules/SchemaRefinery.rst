@@ -8,7 +8,7 @@ The `SchemaRefinery` repository contains tools and modules for refining genomic 
 
 Installation
 ------------
-Current implementation of `SchemaRefinery` is available as a Python package available at `SchemaRefinery GitHub repository <https://github.com/MForofontov/Schema_Refinery>`_. To install the package, run the following command:
+Current implementation of `SchemaRefinery` is available as a Python package available at `SchemaRefinery GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_. To install the package, run the following command:
 
 1. **Install Python**: Ensure you have Python 3.9 or higher installed. You can download Python from the official website: https://www.python.org/downloads/
 
@@ -60,7 +60,7 @@ The repository includes the following main modules:
 3. **:ref:`SchemaAnnotation <schema_annotation>`**: Annotates schemas with additional information.
 4. **:ref:`MatchSchemas <match_schemas>`**: Matches schemas in a directory.
 5. **:ref:`DownloadAssemblies <download_assemblies>`**: Downloads genomic assemblies from various databases.
-6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in a schema.
+6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in fasta format to a schema format.
 
 Dependencies
 ------------
@@ -122,7 +122,23 @@ If you encounter issues while using the modules, consider the following troubles
 
 if the issue persists, please report it to the development team using github issues.
 
+Contributing
+------------
+
+We welcome contributions to the SchemaRefinery project. If you would like to contribute, please follow these steps:
+
+1. Fork the repository on GitHub.
+2. Create a new branch for your feature or bugfix.
+3. Make your changes and commit them with a clear message.
+4. Push your changes to your forked repository.
+5. Create a pull request to the main repository.
+
+License
+-------
+
+This project is licensed under the MIT License. See the `LICENSE <https://opensource.org/license/mit>`_ file for details.
+
 Contact Information
 -------------------
 
-For support or to report issues, please contact the development team at github issues in `SchemaRefinery GitHub repository <https://github.com/MForofontov/Schema_Refinery>`_.
+For support or to report issues, please contact the development team at github issues in `SchemaRefinery GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_.

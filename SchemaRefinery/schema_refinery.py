@@ -227,6 +227,7 @@ def schema_annotation() -> None:
                         '--subject-schema',
                         type=str,
                         required=False,
+                        default=None,
                         dest='subject_schema',
                         help='Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.')
 

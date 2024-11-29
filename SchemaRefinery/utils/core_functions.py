@@ -438,7 +438,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
 
 
 def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
-                                         constants: Tuple[Any, ...]) -> Tuple[str, ...]:
+                                         constants: Tuple[Any, ...], classes_outcome: List[str]) -> Tuple[str, ...]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
 
@@ -494,8 +494,6 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
         """
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
 
-    # Define classes based on priority
-    classes_outcome: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
     pident: float = constants[1]
     bsr: float = constants[7]
     size_ratio: float = 1 - constants[8]
@@ -512,6 +510,7 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
                 if query_freq == 0 or subject_freq == 0:
                     freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
                 else:
+                    # Calculate the frequency ratio
                     freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
                 
                 # Classify based on global_palign_all_min and bsr
@@ -842,16 +841,33 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
             A dictionary where each key is an integer starting from 1, and each value is a cluster of data
             selected based on the given conditions and the to_cluster_list.
         """
+        # Extract the key (loci/CDS IDs) from the processed results
         key_extractor = lambda v: v[3]
+        # Additional condition for the choice data (* means Dropped loci ID)
         additional_condition = lambda v: '*' in v[4][0] or '*' in v[4][1]
-        return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) 
-                                                                          for v in processed_results.values()
-                                                                          if v[0] not in ['1a', '1b', '2a', '3a', '4a', '4c','5']
-                                                                          or ((itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list)
-                                                                               and additional_condition(v))
-                                                                               or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list)
-                                                                                   and additional_condition(v)))]), 1)}
-    
+
+        classes_to_fetch_choice = ['1c', '2b', '3b'] # Classes of choice
+        choices_to_cluster = {keys: [] for keys in classes_to_fetch_choice}
+        # For each choice class, select every entry ID that are part of the same to_cluster_list and share similiar class.
+        for v in processed_results.values():
+            for class_ in classes_to_fetch_choice:
+                if v[0] == class_ or (itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list) and additional_condition(v)) or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list) and additional_condition(v)):
+                    if not itf.identify_string_in_dict_get_key(v[3], choices_to_cluster) and not itf.identify_string_in_dict_get_key((v[3][1], v[3][0]), choices_to_cluster):
+                        choices_to_cluster[class_].append(key_extractor(v))
+                else:
+                    continue
+        
+        clustered_choices = {}
+        i = 0
+        # Cluster the selected choices
+        for cluster_choice in choices_to_cluster.values():
+            clustered = cf.cluster_by_ids(cluster_choice)
+            for cluster in clustered:
+                clustered_choices[i] = cluster
+                i += 1
+
+        return clustered_choices
+
     def process_id(id_: str, to_cluster_list: Dict[int, List[str]], clusters_to_keep: Dict[str, List[str]]) -> Tuple[str, bool, bool]:
         """
         Process an identifier to check its presence in specific lists.
@@ -900,7 +916,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         """
         return any((joined_id or id_) in itf.flatten_list([v for k, v in recommendations[key].items() if cat in k]) for cat in categories)
 
-    def add_to_recommendations(category: str, id_to_write: str, key: str, recommendations: Dict[str, Dict[str, List[str]]], joined_id: str = None) -> None:
+    def add_to_recommendations(category: str, id_to_write: str, key: str, recommendations: Dict[str, Dict[str, List[str]]], category_id: str = None) -> None:
         """
         Add an identifier to the recommendations under a specific category.
 
@@ -922,10 +938,57 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         None
             This function does not return any value but modifies the `recommendations` dictionary in place.
         """
-        if joined_id is not None:  # For joined or choice categories
-            recommendations[key].setdefault(f'{category}_{joined_id}', set()).add(id_to_write)
+        if category_id is not None:  # For joined or choice categories
+            recommendations[key].setdefault(f'{category}_{category_id}', set()).add(id_to_write)
         else:  # For keep or drop categories
             recommendations[key].setdefault(category, set()).add(id_to_write)
+
+    def order_dict_by_first_value(data: Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[str]]], order: Tuple[str]) -> Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[str]]]:
+        """
+        Order the dictionary by the first value of each tuple according to a specified order tuple.
+
+        Parameters
+        ----------
+        data : Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[str]]]
+            The dictionary to be ordered. The dictionary values are tuples containing various elements.
+        order : Tuple[str]
+            The order tuple specifying the desired order of the first values in the dictionary tuples.
+
+        Returns
+        -------
+        Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[str]]]
+            The ordered dictionary.
+        """
+        # Create a dictionary to map order values to their indices for sorting
+        order_index = {value: index for index, value in enumerate(order)}
+        
+        # Sort the dictionary by the first value of each tuple according to the order tuple
+        sorted_data = dict(sorted(data.items(), key=lambda item: order_index.get(item[1][0], len(order))))
+        
+        return sorted_data
+
+    def find_both_values_in_dict_list(query_id: str, subject_id: str, choice: Dict[str, List[str]]) -> str:
+        """
+        Find the key where both query_id and subject_id are present in the same list.
+
+        Parameters
+        ----------
+        query_id : str
+            The query identifier to find.
+        subject_id : str
+            The subject identifier to find.
+        choice : Dict[str, List[str]]
+            The dictionary containing lists of identifiers.
+
+        Returns
+        -------
+        str
+            The key where both query_id and subject_id are present, or an empty string if not found.
+        """
+        for key, values in choice.items():
+            if query_id in values and subject_id in values:
+                return key
+        return None
 
     # Initialize dictionaries to keep track of various results
     related_clusters: Dict[str, List[Any]] = {}  # To keep track of the related clusters
@@ -934,6 +997,9 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
     matched_with_dropped: Dict[str, List[List[str]]] = {}  # To keep track of the matches that matched with dropped
     processed_cases: List[List[str]] = []  # To keep track of the processed cases
 
+    # Filter the processed results by the order of classes
+    processed_results = order_dict_by_first_value(processed_results, classes_outcome)
+
     # Normal run, where IDs are only loci or CDS original IDs.
     to_cluster_list: Dict[int, List[str]] = cluster_data(processed_results)  # All of the cluster of related CDS/loci by ID.
     choice: Dict[int, List[str]] = choice_data(processed_results, to_cluster_list)  # All of the possible cases of choice.
@@ -941,42 +1007,43 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
     for results in processed_results.values():
         if results[0] in ['4c', '5', 'Retained_not_matched_by_blastn']:
             continue
-
+        # Get the IDs and check if they are present in the to_cluster_list
         query_id, query_present, joined_query_id = process_id(results[3][0], to_cluster_list, clusters_to_keep)
         subject_id, subject_present, joined_subject_id = process_id(results[3][1], to_cluster_list, clusters_to_keep)
-
-        key: str = query_present if query_present else subject_present
-
-        related_clusters.setdefault(key, []).append(results[4] 
-                                                    + [f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"]
-                                                    + [str(frequency_in_genomes[results[3][0]])]
-                                                    + [str(frequency_in_genomes[results[3][1]])])
-
-        recommendations.setdefault(key, {})
-        if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
-        if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Joined'])
-        if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
-        if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
-        if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
-    
-        if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
-        if_subject_dropped: bool = (joined_subject_id or subject_id) in dropped_loci_ids
-
-        choice_query_id: str = itf.identify_string_in_dict_get_key(query_id, choice)
-        choice_subject_id: str = itf.identify_string_in_dict_get_key(subject_id, choice)
-
-        # What IDs to add to the Keep, Drop and Choice.
-        query_to_write: str = joined_query_id or query_id
-        subject_to_write: str = joined_subject_id or subject_id
         
-        joined_query_to_write: str = query_id
-        joined_subject_to_write: str = subject_id
-
         # Check if the pair was not processed yet
         if [query_id, subject_id] not in processed_cases:
+            key: str = query_present if query_present else subject_present
+
+            related_clusters.setdefault(key, []).append(results[4] 
+                                                        + [f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"]
+                                                        + [str(frequency_in_genomes[results[3][0]])]
+                                                        + [str(frequency_in_genomes[results[3][1]])])
+
+            recommendations.setdefault(key, {})
+            # Checks to make, so that we can add the ID to the right recommendations.
+            if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
+            if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Joined'])
+            if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
+            if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
+            if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
+            if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
+            if_subject_dropped: bool = (joined_subject_id or subject_id) in dropped_loci_ids
+
+            choice_id: str = find_both_values_in_dict_list(query_id, subject_id, choice) # Find the choice ID (both query and subject in the same list)
+
+            # What IDs to add to the Keep, Drop and Choice.
+            query_to_write: str = joined_query_id or query_id
+            subject_to_write: str = joined_subject_id or subject_id
+            
+            joined_query_to_write: str = query_id
+            joined_subject_to_write: str = subject_id
+
             processed_cases.append([subject_id, query_id])  # Add the inverse pair to the processed cases
-            reverse_id: str = f"{subject_id}|{query_id}"
+            reverse_id: str = f"{subject_id}|{query_id}" # Create the reverse ID
+            # Get reverse results
             reverse_results: Dict[str, Any] = processed_results[reverse_id] if processed_results.get(reverse_id) else None
+            # Choose the best results between the pair and the reverse pair
             if reverse_results and classes_outcome.index(results[0]) > classes_outcome.index(reverse_results[0]):
                 results = reverse_results
             # Process the joined cases
@@ -988,26 +1055,33 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
                     add_to_recommendations('Joined', joined_subject_to_write, key, recommendations, joined_subject_id)
             # Process the choice cases
             elif results[0] in ['1c', '2b', '3b', '4b']:
-                # If it is not dropped and not the same joined cluster, add to the recommendations
+                # If it is not dropped and not the same joined cluster, add to the choice recommendations
                 if not if_query_dropped and not if_subject_dropped and not if_same_joined:
-                    add_to_recommendations('Choice', query_to_write, key, recommendations, choice_query_id)
-                    add_to_recommendations('Choice', subject_to_write, key, recommendations, choice_subject_id)
+                    # If not already reported (other Joined elements already reported with Joined ID)
+                    if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
+                        add_to_recommendations(f'Choice_{results[0]}', query_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice_{results[0]}', subject_to_write, key, recommendations, choice_id)
             # Process cases where some ID is dropped
             elif results[0] in ['1b', '2a', '3a', '4a']:
                 # If it is part of a joined cluster and it gets dropped, add to the recommendations
-                if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]):
-                    add_to_recommendations('Choice', query_to_write, key, recommendations, choice_query_id)
-                    add_to_recommendations('Choice', subject_to_write, key, recommendations, choice_subject_id)
+                if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]) and not if_same_joined:
+                    # If not already reported (other Joined elements already reported with Joined ID)
+                    if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
+                        add_to_recommendations(f'Choice_{results[0]}', query_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice_{results[0]}', subject_to_write, key, recommendations, choice_id)
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
-                if query_id in dropped_loci_ids:
+                if if_query_dropped:
+                    # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
                     if not if_joined_query and not if_query_in_choice:
                         add_to_recommendations('Drop', query_to_write, key, recommendations)
                         dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
-                elif subject_id in dropped_loci_ids:
+                elif if_subject_dropped:
+                    # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
                     if not if_joined_subject and not if_subject_in_choice:
                         add_to_recommendations('Drop', subject_to_write, key, recommendations)
                         dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
+        
     # Add cases where some ID matched with dropped ID, we need to add the ID that matched with the ID that made the other match
     # to be Dropped. e.g x and y matched with x dropping and x also matched with z, then we need to make a choice between x and z.
     for key, matches in matched_with_dropped.items():
@@ -1079,10 +1153,13 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     # Write the recommendations to the output file
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
     with open(recommendations_file_path, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Recommendation\tID\n")
+        recommendations_report_file.write("Recommendation\tIDs\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
-                category = category.split('_')[0] if 'Choice' in category else category
+                category = category.split('_')[:2] if 'Choice' in category else category
+                # If the category is Choice, add the class to the category
+                if isinstance(category, list):
+                    category = '_'.join(category)
                 # Convert all to string
                 ids = itf.convert_set_elements_to_strings(ids)
                 recommendations_report_file.write(f"{category}\t{','.join(ids)}\n")
@@ -1124,7 +1201,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
         related_matches_file.write("Query\tSubject\tClass\tClass_count" +
                                     ("\tInverse_class\tInverse_class_count" if reverse_matches else "") +
                                     "\tFrequency_in_genomes_query\tFrequency_in_genomes_subject"
-                                    "\tRepresentatives_count\tAlelles_count\n")
+                                    "\tAlleles_used_to_blast_count\tAlleles_blasted_against_count\n")
         for related in related_clusters.values():
             for r in related:
                 related_matches_file.write('\t'.join(str(item) for item in r) + '\n')
@@ -1138,8 +1215,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
         count_results_by_cluster_file.write("Query"
                                             "\tSubject"
                                             f"\t{tab.join(classes_outcome)}"
-                                            "\tRepresentatives_count"
-                                            "\tAlelles_count"
+                                            "\tAlleles_used_to_blast_count"
+                                            "\tAlleles_blasted_against_count"
                                             "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class.items():
@@ -1502,10 +1579,12 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
 
     # Process clusters
     for class_, cds in clusters_to_keep.items():
+        # Skip clusters that are not matched
         if class_ == 'Retained_not_matched_by_blastn':
             continue
-
+        # Process clusters
         for cluster in cds if not isinstance(cds, dict) else cds.items():
+            # Determine cluster type
             if isinstance(cds, dict):
                 cluster_id: str = cluster[0]
                 cluster: List[str] = cluster[1]
@@ -1515,11 +1594,11 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
                 cluster_id = cluster
                 cluster = [cluster]
                 cluster_type = 'retained'
-            
+            # Get all alleles in the cluster
             cluster_alleles: List[str] = []
             for entry in cluster:
                 cluster_alleles += all_alleles[entry]
-
+            # Write results
             write_dict: Dict[str, Dict[str, Dict[str, Any]]] = {
                 query: {
                     subject: {id_: entry for id_, entry in entries.items()}
@@ -1528,7 +1607,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
                 for query, subjects in representative_blast_results.items()
                 if query.split('_')[0] in cluster
             }
-            
+            # If the cluster is matched and not joined, write the results
             if is_matched.get(cluster_id) and class_ != '1a':
                 queries: Set[str] = is_matched[cluster_id]
                 cluster: Set[str] = is_matched_alleles[cluster_id]

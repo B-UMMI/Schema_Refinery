@@ -327,7 +327,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                 bsr)
         
         # Save annotations
-        header: str = 'Locus\tProtein_ID\tProtein_product\tProtein_short_name\tBSR'
+        header: str = 'Locus\tUniprot_protein_ID\tUniprot_protein_product\tUniprot_protein_short_name\tUniprot_BSR'
         annotations_file: str = os.path.join(proteome_folder, f"{file_name_without_extension}_annotations.tsv")
         not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(best_bsr_values.keys())
         with open(annotations_file, 'w') as at:

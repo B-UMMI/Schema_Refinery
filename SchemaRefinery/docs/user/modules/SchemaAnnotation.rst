@@ -34,90 +34,92 @@ The `SchemaAnnotation` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--s, --schema-directory
-    (Required) Path to the schema's directory.
+::
 
--o, --output-directory
-    (Required) Path to the output directory where to save the files.
+    -s, --schema-directory
+        (Required) Path to the schema's directory.
 
--ao, --annotation-options
-    (Required) Annotation options to run.
-    Choices: uniprot-proteomes, genbank-files, match-schemas.
+    -o, --output-directory
+        (Required) Path to the output directory where to save the files.
 
--pt, --proteome-table
-    (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
+    -ao, --annotation-options
+        (Required) Annotation options to run.
+        Choices: uniprot-proteomes, genbank-files, match-schemas.
 
--gf, --genbank-files
-    (Optional) Path to the directory that contains Genbank files with annotations to extract.
+    -pt, --proteome-table
+        (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
 
--ca, --chewie-annotations
-    (Optional) File with the results from chewBBACA UniprotFinder module.
+    -gf, --genbank-files
+        (Optional) Path to the directory that contains Genbank files with annotations to extract.
 
--ss, --subject-schema
-    (Optional) Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.
+    -ca, --chewie-annotations
+        (Optional) File with the results from chewBBACA UniprotFinder module.
 
---bsr
-    (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus.
-    Default: 0.6
+    -ss, --subject-schema
+        (Optional) Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.
 
--t, --threads
-    (Optional) Number of threads for concurrent download.
-    Default: 1
+    --bsr
+        (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus.
+        Default: 0.6
 
--c, --cpu
-    (Optional) Number of CPU cores for multiprocessing.
-    Default: 1
+    -t, --threads
+        (Optional) Number of threads for concurrent download.
+        Default: 1
 
--r, --retry
-    (Optional) Maximum number of retries when a download fails.
-    Default: 7
+    -c, --cpu
+        (Optional) Number of CPU cores for multiprocessing.
+        Default: 1
 
--tt, --translation-table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -r, --retry
+        (Optional) Maximum number of retries when a download fails.
+        Default: 7
 
--cs, --clustering-sim
-    (Optional) Similarity value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -tt, --translation-table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
--cc, --clustering-cov
-    (Optional) Coverage value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -cs, --clustering-sim
+        (Optional) Similarity value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--sr, --size_ratio
-    (Optional) Size ratio to consider alleles as the same locus.
-    Default: 0.8
+    -cc, --clustering-cov
+        (Optional) Coverage value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--rm, --run-mode
-    (Optional) Mode to run the module.
-    Choices: reps, alleles.
-    Default: reps
+    -sr, --size_ratio
+        (Optional) Size ratio to consider alleles as the same locus.
+        Default: 0.8
 
--pm, --processing-mode
-    (Optional) Mode to run the module for Schema match.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: None
+    -rm, --run-mode
+        (Optional) Mode to run the module.
+        Choices: reps, alleles.
+        Default: reps
 
--egtc, --extra_genbank_table_columns
-    (Optional) List of columns to add to annotation file.
-    Default: []
+    -pm, --processing-mode
+        (Optional) Mode to run the module for Schema match.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: None
 
--gia, --genbank-ids-to-add
-    (Optional) List of GenBank IDs to add to final results.
-    Default: []
+    -egtc, --extra_genbank_table_columns
+        (Optional) List of columns to add to annotation file.
+        Default: []
 
--pia, --proteome-ids-to-add
-    (Optional) List of Proteome IDs to add to final results.
-    Default: []
+    -gia, --genbank-ids-to-add
+        (Optional) List of GenBank IDs to add to final results.
+        Default: []
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    -pia, --proteome-ids-to-add
+        (Optional) List of Proteome IDs to add to final results.
+        Default: []
+
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------
 Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── genbank_annotations # --nocleanup -ao genbank-files -gf path/to/genbank/files
@@ -367,6 +369,34 @@ Output files and folders description:
                     ...: Other BLAST results.
                 trembl_prots.fasta: TrEMBL protein sequences.
             trembl_prots_annotations.tsv: TrEMBL annotations.
+
+Report files description
+------------------------
+
+.. csv-table:: Annotations
+    :header: "Locus", "Protein_ID", "Protein_product", "Protein_short_name", "BSR", "genebank_origin_id", "genebank_origin_product", "genebank_origin_name", "BSR_best_genbank_annotations", "Best Match", "BSR_best_blast_matches"
+    :widths: 20, 20, 20, 20, 10, 20, 20, 20, 20, 20, 10
+
+    x, sp|P75510|SYW_MYCPN, Tryptophan--tRNA ligase, trpS, 1.0, ADK86998.1, trpS, tryptophan--tRNA ligase, 0.9966923925027563, a, 1.0
+    y, sp|P75528|DACB_MYCPN, Diadenylate cyclase, dacB, 1.0, ADK87204.1, NA, conserved hypothetical protein TIGR00159, 1.0, b, 1.0
+    z, sp|P75473|OTCC_MYCPN, Ornithine carbamoyltransferase, catabolic, arcB, 1.0, AAB96178.1, argI, ArgI, 0.8808227465214761, c, 1.0
+    ...
+
+columns description:
+
+::
+
+    Locus: The locus from the query schema.
+    Uniprot_protein_ID: The identifier for the protein.
+    Uniprot_protein_product: The product of the protein.
+    Uniprot_protein_short_name: The short name of the protein.
+    Uniprot_BSR: The BLAST Score Ratio for the protein.
+    genebank_ID: The GenBank origin ID.
+    genebank_product: The product of the GenBank origin.
+    genebank_name: The name of the GenBank origin.
+    genebank_BSR: The BSR value for the best GenBank annotations.
+    best_matched_loci: The best match for the locus.
+    best_matched_loci_BSR: The BSR value for the best BLAST matches.
 
 Examples
 --------

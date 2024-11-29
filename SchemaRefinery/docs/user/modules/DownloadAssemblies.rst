@@ -48,69 +48,73 @@ The `DownloadAssemblies` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--db, --database
-    (Required) Databases from which assemblies will be downloaded.
-    Choices: NCBI, ENA661
+::
 
--o, --output-directory
-    (Required) Path to the output directory.
+    -db, --database
+        (Required) Databases from which assemblies will be downloaded.
+        Choices: NCBI, ENA661
 
--e, --email
-    (Required) Email provided to Entrez.
+    -o, --output-directory
+        (Required) Path to the output directory.
 
--t, --taxon
-    (Optional) Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.
-    Type: str
+    -e, --email
+        (Required) Email provided to Entrez.
 
--th, --threads
-    (Optional) Number of threads used for download. You should provide an API key to perform more requests through Entrez.
-    Default: 1
+    -t, --taxon
+        (Optional) Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.
+        Type: str
 
--r, --retry
-    (Optional) Maximum number of retries when a download or request fails.
-    Default: 7
+    -th, --threads
+        (Optional) Number of threads used for download. You should provide an API key to perform more requests through Entrez.
+        Default: 1
 
--k, --api-key
-    (Optional) Personal API key provided to the NCBI. If not set, only 3 requests per second are allowed through Entrez. With a valid API key the limit increases to 10 requests per second.
+    -r, --retry
+        (Optional) Maximum number of retries when a download or request fails.
+        Default: 7
 
--fm, --fetch-metadata
-    (Optional) If provided, the process downloads metadata for the assemblies.
-    Default: False
+    -k, --api-key
+        (Optional) Personal API key provided to the NCBI. If not set, only 3 requests per second are allowed through Entrez. With a valid API key the limit increases to 10 requests per second.
 
--f, --filtering-criteria
-    (Optional) TSV file containing filtering parameters applied before assembly download.
+    -fm, --fetch-metadata
+        (Optional) If provided, the process downloads metadata for the assemblies.
+        Default: False
 
---download
-    (Optional) If the assemblies that passed the filtering criteria should be downloaded.
+    -f, --filtering-criteria
+        (Optional) TSV file containing filtering parameters applied before assembly download.
 
--i, --input-table
-    (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
+    --download
+        (Optional) If the assemblies that passed the filtering criteria should be downloaded.
+
+    -i, --input-table
+        (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
 
 Filtering criteria example
 --------------------------
 Filtering criteria file should be a TSV file with the following columns:
+
 .. code-block:: tsv
 
-    abundance\t0.8
-    genome_size\t2000000
-    size_threshold\t0.2
-    max_contig_number\t150
-    known_st\tFalse
-    any_quality\tFalse
-    ST_list_path\tNone
-    assembly_level\tchromosome,complete,contig,scaffold
-    reference\tFalse
-    assembly_source\tall
-    file_to_include\tgenome,gbff
-    verify_status\tTrue
-    exclude_atypical\tTrue
+    abundance   0.8
+    genome_size 2000000
+    size_threshold  0.2
+    max_contig_number   150
+    known_st    False
+    any_quality False
+    ST_list_path    None
+    assembly_level  chromosome,complete,contig,scaffold
+    reference   False
+    assembly_source all
+    file_to_include genome,gbff
+    verify_status   True
+    exclude_atypical    True
 
 Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
 
 Outputs
 -------
 Folder and file structure for the output directory of the `DownloadAssemblies` module is shown below. The output directory contains the following files and folders:
-.. code-block:: bash
+
+::
 
     OutputFolderName
     ├── assemblies_ncbi.zip # -db NCBI --download

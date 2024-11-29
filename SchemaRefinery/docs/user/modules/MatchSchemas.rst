@@ -34,40 +34,42 @@ The `MatchSchemas` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--qs, --query-schema-directory
-    (Required) Folder that contains the query schema.
+::
 
--ss, --subject-schema-directory
-    (Required) Folder that contains the subject schema.
+    -qs, --query-schema-directory
+        (Required) Folder that contains the query schema.
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -ss, --subject-schema-directory
+        (Required) Folder that contains the subject schema.
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
 
--pm, --processing-mode
-    (Optional) Mode to run the module.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: alleles_vs_alleles
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    -pm, --processing-mode
+        (Optional) Mode to run the module.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: alleles_vs_alleles
+
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------
 Folder and file structure for the output directory of the `MatchSchemas` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── Blast # --nocleanup
@@ -87,16 +89,16 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │   │   ├── blast_results_z.tsv
     │   │   └── ...
     │   ├── master_file.fasta
-    |   ├── Query_Translation
-    |   │   ├── query_translations_x.fasta
-    |   │   ├── query_translations_y.fasta
-    |   │   ├── query_translations_z.fasta
-    |   │   └── ...
+    │   ├── Query_Translation
+    │   │   ├── query_translations_x.fasta
+    │   │   ├── query_translations_y.fasta
+    │   │   ├── query_translations_z.fasta
+    │   │   └── ...
     │   ├── Subject_Translation
-    |   │   ├── subject_translations_x.fasta
-    |   │   ├── subject_translations_y.fasta
-    |   │   ├── subject_translations_z.fasta
-    |   │   └── ...
+    │   │   ├── subject_translations_x.fasta
+    │   │   ├── subject_translations_y.fasta
+    │   │   ├── subject_translations_z.fasta
+    │   │   └── ...
     │   └── self_score_folder
     │       ├── blast_results_x.tsv
     │       ├── blast_results_y.tsv
@@ -143,6 +145,27 @@ Output files and folders description:
             ...: All of the other TSV BLASTp for self-score results files.
 
     **best_blast_matches.tsv**: TSV file containing the best BLAST matches for the query and subject schemas.
+
+Report files description
+------------------------
+
+.. csv-table:: **best_blast_matches.tsv**
+    :header: "Locus", "Best Match", "BSR"
+    :widths: 30, 30, 10
+
+    x, y, 0.8
+    z, a, 1.0
+    b, c, 0.965
+    d, e, 0.94
+    ...
+
+columns description:
+
+::
+    
+    Locus: The locus from the query schema.
+    Best Match: The best match for the locus from the subject schema.
+    BSR: The BSR value for the best match.
 
 Examples
 --------

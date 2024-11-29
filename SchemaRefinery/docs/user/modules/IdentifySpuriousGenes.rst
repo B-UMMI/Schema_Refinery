@@ -34,69 +34,71 @@ The `IdentifySpuriousGenes` module can be used as follows:
 Command-Line Arguments
 ----------------------
 
--s, --schema-directory
-    (Required) Path to the created schema directory.
+::
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -s, --schema-directory
+        (Required) Path to the created schema directory.
 
--a, --allelecall-directory
-    (Required) Path to the directory that contains allele call directory that was run with --no-cleanup.
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--pnl, --possible-new-loci
-    (Optional) Path to the directory that contains possible new loci.
+    -a, --allelecall-directory
+        (Required) Path to the directory that contains allele call directory that was run with --no-cleanup.
 
--at, --alignment_ratio_threshold
-    (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
-    Default: 0.9
+    -pnl, --possible-new-loci
+        (Optional) Path to the directory that contains possible new loci.
 
--pt, --pident_threshold
-    (Optional) Threshold value for pident values used to identify spurious CDS (int 0-100).
-    Default: 90
+    -at, --alignment_ratio_threshold
+        (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
+        Default: 0.9
 
--cs, --clustering-sim
-    (Optional) Similarity value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -pt, --pident_threshold
+        (Optional) Threshold value for pident values used to identify spurious CDS (int 0-100).
+        Default: 90
 
--cc, --clustering-cov
-    (Optional) Coverage value for kmers representatives (float: 0-1).
-    Default: 0.9
+    -cs, --clustering-sim
+        (Optional) Similarity value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--gp, --genome_presence
-    (Optional) The minimum number of genomes specific cluster of CDS must be present in order to be considered.
+    -cc, --clustering-cov
+        (Optional) Coverage value for kmers representatives (float: 0-1).
+        Default: 0.9
 
--as, --absolute_size
-    (Optional) Size of the CDS to consider processing.
-    Default: 201
+    -gp, --genome_presence
+        (Optional) The minimum number of genomes specific cluster of CDS must be present in order to be considered.
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -as, --absolute_size
+        (Optional) Size of the CDS to consider processing.
+        Default: 201
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
--sr, --size_ratio
-    (Optional) Size ratio to consider alleles as the same locus.
-    Default: 0.8
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
 
--m, --run-mode
-    (Optional) Run mode for identifying spurious loci.
-    Choices: unclassified_cds, schema
-    Default: schema
+    -sr, --size_ratio
+        (Optional) Size ratio to consider alleles as the same locus.
+        Default: 0.8
 
--pm, --processing-mode
-    (Optional) Mode to run the module.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: reps_vs_alleles
+    -m, --run-mode
+        (Optional) Run mode for identifying spurious loci.
+        Choices: unclassified_cds, schema
+        Default: schema
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -pm, --processing-mode
+        (Optional) Mode to run the module.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: reps_vs_alleles
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
+
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------
@@ -105,7 +107,8 @@ Folder and file structure for the output directory of the `IdentifySpuriousGenes
 Since there are two run modes, the output directory structure will vary based on the run mode selected.
 
 **For --run-mode schema:**
-.. code-block:: bash
+
+::
 
     OutputFolderName
     ├── 1_schema_processing # --nocleanup
@@ -157,23 +160,30 @@ Since there are two run modes, the output directory structure will vary based on
     │           ├── blast_results_y.tsv
     │           └── ...
     ├── 3_processing_results # --nocleanup
-    │   └── blast_results
-    │       ├── blast_all_matches.tsv
-    │       ├── blast_by_cluster
-    │       │   ├── cluster_x.tsv
-    │       │   ├── cluster_y.tsv
-    │       │   └── ...
-    │       └── blast_results_by_class
-    │           ├── class_1.tsv
-    │           ├── class_2.tsv
-    │           └── ...
+    │   ├── blast_results
+    │   │   ├── blast_all_matches.tsv
+    │   │   ├── blast_by_cluster
+    │   │   │   ├── cluster_x.tsv
+    │   │   │   ├── cluster_y.tsv
+    │   │   │   └── ...
+    │   │   └── blast_results_by_class
+    │   │       ├── class_1.tsv
+    │   │       ├── class_2.tsv
+    │   │       └── ...
+    │   ├── cds_id_changes.tsv
+    │   ├── dropped_cds.tsv
+    │   └── Graph_folder
+    │       ├── All_of_CDS_graphs.html
+    │       ├── graphs_class_1a.html
+    │       └── ...
     ├── count_results_by_cluster.tsv
     ├── drop_loci_reason.tsv
     ├── recommendations.tsv
     └── related_matches.tsv
 
 **For --run-mode unclassified_cds:**
-.. code-block:: bash
+
+::
 
     OutputFolderName
     ├── 1_CDS_processing # --nocleanup
@@ -379,6 +389,103 @@ OutputFolderName: The folder where the output files are stored.
         **cluster_y.fasta**: Temporary FASTA file for cluster y.
         **...**: Other temporary FASTA files.
     **temp_fastas_path.txt**: Text file containing paths to temporary FASTA files.
+
+Report files description
+------------------------
+
+.. csv-table:: **count_results_by_cluster.tsv**
+    :header: "Query", "Subject", "1a", "1b", "2a", "3a", "2b", "1c", "3b", "4a", "4b", "4c", "5", "Representatives_count", "Alelles_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject"
+    :widths: 15, 15, 20, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
+
+    x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
+    #,
+    x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
+    #,
+    x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
+    ...
+
+columns description:
+
+::
+
+    Query: The query locus.
+    Subject: The subject locus.
+    1a-5: The count of the loci in the cluster, interpret the values as this, for x query and y subject class 1a '378|1024|-|1024', x has 378 matches out of 1024 to y that are class 1a and while y has no matches '-' out of 1024 to x.
+    alleles_used_to_blast_count: The count of alleles used to blast.
+    alleles_blasted_against_count: The count of alleles blasted against.
+    Frequency_in_genomes_query: The frequency of the query locus in genomes.
+    Frequency_in_genomes_subject: The frequency of the subject locus in genomes.
+
+.. csv-table:: **drop_loci_reason.tsv**
+    :header: "Possible_new_loci_ID", "Drop_Reason"
+    :widths: 40, 60
+
+    x, Dropped_due_to_smaller_genome_presence_than_matched_cluster
+    y, Dropped_due_to_smaller_genome_presence_than_matched_cluster
+    z, Dropped_due_to_smaller_genome_presence_than_matched_cluster
+    ...
+
+columns description:
+
+::
+
+    Possible_new_loci_ID: The identifier for the possible new locus.
+    Drop_Reason: The reason for dropping the locus.
+
+.. csv-table:: **recommendations.tsv**
+    :header: "Recommendation", "IDs"
+    :widths: 20, 80
+
+    Joined_x, "x,y,z"
+    Choice_2b, "x,u,t"
+    Drop, j
+    #,
+    Joined_a, "a,b,c"
+    #,
+    Drop, k
+    ...
+
+columns description:
+
+::
+
+    Recommendation: The type of recommendation (e.g., Joined, Choice, Drop).
+    IDs: A comma-separated list of identifiers for the loci that are recommended.
+
+.. csv-table:: **related_matches.tsv**
+    :header: "Query", "Subject", "Class", "Class_count", "Inverse_class", "Inverse_class_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject", "alleles_used_to_blast_count", "alleles_blasted_against_count"
+    :widths: 20, 20, 10, 10, 10, 10, 20, 20, 20, 20
+
+    x, y, 1a, 378/1024, 1c, 1024/1024, 223, 133, 16|64, 16|64
+    x, z, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
+    x, w, 1a, 6/224, 1a, 1/224, 223, 221, 16|14, 16|14
+    #
+    a, b, 1a, 378/1024, 1c, 1024/1024, 223, 133, 16|64, 16|64
+    a, c, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
+    ...
+    
+columns description:
+
+::
+    
+    Query: The query locus.
+    Subject: The subject locus.
+    Class: The best class of the matches for that loci.
+    Class_count: The count of matches of the loci in the class.
+    Inverse_class: The best class of the inverse match for those loci.
+    Inverse_class_count: The count of inverse matches of the loci in that class.
+    Frequency_in_genomes_query: The frequency of the query locus in genomes.
+    Frequency_in_genomes_subject: The frequency of the subject locus in genomes.
+    alleles_used_to_blast_count: The count of alleles used to blast.
+    alleles_blasted_against_count: The count of alleles blasted against.
+
+**temp_fastas_path.txt**:
+::
+
+    /path/to/temp_fastas/cluster_x.fasta
+    /path/to/temp_fastas/cluster_y.fasta
+    /path/to/temp_fastas/cluster_z.fasta
+    ...
 
 Examples
 --------

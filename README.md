@@ -1,183 +1,136 @@
-# Schema_Refinery
+# SchemaRefinery - A Tool for Refining Genomic Schemas
 
-Set of scripts and instructions to refine wg/cgMLST schemas.
+## Description
 
-## alleles_frequency.py
+The `SchemaRefinery` repository contains tools and modules for refining genomic schemas. These tools help in identifying paralogous loci, spurious genes, and annotating schemas. The repository supports various genomic data processing tasks and provides configurable parameters for different processes.
 
-This script calculates alleles frequencies.
+## Installation
 
-## annotations_merger.py
+Current implementation of `SchemaRefinery` is available as a Python package available at [SchemaRefinery GitHub repository](https://github.com/B-UMMI/Schema_Refinery). To install the package, run the following command:
 
-This script merges the annotations from different sources
-(reference proteomes, Uniprot and Genbank files) into one single file.
+1. **Install Python**: Ensure you have Python 3.9 or higher installed. You can download Python from the [official website](https://www.python.org/downloads/).
 
-## download_ncbi_assemblies.py
+2. **Install Git**: If you don't have Git installed, you can install it using the following command:
 
-### Description
+    ```bash
+    sudo apt-get install git # For Debian-based systems
+    sudo yum install git # For Red Hat-based systems
+    brew install git # For macOS
+    ```
 
-Accepts a Genome Assembly and Annotation report table from the NCBI and downloads the genome assemblies of the samples listed
-in the table. The default behavior will download files from RefSeq. If the genome assembly or file that has to be downloaded
-cannot be found in RefSeq, it will try to download from Genbank. The full list of species can be viewed at
-https://www.ncbi.nlm.nih.gov/genome/browse/#!/overview/ and the script accepts a table with a list of assemblies for a single
-species (e.g.: https://www.ncbi.nlm.nih.gov/genome/browse/#!/prokaryotes/186/). Files are download in GZIP format. It is
-possible to specify a file extension/suffix to download genome assembly data in a specific file format. You can download the
-following file types from the FTP server:
+3. **Clone the Repository**: Clone the `SchemaRefinery` repository from GitHub:
 
-- "assembly_report.txt"
-- "assembly_stats.txt"
-- "cds_from_genomic.fna.gz"
-- "feature_count.txt.gz"
-- "feature_table.txt.gz"
-- "genomic.fna.gz"
-- "genomic.gbff.gz"
-- "genomic.gff.gz"
-- "genomic.gtf.gz"
-- "protein.faa.gz"
-- "protein.gpff.gz"
-- "rna_from_genomic.fna.gz"
-- "translated_cds.faa.gz"
+    ```bash
+    git clone https://github.com/MForofontov/Schema_Refinery.git # Clone the repository
+    ```
 
-#### Usage
+4. **Change Directory**: Navigate to the cloned repository:
 
-Download genome assemblies in fasta.gz format:
+    ```bash
+    cd Schema_Refinery # Change directory to the repository
+    ```
 
-```py
-python download_ncbi_assemblies.py -t <input_table> -o <output_directory>
-```
+5. **Install Dependencies**: Install the required Python packages:
 
-Download compressed GFF files:
+    ```bash
+    pip install biopython
+    ```
 
-```py
-python download_ncbi_assemblies.py -t <input_table> -o <output_directory> --fe genomic.fna.gz
-```
+6. **Install the Package**: Install the `SchemaRefinery` package:
 
-Download only the genome assemblies that are available in RefSeq:
+    ```bash
+    python setup.py install
+    ```
 
-```py
-python download_ncbi_assemblies.py -t <input_table> -o <output_directory> --ftp refseq
-```
+7. **Verify Installation**: Verify the installation by running the following command:
 
-Download only the genome assemblies that are available in RefSeq using 4 threads
+    ```bash
+    SR --help
+    ```
 
-```py
-python download_ncbi_assemblies.py -t <input_table> -o <output_directory> --ftp refseq --threads 4
-```
+## Modules
 
-## download_reference_proteomes.py
+The repository includes the following main modules:
 
-Accepts a Proteomes report table from Uniprot and downloads
-the proteomes of the samples listed in the table.
+1. **[IdentifyParalogousLoci](#identifyparalogousloci)**: Identifies paralogous loci in a schema.
+2. **[IdentifySpuriousGenes](#identifyspuriousgenes)**: Identifies spurious genes in a schema.
+3. **[SchemaAnnotation](#schemaannotation)**: Annotates schemas with additional information.
+4. **[MatchSchemas](#matchschemas)**: Matches schemas in a directory.
+5. **[DownloadAssemblies](#downloadassemblies)**: Downloads genomic assemblies from various databases.
+6. **[AdaptLoci](#adaptloci)**: Adapts loci in fasta format to a schema format.
 
-## fasta_header_integer.py
+## Dependencies
 
-Converts fasta headers to consecutive integers, useful for the creation of BLAST databases.
+- Python 3.9 or higher
+- Biopython library (`pip install biopython`)
+- NCBI datasets ([NCBI datasets](https://www.ncbi.nlm.nih.gov/datasets/))
 
-## genbank_annotations_2.py
+## Modules Usage
 
-This script extracts annotations for a schema from genbank files.
+Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-## genbank_annotations.py
+### IdentifyParalogousLoci
 
-This script extracts annotations for a schema from protein
-genbank files.
+    ```bash
+    SR IdentifyParalogousLoci --help
+    ```
 
-## inter_loci_validation.py
+### IdentifySpuriousGenes
 
-This script verifies if a set of FASTA files corresponding to different loci
-respect the specified BSR and length thresholds applied by chewBBACA's algorithm
-during schema creation or allele calling. It outputs files with relevant information
-that help identify problematic cases in which representative alleles from different
-loci/genes match with a BSR >= 0.6.
+    ```bash
+    SR IdentifySpuriousGenes --help
+    ```
 
-## intra_loci_validation.py
+### SchemaAnnotation
 
-This script checks if the set of alleles for each gene/locus file given as
-input respects the specified BSR and length thresholds applied by chewBBACA's
-algorithm during schema creation or allele calling.
+    ```bash
+    SR SchemaAnnotation --help
+    ```
 
-## loci_positions.py
+### MatchSchemas
 
-This script determines the genome position of loci first representatives.
+    ```bash
+    SR MatchSchemas --help
+    ```
 
-## locus_pairwise_graph.py
+### DownloadAssemblies
 
-This script creates a locus graph based on BSR.
+    ```bash
+    SR DownloadAssemblies --help
+    ```
 
-## match_schemas.py
+### AdaptLoci
 
-This script compares two schemas and outputs the loci matches.
+    ```bash
+    SR AdaptLoci --help
+    ```
 
-## merge_loci.py
+## Troubleshooting
 
-This script merges loci from a schema that are very similar.
 
-## protein_diversity.py
+If you encounter issues while using the modules, consider the following troubleshooting steps:
 
-Given an input schema, and for each gene file, translates DNA
-sequences of all alleles in each locus and determines
-which alleles code for the exact same protein sequence.
+- Verify that the paths to the schema, output, and other directories are correct.
+- Check the output directory for any error logs or messages.
+- Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- Ensure that you have a stable internet connection.
 
-## proteome_matcher.py
+if the issue persists, please report it to the development team using github issues.
 
-This script matches TrEMBL and SwissProt annotations to schemas.
+## Contributing
 
-## proteome_splitter.py
+We welcome contributions to the SchemaRefinery project. If you would like to contribute, please follow these steps:
 
-This script splits a set of Uniprot's reference proteomes into a pair of files,
-one file with sequences from Swiss-Prot and another with sequences from TrEMBL.
+1. Fork the repository on GitHub.
+2. Create a new branch for your feature or bugfix.
+3. Make your changes and commit them with a clear message.
+4. Push your changes to your forked repository.
+5. Create a pull request to the main repository.
 
-## remove_loci.py
+## License
 
-This script removes loci from a schema.
+This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/license/mit) file for details.
 
-## schema_validation_functions.py
+## Contact Information
 
-This script contains a collection of fucntions that are used to validade schemas.
-
-## annotation_merger.py
-
-This script merges annotations from different sources into one single comprehensible file.
-
-## assembly_statistics.py
-
-This script calculates statistics for input assemblies.
-
-## paralogous_interloci_validation_merger.py
-
-This script merges paralagous loci into groups obtained from inter_loci_validation.py.
-
-## allele_call_paralogous_merger.py
-
-This script merges paralagous loci into group from allele call module output.
-
-## split_locus.py
-
-This script splits loci based on sequence size intervals.
-
-## reassign_ids.py
-
-This script reassigns allele identifiers to ensure that the set of alleles for a locus have sequential identifiers.
-
-## new_loci_annotations.py
-
-This script uses ids identifiers to match with older annotations creating annotation table for newer schemas.
-
-## missing_ids.py
-
-This script determines if any locus in a schema does not have sequential allele identifiers.
-
-## mask_matrix.py
-
-Masks elements in a matrix with allelic profiles created with chewBBACA.
-
-## locus_length_variability.py
-
-This scripts computes allele length statistics for all loci in a schema, identifying loci with multimodal allele length distributions and loci with alleles that deviate from the mode value.
-
-## gc_content.py
-
-This script outputs a more detailed GC content information than assembly_statistics.py.
-
-## Extract_cgAlleles.py
-
-This module determines the set of genes in the core genome based on a matrix with allelic profiles and a threshold that defines the proportion of genomes a gene must be present in to be included in the core genome.
+For support or to report issues, please contact the development team at GitHub issues in [SchemaRefinery GitHub repository](https://github.com/B-UMMI/Schema_Refinery).

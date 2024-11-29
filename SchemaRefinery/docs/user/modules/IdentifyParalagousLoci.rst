@@ -33,42 +33,43 @@ The `IdentifyParalogousLoci` module can be used as follows:
 
 Command-Line Arguments
 ----------------------
+::
 
--s, --schema-directory
-    (Required) Folder that contains the schema to identify paralogous loci.
+    -s, --schema-directory
+        (Required) Folder that contains the schema to identify paralogous loci.
 
--o, --output-directory
-    (Required) Path to the directory to which files will be stored.
+    -o, --output-directory
+        (Required) Path to the directory to which files will be stored.
 
--c, --cpu
-    (Optional) Number of CPUs to run BLAST instances.
-    Default: 1
+    -c, --cpu
+        (Optional) Number of CPUs to run BLAST instances.
+        Default: 1
 
--b, --bsr
-    (Optional) BSR value to consider alleles as the same locus.
-    Default: 0.6
+    -b, --bsr
+        (Optional) BSR value to consider alleles as the same locus.
+        Default: 0.6
 
--tt, --translation_table
-    (Optional) Translation table to use for the CDS translation.
-    Default: 11
+    -tt, --translation_table
+        (Optional) Translation table to use for the CDS translation.
+        Default: 11
 
--st, --size_threshold
-    (Optional) Size threshold to consider two paralogous loci as similar.
-    Default: 0.2
+    -st, --size_threshold
+        (Optional) Size threshold to consider two paralogous loci as similar.
+        Default: 0.2
 
--pm, --processing-mode
-    (Optional) Mode to run the module.
-    Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-    Default: alleles_vs_alleles
+    -pm, --processing-mode
+        (Optional) Mode to run the module.
+        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+        Default: alleles_vs_alleles
 
---nocleanup
-    (Optional) Flag to indicate whether to skip cleanup after running the module.
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
 
 Outputs
 -------
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
 
-.. code-block:: bash
+::
 
     OutputFolderName
     ├── Blast # --nocleanup
@@ -138,6 +139,51 @@ Output files and folders description:
     **paralogous_loci_report.tsv**: TSV file containing the report of the paralogous loci.
     **paralogous_loci_report_cluster_by_id.tsv**: TSV file containing the report of the paralogous loci clustered by ID.
     **paralogous_loci_report_passed_all_checks.tsv**: TSV file containing the report of the paralogous loci clustered by ID that passed all checks.
+
+Report files description
+------------------------
+
+.. csv-table:: **paralogous_loci_report.tsv**
+   :header: "Query_loci_id", "Subject_loci_id", "BSR", "if_loci_intersect", "if_close_distance", "Loci_min_allele_size", "Loci_max_allele_size", "Loci_mode_allele_size", "Loci_mean_allele_size"
+   :widths: 20, 20, 10, 10, 10, 20, 20, 20, 20
+
+   x, a, 0.7360028348688873, False, False, 416.0|1349.0, 544.0|1645.0, 515.0|1628.0, 476.75|1615.125
+   x, b, 0.6146651702207258, False, True, 416.0|599.0, 544.0|738.0, 515.0|738.0, 476.75|720.625
+   x, c, 0.6523642732049036, True, True, 416.0|466.0, 544.0|547.0, 515.0|547.0, 476.75|512.5714285714286
+   ...
+
+columns description:
+
+::
+    Query_loci_id: The locus ID of the query.
+    Subject_loci_id: The locus ID of the subject.
+    BSR: The BSR value between the query and subject loci.
+    if_loci_intersect: If the loci intersect.
+    if_close_distance: If the loci are close in distance.
+    Loci_min_allele_size: The minimum allele size of the loci, query and subject values are separated by '|'.
+    Loci_max_allele_size: The maximum allele size of the loci, query and subject values are separated by '|'.
+    Loci_mode_allele_size: The mode allele size of the loci, query and subject values are separated by '|'.
+    Loci_mean_allele_size: The mean allele size of the loci, query and subject values are separated by '|'.
+
+.. csv-table:: **paralogous_loci_report_cluster_by_id.tsv**
+   :header: "Joined_loci_id", "Clustered_loci_ids"
+   :widths: 20, 80
+
+   x, x,a,b,c
+   y, y,d,e,f
+   z, z,g,h
+   ...
+
+columns description:
+
+.. csv-table:: **paralogous_loci_report_passed_all_checks.tsv**
+   :header: "Joined_loci_id", "Clustered_loci_ids"
+   :widths: 20, 80
+
+   x, x,b,c
+   y, y,d
+   z, z,h
+   ...
 
 Examples
 --------
