@@ -1145,10 +1145,13 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
         recommendations_report_file.write("Recommendation\tIDs\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
-                category = category.split('_')[:2] if 'Choice' in category else category
+                category = '_'.join(category.split('_')[:2] if 'Choice' in category else category)
+                # If the category is Choice, add the class to the category
+                if len(category) > 1:
+                    category = '_'.join(category[:2])
                 # Convert all to string
                 ids = itf.convert_set_elements_to_strings(ids)
-                recommendations_report_file.write(f"{'_'.join(category)}\t{','.join(ids)}\n")
+                recommendations_report_file.write(f"{category}\t{','.join(ids)}\n")
             recommendations_report_file.write("#\n")
             
     # Add the reverse matches to the related clusters
