@@ -1147,8 +1147,8 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
             for category, ids in recommendation.items():
                 category = category.split('_')[:2] if 'Choice' in category else category
                 # If the category is Choice, add the class to the category
-                if isinstance(ids, list):
-                    category = '_'.join(category[:2])
+                if isinstance(category, list):
+                    category = '_'.join(category)
                 # Convert all to string
                 ids = itf.convert_set_elements_to_strings(ids)
                 recommendations_report_file.write(f"{category}\t{','.join(ids)}\n")
