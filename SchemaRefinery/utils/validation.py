@@ -370,18 +370,13 @@ def validate_schema_annotation_module_arguments(args: dict) -> None:
         verify_path_exists(args.subject_schema, 'directory')
 
     # Check for mutually inclusive options
-    if not args.processing_mode and args.subject_schema:
+    if args.processing_mode is None and args.subject_schema is not None:
         verify_path_exists(args.subject_schema, 'directory')
         sys.exit("-pm --processing-mode is required when you want to add match with subject schema.")
 
     # Check for mutually inclusive options
-    if args.processing_mode and not args.subject_schema:
+    if args.processing_mode is not None and args.subject_schema is None:
         sys.exit("-ss --subject_schema is required when you want to add processing mode.")
-
-    # Check for mutually inclusive options
-    if not args.extra_genbank_table_columns and args.genbank_files:
-        sys.exit("-ss --subject_schema is required when you want to add processing mode.")
-
 
 def validate_download_assemblies_module_arguments(args: dict) -> None:
     """
