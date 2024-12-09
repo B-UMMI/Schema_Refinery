@@ -487,6 +487,26 @@ columns description:
     /path/to/temp_fastas/cluster_z.fasta
     ...
 
+**Algorithm Explanation:**
+Algorithm to identify new loci based on the CDS that are not in the schema:
+
+.. image:: source/algorithm_classification.drawio.png
+   :alt: Algorithm for unclassified CDS
+   :width: 200px
+   :align: center
+
+
+Each BLAST results is parsed and given a class based on the following rules:
+
+.. image:: source/algorithm_classification.drawio.png
+   :alt: Classification Algorithm
+   :width: 200px
+   :align: center
+
+Between the two loci, the best class is chosen based on the following order of the classes to represent the relationship between the two loci.
+
+classification order: 1a, 1b, 2a, 3a, 2b, 1c, 3b, 4a, 4b, 4c, 5
+
 Examples
 --------
 
