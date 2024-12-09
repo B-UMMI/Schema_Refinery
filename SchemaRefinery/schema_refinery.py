@@ -329,7 +329,7 @@ def schema_annotation() -> None:
                     dest='genbank_ids_to_add',
                     nargs='+',
                     default=[],
-                    help='List of GenBank IDs to add to final results.')
+                    help='List of GenBank IDs to add to final results (example.gbk).')
     
     parser.add_argument('-pia',
                     '--proteome-ids-to-add',
