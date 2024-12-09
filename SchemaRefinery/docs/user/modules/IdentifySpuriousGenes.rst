@@ -495,11 +495,17 @@ Algorithm to identify new loci based on the CDS that are not in the schema:
    :width: 200px
    :align: center
 
+Algorithm to indentify spurious loci based on the schema input:
+
+.. image:: source/algorithm_classification.drawio.png
+   :alt: Algorithm to identify spurious loci
+   :width: 200px
+   :align: center
 
 Each BLAST results is parsed and given a class based on the following rules:
 
 .. image:: source/algorithm_classification.drawio.png
-   :alt: Classification Algorithm
+   :alt: Classification algorithm
    :width: 200px
    :align: center
 
