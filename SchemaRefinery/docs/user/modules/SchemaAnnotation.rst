@@ -115,6 +115,9 @@ Command-Line Arguments
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Algorithm Explanation
+---------------------
+
 Outputs
 -------
 Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
