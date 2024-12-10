@@ -118,14 +118,14 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
-The `SchemaAnnotation` module annotates using GenBank files based on the following Flowchart:
+The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
 
 .. image:: source/genbank_annotation.png
    :alt: SchemaAnnotation GenBank Flowchart
    :width: 200px
    :align: center
 
-The `SchemaAnnotation` module annotates using UniProt proteomes based on the following Flowchart:
+The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the following Flowchart:
 
 .. image:: source/uniprot_proteomes_annotation.png
    :alt: SchemaAnnotation UniProt Proteomes Flowchart
