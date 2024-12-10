@@ -68,6 +68,13 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
+Algorithm to identify paralagous loci in a schema is shown below:
+
+.. image:: source/paralagous_loci.drawio.png
+   :alt: Paralagous loci identification algorithm
+   :width: 200px
+   :align: center
+
 Outputs
 -------
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:

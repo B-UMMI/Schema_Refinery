@@ -123,7 +123,7 @@ def identify_paralogous_loci(schema_directory: str,
                                                 statistics.mean(loci_allele_size)/3)
     
         # Get the fasta sequences for the query
-        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(query_fasta, False)
+        fasta_dict = sf.fetch_fasta_dict(query_fasta, False)
         # Write the sequences to the query file
         with open(query_fasta_translation, 'w') as query_file:
             for allele_id, sequence in fasta_dict.items():
