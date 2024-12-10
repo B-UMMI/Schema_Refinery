@@ -1,0 +1,109 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="25.0.3">
+  <diagram name="Page-1" id="vI1ZFkF_VZ9kpP50E2va">
+    <mxGraphModel dx="1364" dy="799" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="fPaXjcl1kV30KWy46vOE-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-1" target="fPaXjcl1kV30KWy46vOE-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-1" value="proteome fetcher" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="30" y="100" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-2" target="fPaXjcl1kV30KWy46vOE-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-2" value="Proteome files" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="36" y="10" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-4" target="fPaXjcl1kV30KWy46vOE-33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-4" value="Proteome splitter, split proteome based on ids into separate files for&amp;nbsp;TrEMBL and swiss-prot" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="160" y="100" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-6" target="fPaXjcl1kV30KWy46vOE-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-6" value="Run BLASTp" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="683" y="100" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-8" target="fPaXjcl1kV30KWy46vOE-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-8" value="Schema" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="425" y="10" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-9" target="fPaXjcl1kV30KWy46vOE-38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-9" value="Translating Schema loci" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="420" y="100" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-13" value="reps_&lt;div&gt;translations&lt;/div&gt;" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="426" y="240" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-9" target="fPaXjcl1kV30KWy46vOE-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-19" target="fPaXjcl1kV30KWy46vOE-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-19" value="Extracting best annotation for each input files and overall" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="683" y="240" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-21" value="Write Results" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="683" y="400" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-23" value="&lt;span style=&quot;font-size: 10px;&quot;&gt;best_annotations_&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 10px;&quot;&gt;per_proteome_file&lt;/span&gt;&lt;/div&gt;" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="553" y="410" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-21" target="fPaXjcl1kV30KWy46vOE-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-28" value="best_proteomes_&lt;div&gt;annotations_swiss_&lt;/div&gt;&lt;div&gt;prot.tsv&lt;/div&gt;" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="541" y="570" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-21" target="fPaXjcl1kV30KWy46vOE-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-33" target="fPaXjcl1kV30KWy46vOE-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-33" value="Create BLASTp database for swiss-prot and&amp;nbsp;TrEMBL" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="290" y="100" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-38" target="fPaXjcl1kV30KWy46vOE-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-47" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-38" target="fPaXjcl1kV30KWy46vOE-46">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-38" value="Calculate self-score" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="553" y="100" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-41" value="best_proteomes_&lt;div&gt;annotations_&lt;/div&gt;&lt;div&gt;trEMBL.tsv&lt;/div&gt;" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="541" y="490" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-21" target="fPaXjcl1kV30KWy46vOE-41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-46" value="self_score_&lt;div&gt;folder&lt;/div&gt;" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="559" y="10" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-48" value="blastp_results" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="689" y="10" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-49" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0.88;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-6" target="fPaXjcl1kV30KWy46vOE-48">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-50" value="blast_db" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="296" y="240" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="fPaXjcl1kV30KWy46vOE-51" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="fPaXjcl1kV30KWy46vOE-33" target="fPaXjcl1kV30KWy46vOE-50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
