@@ -57,7 +57,7 @@ def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, s
 
 def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_files: str,
                              blast_folder: str, self_score_dict: Dict[str, float], max_id_length: int,
-                             get_blastp_exec: str, bsr: float, cpu: int) -> Dict[str, Tuple[str, float]]:
+                             get_blastp_exec: str, bsr: float, cpu: int) -> Dict[str, Dict[str, float]]:
     """
     Run BLASTp to match schemas and calculate BSR values.
 
@@ -93,7 +93,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
     
     # Initialize dictionaries to store BSR values
     bsr_values: Dict[str, Dict[str, float]] = {}
-    best_bsr_values: Dict[str, Tuple[str, float]] = {}
+    best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_translations_paths)
     i: int = 1
     
@@ -105,7 +105,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                                 query_translations_paths.keys(),
                                 repeat(blastp_results_folder)):
             # Get the alignments
-            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, float]]]
+            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
             filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results_simplified(res[1],
                                                                                                         0,
                                                                                                         False,
@@ -135,7 +135,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                     else:
                         continue
                     # Save the best match for each query and subject matches
-                    subject_loci_id: str = subject_id.split('_')[0]
+                    subject_loci_id = subject_id.split('_')[0]
                     if not best_bsr_values[query_loci_id].get(subject_loci_id):
                         best_bsr_values[query_loci_id][subject_loci_id] = computed_score
                     elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
@@ -148,7 +148,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
     return best_bsr_values
 
 
-def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Tuple[str, float]],
+def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]],
                                      query_translations_paths: Dict[str, str], output_folder: str) -> str:
     """
     Write the best BLAST matches to a file.
@@ -235,7 +235,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     len_subject_fasta: int = len(subject_fastas)
     # Process query FASTA files
     query_translation_dict: Dict[str, str] = {}
-    query_ids: Dict[str, List[str]] = {}
+    query_ids: Dict[str, List[List[str]]] = {}
     query_translations_paths: Dict[str, str] = {}
     i = 0
     print("\nTranslating sequences for query schema...")
@@ -262,7 +262,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     
     # Process subject FASTA files
     subject_translation_dict: Dict[str, str] = {}
-    subject_ids: Dict[str, List[str]] = {}
+    subject_ids: Dict[str, List[List[str]]] = {}
     subject_translations_paths: Dict[str, str] = {}
     master_file_path: str = os.path.join(blast_folder, 'master_file.fasta')
     i = 0
@@ -271,7 +271,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         i += 1
         print(f"\rTranslated subject loci FASTA: {i}/{len_subject_fasta}", end='', flush=True)
         # Get the fasta sequences for the query
-        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
+        fasta_dict = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
         subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
         # Create translation file path
@@ -301,7 +301,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     max_id_length: int = len(max(query_translations_paths.keys(), key=len))
 
     # Calculate self-scores for each query
-    self_score_dict: Dict[str, int] = bf.calculate_self_score(query_translations_paths,
+    self_score_dict: Dict[str, float] = bf.calculate_self_score(query_translations_paths,
                                                               get_blastp_exec,
                                                               blast_folder,
                                                               max_id_length,
@@ -316,7 +316,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
 
     # Run BLAST
     print("\nRunning BLASTs between schemas...")
-    best_bsr_values: Dict[str, Tuple[str, float]] = run_blasts_match_schemas(query_translations_paths,
+    best_bsr_values: Dict[str, Dict[str, float]] = run_blasts_match_schemas(query_translations_paths,
                                                                             blast_db_files,
                                                                             blast_folder,
                                                                             self_score_dict,

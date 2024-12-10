@@ -70,8 +70,8 @@ Algorithm Explanation
 
 Algorithm to identify paralagous loci in a schema is shown below:
 
-.. image:: source/paralagous_loci.drawio.png
-   :alt: Paralagous loci identification algorithm
+.. image:: source/paralagous_loci.png
+   :alt: IdentifyParalogousLoci Algorithm
    :width: 200px
    :align: center
 

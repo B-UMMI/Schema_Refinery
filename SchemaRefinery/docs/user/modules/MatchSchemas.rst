@@ -68,6 +68,13 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
+Algorithm to match schemas:
+
+.. image:: source/match_schemas.png
+   :alt: MatchSchemas Algorithm
+   :width: 200px
+   :align: center
+
 
 Outputs
 -------
