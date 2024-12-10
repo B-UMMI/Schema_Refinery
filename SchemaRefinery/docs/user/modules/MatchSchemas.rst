@@ -75,7 +75,6 @@ MatchSchemas Algorithm Flowchart:
    :width: 200px
    :align: center
 
-
 Outputs
 -------
 Folder and file structure for the output directory of the `MatchSchemas` module is shown below. The output directory contains the following files and folders:
