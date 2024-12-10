@@ -68,7 +68,7 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
-Algorithm to match schemas:
+MatchSchemas Algorithm Flowchart:
 
 .. image:: source/match_schemas.png
    :alt: MatchSchemas Algorithm

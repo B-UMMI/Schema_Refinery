@@ -118,6 +118,14 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
+The `SchemaAnnotation` module annotates using GenBank Flowchart:
+
+.. image:: source/genbank_annotation.png
+   :alt: SchemaAnnotation GenBank Flowchart
+   :width: 200px
+   :align: center
+
+
 Outputs
 -------
 Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
@@ -281,6 +289,7 @@ Output files and folders description:
                 x_translation.fasta: Translation for x.
                 y_translation.fasta: Translation for y.
                 ...: Other translations.
+            selected_genbank_proteins.fasta
 
     matched_schemas: Folder containing matched schemas.
         best_blast_matches.tsv: Best BLAST matches.
