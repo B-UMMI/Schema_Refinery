@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'chewBBACA'
+project = 'SchemaRefinery'
 copyright = '2024, UMMI'
 author = 'Mykyta Forofontov'
 
