@@ -11,9 +11,9 @@ build:
   tools:
     python: "3.9"
 
-# Build documentation in the CHEWBBACA/docs/ directory with Sphinx
+# Build documentation in the SchemaRefinery/docs/ directory with Sphinx
 sphinx:
-   configuration: CHEWBBACA/docs/conf.py
+   configuration: SchemaRefinery/docs/conf.py
 
 # Optionally declare the Python requirements required to build your docs
 python:
