@@ -122,7 +122,16 @@ Each BLAST results is parsed and given a class based on the following rules:
 .. image:: source/algorithm_classification.drawio.png
    :alt: Classification algorithm
    :width: 200px
-   :align: center
+   :align: centercolumns description:
+
+.. csv-table:: **paralogous_loci_report_passed_all_checks.tsv**
+   :header: "Joined_loci_id", "Clustered_loci_ids"
+   :widths: 20, 80
+
+   x, x,b,c
+   y, y,d
+   z, z,h
+   ...
 
 Between the two loci, the best class is chosen based on the following order of the classes to represent the relationship between the two loci.
 
