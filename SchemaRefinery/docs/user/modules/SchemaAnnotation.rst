@@ -115,6 +115,38 @@ Command-Line Arguments
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Algorithm Explanation
+---------------------
+
+The `SchemaAnnotation` module annotates using three different options: `GenBank files`, `UniProt proteomes`, and `Match Schemas`.
+The following is the flowchart for the `SchemaAnnotation` module:
+
+.. image:: source/SchemaAnnotation.png
+   :alt: SchemaAnnotation Flowchart
+   :width: 200px
+   :align: center
+
+The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
+
+.. image:: source/genbank_annotation.png
+   :alt: SchemaAnnotation GenBank Flowchart
+   :width: 200px
+   :align: center
+
+The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the following Flowchart:
+
+.. image:: source/uniprot_proteomes_annotation.png
+   :alt: SchemaAnnotation UniProt Proteomes Flowchart
+   :width: 200px
+   :align: center
+
+The `SchemaAnnotation` module matches schemas based on the following Flowchart:
+
+.. image:: source/match_schemas.png
+   :alt: SchemaAnnotation Match Schemas Flowchart
+   :width: 200px
+   :align: center
+
 Outputs
 -------
 Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
@@ -278,6 +310,7 @@ Output files and folders description:
                 x_translation.fasta: Translation for x.
                 y_translation.fasta: Translation for y.
                 ...: Other translations.
+            selected_genbank_proteins.fasta
 
     matched_schemas: Folder containing matched schemas.
         best_blast_matches.tsv: Best BLAST matches.

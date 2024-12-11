@@ -65,6 +65,16 @@ Command-Line Arguments
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Algorithm Explanation
+---------------------
+
+Algorithm to identify paralagous loci in a schema is shown below:
+
+.. image:: source/paralagous_loci.png
+   :alt: IdentifyParalogousLoci Algorithm
+   :width: 200px
+   :align: center
+
 Outputs
 -------
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:

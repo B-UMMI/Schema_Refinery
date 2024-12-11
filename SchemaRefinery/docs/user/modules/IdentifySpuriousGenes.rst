@@ -100,6 +100,44 @@ Command-Line Arguments
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Algorithm Explanation
+---------------------
+
+Algorithm to identify new loci based on the CDS that are not in the schema:
+
+.. image:: source/algorithm_classification.drawio.png
+   :alt: Algorithm for unclassified CDS
+   :width: 200px
+   :align: center
+
+Algorithm to indentify spurious loci based on the schema input:
+
+.. image:: source/algorithm_classification.drawio.png
+   :alt: Algorithm to identify spurious loci
+   :width: 200px
+   :align: center
+
+Each BLAST results is parsed and given a class based on the following rules:
+
+.. image:: source/algorithm_classification.drawio.png
+   :alt: Classification algorithm
+   :width: 200px
+   :align: centercolumns description:
+
+.. csv-table:: **paralogous_loci_report_passed_all_checks.tsv**
+   :header: "Joined_loci_id", "Clustered_loci_ids"
+   :widths: 20, 80
+
+   x, x,b,c
+   y, y,d
+   z, z,h
+   ...
+
+Between the two loci, the best class is chosen based on the following order of the classes to represent the relationship between the two loci.
+
+classification order: 1a, 1b, 2a, 3a, 2b, 1c, 3b, 4a, 4b, 4c, 5
+
+
 Outputs
 -------
 Folder and file structure for the output directory of the `IdentifySpuriousGenes` module is shown below. The output directory contains the following files and folders:

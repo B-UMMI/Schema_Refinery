@@ -65,6 +65,16 @@ Command-Line Arguments
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+Algorithm Explanation
+---------------------
+
+MatchSchemas Algorithm Flowchart:
+
+.. image:: source/match_schemas.png
+   :alt: MatchSchemas Algorithm
+   :width: 200px
+   :align: center
+
 Outputs
 -------
 Folder and file structure for the output directory of the `MatchSchemas` module is shown below. The output directory contains the following files and folders:
