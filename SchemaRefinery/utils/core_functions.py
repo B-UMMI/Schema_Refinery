@@ -389,14 +389,14 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
         """
         del representative_blast_results[query][subject][entry_id]
 
-    def clean_up_results(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+    def clean_up_results(representative_blast_results: tp.BlastResult, 
                          query: str, subject: str) -> None:
         """
         Cleans up BLAST results for a specific query and subject by removing empty entries.
 
         Parameters
         ----------
-        representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
+        representative_blast_results : tp.BlastResult
             A dictionary containing BLAST results, where keys are query IDs, and values are dictionaries with
             subject IDs as keys, each mapping to their respective result entries.
         query : str
@@ -439,7 +439,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
             clean_up_results(representative_blast_results, query, subject)
 
 
-def separate_blast_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+def separate_blast_results_into_classes(representative_blast_results: tp.BlastResult, 
                                          constants: Tuple[Any, ...], classes_outcome: List[str]) -> Tuple[str, ...]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
@@ -451,7 +451,7 @@ def separate_blast_results_into_classes(representative_blast_results: Dict[str, 
 
     Parameters
     ----------
-    representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
+    representative_blast_results : tp.BlastResult
         A nested dictionary where the first level keys are query sequence IDs, the second level keys
         are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
         result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
@@ -609,7 +609,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastResult,
     return sorted_blast_dict
 
 
-def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Any]]], 
+def process_classes(representative_blast_results: tp.BlastResult, 
                     classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
                     Dict[str, Tuple[Optional[str], List[str], List[str], Tuple[str, str], List[str]]],
                     Dict[str, Dict[str, int]], Dict[str, Dict[str, List[Union[int, str]]]],
@@ -1254,7 +1254,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
 
 
 def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_classes: tp.ClustersToKeep, 
-                sorted_blast_dict: Dict[str, Any]) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
+                sorted_blast_dict: tp.BlastResult) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
     """
     Determines the matches between loci and their corresponding alleles or CDS based on the
     relationships and the current selection of CDS to keep.
