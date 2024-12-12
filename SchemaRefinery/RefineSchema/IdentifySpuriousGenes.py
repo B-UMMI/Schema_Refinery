@@ -277,7 +277,11 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_alleles,
         cds_present,
         group_reps_ids,
-        group_alleles_ids) = scf.process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, initial_processing_output)
+        group_alleles_ids) = scf.process_new_loci(schema_folder,
+                                                  allelecall_directory,
+                                                  constants,
+                                                  processing_mode,
+                                                  initial_processing_output)
 
     # Create BLAST db for the schema DNA sequences.
     print("\nCreating BLASTn database...")
