@@ -264,7 +264,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     subject_translation_dict: Dict[str, str] = {}
     subject_ids: Dict[str, List[List[str]]] = {}
     subject_translations_paths: Dict[str, str] = {}
-    master_file_path: str = os.path.join(blast_folder, 'master_file.fasta')
+    master_file_path: str = os.path.join(blast_folder, 'subject_master_file.fasta')
     i = 0
     print("\nTranslating sequences for subject schema...")
     for subject_loci, path in subject_fastas.items():

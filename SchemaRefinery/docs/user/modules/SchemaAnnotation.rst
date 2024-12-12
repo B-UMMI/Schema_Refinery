@@ -163,6 +163,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │   │   └── ...
     │   ├── best_genbank_annotations.tsv
     │   ├── blast_processing
+    │   │   ├── selected_genbank_proteins.fasta
     │   │   ├── blast_db
     │   │   │   ├── blast_db_protein.pdb
     │   │   │   ├── blast_db_protein.phr
@@ -288,6 +289,7 @@ Output files and folders description:
             ...: Other GenBank file annotations.
         best_genbank_annotations.tsv: Best GenBank annotations.
         blast_processing: Folder containing BLASTp database, BLASTp output files, and translation files.
+            selected_genbank_proteins.fasta: Selected GenBank proteins.
             blast_db: Folder containing the BLASTp database.
                 blast_db_protein.pdb: Position-specific Data Base file.
                 blast_db_protein.phr: Protein Header Record file.
@@ -310,7 +312,6 @@ Output files and folders description:
                 x_translation.fasta: Translation for x.
                 y_translation.fasta: Translation for y.
                 ...: Other translations.
-            selected_genbank_proteins.fasta
 
     matched_schemas: Folder containing matched schemas.
         best_blast_matches.tsv: Best BLAST matches.
