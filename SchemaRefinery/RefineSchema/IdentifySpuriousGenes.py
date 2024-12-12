@@ -415,6 +415,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                 output_directory)
 
     # Get all of the CDS that matched with loci or loci matched with loci
+    #TODO fix this
     is_matched: Dict[str, Any]
     is_matched_alleles: Dict[str, Any]
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
