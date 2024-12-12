@@ -564,7 +564,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastResult,
 
     Parameters
     ----------
-    representative_blast_results : Dict[str, Dict[str, List[Dict[str, Any]]]]
+    representative_blast_results : tp.BlastResult
         A dictionary where each key is a query identifier and each value is another dictionary.
         The inner dictionary's keys are subject identifiers, and values are lists containing
         details of the match, where the second element is a dictionary with the key 'class'
@@ -625,7 +625,7 @@ def process_classes(representative_blast_results: tp.BlastResult,
 
     Parameters
     ----------
-    representative_blast_results : Dict[str, Dict[str, Dict[str, Any]]]
+    representative_blast_results : tp.BlastResult
         A nested dictionary where the first key is the query sequence ID, the second key is
         the subject sequence ID, and the value is another dictionary containing match details
         including the class of the match.process_classes
@@ -1328,9 +1328,9 @@ def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_
 
 def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
                output_dir: str, constants: List[Any], cpu: int,
-               multi_fasta: Dict[str, List[str]]) -> Tuple[Dict[str, Dict[str, Any]], 
-                                                           Dict[str, Dict[str, Any]], 
-                                                           Dict[str, Dict[str, Any]], 
+               multi_fasta: Dict[str, List[str]]) -> Tuple[tp.BlastResult, 
+                                                           tp.RepresentativeBlastResultsCoords, 
+                                                           tp.RepresentativeBlastResultsCoords, 
                                                            Dict[str, Dict[str, float]], 
                                                            Dict[str, float]]:
     """
