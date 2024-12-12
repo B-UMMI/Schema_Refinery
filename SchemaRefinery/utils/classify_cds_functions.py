@@ -852,14 +852,14 @@ def prepare_files_to_blast(representatives_blastn_folder: str,
     return to_blast_paths, master_file_path
 
 
-def update_frequencies_in_genomes(clusters_to_keep: Dict[str, Dict[str, List[str]]], 
+def update_frequencies_in_genomes(clusters_to_keep_1a: Dict[str, List[str]], 
                                   frequency_in_genomes: Dict[str, int]) -> Dict[str, int]:
     """
     Updates the frequencies in genomes for joined groups and updates the changed clusters frequency from joined CDSs.
 
     Parameters
     ----------
-    clusters_to_keep : Dict[str, Dict[str, List[str]]]
+    clusters_to_keep : Dict[str, List[str]]
         Dictionary containing clusters to keep with their members.
     frequency_in_genomes : Dict[str, int]
         Dictionary with the frequency of CDS in the genomes.
@@ -873,7 +873,7 @@ def update_frequencies_in_genomes(clusters_to_keep: Dict[str, Dict[str, List[str
     new_cluster_freq: Dict[str, int] = {}
 
     # Calculate new frequencies for joined groups
-    for cluster_id, cluster_members in clusters_to_keep['1a'].items():
+    for cluster_id, cluster_members in clusters_to_keep_1a.items():
         new_cluster_freq[cluster_id] = sum(frequency_in_genomes[member] for member in cluster_members)
         for member in cluster_members:
             updated_frequency_in_genomes[member] = new_cluster_freq[cluster_id]

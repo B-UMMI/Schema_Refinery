@@ -344,18 +344,19 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     # Extract which clusters are to maintain and to display to user.
     clusters_to_keep: Dict[str, Any]
     dropped_loci_ids: List[str]
-    clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
+    clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
     
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
-    clusters_to_keep['1a'] = {values[0]: values for key, values in clusters_to_keep['1a'].items()}
+    clusters_to_keep_1a = {values[0]: values for key, values in clusters_to_keep_1a.items()}
     if run_mode == 'unclassified_cds':
-        updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep, frequency_in_genomes)
+        updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a,  frequency_in_genomes)
     
         # Open dict to store IDs of the reps and alleles
-        group_reps_ids: Dict[str, Any] = {}
-        group_alleles_ids: Dict[str, Any] = {}
+        group_reps_ids = {}
+        group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
-        group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(clusters_to_keep,
+        group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(clusters_to_keep_1a,
+                                                                                clusters_to_keep,
                                                                                 all_alleles,
                                                                                 dropped_loci_ids,
                                                                                 group_reps_ids,
@@ -363,7 +364,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         print("\nAdd remaining cluster that didn't match by BLASTn...")
         # Add cluster not matched by BLASTn
-        all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep['1a'].values()])
+        all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a.values()])
         clusters_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in all_alleles.keys() if cluster not in all_matched_clusters])
 
     processed_drop: List[str] = []
@@ -371,10 +372,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     cof.add_cds_to_dropped_cds(dropped_loci_ids,
                             dropped_alleles,
                             clusters_to_keep,
+                            clusters_to_keep_1a,
                             all_alleles,
                             'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
                             processed_drop)
 
+    # Merge classes
+    merged_all_classes: Dict[str, Any] = {'1a': clusters_to_keep_1a.copy()}
+    merged_all_classes.update(clusters_to_keep)
     print("\nExtracting results...")
     related_clusters: Dict[str, Any]
     recommendations: Dict[str, Any]
@@ -382,7 +387,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     related_clusters, recommendations = cof.extract_results(processed_results,
                                                             count_results_by_class,
                                                             frequency_in_genomes,
-                                                            clusters_to_keep,
+                                                            merged_all_classes,
                                                             dropped_loci_ids,
                                                             classes_outcome)
 
@@ -406,7 +411,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     is_matched: Dict[str, Any]
     is_matched_alleles: Dict[str, Any]
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
-                                                    clusters_to_keep,
+                                                    merged_all_classes,
                                                     sorted_blast_dict)
 
     print("\nWriting classes and cluster results to files...")
@@ -416,7 +421,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                report_file_path,
                                'w')
     # Write the processed results to a file alignments by clusters and classes.
-    cof.write_processed_results_to_file(clusters_to_keep,
+    cof.write_processed_results_to_file(merged_all_classes,
                                     representative_blast_results,
                                     classes_outcome,
                                     all_alleles,
@@ -427,7 +432,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     if run_mode == 'unclassified_cds':
         print("\nUpdating IDs and saving changes in cds_id_changes.tsv...")
         # Update the IDs and save the changes in a file.
-        ccf.update_ids_and_save_changes(clusters_to_keep,
+        ccf.update_ids_and_save_changes(merged_all_classes,
                                     all_alleles,
                                     cds_original_ids,
                                     dropped_alleles,
@@ -443,14 +448,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                         dropped_alleles,
                                                                         output_directory)
     # Print the classification results
-    cof.print_classifications_results(clusters_to_keep,
+    cof.print_classifications_results(merged_all_classes,
                                         dropped_loci_ids,
                                         to_blast_paths,
                                         all_alleles)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
         print("\nWriting temp loci file...")
-        temp_fastas_paths, fastas_paths_txt, temp_fastas_folder = ccf.write_temp_loci(clusters_to_keep,
+        temp_fastas_paths, fastas_paths_txt, temp_fastas_folder = ccf.write_temp_loci(merged_all_classes,
                                                                                 all_nucleotide_sequences,
                                                                                 all_alleles,
                                                                                 output_directory)

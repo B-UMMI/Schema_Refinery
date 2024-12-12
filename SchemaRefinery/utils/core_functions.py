@@ -1637,7 +1637,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
 
 
 def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: Dict[str, Dict[str, int]], 
-                            drop_mark: Set[int]) -> Tuple[Dict[str, List[Union[int, List[int]]]], Set[int]]:
+                            drop_mark: Set[int]) -> Tuple[Dict[str, Union[List[Union[str, List[str]]], Dict[str, List[str]]]], Set[str]]:
     """
     Extracts and organizes CDS (Coding Sequences) to keep based on classification outcomes.
 
@@ -1658,7 +1658,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
 
     Returns
     -------
-    clusters_to_keep : Dict[str, List[Union[int, List[int]]]]
+    clusters_to_keep : Dict[str, Union[List[Union[int, List[int]]], Dict[int, List[str]]]]
         A dictionary with class identifiers as keys and lists of CDS identifiers or pairs of identifiers
         to be kept in each class.
     drop_possible_loci : Set[int]
@@ -1676,24 +1676,24 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
       `cf.cluster_by_ids` for clustering CDS pairs in class '1a'.
     """
     # Temporary dictionary to keep track of the best class for each CDS
-    temp_keep: Dict[int, str] = {}
+    temp_keep: Dict[str, str] = {}
     
     # Initialize clusters_to_keep with empty lists for each class in classes_outcome
-    clusters_to_keep: Dict[str, List[Union[int, List[int]]]] = {class_: [] for class_ in classes_outcome}
-    
+    clusters_to_keep: Dict[str, Union[Dict[int, List[str]]]] = {class_: [] for class_ in classes_outcome if class_ != '1a'}
+    temp_clusters_1a: List[List[str]] = []
     # Initialize a set to keep track of CDS to be dropped
-    drop_possible_loci: Set[int] = set()
+    drop_possible_loci: Set[str] = set()
     
     # Iterate through count_results_by_class to assign CDS to the most appropriate class
     for ids, result in count_results_by_class.items():
         class_: str = next(iter(result))
-        query: int
-        subject: int
-        query, subject = list(map(lambda x: itf.try_convert_to_type(x, int), ids.split('|')))
+        query: str
+        subject: str
+        query, subject = ids.split('|')
         
         # Special handling for class '1a'
         if class_ == '1a':
-            clusters_to_keep.setdefault('1a', []).append([query, subject])
+            temp_clusters_1a.append([query, subject])
         
         # Update temp_keep with the best class for each CDS
         if not temp_keep.get(query):
@@ -1716,12 +1716,12 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
             clusters_to_keep.setdefault(class_, []).append(keep)
     
     # Cluster and index CDS pairs in class '1a'
-    clusters_to_keep['1a'] = {i: list(values) for i, values in enumerate(cf.cluster_by_ids(clusters_to_keep['1a']), 1)}
+    clusters_to_keep_1a: Dict[int, List[str]] = {i: list(values) for i, values in enumerate(cf.cluster_by_ids(temp_clusters_1a), 1)}
     
-    return clusters_to_keep, drop_possible_loci
+    return clusters_to_keep_1a, clusters_to_keep, drop_possible_loci
 
 
-def count_number_of_reps_and_alleles(clusters_to_keep: Dict[str, Dict[int, List[int]]], clusters: Dict[int, List[int]], 
+def count_number_of_reps_and_alleles(clusters_to_keep_1a, clusters_to_keep: Dict[str, Dict[int, List[int]]], clusters: Dict[int, List[int]], 
                                     drop_possible_loci: Set[int], group_reps_ids: Dict[int, Set[int]], 
                                     group_alleles_ids: Dict[int, Set[int]]) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
     """
@@ -1758,22 +1758,17 @@ def count_number_of_reps_and_alleles(clusters_to_keep: Dict[str, Dict[int, List[
     - It then iterates through the drop set to ensure that any groups marked for dropping are also included
       in the dictionaries.
     """
+    for group, cds_group in clusters_to_keep_1a.items():
+        for cds in cds_group:
+            group_reps_ids.setdefault(cds, set()).add(cds)
+            group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
+
     # Iterate over each class in clusters_to_keep
     for class_, cds_group in clusters_to_keep.items():
         # Iterate over each group in the class
         for group in cds_group:
-            if class_ == '1a':
-                # Iterate over each representative in the joined group
-                for cds in cds_group[group]:
-                    if group_reps_ids.get(cds):
-                        continue
-                    group_reps_ids.setdefault(cds, set()).add(cds)
-                    group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
-            elif group_reps_ids.get(group):
-                continue
-            else:
-                group_reps_ids.setdefault(group, set()).add(group)
-                group_alleles_ids.setdefault(group, set()).update(clusters[group])
+            group_reps_ids.setdefault(group, set()).add(group)
+            group_alleles_ids.setdefault(group, set()).update(clusters[group])
     
     # Iterate over the drop set to ensure groups marked for dropping are included
     for id_ in drop_possible_loci:
@@ -1784,7 +1779,7 @@ def count_number_of_reps_and_alleles(clusters_to_keep: Dict[str, Dict[int, List[
     return group_reps_ids, group_alleles_ids
 
 
-def create_graphs(file_path: str, output_path: str, filename: str, other_plots: Optional[List[Dict[str, Any]]] = None) -> None:
+def create_graphs(file_path: str, output_path: str, filename: str, other_plots: Optional[List[str]] = None) -> None:
     """
     Create graphs based on representative_blast_results written inside a TSV file.
 
@@ -1945,8 +1940,9 @@ def print_classifications_results(clusters_to_keep: Dict[str, Any], drop_possibl
         clusters_to_keep['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
 
 
-def add_cds_to_dropped_cds(drop_possible_loci: List[int], dropped_cds: Dict[int, str], clusters_to_keep: Dict[str, Any], 
-                            clusters: Dict[int, List[int]], reason: str, processed_drop: List[int]) -> None:
+def add_cds_to_dropped_cds(drop_possible_loci: List[str], dropped_cds: Dict[str, str], clusters_to_keep: Dict[str, Any],
+                           clusters_to_keep_1a: Dict[str, List[str]],
+                            clusters: Dict[str, List[str]], reason: str, processed_drop: List[str]) -> None:
     """
     Adds CDS to the dropped CDS list based on the provided parameters.
 
@@ -1990,11 +1986,11 @@ def add_cds_to_dropped_cds(drop_possible_loci: List[int], dropped_cds: Dict[int,
             processed_drop.append(drop_id)
 
         # Check if the drop ID belongs to a joined group (class '1a')
-        class_1a_id: Optional[int] = itf.identify_string_in_dict_get_key(drop_id, clusters_to_keep['1a'])
+        class_1a_id: Optional[str] = itf.identify_string_in_dict_get_key(drop_id, clusters_to_keep_1a)
         if class_1a_id:
             # Add all elements of the joined group to the dropped list
-            process_ids: List[int] = clusters_to_keep['1a'][class_1a_id]
-            del clusters_to_keep['1a'][drop_id]
+            process_ids: List[str] = clusters_to_keep_1a[class_1a_id]
+            del clusters_to_keep_1a[drop_id]
         else:
             # Check if the drop ID belongs to another class
             class_: Optional[str] = itf.identify_string_in_dict_get_key(drop_id, {key: value for key, value in clusters_to_keep.items() if key != '1a'})
@@ -2121,7 +2117,7 @@ def identify_problematic_new_loci(clusters_to_keep: Dict[str, Dict[int, List[int
 
 
 def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], dropped_cds: Dict[str, str], 
-                                            output_directory: str) -> None:
+                                            output_directory: str) -> str:
     """
     Write the dropped possible new loci to a file with the reasons for dropping them.
 
