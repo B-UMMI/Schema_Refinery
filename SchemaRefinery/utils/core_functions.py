@@ -97,11 +97,11 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
                     report_file.write('\t'.join(map(str, alignment_data.values())) + '\n')
 
 
-def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+def add_items_to_results(representative_blast_results: tp.BlastResult, 
                          reps_kmers_sim: Dict[str, Dict[str, Tuple[float, float]]], 
                          bsr_values: Dict[str, Dict[str, float]],
-                         representative_blast_results_coords_all: Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]],
-                         representative_blast_results_coords_pident: Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]],
+                         representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords,
+                         representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords,
                          frequency_in_genomes: Dict[str, int], 
                          allele_ids: List[bool]) -> None:
     """
@@ -115,7 +115,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
 
     Parameters
     ----------
-    representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
+    representative_blast_results : tp.BlastResult
         A dictionary containing BLAST results. Each entry is expected to represent a unique BLAST hit with
         various metrics.
     reps_kmers_sim : Dict[str, Dict[str, Tuple[float, float]]]
@@ -123,9 +123,9 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
     bsr_values : Dict[str, Dict[str, float]]
         A dictionary mapping pairs of CDS to their Blast Score Ratio (BSR) values. Can be None if BSR values
         are not available.
-    representative_blast_results_coords_all : Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]]
+    representative_blast_results_coords_all : tp.RepresentativeBlastResultsCoords
         A dictionary containing the coordinates for all BLAST entries, used for calculating global alignment metrics.
-    representative_blast_results_coords_pident : Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]]
+    representative_blast_results_coords_pident : tp.RepresentativeBlastResultsCoords
         A dictionary containing the coordinates for BLAST entries above a certain percentage identity threshold,
         used for calculating specific global alignment metrics.
     frequency_in_genomes : Dict[str, int]
@@ -216,14 +216,14 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
             bsr = float(round(bsr))
         return round(bsr, 4)
 
-    def calculate_total_length(representative_blast_results_coords: Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]], 
+    def calculate_total_length(representative_blast_results_coords: tp.RepresentativeBlastResultsCoords, 
                                query: str, subject: str) -> Dict[str, int]:
         """
         Calculates the total aligned length for each reference sequence in a given query-subject pair.
 
         Parameters
         ----------
-        representative_blast_results_coords : Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]]
+        representative_blast_results_coords : tp.RepresentativeBlastResultsCoords
             A nested dictionary where the first level keys are query sequence IDs, the second level keys are
             subject sequence IDs, and the values are dictionaries mapping reference sequence IDs to lists of
             alignment intervals.
@@ -294,7 +294,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
                                       (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
         return round(local_palign_min, 4)
 
-    def update_results(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+    def update_results(representative_blast_results: tp.BlastResult, 
                        query: str, subject: str, entry_id: str, bsr: float, sim: Union[float, str], 
                        cov: Union[float, str], frequency_in_genomes: Dict[str, int],
                        global_palign_all_min: float, global_palign_all_max: float, 
@@ -305,7 +305,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
 
         Parameters
         ----------
-        representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
+        representative_blast_results : tp.BlastResult
             A dictionary containing BLAST results where keys are query IDs, values are dictionaries with subject
             IDs as keys, and each subject dictionary contains dictionaries of entry IDs with their respective data.
         query : str
@@ -364,14 +364,14 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
             subject = subject_before
         representative_blast_results[query][subject][entry_id].update(update_dict)
 
-    def remove_results(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+    def remove_results(representative_blast_results: tp.BlastResult, 
                        query: str, subject: str, entry_id: str) -> None:
         """
         Removes a specific entry from the BLAST results for a given query and subject pair.
 
         Parameters
         ----------
-        representative_blast_results : Dict[str, Dict[str, Dict[str, Dict[str, Any]]]]
+        representative_blast_results : tp.BlastResult
             A dictionary containing BLAST results, structured with query IDs as keys, each mapping to a dictionary
             of subject IDs, which in turn map to dictionaries of entry IDs and their associated data.
         query : str
@@ -1378,9 +1378,9 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     # Calculate max id length for print.
     max_id_length: int = len(max(cds_to_blast, key=len))
     total_reps: int = len(rep_paths_nuc)
-    representative_blast_results: Dict[str, Dict[str, Any]] = {}
-    representative_blast_results_coords_all: Dict[str, Dict[str, Any]] = {}
-    representative_blast_results_coords_pident: Dict[str, Dict[str, Any]] = {}
+    representative_blast_results: tp.BlastResult = {}
+    representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords = {}
+    representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
     i: int = 1
@@ -1541,7 +1541,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
 
 
 def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep, 
-                                    representative_blast_results: Dict[str, Dict[str, Dict[str, Any]]],
+                                    representative_blast_results: tp.BlastResult,
                                     classes_outcome: List[str], all_alleles: Dict[str, List[str]], 
                                     is_matched: Dict[str, Set[str]], is_matched_alleles: Dict[str, Set[str]], 
                                     output_path: str) -> None:
@@ -1552,7 +1552,7 @@ def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep,
     ----------
     merged_all_classes : tp.ClustersToKeep
         Dictionary containing clusters to keep, categorized by class.
-    representative_blast_results : Dict[str, Dict[str, Dict[str, Any]]]
+    representative_blast_results : tp.BlastResult
         Dictionary containing representative BLAST results.
     classes_outcome : List[str]
         List of class outcomes to process.

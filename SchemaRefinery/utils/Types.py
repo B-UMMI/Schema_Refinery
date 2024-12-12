@@ -1,4 +1,4 @@
-from typing import Dict, List, TypedDict
+from typing import Dict, List, TypedDict, Tuple
 
 class ClustersToKeep(TypedDict):
     '1a': Dict[int, List[str]]
@@ -41,3 +41,6 @@ class BlastResult(TypedDict):
 
 class SortedBlastDict(TypedDict):
     query: Dict[str, Dict[int, BlastResult]]
+
+class RepresentativeBlastResultsCoords(TypedDict):
+    query: Dict[str, Dict[str, List[Tuple[int, int]]]]
