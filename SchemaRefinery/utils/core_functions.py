@@ -610,12 +610,13 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
 
 
 def process_classes(representative_blast_results: tp.BlastDict, 
-                    classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
+                    classes_outcome: Tuple[str, ...],
+                    all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
                     tp.ProcessedResults,
                     tp.CountResultsByClass,
                     tp.CountResultsByClassWithInverse,
-                    tp.RepsAndAllelesIds Dict[str, List[List[str]]]
-                    ]:
+                    tp.RepsAndAllelesIds,
+                    tp.AllRelationships,]:
     """
     Processes BLAST results to determine class-based relationships and counts.
 
@@ -652,7 +653,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
         A dictionary mapping pairs of query and subject sequences to their unique loci/CDS IDs and alleles IDs.
     drop_mark : List[str]
         A list of sequences that were marked for dropping.
-    all_relationships : Dict[str, List[List[str]]]
+    all_relationships : tp.AllRelationships
         A dictionary containing all relationships between sequences, grouped by class.
 
     Notes
@@ -668,7 +669,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse = {}
     reps_and_alleles_ids: tp.RepsAndAllelesIds = {}
     processed_results: tp.ProcessedResults = {}
-    all_relationships: Dict[str, List[List[str]]] = {class_: [] for class_ in classes_outcome}
+    all_relationships: tp.AllRelationships = {class_: [] for class_ in classes_outcome}
     drop_mark: List[str] = []
     inverse_match: List[str] = []
 
@@ -1254,7 +1255,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     return (related_matches_path, count_results_by_cluster_path, recommendations_file_path)
 
 
-def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_classes: tp.ClustersToKeep, 
+def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.ClustersToKeep, 
                 sorted_blast_dict: tp.BlastDict) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
     """
     Determines the matches between loci and their corresponding alleles or CDS based on the
@@ -1268,7 +1269,7 @@ def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_
 
     Parameters
     ----------
-    all_relationships : Dict[str, List[Tuple[str, str]]]
+    all_relationships : tp.AllRelationships
         A dictionary containing all relationships between loci and alleles or CDS, with loci as keys
         and lists of related alleles or CDS as values.
     merged_all_classes : tp.ClustersToKeep

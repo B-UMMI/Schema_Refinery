@@ -71,3 +71,6 @@ class CountResultsByClassWithInverse(TypedDict):
 
 class RepsAndAllelesIds(TypedDict):
     query_subject: Tuple[Set[str], Set[str]]
+
+class AllRelationships(TypedDict):
+    class_: List[List[str]]

@@ -335,7 +335,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse
     reps_and_alleles_ids: tp.RepsAndAllelesIds
     drop_mark: Set[int]
-    all_relationships: Dict[str, List[str]]
+    all_relationships: tp.AllRelationships
     # Process and extract relevant information from the blast results
     (processed_results,
      count_results_by_class,
