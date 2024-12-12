@@ -362,8 +362,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a,  frequency_in_genomes)
     
         # Open dict to store IDs of the reps and alleles
-        group_reps_ids = {}
-        group_alleles_ids = {}
+        group_reps_ids: Dict[str, Set[str]] = {}
+        group_alleles_ids: Dict[str, Set[str]] = {}
         # Count the number of reps and alleles again because clusters were joined
         group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
                                                                                 processing_mode,
