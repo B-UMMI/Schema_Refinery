@@ -364,6 +364,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
         group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
+                                                                                processing_mode,
                                                                                 all_alleles,
                                                                                 dropped_loci_ids,
                                                                                 group_reps_ids,

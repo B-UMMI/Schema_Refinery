@@ -1717,7 +1717,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     return clusters_to_keep_1a, clusters_to_keep, drop_possible_loci
 
 
-def count_number_of_reps_and_alleles(merged_all_classes: Dict[str, Dict[int, List[int]]], clusters: Dict[int, List[int]], 
+def count_number_of_reps_and_alleles(merged_all_classes: Dict[str, Dict[int, List[int]]], processing_mode: str, clusters: Dict[int, List[int]], 
                                     drop_possible_loci: Set[int], group_reps_ids: Dict[int, Set[int]], 
                                     group_alleles_ids: Dict[int, Set[int]]) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
     """
@@ -1763,13 +1763,26 @@ def count_number_of_reps_and_alleles(merged_all_classes: Dict[str, Dict[int, Lis
                 for cds in cds_group[group]:
                     if group_reps_ids.get(cds):
                         continue
-                    group_reps_ids.setdefault(cds, set()).add(cds)
-                    group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
+                    if processing_mode[0] == 'alleles':
+                        group_reps_ids.setdefault(cds, set()).update(clusters[cds])
+                    else:
+                        group_reps_ids.setdefault(cds, set()).add(cds)
+                    if processing_mode[1] == 'alleles':
+                        group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
+                    else:
+                        group_alleles_ids.setdefault(cds, set()).add(cds)
+                    
             elif group_reps_ids.get(group):
                 continue
             else:
-                group_reps_ids.setdefault(group, set()).add(group)
-                group_alleles_ids.setdefault(group, set()).update(clusters[group])
+                if processing_mode[0] == 'alleles':
+                    group_reps_ids.setdefault(cds, set()).update(clusters[cds])
+                else:
+                    group_reps_ids.setdefault(cds, set()).add(cds)
+                if processing_mode[1] == 'alleles':
+                    group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
+                else:
+                    group_alleles_ids.setdefault(cds, set()).add(cds)
     
     # Iterate over the drop set to ensure groups marked for dropping are included
     for id_ in drop_possible_loci:
