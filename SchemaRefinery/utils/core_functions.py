@@ -625,7 +625,7 @@ def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, 
     representative_blast_results : Dict[str, Dict[str, Dict[str, Any]]]
         A nested dictionary where the first key is the query sequence ID, the second key is
         the subject sequence ID, and the value is another dictionary containing match details
-        including the class of the match.
+        including the class of the match.process_classes
     classes_outcome : Tuple[str, ...]
         A list of class identifiers ordered by priority. This order determines which classes are
         considered more significant when multiple matches for the same pair of sequences are found.
@@ -769,8 +769,8 @@ def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, 
     return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark, all_relationships
 
 
-def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_by_class: Dict[str, Dict[str, int]], 
-                    frequency_in_genomes: Dict[str, int], clusters_to_keep: Dict[str, List[str]], 
+def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[Any]]], count_results_by_class: Dict[str, Dict[str, int]], 
+                    frequency_in_genomes: Dict[str, int], merged_all_classes: Dict[str, List[str]], 
                     dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
     """
     Extracts and organizes results from process_classes.
@@ -783,7 +783,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         A dictionary with counts of results by class.
     frequency_in_genomes : Dict[str, int]
         A dictionary containing the frequency of the query and subject in genomes.
-    clusters_to_keep : Dict[str, List[str]]
+    merged_all_classes : Dict[str, List[str]]
         A dictionary containing identifiers to check for a joined condition.
     dropped_loci_ids : List[str]
         A list of possible loci to drop.
@@ -868,7 +868,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
 
         return clustered_choices
 
-    def process_id(id_: str, to_cluster_list: Dict[int, List[str]], clusters_to_keep: Dict[str, List[str]]) -> Tuple[str, bool, bool]:
+    def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: Dict[str, List[str]]) -> Tuple[str, str, str]:
         """
         Process an identifier to check its presence in specific lists.
 
@@ -885,10 +885,10 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         -------
         Tuple[str, bool, bool]
             A tuple containing the original id, a boolean indicating if the id is present in the to_cluster_list,
-            and a boolean indicating if the id is present in the clusters_to_keep under a specific key.
+            and a boolean indicating if the id is present in the merged_all_classes under a specific key.
         """
-        present: bool = itf.identify_string_in_dict_get_key(id_, to_cluster_list)
-        joined_id: bool = itf.identify_string_in_dict_get_key(id_, clusters_to_keep['1a'])
+        present: str = itf.identify_string_in_dict_get_key(id_, to_cluster_list)
+        joined_id: str = itf.identify_string_in_dict_get_key(id_, merged_all_classes['1a'])
         return id_, present, joined_id
 
     def check_in_recommendations(id_: str, joined_id: str, recommendations: Dict[str, Dict[str, List[str]]], key: str, categories: List[str]) -> bool:
@@ -967,7 +967,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         
         return sorted_data
 
-    def find_both_values_in_dict_list(query_id: str, subject_id: str, choice: Dict[str, List[str]]) -> str:
+    def find_both_values_in_dict_list(query_id: str, subject_id: str, choice: Dict[str, List[str]]) -> Union[str, None]:
         """
         Find the key where both query_id and subject_id are present in the same list.
 
@@ -1008,44 +1008,40 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
         if results[0] in ['4c', '5', 'Retained_not_matched_by_blastn']:
             continue
         # Get the IDs and check if they are present in the to_cluster_list
-        query_id, query_present, joined_query_id = process_id(results[3][0], to_cluster_list, clusters_to_keep)
-        subject_id, subject_present, joined_subject_id = process_id(results[3][1], to_cluster_list, clusters_to_keep)
+        query_id, query_present, joined_query_id = process_id(results[3][0], to_cluster_list, merged_all_classes)
+        subject_id, subject_present, joined_subject_id = process_id(results[3][1], to_cluster_list, merged_all_classes)
         
+        key: str = query_present if query_present else subject_present
+
+        direct_match_info = f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"
+        related_clusters.setdefault(key, []).append(results[4]
+                                                    + [direct_match_info]
+                                                    + [str(frequency_in_genomes[results[3][0]])]
+                                                    + [str(frequency_in_genomes[results[3][1]])]
+                                                    )
+
+        recommendations.setdefault(key, {})
+        # Checks to make, so that we can add the ID to the right recommendations.
+        if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
+        if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Joined'])
+        if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
+        if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
+        if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
+        if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
+        if_subject_dropped: bool = (joined_subject_id or subject_id) in dropped_loci_ids
+
+        choice_id: str = find_both_values_in_dict_list(query_id, subject_id, choice) # Find the choice ID (both query and subject in the same list)
+
+        # What IDs to add to the Keep, Drop and Choice.
+        query_to_write: str = joined_query_id or query_id
+        subject_to_write: str = joined_subject_id or subject_id
+        
+        joined_query_to_write: str = query_id
+        joined_subject_to_write: str = subject_id
+
         # Check if the pair was not processed yet
         if [query_id, subject_id] not in processed_cases:
-            key: str = query_present if query_present else subject_present
 
-            related_clusters.setdefault(key, []).append(results[4] 
-                                                        + [f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"]
-                                                        + [str(frequency_in_genomes[results[3][0]])]
-                                                        + [str(frequency_in_genomes[results[3][1]])])
-
-            recommendations.setdefault(key, {})
-            # Checks to make, so that we can add the ID to the right recommendations.
-            if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
-            if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Joined'])
-            if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
-            if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
-            if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
-            if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
-            if_subject_dropped: bool = (joined_subject_id or subject_id) in dropped_loci_ids
-
-            choice_id: str = find_both_values_in_dict_list(query_id, subject_id, choice) # Find the choice ID (both query and subject in the same list)
-
-            # What IDs to add to the Keep, Drop and Choice.
-            query_to_write: str = joined_query_id or query_id
-            subject_to_write: str = joined_subject_id or subject_id
-            
-            joined_query_to_write: str = query_id
-            joined_subject_to_write: str = subject_id
-
-            processed_cases.append([subject_id, query_id])  # Add the inverse pair to the processed cases
-            reverse_id: str = f"{subject_id}|{query_id}" # Create the reverse ID
-            # Get reverse results
-            reverse_results: Dict[str, Any] = processed_results[reverse_id] if processed_results.get(reverse_id) else None
-            # Choose the best results between the pair and the reverse pair
-            if reverse_results and classes_outcome.index(results[0]) > classes_outcome.index(reverse_results[0]):
-                results = reverse_results
             # Process the joined cases
             if results[0] == '1a':
                 # If it is part of a joined cluster, add to the recommendations
@@ -1098,7 +1094,7 @@ def extract_results(processed_results: Dict[str, Dict[str, Any]], count_results_
 
 
 def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]]],
-                                count_results_by_class: Dict[str, Dict[str, Tuple[int, int]]], 
+                                count_results_by_class_with_inverse: Dict[str, Dict[str, Tuple[int, int]]], 
                                 group_reps_ids: Dict[str, List[str]],
                                 group_alleles_ids: Dict[str, List[str]], 
                                 frequency_in_genomes: Dict[str, int],
@@ -1118,7 +1114,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     related_clusters : Dict[str, List[Tuple[Any, ...]]]
         A dictionary where each key is a cluster identifier and each value is a list of tuples.
         Each tuple represents a related match with its details.
-    count_results_by_class : Dict[str, Dict[str, Tuple[int, int]]]
+    count_results_by_class_with_inverse : Dict[str, Dict[str, Tuple[int, int]]]
         A dictionary where each key is a cluster identifier separated by '|', and each value is another dictionary.
         The inner dictionary's keys are class identifiers, and values are counts of results for that class.
     group_reps_ids : Dict[str, List[str]]
@@ -1175,7 +1171,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
             
             # Add the total count of the representatives and alleles
-            representatives_count_query: int = len(group_reps_ids[query])
+            representatives_count_query: str = f"{len(group_reps_ids[query])}"
             representatives_count_subject: str = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
             allele_count_query: str = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
             allele_count_subject: str = f"{len(group_alleles_ids[subject])}"
@@ -1219,7 +1215,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
                                             "\tAlleles_blasted_against_count"
                                             "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
-        for id_, classes in count_results_by_class.items():
+        for id_, classes in count_results_by_class_with_inverse.items():
             query: str
             subject: str
             query, subject = id_.split('|')
@@ -1721,7 +1717,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     return clusters_to_keep_1a, clusters_to_keep, drop_possible_loci
 
 
-def count_number_of_reps_and_alleles(clusters_to_keep_1a, clusters_to_keep: Dict[str, Dict[int, List[int]]], clusters: Dict[int, List[int]], 
+def count_number_of_reps_and_alleles(merged_all_classes: Dict[str, Dict[int, List[int]]], clusters: Dict[int, List[int]], 
                                     drop_possible_loci: Set[int], group_reps_ids: Dict[int, Set[int]], 
                                     group_alleles_ids: Dict[int, Set[int]]) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
     """
@@ -1758,17 +1754,22 @@ def count_number_of_reps_and_alleles(clusters_to_keep_1a, clusters_to_keep: Dict
     - It then iterates through the drop set to ensure that any groups marked for dropping are also included
       in the dictionaries.
     """
-    for group, cds_group in clusters_to_keep_1a.items():
-        for cds in cds_group:
-            group_reps_ids.setdefault(cds, set()).add(cds)
-            group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
-
     # Iterate over each class in clusters_to_keep
-    for class_, cds_group in clusters_to_keep.items():
+    for class_, cds_group in merged_all_classes.items():
         # Iterate over each group in the class
         for group in cds_group:
-            group_reps_ids.setdefault(group, set()).add(group)
-            group_alleles_ids.setdefault(group, set()).update(clusters[group])
+            if class_ == '1a':
+                # Iterate over each representative in the joined group
+                for cds in cds_group[group]:
+                    if group_reps_ids.get(cds):
+                        continue
+                    group_reps_ids.setdefault(cds, set()).add(cds)
+                    group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
+            elif group_reps_ids.get(group):
+                continue
+            else:
+                group_reps_ids.setdefault(group, set()).add(group)
+                group_alleles_ids.setdefault(group, set()).update(clusters[group])
     
     # Iterate over the drop set to ensure groups marked for dropping are included
     for id_ in drop_possible_loci:

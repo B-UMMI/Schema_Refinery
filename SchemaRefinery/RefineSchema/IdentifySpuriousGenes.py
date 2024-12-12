@@ -352,6 +352,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep_1a = {values[0]: values for key, values in clusters_to_keep_1a.items()}
+
+    # Merge classes
+    merged_all_classes: Dict[str, Any] = {'1a': clusters_to_keep_1a.copy()}
+    merged_all_classes.update(clusters_to_keep)
     if run_mode == 'unclassified_cds':
         updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a,  frequency_in_genomes)
     
@@ -359,8 +363,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         group_reps_ids = {}
         group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
-        group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(clusters_to_keep_1a,
-                                                                                clusters_to_keep,
+        group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
                                                                                 all_alleles,
                                                                                 dropped_loci_ids,
                                                                                 group_reps_ids,
@@ -381,9 +384,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                             'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
                             processed_drop)
 
-    # Merge classes
-    merged_all_classes: Dict[str, Any] = {'1a': clusters_to_keep_1a.copy()}
-    merged_all_classes.update(clusters_to_keep)
     print("\nExtracting results...")
     related_clusters: Dict[str, Any]
     recommendations: Dict[str, Any]
