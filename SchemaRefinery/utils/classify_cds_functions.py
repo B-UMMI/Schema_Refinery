@@ -799,7 +799,7 @@ def prepare_files_to_blast(representatives_blastn_folder: str,
                        all_nucleotide_sequences: Dict[str, str], 
                        processing_mode: str) -> Tuple[Dict[str, str], str]:
     """
-    Creates BLAST files for the representatives and writes them to the specified folder.
+    Writes representative and master FASTA files for BLAST.
 
     Parameters
     ----------
