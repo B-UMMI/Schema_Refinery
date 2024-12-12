@@ -794,7 +794,7 @@ def write_fasta_file(file_path: str, sequences: Dict[str, str]) -> None:
             fasta_file.write(f">{seq_id}\n{sequence}\n")
 
 
-def create_blast_files(representatives_blastn_folder: str, 
+def prepare_files_to_blast(representatives_blastn_folder: str, 
                        all_alleles: Dict[str, List[str]], 
                        all_nucleotide_sequences: Dict[str, str], 
                        processing_mode: str) -> Tuple[Dict[str, str], str]:
