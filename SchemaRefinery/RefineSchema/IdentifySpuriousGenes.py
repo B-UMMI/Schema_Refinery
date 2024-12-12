@@ -388,7 +388,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                             processed_drop)
 
     print("\nExtracting results...")
-    related_clusters: Dict[str, Any]
+    related_clusters: tp.RelatedClusters
     recommendations: Dict[str, Any]
     # Extract the results from the processed results
     related_clusters, recommendations = cof.extract_results(processed_results,

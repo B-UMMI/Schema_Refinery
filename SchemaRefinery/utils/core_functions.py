@@ -776,7 +776,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.ClustersToKeep, 
-                    dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
+                    dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[tp.RelatedClusters, Dict[str, Dict[str, Any]]]:
     """
     Extracts and organizes results from process_classes.
 
@@ -996,7 +996,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         return None
 
     # Initialize dictionaries to keep track of various results
-    related_clusters: Dict[str, List[Any]] = {}  # To keep track of the related clusters
+    related_clusters: tp.RelatedClusters = {}  # To keep track of the related clusters
     recommendations: Dict[str, Dict[str, List[str]]] = {}  # To keep track of the recommendations
     dropped_match: Dict[str, List[List[str]]] = {}  # To keep track of the dropped matches
     matched_with_dropped: Dict[str, List[List[str]]] = {}  # To keep track of the matches that matched with dropped
@@ -1098,7 +1098,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     return related_clusters, recommendations
 
 
-def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]]],
+def write_blast_summary_results(related_clusters: tp.RelatedClusters,
                                 count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse, 
                                 group_reps_ids: Dict[str, List[str]],
                                 group_alleles_ids: Dict[str, List[str]], 
@@ -1116,7 +1116,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
 
     Parameters
     ----------
-    related_clusters : Dict[str, List[Tuple[Any, ...]]]
+    related_clusters : tp.RelatedClusters
         A dictionary where each key is a cluster identifier and each value is a list of tuples.
         Each tuple represents a related match with its details.
     count_results_by_class_with_inverse : tp.CountResultsByClassWithInverse

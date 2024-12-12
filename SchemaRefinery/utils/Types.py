@@ -74,3 +74,6 @@ class RepsAndAllelesIds(TypedDict):
 
 class AllRelationships(TypedDict):
     class_: List[List[str]]
+
+class RelatedClusters(TypedDict):
+    cluster_id: Dict[int, List[str]]
