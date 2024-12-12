@@ -77,3 +77,6 @@ class AllRelationships(TypedDict):
 
 class RelatedClusters(TypedDict):
     cluster_id: Dict[int, List[str]]
+
+class Recomendations(TypedDict):
+    cluster_id: Dict[int, Dict[str, Set[str]]]

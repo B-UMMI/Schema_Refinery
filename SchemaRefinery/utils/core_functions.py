@@ -776,7 +776,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.ClustersToKeep, 
-                    dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[tp.RelatedClusters, Dict[str, Dict[str, Any]]]:
+                    dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
 
@@ -997,7 +997,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
 
     # Initialize dictionaries to keep track of various results
     related_clusters: tp.RelatedClusters = {}  # To keep track of the related clusters
-    recommendations: Dict[str, Dict[str, List[str]]] = {}  # To keep track of the recommendations
+    recommendations: tp.Recomendations = {}  # To keep track of the recommendations
     dropped_match: Dict[str, List[List[str]]] = {}  # To keep track of the dropped matches
     matched_with_dropped: Dict[str, List[List[str]]] = {}  # To keep track of the matches that matched with dropped
     processed_cases: List[List[str]] = []  # To keep track of the processed cases
@@ -1103,7 +1103,7 @@ def write_blast_summary_results(related_clusters: tp.RelatedClusters,
                                 group_reps_ids: Dict[str, List[str]],
                                 group_alleles_ids: Dict[str, List[str]], 
                                 frequency_in_genomes: Dict[str, int],
-                                recommendations: Dict[str, Dict[str, List[str]]], 
+                                recommendations: tp.Recomendations, 
                                 reverse_matches: bool,
                                 classes_outcome: Tuple[str, ...],
                                 output_directory: str) -> Tuple[str]:
@@ -1128,7 +1128,7 @@ def write_blast_summary_results(related_clusters: tp.RelatedClusters,
         A dictionary mapping sequence identifiers to their allele IDs.
     frequency_in_genomes : Dict[str, int]
         A dictionary mapping sequence identifiers to their frequency in genomes.
-    recommendations : Dict[str, Dict[str, List[str]]]
+    recommendations : tp.Recommendations
         A dictionary containing recommendations for each cluster based on the classification of the results.
     reverse_matches : bool
         A flag indicating whether there are reverse matches.
