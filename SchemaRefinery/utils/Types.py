@@ -1,4 +1,5 @@
 from typing import Dict, List, TypedDict, Tuple
+from collections import OrderedDict
 
 class ClustersToKeep(TypedDict):
     '1a': Dict[int, List[str]]
@@ -57,3 +58,13 @@ class ProcessedResult(TypedDict):
 
 class ProcessedResults(TypedDict):
     query_subject: Tuple[ProcessedResult]
+
+class CountResultsByClass(TypedDict):
+    query_subject: Dict[str, OrderedDict[str, int]]
+
+class ClassCount(TypedDict):
+    direct_class: int
+    inverse_class: int
+
+class CountResultsByClassWithInverse(TypedDict):
+    query_subject: Dict[str, Dict[str, List[ClassCount]]]

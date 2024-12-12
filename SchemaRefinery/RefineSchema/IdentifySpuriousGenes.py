@@ -330,9 +330,9 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
-    processed_results: Dict[str, Dict[str, Any]]
-    count_results_by_class: Dict[str, Dict[str, int]]
-    count_results_by_class_with_inverse: Dict[str, Dict[str, int]]
+    processed_results: tp.ProcessedResults
+    count_results_by_class: tp.CountResultsByClass
+    count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse
     reps_and_alleles_ids: Dict[str, Set[str]]
     drop_mark: Set[int]
     all_relationships: Dict[str, List[str]]

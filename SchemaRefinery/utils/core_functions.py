@@ -612,7 +612,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
 def process_classes(representative_blast_results: tp.BlastDict, 
                     classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
                     tp.ProcessedResults,
-                    Dict[str, Dict[str, int]], Dict[str, Dict[str, List[Union[int, str]]]],
+                    tp.CountResultsByClass, Dict[str, Dict[str, List[Union[int, str]]]],
                     Dict[str, Tuple[set, set]], List[str], Dict[str, List[List[str]]]
                     ]:
     """
@@ -641,10 +641,10 @@ def process_classes(representative_blast_results: tp.BlastDict,
     processed_results : tp.ProcessedResults
         A dictionary containing processed results with keys formatted as "query|subject" and values being tuples
         containing information about the processed sequences, their class, relationships, and additional details.
-    count_results_by_class : Dict[str, Dict[str, int]]
+    count_results_by_class : tp.CountResultsByClass
         A dictionary containing counts of results by class, with keys formatted as "query|subject" and values being
         dictionaries with class identifiers as keys and counts as values.
-    count_results_by_class_with_inverse : Dict[str, Dict[str, List[Union[int, str]]]]
+    count_results_by_class_with_inverse : tp.CountResultsByClassWithInverse
         A dictionary containing counts of results by class, including inverse matches, with keys formatted as
         "query|subject" and values being dictionaries with class identifiers as keys and counts as values.
     reps_and_alleles_ids : Dict[str, Tuple[set, set]]
@@ -663,7 +663,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     relationships.
     """
     # Initialize variables
-    count_results_by_class: Dict[str, Dict[str, int]] = {}
+    count_results_by_class: tp.CountResultsByClass = {}
     count_results_by_class_with_inverse: Dict[str, Dict[str, List[Union[int, str]]]] = {}
     reps_and_alleles_ids: Dict[str, Tuple[set, set]] = {}
     processed_results: tp.ProcessedResults = {}
@@ -772,7 +772,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark, all_relationships
 
 
-def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: Dict[str, Dict[str, int]], 
+def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.ClustersToKeep, 
                     dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
     """
@@ -782,7 +782,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     ----------
     processed_results : tp.ProcessedResults
         The processed results data.
-    count_results_by_class : Dict[str, Dict[str, int]]
+    count_results_by_class : tp.CountResultsByClass
         A dictionary with counts of results by class.
     frequency_in_genomes : Dict[str, int]
         A dictionary containing the frequency of the query and subject in genomes.
@@ -1097,7 +1097,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
 
 
 def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]]],
-                                count_results_by_class_with_inverse: Dict[str, Dict[str, Tuple[int, int]]], 
+                                count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse, 
                                 group_reps_ids: Dict[str, List[str]],
                                 group_alleles_ids: Dict[str, List[str]], 
                                 frequency_in_genomes: Dict[str, int],
@@ -1117,7 +1117,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     related_clusters : Dict[str, List[Tuple[Any, ...]]]
         A dictionary where each key is a cluster identifier and each value is a list of tuples.
         Each tuple represents a related match with its details.
-    count_results_by_class_with_inverse : Dict[str, Dict[str, Tuple[int, int]]]
+    count_results_by_class_with_inverse : tp.CountResultsByClassWithInverse
         A dictionary where each key is a cluster identifier separated by '|', and each value is another dictionary.
         The inner dictionary's keys are class identifiers, and values are counts of results for that class.
     group_reps_ids : Dict[str, List[str]]
@@ -1635,7 +1635,7 @@ def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep,
         alignment_dict_to_file(write_dict, report_file_path, 'w')
 
 
-def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: Dict[str, Dict[str, int]], 
+def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: tp.CountResultsByClass, 
                             drop_mark: Set[int]) -> Tuple[Dict[str, Union[List[Union[str, List[str]]], Dict[str, List[str]]]], Set[str]]:
     """
     Extracts and organizes CDS (Coding Sequences) to keep based on classification outcomes.
@@ -1649,7 +1649,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     ----------
     classes_outcome : List[str]
         An ordered list of class identifiers that determine the priority of classes for keeping CDS.
-    count_results_by_class : Dict[str, Dict[str, int]]
+    count_results_by_class : tp.CountResultsByClass
         A dictionary where keys are concatenated query and subject IDs separated by '|', and values
         are dictionaries with class identifiers as keys and counts as values.
     drop_mark : Set[int]
