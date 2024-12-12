@@ -553,7 +553,8 @@ def separate_blast_results_into_classes(representative_blast_results: Dict[str, 
     return classes_outcome
 
 
-def sort_blast_results_by_classes(representative_blast_results, classes_outcome):
+def sort_blast_results_by_classes(representative_blast_results: tp.BlastResult, 
+                                  classes_outcome: Tuple[str, ...]) -> tp.BlastResult:
     """
     Sorts BLAST results by classes based on the alignment score.
     
@@ -563,18 +564,18 @@ def sort_blast_results_by_classes(representative_blast_results, classes_outcome)
 
     Parameters
     ----------
-    representative_blast_results : dict
+    representative_blast_results : Dict[str, Dict[str, List[Dict[str, Any]]]]
         A dictionary where each key is a query identifier and each value is another dictionary.
         The inner dictionary's keys are subject identifiers, and values are lists containing
         details of the match, where the second element is a dictionary with the key 'class'
         indicating the class of the alignment.
-    classes_outcome : tuple
+    classes_outcome : Tuple[str, ...]
         A list of possible classes outcomes to sort the BLAST results into. The order in this list
         determines the priority of the classes when organizing the results.
 
     Returns
     -------
-    sorted_blast_dict : dict
+    sorted_blast_dict : Dict[str, Dict[str, List[Dict[str, Any]]]]
         A dictionary structured similarly to `representative_blast_results`, but sorted such that
         all results for a given query are grouped by their class as determined by the highest
         scoring alignment.
@@ -586,8 +587,8 @@ def sort_blast_results_by_classes(representative_blast_results, classes_outcome)
     - It creates a temporary dictionary to first group results by class, then consolidates these
       into the final sorted dictionary to be returned.
     """
-    sorted_blast_dict = {}
-    temp_dict = {k: {} for k in classes_outcome}
+    sorted_blast_dict: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+    temp_dict: Dict[str, Dict[str, Dict[str, List[Dict[str, Any]]]]] = {k: {} for k in classes_outcome}
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
@@ -603,7 +604,7 @@ def sort_blast_results_by_classes(representative_blast_results, classes_outcome)
             if not sorted_blast_dict.get(query):
                 sorted_blast_dict[query] = {}
             for id_subject, matches in rep_blast_result.items():
-                    sorted_blast_dict[query][id_subject] = matches
+                sorted_blast_dict[query][id_subject] = matches
     
     return sorted_blast_dict
 

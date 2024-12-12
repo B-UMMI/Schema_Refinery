@@ -3,7 +3,7 @@
 
 import os
 import sys
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, Set
 
 try:
     from utils import (core_functions as cof,
@@ -322,20 +322,20 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nFiltering BLAST results into classes...")
     # Separate results into different classes.
-    classes_outcome: Dict[str, Any] = cof.separate_blast_results_into_classes(representative_blast_results,
+    classes_outcome: List[str] = cof.separate_blast_results_into_classes(representative_blast_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
     print("\nProcessing classes...")
     # Sort each entry based on their assigned classes
-    sorted_blast_dict: Dict[str, Any] = cof.sort_blast_results_by_classes(representative_blast_results,
+    sorted_blast_dict: tp.SortedBlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
-    processed_results: Dict[str, Any]
-    count_results_by_class: Dict[str, Any]
-    count_results_by_class_with_inverse: Dict[str, Any]
-    reps_and_alleles_ids: Dict[str, Any]
-    drop_mark: Dict[str, Any]
-    all_relationships: Dict[str, Any]
+    processed_results: Dict[str, Dict[str, Any]]
+    count_results_by_class: Dict[str, Dict[str, int]]
+    count_results_by_class_with_inverse: Dict[str, Dict[str, int]]
+    reps_and_alleles_ids: Dict[str, Set[str]]
+    drop_mark: Set[int]
+    all_relationships: Dict[str, List[str]]
     # Process and extract relevant information from the blast results
     (processed_results,
      count_results_by_class,
