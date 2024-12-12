@@ -39,7 +39,7 @@ class BlastResult(TypedDict):
     local_palign_min: float
     class_: str 
 
-class SortedBlastDict(TypedDict):
+class BlastDict(TypedDict):
     query: Dict[str, Dict[int, BlastResult]]
 
 class RepresentativeBlastResultsCoords(TypedDict):

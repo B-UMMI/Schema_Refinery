@@ -97,7 +97,7 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
                     report_file.write('\t'.join(map(str, alignment_data.values())) + '\n')
 
 
-def add_items_to_results(representative_blast_results: tp.BlastResult, 
+def add_items_to_results(representative_blast_results: tp.BlastDict, 
                          reps_kmers_sim: Dict[str, Dict[str, Tuple[float, float]]], 
                          bsr_values: Dict[str, Dict[str, float]],
                          representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords,
@@ -115,7 +115,7 @@ def add_items_to_results(representative_blast_results: tp.BlastResult,
 
     Parameters
     ----------
-    representative_blast_results : tp.BlastResult
+    representative_blast_results : tp.BlastDict
         A dictionary containing BLAST results. Each entry is expected to represent a unique BLAST hit with
         various metrics.
     reps_kmers_sim : Dict[str, Dict[str, Tuple[float, float]]]
@@ -294,7 +294,7 @@ def add_items_to_results(representative_blast_results: tp.BlastResult,
                                       (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
         return round(local_palign_min, 4)
 
-    def update_results(representative_blast_results: tp.BlastResult, 
+    def update_results(representative_blast_results: tp.BlastDict, 
                        query: str, subject: str, entry_id: str, bsr: float, sim: Union[float, str], 
                        cov: Union[float, str], frequency_in_genomes: Dict[str, int],
                        global_palign_all_min: float, global_palign_all_max: float, 
@@ -305,7 +305,7 @@ def add_items_to_results(representative_blast_results: tp.BlastResult,
 
         Parameters
         ----------
-        representative_blast_results : tp.BlastResult
+        representative_blast_results : tp.BlastDict
             A dictionary containing BLAST results where keys are query IDs, values are dictionaries with subject
             IDs as keys, and each subject dictionary contains dictionaries of entry IDs with their respective data.
         query : str
@@ -364,14 +364,14 @@ def add_items_to_results(representative_blast_results: tp.BlastResult,
             subject = subject_before
         representative_blast_results[query][subject][entry_id].update(update_dict)
 
-    def remove_results(representative_blast_results: tp.BlastResult, 
+    def remove_results(representative_blast_results: tp.BlastDict, 
                        query: str, subject: str, entry_id: str) -> None:
         """
         Removes a specific entry from the BLAST results for a given query and subject pair.
 
         Parameters
         ----------
-        representative_blast_results : tp.BlastResult
+        representative_blast_results : tp.BlastDict
             A dictionary containing BLAST results, structured with query IDs as keys, each mapping to a dictionary
             of subject IDs, which in turn map to dictionaries of entry IDs and their associated data.
         query : str
@@ -389,14 +389,14 @@ def add_items_to_results(representative_blast_results: tp.BlastResult,
         """
         del representative_blast_results[query][subject][entry_id]
 
-    def clean_up_results(representative_blast_results: tp.BlastResult, 
+    def clean_up_results(representative_blast_results: tp.BlastDict, 
                          query: str, subject: str) -> None:
         """
         Cleans up BLAST results for a specific query and subject by removing empty entries.
 
         Parameters
         ----------
-        representative_blast_results : tp.BlastResult
+        representative_blast_results : tp.BlastDict
             A dictionary containing BLAST results, where keys are query IDs, and values are dictionaries with
             subject IDs as keys, each mapping to their respective result entries.
         query : str
@@ -439,7 +439,7 @@ def add_items_to_results(representative_blast_results: tp.BlastResult,
             clean_up_results(representative_blast_results, query, subject)
 
 
-def separate_blast_results_into_classes(representative_blast_results: tp.BlastResult, 
+def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, 
                                          constants: Tuple[Any, ...], classes_outcome: List[str]) -> Tuple[str, ...]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
@@ -451,7 +451,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastRe
 
     Parameters
     ----------
-    representative_blast_results : tp.BlastResult
+    representative_blast_results : tp.BlastDict
         A nested dictionary where the first level keys are query sequence IDs, the second level keys
         are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
         result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
@@ -553,8 +553,8 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastRe
     return classes_outcome
 
 
-def sort_blast_results_by_classes(representative_blast_results: tp.BlastResult, 
-                                  classes_outcome: Tuple[str, ...]) -> tp.BlastResult:
+def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict, 
+                                  classes_outcome: Tuple[str, ...]) -> tp.BlastDict:
     """
     Sorts BLAST results by classes based on the alignment score.
     
@@ -564,7 +564,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastResult,
 
     Parameters
     ----------
-    representative_blast_results : tp.BlastResult
+    representative_blast_results : tp.BlastDict
         A dictionary where each key is a query identifier and each value is another dictionary.
         The inner dictionary's keys are subject identifiers, and values are lists containing
         details of the match, where the second element is a dictionary with the key 'class'
@@ -609,7 +609,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastResult,
     return sorted_blast_dict
 
 
-def process_classes(representative_blast_results: tp.BlastResult, 
+def process_classes(representative_blast_results: tp.BlastDict, 
                     classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
                     Dict[str, Tuple[Optional[str], List[str], List[str], Tuple[str, str], List[str]]],
                     Dict[str, Dict[str, int]], Dict[str, Dict[str, List[Union[int, str]]]],
@@ -625,7 +625,7 @@ def process_classes(representative_blast_results: tp.BlastResult,
 
     Parameters
     ----------
-    representative_blast_results : tp.BlastResult
+    representative_blast_results : tp.BlastDict
         A nested dictionary where the first key is the query sequence ID, the second key is
         the subject sequence ID, and the value is another dictionary containing match details
         including the class of the match.process_classes
@@ -1254,7 +1254,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
 
 
 def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_classes: tp.ClustersToKeep, 
-                sorted_blast_dict: tp.BlastResult) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
+                sorted_blast_dict: tp.BlastDict) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
     """
     Determines the matches between loci and their corresponding alleles or CDS based on the
     relationships and the current selection of CDS to keep.
@@ -1328,7 +1328,7 @@ def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_
 
 def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
                output_dir: str, constants: List[Any], cpu: int,
-               multi_fasta: Dict[str, List[str]]) -> Tuple[tp.BlastResult, 
+               multi_fasta: Dict[str, List[str]]) -> Tuple[tp.BlastDict, 
                                                            tp.RepresentativeBlastResultsCoords, 
                                                            tp.RepresentativeBlastResultsCoords, 
                                                            Dict[str, Dict[str, float]], 
@@ -1378,7 +1378,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     # Calculate max id length for print.
     max_id_length: int = len(max(cds_to_blast, key=len))
     total_reps: int = len(rep_paths_nuc)
-    representative_blast_results: tp.BlastResult = {}
+    representative_blast_results: tp.BlastDict = {}
     representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords = {}
     representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     # Get Path to the blastn executable
@@ -1541,7 +1541,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
 
 
 def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep, 
-                                    representative_blast_results: tp.BlastResult,
+                                    representative_blast_results: tp.BlastDict,
                                     classes_outcome: List[str], all_alleles: Dict[str, List[str]], 
                                     is_matched: Dict[str, Set[str]], is_matched_alleles: Dict[str, Set[str]], 
                                     output_path: str) -> None:
@@ -1552,7 +1552,7 @@ def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep,
     ----------
     merged_all_classes : tp.ClustersToKeep
         Dictionary containing clusters to keep, categorized by class.
-    representative_blast_results : tp.BlastResult
+    representative_blast_results : tp.BlastDict
         Dictionary containing representative BLAST results.
     classes_outcome : List[str]
         List of class outcomes to process.
