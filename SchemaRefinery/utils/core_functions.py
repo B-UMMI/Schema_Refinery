@@ -896,7 +896,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         joined_id: str = itf.identify_string_in_dict_get_key(id_, merged_all_classes['1a'])
         return id_, present, joined_id
 
-    def check_in_recommendations(id_: str, joined_id: str, recommendations: Dict[str, Dict[str, List[str]]], key: str, categories: List[str]) -> bool:
+    def check_in_recommendations(id_: str, joined_id: str, recommendations: tp.Recomendations, key: str, categories: List[str]) -> bool:
         """
         Check if an identifier or its joined form is present in a set of recommendations.
 
@@ -906,7 +906,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
             The original identifier to check.
         joined_id : str
             The joined form of the identifier to check.
-        recommendations : Dict[str, Dict[str, List[str]]]
+        recommendations : tp.Recomendations
             A dictionary of recommendations to search within.
         key : str
             The key within the recommendations to search under.
@@ -921,7 +921,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         """
         return any((joined_id or id_) in itf.flatten_list([v for k, v in recommendations[key].items() if cat in k]) for cat in categories)
 
-    def add_to_recommendations(category: str, id_to_write: str, key: str, recommendations: Dict[str, Dict[str, List[str]]], category_id: str = None) -> None:
+    def add_to_recommendations(category: str, id_to_write: str, key: str, recommendations: tp.Recomendations, category_id: str = None) -> None:
         """
         Add an identifier to the recommendations under a specific category.
 
@@ -933,7 +933,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
             The identifier to add to the recommendations.
         key : str
             The key within the recommendations to add under.
-        recommendations : Dict[str, Dict[str, List[str]]]
+        recommendations : tp.Recomendations
             The recommendations dictionary to modify.
         joined_id : str, optional
             The joined form of the identifier, if applicable. Default is None.
