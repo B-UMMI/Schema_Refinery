@@ -229,7 +229,7 @@ Since there are two run modes, the output directory structure will vary based on
     │   └── CDS_not_found_translation.fasta
     ├── 2_BLAST_processing # --nocleanup
     │   ├── 1_BLASTn_processing
-    │   │   ├── blast_db_nucl
+    │   │   ├── Blast_db_nucleotide
     │   │   │   ├── Blast_db_nucleotide.ndb
     │   │   │   ├── Blast_db_nucleotide.nhr
     │   │   │   ├── Blast_db_nucleotide.nin
