@@ -13,7 +13,8 @@ try:
                        linux_functions as lf,
                        graphical_functions as gf,
                        pandas_functions as pf,
-                       sequence_functions as sf)
+                       sequence_functions as sf,
+                       Types as tp)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       clustering_functions as cf,
@@ -23,7 +24,8 @@ except ModuleNotFoundError:
                                       linux_functions as lf,
                                       graphical_functions as gf,
                                       pandas_functions as pf,
-                                      sequence_functions as sf)
+                                      sequence_functions as sf,
+                                      Types as tp)
 
 def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                            file_path: str, write_type: str) -> None:
@@ -770,7 +772,7 @@ def process_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, 
 
 
 def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[Any]]], count_results_by_class: Dict[str, Dict[str, int]], 
-                    frequency_in_genomes: Dict[str, int], merged_all_classes: Dict[str, List[str]], 
+                    frequency_in_genomes: Dict[str, int], merged_all_classes: tp.ClustersToKeep, 
                     dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
     """
     Extracts and organizes results from process_classes.
@@ -783,7 +785,7 @@ def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str]
         A dictionary with counts of results by class.
     frequency_in_genomes : Dict[str, int]
         A dictionary containing the frequency of the query and subject in genomes.
-    merged_all_classes : Dict[str, List[str]]
+    merged_all_classes : tp.ClustersToKeep
         A dictionary containing identifiers to check for a joined condition.
     dropped_loci_ids : List[str]
         A list of possible loci to drop.
@@ -868,7 +870,7 @@ def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str]
 
         return clustered_choices
 
-    def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: Dict[str, List[str]]) -> Tuple[str, str, str]:
+    def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: tp.ClustersToKeep) -> Tuple[str, str, str]:
         """
         Process an identifier to check its presence in specific lists.
 
@@ -878,7 +880,7 @@ def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str]
             The identifier to be processed.
         to_cluster_list : Dict[int, List[str]]
             A list of identifiers to check for the presence of id_.
-        clusters_to_keep : Dict[str, List[str]]
+        merged_all_classes : tp.ClustersToKeep
             A dictionary containing identifiers to check for a joined condition.
 
         Returns
@@ -1250,7 +1252,7 @@ def write_blast_summary_results(related_clusters: Dict[str, List[Tuple[Any, ...]
     return (related_matches_path, count_results_by_cluster_path, recommendations_file_path)
 
 
-def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to_keep: Dict[str, List[str]], 
+def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], merged_all_classes: tp.ClustersToKeep, 
                 sorted_blast_dict: Dict[str, Any]) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
     """
     Determines the matches between loci and their corresponding alleles or CDS based on the
@@ -1267,7 +1269,7 @@ def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to
     all_relationships : Dict[str, List[Tuple[str, str]]]
         A dictionary containing all relationships between loci and alleles or CDS, with loci as keys
         and lists of related alleles or CDS as values.
-    clusters_to_keep : Dict[str, List[str]]
+    merged_all_classes : tp.ClustersToKeep
         A dictionary with classes as keys and lists of CDS or loci IDs to be kept as values.
     sorted_blast_dict : Dict[str, Any]
         A dictionary containing sorted BLAST results, used to identify loci that have matches.
@@ -1305,7 +1307,7 @@ def get_matches(all_relationships: Dict[str, List[Tuple[str, str]]], clusters_to
     had_matches: Set[str] = set([rep.split('_')[0] for rep in sorted_blast_dict])
     
     # Iterate over clusters to keep and determine matches
-    for class_, entries in list(clusters_to_keep.items()):
+    for class_, entries in list(merged_all_classes.items()):
         for entry in list(entries):
             if entry not in had_matches and class_ != '1a':
                 id_: str = entry
@@ -1537,7 +1539,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
             representative_blast_results_coords_pident, bsr_values, self_score_dict)
 
 
-def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str], Dict[str, List[str]]]], 
+def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep, 
                                     representative_blast_results: Dict[str, Dict[str, Dict[str, Any]]],
                                     classes_outcome: List[str], all_alleles: Dict[str, List[str]], 
                                     is_matched: Dict[str, Set[str]], is_matched_alleles: Dict[str, Set[str]], 
@@ -1547,7 +1549,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
 
     Parameters
     ----------
-    clusters_to_keep : Dict[str, Union[List[str], Dict[str, List[str]]]]
+    merged_all_classes : tp.ClustersToKeep
         Dictionary containing clusters to keep, categorized by class.
     representative_blast_results : Dict[str, Dict[str, Dict[str, Any]]]
         Dictionary containing representative BLAST results.
@@ -1574,7 +1576,7 @@ def write_processed_results_to_file(clusters_to_keep: Dict[str, Union[List[str],
     ff.create_directory(blast_results_by_class_output)
 
     # Process clusters
-    for class_, cds in clusters_to_keep.items():
+    for class_, cds in merged_all_classes.items():
         # Skip clusters that are not matched
         if class_ == 'Retained_not_matched_by_blastn':
             continue
@@ -1717,9 +1719,10 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     return clusters_to_keep_1a, clusters_to_keep, drop_possible_loci
 
 
-def count_number_of_reps_and_alleles(merged_all_classes: Dict[str, Dict[int, List[int]]], processing_mode: str, clusters: Dict[int, List[int]], 
-                                    drop_possible_loci: Set[int], group_reps_ids: Dict[int, Set[int]], 
-                                    group_alleles_ids: Dict[int, Set[int]]) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
+def count_number_of_reps_and_alleles(merged_all_classes: tp.ClustersToKeep, 
+                                    processing_mode: str, clusters: Dict[str, List[str]], 
+                                    drop_possible_loci: Set[str], group_reps_ids: Dict[str, Set[str]], 
+                                    group_alleles_ids: Dict[str, Set[str]]) -> Tuple[Dict[str, Set[str]], Dict[str, Set[str]]]:
     """
     Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in
     the drop set.
@@ -1754,35 +1757,45 @@ def count_number_of_reps_and_alleles(merged_all_classes: Dict[str, Dict[int, Lis
     - It then iterates through the drop set to ensure that any groups marked for dropping are also included
       in the dictionaries.
     """
-    def add_ids():
+    def add_ids(cds: str):
+        """
+        Helper function to add representative and allele IDs to the respective dictionaries.
+        """
         if processing_mode[0] == 'alleles':
+            # If processing mode is 'alleles', update group_reps_ids with all members of the cluster
             group_reps_ids.setdefault(cds, set()).update(clusters[cds])
         else:
+            # Otherwise, add the CDS itself as a representative
             group_reps_ids.setdefault(cds, set()).add(cds)
+        
         if processing_mode[1] == 'alleles':
+            # If processing mode is 'alleles', update group_alleles_ids with all members of the cluster
             group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
         else:
+            # Otherwise, add the CDS itself as an allele
             group_alleles_ids.setdefault(cds, set()).add(cds)
 
-    # Iterate over each class in clusters_to_keep
+    # Iterate over each class in merged_all_classes
     for class_, cds_group in merged_all_classes.items():
         # Iterate over each group in the class
         for group in cds_group:
             if class_ == '1a':
-                # Iterate over each representative in the joined group
+                # Special handling for class '1a'
                 for cds in cds_group[group]:
                     if group_reps_ids.get(cds):
+                        # Skip if the CDS is already in group_reps_ids
                         continue
-                    
-                    add_ids()
+                    add_ids(cds)
             elif group_reps_ids.get(group):
+                # Skip if the group is already in group_reps_ids
                 continue
             else:
-                add_ids()
+                add_ids(group)
     
     # Iterate over the drop set to ensure groups marked for dropping are included
     for id_ in drop_possible_loci:
         if id_ not in group_reps_ids:
+            # Add the group ID to group_reps_ids and group_alleles_ids if not already present
             group_reps_ids.setdefault(id_, set()).add(id_)
             group_alleles_ids.setdefault(id_, set()).update(clusters[id_])
 
@@ -1857,14 +1870,14 @@ def create_graphs(file_path: str, output_path: str, filename: str, other_plots: 
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
 
-def print_classifications_results(clusters_to_keep: Dict[str, Any], drop_possible_loci: List[int], 
+def print_classifications_results(merged_all_classes: tp.ClustersToKeep, drop_possible_loci: List[int], 
                                   to_blast_paths: Dict[str, str], clusters: Dict[str, Any]) -> None:
     """
     Prints the classification results based on the provided parameters.
 
     Parameters
     ----------
-    clusters_to_keep : Dict[str, Any]
+    merged_all_classes : tp.ClustersToKeep
         Dictionary containing CDS to keep, classified by their class type.
     drop_possible_loci : List[int]
         List of possible loci dropped.
@@ -1923,13 +1936,13 @@ def print_classifications_results(clusters_to_keep: Dict[str, Any], drop_possibl
                 print(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.")
 
     # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
-    retained_not_matched_by_blastn: Optional[Any] = clusters_to_keep.pop('Retained_not_matched_by_blastn', None)
+    retained_not_matched_by_blastn: Optional[Any] = merged_all_classes.pop('Retained_not_matched_by_blastn', None)
 
     # Display info about the results obtained from processing the classes.
     # Get the total number of CDS reps considered for classification.
     count_cases: Dict[str, int] = {}
 
-    for class_, loci in clusters_to_keep.items():
+    for class_, loci in merged_all_classes.items():
         if class_ == '1a':
             count_cases[class_] = len(itf.flatten_list(loci.values()))
         else:
@@ -1942,12 +1955,12 @@ def print_classifications_results(clusters_to_keep: Dict[str, Any], drop_possibl
     print(f"Out of {len(to_blast_paths)}:")
     print(f"\t{total_loci} representatives had matches with BLASTn against the.")
     for class_, count in count_cases.items():
-        print_results(class_, count, clusters_to_keep)
+        print_results(class_, count, merged_all_classes)
 
     print(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches")
 
     if retained_not_matched_by_blastn:
-        clusters_to_keep['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
+        merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
 
 
 def add_cds_to_dropped_cds(drop_possible_loci: List[str], dropped_cds: Dict[str, str], clusters_to_keep: Dict[str, Any],
