@@ -65,7 +65,7 @@ def create_directories(output_directory: str, run_mode: str) -> List[Optional[st
 
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
     if run_mode == 'unclassified_cds':
-        representatives_blastn_folder: Optional[str] = os.path.join(blastn_output, 'cluster_representatives_fastas')
+        representatives_blastn_folder: Optional[str] = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
         ff.create_directory(representatives_blastn_folder)
     else:
         representatives_blastn_folder = None
@@ -316,7 +316,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nFiltering BLAST results into classes...")
     # Separate results into different classes.
-    classes_outcome: Dict[str, Any] = cof.separate_blastn_results_into_classes(representative_blast_results,
+    classes_outcome: Dict[str, Any] = cof.separate_blast_results_into_classes(representative_blast_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
     print("\nProcessing classes...")

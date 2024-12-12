@@ -437,7 +437,7 @@ def add_items_to_results(representative_blast_results: Dict[str, Dict[str, Dict[
             clean_up_results(representative_blast_results, query, subject)
 
 
-def separate_blastn_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
+def separate_blast_results_into_classes(representative_blast_results: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                                          constants: Tuple[Any, ...], classes_outcome: List[str]) -> Tuple[str, ...]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
@@ -490,7 +490,7 @@ def separate_blastn_results_into_classes(representative_blast_results: Dict[str,
         -----
         - This function directly modifies the `representative_blast_results` dictionary from the outer
           scope, specifically adding or updating the 'class' key for a BLASTN result.
-        - It is designed to be used only within the `separate_blastn_results_into_classes` function.
+        - It is designed to be used only within the `separate_blast_results_into_classes` function.
         """
         representative_blast_results[query][id_subject][id_].update({'class': class_name})
 
