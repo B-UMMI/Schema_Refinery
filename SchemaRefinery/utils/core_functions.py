@@ -614,7 +614,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
                     tp.ProcessedResults,
                     tp.CountResultsByClass,
                     tp.CountResultsByClassWithInverse,
-                    Dict[str, Tuple[set, set]], List[str], Dict[str, List[List[str]]]
+                    tp.RepsAndAllelesIds Dict[str, List[List[str]]]
                     ]:
     """
     Processes BLAST results to determine class-based relationships and counts.
@@ -648,7 +648,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     count_results_by_class_with_inverse : tp.CountResultsByClassWithInverse
         A dictionary containing counts of results by class, including inverse matches, with keys formatted as
         "query|subject" and values being dictionaries with class identifiers as keys and counts as values.
-    reps_and_alleles_ids : Dict[str, Tuple[set, set]]
+    reps_and_alleles_ids : tp.RepsAndAllelesIds
         A dictionary mapping pairs of query and subject sequences to their unique loci/CDS IDs and alleles IDs.
     drop_mark : List[str]
         A list of sequences that were marked for dropping.
@@ -666,7 +666,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     # Initialize variables
     count_results_by_class: tp.CountResultsByClass = {}
     count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse = {}
-    reps_and_alleles_ids: Dict[str, Tuple[set, set]] = {}
+    reps_and_alleles_ids: tp.RepsAndAllelesIds = {}
     processed_results: tp.ProcessedResults = {}
     all_relationships: Dict[str, List[List[str]]] = {class_: [] for class_ in classes_outcome}
     drop_mark: List[str] = []

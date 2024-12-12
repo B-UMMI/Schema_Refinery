@@ -1,4 +1,4 @@
-from typing import Dict, List, TypedDict, Tuple
+from typing import Dict, List, TypedDict, Tuple, Set
 from collections import OrderedDict
 
 class ClustersToKeep(TypedDict):
@@ -68,3 +68,6 @@ class ClassCount(TypedDict):
 
 class CountResultsByClassWithInverse(TypedDict):
     query_subject: Dict[str, Dict[str, List[ClassCount]]]
+
+class RepsAndAllelesIds(TypedDict):
+    query_subject: Tuple[Set[str], Set[str]]
