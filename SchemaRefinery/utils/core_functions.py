@@ -99,7 +99,7 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
 
 def add_items_to_results(representative_blast_results: tp.BlastDict, 
                          reps_kmers_sim: Dict[str, Dict[str, Tuple[float, float]]], 
-                         bsr_values: Dict[str, Dict[str, float]],
+                         bsr_values: tp.BSRValues,
                          representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords,
                          representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords,
                          frequency_in_genomes: Dict[str, int], 
@@ -120,7 +120,7 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
         various metrics.
     reps_kmers_sim : Dict[str, Dict[str, Tuple[float, float]]]
         A dictionary mapping pairs of CDS to their k-mer similarity scores.
-    bsr_values : Dict[str, Dict[str, float]]
+    bsr_values : tp.BSRValues
         A dictionary mapping pairs of CDS to their Blast Score Ratio (BSR) values. Can be None if BSR values
         are not available.
     representative_blast_results_coords_all : tp.RepresentativeBlastResultsCoords
@@ -189,14 +189,14 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
             cov = '-'
         return sim, cov
 
-    def get_bsr_value(bsr_values: Dict[str, Dict[str, float]], 
+    def get_bsr_value(bsr_values: tp.BSRValues, 
                       query: str, subject: str) -> float:
         """
         Fetches the BLAST Score Ratio (BSR) for a specified pair of sequences.
 
         Parameters
         ----------
-        bsr_values : Dict[str, Dict[str, float]]
+        bsr_values : tp.BSRValues
             A dictionary where keys are query sequence IDs and values are dictionaries with subject sequence
             IDs as keys. Each inner dictionary's values are the BSR values.
         query : str
@@ -1331,7 +1331,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
                multi_fasta: Dict[str, List[str]]) -> Tuple[tp.BlastDict, 
                                                            tp.RepresentativeBlastResultsCoords, 
                                                            tp.RepresentativeBlastResultsCoords, 
-                                                           Dict[str, Dict[str, float]], 
+                                                           tp.BSRValues, 
                                                            Dict[str, float]]:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
@@ -1477,7 +1477,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
                 seen_entries.setdefault(filename, set()).update(subjects_ids)
 
     # Calculate BSR based on BLASTp.
-    bsr_values: Dict[str, Dict[str, float]] = {}
+    bsr_values: tp.BSRValues = {}
     
     # Create query entries
     for query in blastp_runs_to_do:

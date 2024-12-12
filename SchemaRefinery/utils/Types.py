@@ -44,3 +44,6 @@ class BlastDict(TypedDict):
 
 class RepresentativeBlastResultsCoords(TypedDict):
     query: Dict[str, Dict[str, List[Tuple[int, int]]]]
+
+class BSRValues(TypedDict):
+    query_id: Dict[str, float]
