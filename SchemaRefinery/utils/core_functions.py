@@ -611,7 +611,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
 
 def process_classes(representative_blast_results: tp.BlastDict, 
                     classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
-                    Dict[str, Tuple[Optional[str], List[str], List[str], Tuple[str, str], List[str]]],
+                    tp.ProcessedResults,
                     Dict[str, Dict[str, int]], Dict[str, Dict[str, List[Union[int, str]]]],
                     Dict[str, Tuple[set, set]], List[str], Dict[str, List[List[str]]]
                     ]:
@@ -638,7 +638,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
     Returns
     -------
-    processed_results : Dict[str, Tuple[Optional[str], List[str], List[str], Tuple[str, str], List[str]]]
+    processed_results : tp.ProcessedResults
         A dictionary containing processed results with keys formatted as "query|subject" and values being tuples
         containing information about the processed sequences, their class, relationships, and additional details.
     count_results_by_class : Dict[str, Dict[str, int]]
@@ -666,7 +666,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     count_results_by_class: Dict[str, Dict[str, int]] = {}
     count_results_by_class_with_inverse: Dict[str, Dict[str, List[Union[int, str]]]] = {}
     reps_and_alleles_ids: Dict[str, Tuple[set, set]] = {}
-    processed_results: Dict[str, Tuple[Optional[str], List[str], List[str], Tuple[str, str], List[str]]] = {}
+    processed_results: tp.ProcessedResults = {}
     all_relationships: Dict[str, List[List[str]]] = {class_: [] for class_ in classes_outcome}
     drop_mark: List[str] = []
     inverse_match: List[str] = []
@@ -772,7 +772,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark, all_relationships
 
 
-def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str], Tuple[str, str], List[Any]]], count_results_by_class: Dict[str, Dict[str, int]], 
+def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: Dict[str, Dict[str, int]], 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.ClustersToKeep, 
                     dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]:
     """
@@ -780,7 +780,7 @@ def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str]
 
     Parameters
     ----------
-    processed_results : Dict[str, Dict[str, Any]]
+    processed_results : tp.ProcessedResults
         The processed results data.
     count_results_by_class : Dict[str, Dict[str, int]]
         A dictionary with counts of results by class.
@@ -807,7 +807,7 @@ def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str]
     - It uses helper functions like `cf.cluster_by_ids` for clustering and `itf.identify_string_in_dict_get_key`
       for identifying if a query or subject ID is present in the clusters.
     """
-    def cluster_data(processed_results: Dict[str, Dict[str, Any]]) -> Dict[int, List[str]]:
+    def cluster_data(processed_results: tp.ProcessedResult) -> Dict[int, List[str]]:
         """
         Cluster data based on a specific key extracted from the processed results.
 
@@ -827,13 +827,13 @@ def extract_results(processed_results: Dict[str, Tuple[str, List[str], List[str]
 
         return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) for v in processed_results.values() if condition(v)]), 1)}
 
-    def choice_data(processed_results: Dict[str, Dict[str, Any]], to_cluster_list: Dict[int, List[str]]) -> Dict[int, List[str]]:
+    def choice_data(processed_results: tp.ProcessedResults, to_cluster_list: Dict[int, List[str]]) -> Dict[int, List[str]]:
         """
         Select and cluster data based on specific conditions and a list of identifiers to cluster.
 
         Parameters
         ----------
-        processed_results : Dict[str, Dict[str, Any]]
+        processed_results : tp.ProcessedResults
             A dictionary containing the processed results to be selected and clustered.
         to_cluster_list : Dict[int, List[str]]
             A list of identifiers indicating which entries should be considered for clustering.

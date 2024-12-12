@@ -47,3 +47,13 @@ class RepresentativeBlastResultsCoords(TypedDict):
 
 class BSRValues(TypedDict):
     query_id: Dict[str, float]
+
+class ProcessedResult(TypedDict):
+    class_: str
+    ids: List[str]
+    empty_list: List[str]
+    pair: Tuple[str, str]
+    combined_list: List[str]
+
+class ProcessedResults(TypedDict):
+    query_subject: Tuple[ProcessedResult]
