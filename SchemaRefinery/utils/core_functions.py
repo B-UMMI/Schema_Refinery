@@ -612,7 +612,8 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
 def process_classes(representative_blast_results: tp.BlastDict, 
                     classes_outcome: Tuple[str, ...], all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
                     tp.ProcessedResults,
-                    tp.CountResultsByClass, Dict[str, Dict[str, List[Union[int, str]]]],
+                    tp.CountResultsByClass,
+                    tp.CountResultsByClassWithInverse,
                     Dict[str, Tuple[set, set]], List[str], Dict[str, List[List[str]]]
                     ]:
     """
@@ -664,7 +665,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     """
     # Initialize variables
     count_results_by_class: tp.CountResultsByClass = {}
-    count_results_by_class_with_inverse: Dict[str, Dict[str, List[Union[int, str]]]] = {}
+    count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse = {}
     reps_and_alleles_ids: Dict[str, Tuple[set, set]] = {}
     processed_results: tp.ProcessedResults = {}
     all_relationships: Dict[str, List[List[str]]] = {class_: [] for class_ in classes_outcome}
