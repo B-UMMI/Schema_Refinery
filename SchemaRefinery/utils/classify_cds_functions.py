@@ -6,13 +6,15 @@ try:
                        sequence_functions as sf,
                        clustering_functions as cf,
                        iterable_functions as itf,
-                       kmers_functions as kf,)
+                       kmers_functions as kf,
+                       Types as tp)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                         sequence_functions as sf,
                                         clustering_functions as cf,
                                         iterable_functions as itf,
-                                        kmers_functions as kf,)
+                                        kmers_functions as kf,
+                                        Types as tp)
 
 def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) -> None:
     """
@@ -36,7 +38,7 @@ def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) 
         for cds_id, reason in dropped_cds.items():
             dropped_cds_file.write(f"{cds_id}\t{reason}\n")
 
-def update_ids_and_save_changes(clusters_to_keep: Dict[str, List[str]], 
+def update_ids_and_save_changes(merged_all_classes: tp.ClustersToKeep, 
                                 clusters: Dict[str, List[str]], 
                                 cds_original_ids: Dict[str, List[str]], 
                                 dropped_cds: Dict[str, str],
@@ -51,7 +53,7 @@ def update_ids_and_save_changes(clusters_to_keep: Dict[str, List[str]],
 
     Parameters
     ----------
-    clusters_to_keep : Dict[str, List[str]]
+    merged_all_classes : tp.ClustersToKeep
         A dictionary where each key is a class and each value is a list of CDS to keep.
     clusters : Dict[str, List[str]]
         A dictionary mapping representative IDs to their cluster members.
@@ -298,7 +300,7 @@ def replace_ids_in_clusters(clusters: Dict[str, List[str]],
     return cds_original_ids
 
             
-def write_temp_loci(clusters_to_keep: Dict[str, List[str]], 
+def write_temp_loci(merged_all_classes: tp.ClustersToKeep, 
                     all_nucleotide_sequences: Dict[str, str], 
                     clusters: Dict[str, List[str]], 
                     output_path: str) -> Dict[str, str]:
@@ -308,7 +310,7 @@ def write_temp_loci(clusters_to_keep: Dict[str, List[str]],
     
     Parameters
     ----------
-    clusters_to_keep : Dict[str, List[str]]
+    merged_all_classes : tp.ClustersToKeep
         Dictionary of the CDS to keep by each classification.
     all_nucleotide_sequences : Dict[str, str]
         Dictionary that contains all of the DNA sequences for all of the alleles.
@@ -361,7 +363,7 @@ def write_temp_loci(clusters_to_keep: Dict[str, List[str]],
             if class_ != '1a':
                 cds = [cds]
             else:
-                cds = clusters_to_keep[class_][cds]
+                cds = merged_all_classes[class_][cds]
             index: int = 1
             # Write all of the alleles to the files.
             with open(cds_group_fasta_file, 'w') as fasta_file:
@@ -379,7 +381,7 @@ def write_temp_loci(clusters_to_keep: Dict[str, List[str]],
     temp_fastas_folder: str = os.path.join(output_path, 'temp_fastas')
     ff.create_directory(temp_fastas_folder)
     # Process each class and CDS list in clusters_to_keep
-    for class_, cds_list in clusters_to_keep.items():
+    for class_, cds_list in merged_all_classes.items():
         write_possible_new_loci(class_, cds_list, temp_fastas_folder,
                                 temp_fastas_paths, all_nucleotide_sequences,
                                 clusters)
@@ -794,12 +796,12 @@ def write_fasta_file(file_path: str, sequences: Dict[str, str]) -> None:
             fasta_file.write(f">{seq_id}\n{sequence}\n")
 
 
-def create_blast_files(representatives_blastn_folder: str, 
+def prepare_files_to_blast(representatives_blastn_folder: str, 
                        all_alleles: Dict[str, List[str]], 
                        all_nucleotide_sequences: Dict[str, str], 
                        processing_mode: str) -> Tuple[Dict[str, str], str]:
     """
-    Creates BLAST files for the representatives and writes them to the specified folder.
+    Writes representative and master FASTA files for BLAST.
 
     Parameters
     ----------
@@ -852,14 +854,14 @@ def create_blast_files(representatives_blastn_folder: str,
     return to_blast_paths, master_file_path
 
 
-def update_frequencies_in_genomes(clusters_to_keep: Dict[str, Dict[str, List[str]]], 
+def update_frequencies_in_genomes(clusters_to_keep_1a: Dict[str, List[str]], 
                                   frequency_in_genomes: Dict[str, int]) -> Dict[str, int]:
     """
     Updates the frequencies in genomes for joined groups and updates the changed clusters frequency from joined CDSs.
 
     Parameters
     ----------
-    clusters_to_keep : Dict[str, Dict[str, List[str]]]
+    clusters_to_keep : Dict[str, List[str]]
         Dictionary containing clusters to keep with their members.
     frequency_in_genomes : Dict[str, int]
         Dictionary with the frequency of CDS in the genomes.
@@ -873,7 +875,7 @@ def update_frequencies_in_genomes(clusters_to_keep: Dict[str, Dict[str, List[str
     new_cluster_freq: Dict[str, int] = {}
 
     # Calculate new frequencies for joined groups
-    for cluster_id, cluster_members in clusters_to_keep['1a'].items():
+    for cluster_id, cluster_members in clusters_to_keep_1a.items():
         new_cluster_freq[cluster_id] = sum(frequency_in_genomes[member] for member in cluster_members)
         for member in cluster_members:
             updated_frequency_in_genomes[member] = new_cluster_freq[cluster_id]

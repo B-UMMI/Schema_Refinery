@@ -98,7 +98,7 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │   │   ├── blast_results_y.tsv
     │   │   ├── blast_results_z.tsv
     │   │   └── ...
-    │   ├── master_file.fasta
+    │   ├── subject_master_file.fasta
     │   ├── Query_Translation
     │   │   ├── query_translations_x.fasta
     │   │   ├── query_translations_y.fasta
@@ -137,7 +137,7 @@ Output files and folders description:
             blast_results_y.tsv: TSV file containing the BLASTp results for the locus y.
             blast_results_z.tsv: TSV file containing the BLASTp results for the locus z.
             ...: All of the other TSV BLASTp results files.
-        master_file.fasta: FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
+        subject_master_file.fasta: FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
         Query_Translation: Folder containing the translation files.
             query_translations_x.fasta: FASTA file containing the translation for the locus x.
             query_translations_y.fasta: FASTA file containing the translation for the locus y.
