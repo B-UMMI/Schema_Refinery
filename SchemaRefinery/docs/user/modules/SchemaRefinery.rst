@@ -113,7 +113,7 @@ Each module can be used independently by running the corresponding script with t
 Schema Creation Workflow
 ------------------------
 
-Algorithm to identify new loci based on the CDS that are not in the schema:
+Workflow for creating a schema using the `SchemaRefinery` modules and chewBBACA:
 
 .. image:: source/Schema_creation_workflow.png
    :alt: Schema Creation Workflow
