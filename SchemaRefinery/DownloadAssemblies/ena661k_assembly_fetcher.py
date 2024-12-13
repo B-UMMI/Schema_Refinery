@@ -184,7 +184,7 @@ def download_ftp_file(data: Tuple[str, str, Union[str, None]], retry: int, verif
     return downloaded
 
 def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
-         criteria: Dict[str, Any], retry: int, threads: int) -> str:
+         criteria: Dict[str, Any], retry: int, threads: int) -> tuple[list[str], str, str, str, str]:
     """
     Main function to handle downloading assemblies based on provided arguments.
 
