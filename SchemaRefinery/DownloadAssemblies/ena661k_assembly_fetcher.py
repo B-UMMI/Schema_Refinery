@@ -224,13 +224,13 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         print('\nFile with FTP links already exists...')
     else:
         print('Downloading ENA661K ftp paths file...')
-        download_ftp_file([ct.ASSEMBLY_FTP_PATH, assembly_ftp_file, None], retry, False, True)
+        download_ftp_file((ct.ASSEMBLY_FTP_PATH, assembly_ftp_file, None), retry, False, True)
 
     if os.path.exists(assembly_metadata_file):
         print('File with ENA661K metadata already exists...')
     else:
         print('Downloading ENA661K metadata file...')
-        download_ftp_file([ct.ASSEMBLY_METADATA_PATH, assembly_metadata_file + '.gz', None], retry, False, True)
+        download_ftp_file((ct.ASSEMBLY_METADATA_PATH, assembly_metadata_file + '.gz', None), retry, False, True)
 
         print('Unzipping metadata...')
         with gzip.open(assembly_metadata_file + '.gz', 'rb') as f_in:
@@ -243,7 +243,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         print('File with ENA661K checklist already exists...')
     else:
         print('Downloading ENA661K checklist.chk...')
-        download_ftp_file([ct.FTP_HASH_FILE, local_checklist, None], retry, False, True)
+        download_ftp_file((ct.FTP_HASH_FILE, local_checklist, None), retry, False, True)
 
     # Read file with metadata
     print("\nReading metadata table...")
