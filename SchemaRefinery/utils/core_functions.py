@@ -1098,15 +1098,15 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     return related_clusters, recommendations
 
 
-def write_blast_summary_results(related_clusters: tp.RelatedClusters,
-                                count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse, 
-                                group_reps_ids: Dict[str, List[str]],
-                                group_alleles_ids: Dict[str, List[str]], 
-                                frequency_in_genomes: Dict[str, int],
-                                recommendations: tp.Recomendations, 
-                                reverse_matches: bool,
-                                classes_outcome: Tuple[str, ...],
-                                output_directory: str) -> Tuple[str]:
+def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
+                                        count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse, 
+                                        group_reps_ids: Dict[str, List[str]],
+                                        group_alleles_ids: Dict[str, List[str]], 
+                                        frequency_in_genomes: Dict[str, int],
+                                        recommendations: tp.Recomendations, 
+                                        reverse_matches: bool,
+                                        classes_outcome: Tuple[str, ...],
+                                        output_directory: str) -> Tuple[str]:
     """
     Writes summary results of BLAST analysis to TSV files.
 

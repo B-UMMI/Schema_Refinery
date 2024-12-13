@@ -404,15 +404,15 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     reverse_matches: bool = True
     (related_matches_path,
      count_results_by_cluster_path,
-     recommendations_file_path) = cof.write_blast_summary_results(related_clusters,
-                                                                count_results_by_class_with_inverse,
-                                                                group_reps_ids,
-                                                                group_alleles_ids,
-                                                                frequency_in_genomes,
-                                                                recommendations,
-                                                                reverse_matches,
-                                                                classes_outcome,
-                                                                output_directory)
+     recommendations_file_path) = cof.write_recommendations_summary_results(related_clusters,
+                                                                            count_results_by_class_with_inverse,
+                                                                            group_reps_ids,
+                                                                            group_alleles_ids,
+                                                                            frequency_in_genomes,
+                                                                            recommendations,
+                                                                            reverse_matches,
+                                                                            classes_outcome,
+                                                                            output_directory)
 
     # Get all of the CDS that matched with loci or loci matched with loci
     #TODO fix this
