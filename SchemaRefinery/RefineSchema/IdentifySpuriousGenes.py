@@ -13,7 +13,6 @@ try:
                        blast_functions as bf,
                        linux_functions as lf,
                        classify_cds_functions as ccf,
-                       schema_classification_functions as scf,
                        constants as ct,
                        Types as tp)
 except ModuleNotFoundError:
@@ -24,7 +23,6 @@ except ModuleNotFoundError:
                                         blast_functions as bf,
                                         linux_functions as lf,
                                         classify_cds_functions as ccf,
-                                        schema_classification_functions as scf,
                                         constants as ct,
                                         Types as tp)
 
@@ -280,10 +278,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         cds_present,
         group_reps_ids,
         group_alleles_ids) = cof.prepare_loci(schema_folder,
-                                                  allelecall_directory,
-                                                  constants,
-                                                  processing_mode,
-                                                  initial_processing_output)
+                                            allelecall_directory,
+                                            constants,
+                                            processing_mode,
+                                            initial_processing_output)
 
     # Create BLAST db for the schema DNA sequences.
     print("\nCreating BLASTn database...")
