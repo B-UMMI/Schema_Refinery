@@ -279,7 +279,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_alleles,
         cds_present,
         group_reps_ids,
-        group_alleles_ids) = scf.process_new_loci(schema_folder,
+        group_alleles_ids) = cof.prepare_loci(schema_folder,
                                                   allelecall_directory,
                                                   constants,
                                                   processing_mode,
