@@ -409,7 +409,7 @@ Report files description
 
 .. csv-table:: Annotations
     :header: "Locus", "Protein_ID", "Protein_product", "Protein_short_name", "BSR", "genebank_origin_id", "genebank_origin_product", "genebank_origin_name", "BSR_best_genbank_annotations", "Best Match", "BSR_best_blast_matches"
-    :widths: 20, 20, 20, 20, 10, 20, 20, 20, 20, 20, 10
+    :widths: 20, 20, 20, 20, 15, 20, 20, 20, 20, 20, 15
 
     x, sp|P75510|SYW_MYCPN, Tryptophan--tRNA ligase, trpS, 1.0, ADK86998.1, trpS, tryptophan--tRNA ligase, 0.9966923925027563, a, 1.0
     y, sp|P75528|DACB_MYCPN, Diadenylate cyclase, dacB, 1.0, ADK87204.1, NA, conserved hypothetical protein TIGR00159, 1.0, b, 1.0

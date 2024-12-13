@@ -6,6 +6,13 @@ Description
 
 The `SchemaRefinery` repository contains tools and modules for refining genomic schemas. These tools help in identifying paralogous loci, spurious genes, and annotating schemas. The repository supports various genomic data processing tasks and provides configurable parameters for different processes.
 
+Dependencies
+------------
+
+- Python 3.9 or higher
+- Biopython library (`pip install biopython`)
+- NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+
 Installation
 ------------
 Current implementation of `SchemaRefinery` is available as a Python package available at `SchemaRefinery GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_. To install the package, run the following command:
@@ -62,13 +69,6 @@ The repository includes the following main modules:
 5. **:ref:`DownloadAssemblies <download_assemblies>`**: Downloads genomic assemblies from various databases.
 6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in fasta format to a schema format.
 
-Dependencies
-------------
-
-- Python 3.9 or higher
-- Biopython library (`pip install biopython`)
-- NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
-
 Modules Usage
 -------------
 
@@ -109,6 +109,16 @@ Each module can be used independently by running the corresponding script with t
 .. code-block:: bash
 
     SR AdaptLoci --help
+
+Schema Creation Workflow
+------------------------
+
+Algorithm to identify new loci based on the CDS that are not in the schema:
+
+.. image:: source/Schema_creation_workflow.png
+   :alt: Schema Creation Workflow
+   :width: 200px
+   :align: center
 
 Troubleshooting
 ---------------
