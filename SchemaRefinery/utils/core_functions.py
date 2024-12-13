@@ -2238,7 +2238,7 @@ def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode
     schema_short = {fastafile.replace('_short', ''): os.path.join(schema_short_dir, fastafile) for fastafile in os.listdir(schema_short_dir) if fastafile.endswith('.fasta')}
     
     # Path to the master FASTA file
-    master_file_path = os.path.join(results_output, 'master.fasta')
+    master_file_path = os.path.join(results_output, 'master_nucleotide.fasta')
     
     # Create a directory for possible new loci translations
     possible_new_loci_translation_folder = os.path.join(results_output, 'schema_translation_folder')
