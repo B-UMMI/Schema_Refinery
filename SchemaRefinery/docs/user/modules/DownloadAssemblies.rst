@@ -88,6 +88,32 @@ Command-Line Arguments
     -i, --input-table
         (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
 
+Algorithm Explanation
+---------------------
+
+The `DownloadAssemblies` Workflow is shown in the flowchart below:
+
+Workflow for downloading assemblies from NCBI:
+
+.. image:: source/DownloadAssemblies_ncbi.png
+   :alt: SchemaAnnotation Flowchart
+   :width: 80%
+   :align: center
+
+Workflow for downloading assemblies from ENA661K:
+
+.. image:: source/DownloadAssemblies_ena661k.png
+   :alt: SchemaAnnotation Flowchart
+   :width: 80%
+   :align: center
+
+Workflow for downloading metadata:
+
+.. image:: source/DownloadAssemblies_metadata.png
+   :alt: SchemaAnnotation Flowchart
+   :width: 80%
+   :align: center
+
 Filtering criteria example
 --------------------------
 Filtering criteria file should be a TSV file with the following columns:
