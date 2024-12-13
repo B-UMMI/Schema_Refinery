@@ -23,7 +23,7 @@ import concurrent.futures
 import gzip
 import shutil
 from itertools import repeat
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Union
 
 try:
     from utils import constants as ct
@@ -136,7 +136,7 @@ def read_table(file_path: str, delimiter: str = '\t') -> List[List[str]]:
 
     return lines
 
-def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = True, progress: bool = False) -> bool:
+def download_ftp_file(data: Tuple[str, str, Union[str, None]], retry: int, verify: bool = True, progress: bool = False) -> bool:
     """
     Download a file from an FTP server.
 
@@ -184,7 +184,7 @@ def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = Tru
     return downloaded
 
 def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
-         criteria: Dict[str, Any], retry: int, threads: int) -> str:
+         criteria: Dict[str, Any], retry: int, threads: int) -> tuple[list[str], str, str, str, str]:
     """
     Main function to handle downloading assemblies based on provided arguments.
 
@@ -224,13 +224,13 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         print('\nFile with FTP links already exists...')
     else:
         print('Downloading ENA661K ftp paths file...')
-        download_ftp_file([ct.ASSEMBLY_FTP_PATH, assembly_ftp_file, None], retry, False, True)
+        download_ftp_file((ct.ASSEMBLY_FTP_PATH, assembly_ftp_file, None), retry, False, True)
 
     if os.path.exists(assembly_metadata_file):
         print('File with ENA661K metadata already exists...')
     else:
         print('Downloading ENA661K metadata file...')
-        download_ftp_file([ct.ASSEMBLY_METADATA_PATH, assembly_metadata_file + '.gz', None], retry, False, True)
+        download_ftp_file((ct.ASSEMBLY_METADATA_PATH, assembly_metadata_file + '.gz', None), retry, False, True)
 
         print('Unzipping metadata...')
         with gzip.open(assembly_metadata_file + '.gz', 'rb') as f_in:
@@ -243,7 +243,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         print('File with ENA661K checklist already exists...')
     else:
         print('Downloading ENA661K checklist.chk...')
-        download_ftp_file([ct.FTP_HASH_FILE, local_checklist, None], retry, False, True)
+        download_ftp_file((ct.FTP_HASH_FILE, local_checklist, None), retry, False, True)
 
     # Read file with metadata
     print("\nReading metadata table...")
@@ -325,7 +325,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
     with open(ena_valid_ids_file, write_type, encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(sample_ids) + '\n')
 
-    failed_ids_file: str = os.path.join(ena_metadata_directory, "id_failed_criteria.tsv")
+    failed_ids_file: str = os.path.join(ena_metadata_directory, "ids_failed_criteria.tsv")
     with open(failed_ids_file, 'w+', encoding='utf-8') as ids_to_tsv:
         ids_to_tsv.write("\n".join(failed_list) + '\n')
 

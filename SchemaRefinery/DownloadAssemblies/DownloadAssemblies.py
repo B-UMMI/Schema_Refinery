@@ -178,7 +178,7 @@ def main(args: Any) -> None:
 
 
         ncbi_valid_ids_file
-        print("\nFetching RefSeq, Genbank and SRA IDs linked to the BioSample ID...")
+        print("\nFetching RefSeq, Genbank and SRA IDs linked to the assembly ID...")
         ncbi_linked_ids.main(ids_file,
                              linked_ids_file,
                              args.email,

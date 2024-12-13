@@ -107,21 +107,21 @@ Algorithm to identify new loci based on the CDS that are not in the schema:
 
 .. image:: source/IdentifySpuriousGenes_unclassifiedCDS.png
    :alt: Algorithm for unclassified CDS
-   :width: 200px
+   :width: 80%
    :align: center
 
 Algorithm to indentify spurious loci based on the schema input:
 
 .. image:: source/IdentifySpuriousGenes_schema.png
    :alt: Algorithm to identify spurious loci
-   :width: 200px
+   :width: 80%
    :align: center
 
 Each BLAST results is parsed and given a class based on the following rules:
 
 .. image:: source/algorithm_classification.png
    :alt: Classification algorithm
-   :width: 200px
+   :width: 80%
    :align: centercolumns description:
 
 ---------------------------------------------------------------------------------
