@@ -23,7 +23,7 @@ import concurrent.futures
 import gzip
 import shutil
 from itertools import repeat
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Union
 
 try:
     from utils import constants as ct
@@ -136,7 +136,7 @@ def read_table(file_path: str, delimiter: str = '\t') -> List[List[str]]:
 
     return lines
 
-def download_ftp_file(data: Tuple[str, str, str], retry: int, verify: bool = True, progress: bool = False) -> bool:
+def download_ftp_file(data: Tuple[str, str, Union[str, None]], retry: int, verify: bool = True, progress: bool = False) -> bool:
     """
     Download a file from an FTP server.
 

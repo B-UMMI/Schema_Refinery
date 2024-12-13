@@ -16,9 +16,11 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, TypedDict
 
-class Metadata(TypedDict):
-    total_count: int
-    reports: List[Dict[str, Any]]
+try:
+    from utils import Types as tp
+
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import Types as tp
 
 def verify_assembly(metadata_assembly: Dict[str, Any], size_threshold: Optional[float], max_contig_number: Optional[int],
                     genome_size: Optional[int], verify_status: Optional[bool]) -> bool:
@@ -71,7 +73,7 @@ def verify_assembly(metadata_assembly: Dict[str, Any], size_threshold: Optional[
 
 
 def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: Optional[Dict[str, Any]],
-                   api_key: Optional[str]) -> Metadata:
+                   api_key: Optional[str]) -> tp.Metadata:
     """
     This function based on an input id fetches JSON object (dict) for all assemblies.
 
@@ -88,7 +90,7 @@ def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: 
 
     Returns
     -------
-    Dict[str, Any]
+    tp.Metadata
         JSON object that contains metadata.
     """
     arguments: List[str] = []
@@ -118,7 +120,7 @@ def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: 
     metadata_process: subprocess.CompletedProcess = subprocess.run(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
 
     # Parse the JSON output
-    metadata: Metadata = json.loads(metadata_process.stdout)
+    metadata: tp.Metadata = json.loads(metadata_process.stdout)
 
     return metadata
 
@@ -134,7 +136,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
             print("No assembly identifiers provided.")
 
         if criteria is not None:
-            metadata: Metadata = fetch_metadata(input_table, None, criteria, api_key)
+            metadata: tp.Metadata = fetch_metadata(input_table, None, criteria, api_key)
             if metadata['total_count'] == 0:
                 sys.exit("\nNo assemblies that satisfy the selected criteria were found.")
     else:
@@ -153,7 +155,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
         total_ids: int = len(assembly_ids)
         failed: List[str] = []
         passed: List[str] = []
-        passed_metadata: List[Dict[str, Any]] = [] #TODO: write passed metadata to a file
+        passed_metadata: List[Dict[str, Any]] = []
         if criteria is not None:
             # Validate assemblies
             if metadata['total_count'] > 0:
@@ -173,6 +175,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
                         failed.append(current_accession)
                 # Update assembly_ids to only include passed assemblies
                 assembly_ids = passed
+                # Update metadata to only include passed assemblies
                 metadata = {'total_count': len(assembly_ids), 'reports': passed_metadata}
 
             print(f"\n{len(assembly_ids)} passed filtering criteria.")
@@ -261,7 +264,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
             ids_to_txt.write("\n".join(assembly_ids) + '\n')
 
         # Save IDs that failed criteria
-        failed_ids_file: str = os.path.join(ncbi_metadata_directory, "id_failed_criteria.tsv")
+        failed_ids_file: str = os.path.join(ncbi_metadata_directory, "ids_failed_criteria.tsv")
         with open(failed_ids_file, 'w', encoding='utf-8') as ids_to_txt:
             ids_to_txt.write("\n".join(failed) + '\n')
 

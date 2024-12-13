@@ -132,7 +132,7 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
     ├── assemblies_metadata_ncbi.tsv # -db NCBI
     ├── metadata_ncbi # -db NCBI --nocleanup
     │   ├── assemblies_ids_to_download.tsv
-    │   └── id_failed_criteria.tsv
+    │   └── ids_failed_criteria.tsv
     └── metadata_ena661k # -db ENA661k --nocleanup
         ├── assemblies_ids_to_download.tsv
         ├── failed_to_download.tsv

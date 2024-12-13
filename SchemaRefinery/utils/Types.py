@@ -80,3 +80,7 @@ class RelatedClusters(TypedDict):
 
 class Recomendations(TypedDict):
     cluster_id: Dict[int, Dict[str, Set[str]]]
+
+class Metadata(TypedDict):
+    total_count: int
+    reports: List[Dict[str, Any]]
