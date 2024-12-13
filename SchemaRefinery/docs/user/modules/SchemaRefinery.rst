@@ -117,7 +117,7 @@ Workflow for creating a schema using the `SchemaRefinery` modules and chewBBACA:
 
 .. image:: source/Schema_creation_workflow.png
    :alt: Schema Creation Workflow
-   :width: 200px
+   :width: 80%
    :align: center
 
 Troubleshooting

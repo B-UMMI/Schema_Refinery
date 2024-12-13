@@ -72,7 +72,7 @@ MatchSchemas Algorithm Flowchart:
 
 .. image:: source/match_schemas.png
    :alt: MatchSchemas Algorithm
-   :width: 200px
+   :width: 80%
    :align: center
 
 Outputs

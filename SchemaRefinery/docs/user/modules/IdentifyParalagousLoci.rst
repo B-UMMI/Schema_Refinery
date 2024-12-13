@@ -72,7 +72,7 @@ Algorithm to identify paralagous loci in a schema is shown below:
 
 .. image:: source/paralagous_loci.png
    :alt: IdentifyParalogousLoci Algorithm
-   :width: 200px
+   :width: 80%
    :align: center
 
 Outputs
