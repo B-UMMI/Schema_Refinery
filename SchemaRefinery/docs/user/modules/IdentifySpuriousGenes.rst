@@ -123,7 +123,7 @@ Each BLAST results is parsed and given a class based on the following rules:
    :alt: Classification algorithm
    :width: 200px
    :align: centercolumns description:
-   
+
 ---------------------------------------------------------------------------------
 
 .. csv-table:: **paralogous_loci_report_passed_all_checks.tsv**
