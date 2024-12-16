@@ -7,20 +7,14 @@ Welcome to SchemaRefinery's documentation!
 ==========================================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Contents:
 
-    SchemaRefinery/IdentifySpuriousGenes
-    SchemaRefinery/MatchSchemas
-    SchemaRefinery/SchemaAnnotation
-    SchemaRefinery/IdentifyParalagousLoci
-    SchemaRefinery/DownloadAssemblies
-    SchemaRefinery/AdaptLoci
-    SchemaRefinery/SchemaRefinery
+    SchemaRefinery/modules/IdentifySpuriousGenes
+    SchemaRefinery/modules/MatchSchemas
+    SchemaRefinery/modules/SchemaAnnotation
+    SchemaRefinery/modules/IdentifyParalagousLoci
+    SchemaRefinery/modules/DownloadAssemblies
+    SchemaRefinery/modules/AdaptLoci
+    SchemaRefinery/modules/SchemaRefinery
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
