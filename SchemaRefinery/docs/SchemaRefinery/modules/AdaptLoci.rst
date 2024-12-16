@@ -6,7 +6,9 @@ AdaptLoci - Adapt fastas into a chewBBACA schema
 Description
 -----------
 The `AdaptLoci` module is designed to adapt loci from FASTA files into a chewBBACA-compatible schema. This module processes input loci, evaluates allele similarity, and selects representative alleles based on configurable parameters. It supports parallel processing to enhance performance and efficiency, making it suitable for large genomic datasets. The module ensures that the adapted loci are ready for downstream analysis and schema refinement tasks.
+
 This module is essential for researchers and bioinformaticians working on genomic schema refinement, providing a robust and flexible tool for adapting loci into a standardized schema format.
+
 Features
 --------
 
