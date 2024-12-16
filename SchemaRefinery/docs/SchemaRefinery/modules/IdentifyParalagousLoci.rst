@@ -5,8 +5,7 @@ IdentifyParalogousLoci - Identify paralogous loci in a schema
 
 Description
 -----------
-
-The `IdentifyParalogousLoci` module parses command-line arguments and initiates the process to identify paralogous loci in a schema. This module sets up an argument parser to handle various command-line options for identifying paralogous loci and then calls the main function of the `IdentifyParalogousLoci` class with the parsed arguments.
+The `IdentifyParalogousLoci` module is a comprehensive tool designed to identify paralogous loci within a genomic schema. This module is essential for researchers and bioinformaticians who need to detect and analyze paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions.
 
 Features
 --------
