@@ -109,7 +109,7 @@ Workflow for downloading assemblies from ENA661K:
 
 Workflow for downloading metadata:
 
-.. image:: source/DownloadAssemblies_metadata.png
+.. image:: source/DownloadAssemblies_fetch_metadata.png
    :alt: SchemaAnnotation Flowchart
    :width: 80%
    :align: center
