@@ -184,9 +184,9 @@ columns description:
    :header: "Joined_loci_id", "Clustered_loci_ids"
    :widths: 20, 80
 
-   x, x,a,b,c
-   y, y,d,e,f
-   z, z,g,h
+   x, "x,a,b,c"
+   y, "y,d,e,f"
+   z, "z,g,h"
    ...
 
 columns description:
@@ -195,9 +195,9 @@ columns description:
    :header: "Joined_loci_id", "Clustered_loci_ids"
    :widths: 20, 80
 
-   x, x,b,c
-   y, y,d
-   z, z,h
+   x, "x,b,c"
+   y, "y,d"
+   z, "z,h"
    ...
 
 Examples
