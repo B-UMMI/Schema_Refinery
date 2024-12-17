@@ -74,37 +74,37 @@ Modules Usage
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-### :ref:`IdentifyParalogousLoci <identify_paralogous_loci>`
+### :ref:`IdentifyParalogousLoci <Identify_paralogous_loci>`
 
 .. code-block:: bash
 
     SR IdentifyParalogousLoci --help
 
-### :ref:`IdentifySpuriousGenes <identify_spurious_genes>`
+### :ref:`IdentifySpuriousGenes <Identify_spurious_genes>`
 
 .. code-block:: bash
 
     SR IdentifySpuriousGenes --help
 
-### :ref:`SchemaAnnotation <schema_annotation>`
+### :ref:`SchemaAnnotation <Schema_annotation>`
 
 .. code-block:: bash
 
     SR SchemaAnnotation --help
 
-### :ref:`MatchSchemas <match_schemas>`
+### :ref:`MatchSchemas <Match_schemas>`
 
 .. code-block:: bash
 
     SR MatchSchemas --help
 
-### :ref:`DownloadAssemblies <download_assemblies>`
+### :ref:`DownloadAssemblies <Download_assemblies>`
 
 .. code-block:: bash
 
     SR DownloadAssemblies --help
 
-### :ref:`AdaptLoci <adapt_loci>`
+### :ref:`AdaptLoci <Adapt_loci>`
 
 .. code-block:: bash
 
