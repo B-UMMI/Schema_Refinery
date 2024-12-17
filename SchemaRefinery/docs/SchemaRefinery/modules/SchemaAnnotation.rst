@@ -125,13 +125,6 @@ The following is the flowchart for the `SchemaAnnotation` module:
    :width: 80%
    :align: center
 
-The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
-
-.. image:: source/genbank_annotation.png
-   :alt: SchemaAnnotation GenBank Flowchart
-   :width: 80%
-   :align: center
-
 The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the following Flowchart:
 
 .. image:: source/uniprot_proteomes_annotation.png
@@ -139,7 +132,14 @@ The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the f
    :width: 80%
    :align: center
 
-The `SchemaAnnotation` module matches schemas based on the following Flowchart:
+The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
+
+.. image:: source/genbank_annotation.png
+   :alt: SchemaAnnotation GenBank Flowchart
+   :width: 80%
+   :align: center
+
+The `SchemaAnnotation` module matches schemas based on `MatchSchemas` module with the following Flowchart:
 
 .. image:: source/match_schemas.png
    :alt: SchemaAnnotation Match Schemas Flowchart
