@@ -5,6 +5,7 @@ DownloadAssemblies - Download assemblie sand their metadata from specified datab
 
 Description
 -----------
+
 The `DownloadAssemblies` module is a module designed to facilitate the download of genomic assemblies from specified databases. This module parses command-line arguments to initiate the download process, allowing users to efficiently retrieve assemblies from either the NCBI or ENA661 databases. The downloaded assemblies are stored in the specified output directory.
 
 Overview
