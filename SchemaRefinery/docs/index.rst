@@ -17,4 +17,3 @@ Welcome to SchemaRefinery's documentation!
     SchemaRefinery/modules/IdentifyParalagousLoci
     SchemaRefinery/modules/DownloadAssemblies
     SchemaRefinery/modules/AdaptLoci
-

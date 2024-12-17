@@ -4,7 +4,7 @@ SchemaRefinery - A Tool for Refining Genomic Schemas
 Description
 -----------
 
-The `SchemaRefinery` repository contains tools and modules for refining genomic schemas. These tools help in identifying paralogous loci, spurious genes, and annotating schemas. The repository supports various genomic data processing tasks and provides configurable parameters for different processes.
+The `SchemaRefinery` is a comprehensive toolkit designed for refining and managing genomic schemas. It provides a suite of modules for various tasks such as identifying paralogous loci, downloading genomic assemblies, and adapting loci into standardized schemas.
 
 Dependencies
 ------------
