@@ -4,7 +4,7 @@ SchemaRefinery - A Tool for Refining Genomic Schemas
 Description
 -----------
 
-The `SchemaRefinery` repository contains tools and modules for refining genomic schemas. These tools help in identifying paralogous loci, spurious genes, and annotating schemas. The repository supports various genomic data processing tasks and provides configurable parameters for different processes.
+The `SchemaRefinery` is a comprehensive toolkit designed for refining and managing genomic schemas. It provides a suite of modules for various tasks such as identifying paralogous loci, downloading genomic assemblies, and adapting loci into standardized schemas.
 
 Dependencies
 ------------
@@ -62,49 +62,49 @@ Modules
 
 The repository includes the following main modules:
 
-1. **:ref:`IdentifyParalogousLoci <identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
-2. **:ref:`IdentifySpuriousGenes <identify_spurious_genes>`**: Identifies spurious genes in a schema.
-3. **:ref:`SchemaAnnotation <schema_annotation>`**: Annotates schemas with additional information.
-4. **:ref:`MatchSchemas <match_schemas>`**: Matches schemas in a directory.
-5. **:ref:`DownloadAssemblies <download_assemblies>`**: Downloads genomic assemblies from various databases.
-6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in fasta format to a schema format.
+1. **:ref:`IdentifyParalogousLoci <Identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
+2. **:ref:`IdentifySpuriousGenes <Identify_spurious_genes>`**: Identifies spurious genes in a schema.
+3. **:ref:`SchemaAnnotation <Schema_annotation>`**: Annotates schemas with additional information.
+4. **:ref:`MatchSchemas <Match_schemas>`**: Matches schemas in a directory.
+5. **:ref:`DownloadAssemblies <Download_assemblies>`**: Downloads genomic assemblies from various databases.
+6. **:ref:`AdaptLoci <Adapt_loci>`**: Adapts loci in fasta format to a schema format.
 
 Modules Usage
 -------------
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-### :ref:`IdentifyParalogousLoci <identify_paralogous_loci>`
+### :ref:`IdentifyParalogousLoci <Identify_paralogous_loci>`
 
 .. code-block:: bash
 
     SR IdentifyParalogousLoci --help
 
-### :ref:`IdentifySpuriousGenes <identify_spurious_genes>`
+### :ref:`IdentifySpuriousGenes <Identify_spurious_genes>`
 
 .. code-block:: bash
 
     SR IdentifySpuriousGenes --help
 
-### :ref:`SchemaAnnotation <schema_annotation>`
+### :ref:`SchemaAnnotation <Schema_annotation>`
 
 .. code-block:: bash
 
     SR SchemaAnnotation --help
 
-### :ref:`MatchSchemas <match_schemas>`
+### :ref:`MatchSchemas <Match_schemas>`
 
 .. code-block:: bash
 
     SR MatchSchemas --help
 
-### :ref:`DownloadAssemblies <download_assemblies>`
+### :ref:`DownloadAssemblies <Download_assemblies>`
 
 .. code-block:: bash
 
     SR DownloadAssemblies --help
 
-### :ref:`AdaptLoci <adapt_loci>`
+### :ref:`AdaptLoci <Adapt_loci>`
 
 .. code-block:: bash
 

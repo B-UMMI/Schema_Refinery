@@ -10,11 +10,10 @@ Welcome to SchemaRefinery's documentation!
     :maxdepth: 1
     :caption: Contents:
 
+    SchemaRefinery/modules/SchemaRefinery
     SchemaRefinery/modules/IdentifySpuriousGenes
     SchemaRefinery/modules/MatchSchemas
     SchemaRefinery/modules/SchemaAnnotation
     SchemaRefinery/modules/IdentifyParalagousLoci
     SchemaRefinery/modules/DownloadAssemblies
     SchemaRefinery/modules/AdaptLoci
-    SchemaRefinery/modules/SchemaRefinery
-

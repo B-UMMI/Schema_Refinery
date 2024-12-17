@@ -1,13 +1,12 @@
 .. _SchemaAnnotation:
 
-SchemaAnnotation - Annotate schemas in a directory
-==================================================
+SchemaAnnotation - Annotate schemas
+===================================
 
 Description
 -----------
 
-The `SchemaAnnotation` module parses command-line arguments and initiates the schema annotation process. This module sets up an argument parser to handle various command-line options for annotating schemas and then calls the main function of the `SchemaAnnotation` class with the parsed arguments.
-
+The `SchemaAnnotation` module is a versatile tool designed to facilitate the annotation of genomic schemas. This module parses command-line arguments and initiates the schema annotation process, providing a flexible and user-friendly interface for researchers and bioinformaticians.
 Features
 --------
 
@@ -126,13 +125,6 @@ The following is the flowchart for the `SchemaAnnotation` module:
    :width: 80%
    :align: center
 
-The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
-
-.. image:: source/genbank_annotation.png
-   :alt: SchemaAnnotation GenBank Flowchart
-   :width: 80%
-   :align: center
-
 The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the following Flowchart:
 
 .. image:: source/uniprot_proteomes_annotation.png
@@ -140,7 +132,14 @@ The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the f
    :width: 80%
    :align: center
 
-The `SchemaAnnotation` module matches schemas based on the following Flowchart:
+The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
+
+.. image:: source/genbank_annotation.png
+   :alt: SchemaAnnotation GenBank Flowchart
+   :width: 80%
+   :align: center
+
+The `SchemaAnnotation` module matches schemas based on `MatchSchemas` module with the following Flowchart:
 
 .. image:: source/match_schemas.png
    :alt: SchemaAnnotation Match Schemas Flowchart

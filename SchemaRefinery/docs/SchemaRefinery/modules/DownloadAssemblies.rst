@@ -1,17 +1,12 @@
 .. _DownloadAssemblies:
 
-DownloadAssemblies - Download assembliesand their metadata from specified databases
+DownloadAssemblies - Download assemblie sand their metadata from specified databases
 ====================================================================================
 
 Description
 -----------
 
-The `DownloadAssemblies` module parses command-line arguments and initiates the downloads assemblies
-from the specified databases and stores them in the output directory. It downloads the assemblies in
-parallel using the number of threads specified by the user. The database options are NCBI or ENA661.
-Assemblies can be download based on the taxon name or IDs table provided by the user. The user can also provide a
-filtering criteria file to filter the assemblies before downloading. The user can also download BioSample metadata
-for the assemblies if the flag is provided.
+The `DownloadAssemblies` module is a module designed to facilitate the download of genomic assemblies from specified databases. This module parses command-line arguments to initiate the download process, allowing users to efficiently retrieve assemblies from either the NCBI or ENA661 databases. The downloaded assemblies are stored in the specified output directory.
 
 Overview
 --------
