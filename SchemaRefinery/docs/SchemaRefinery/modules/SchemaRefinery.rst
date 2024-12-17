@@ -62,12 +62,12 @@ Modules
 
 The repository includes the following main modules:
 
-1. **:ref:`IdentifyParalogousLoci <identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
-2. **:ref:`IdentifySpuriousGenes <identify_spurious_genes>`**: Identifies spurious genes in a schema.
-3. **:ref:`SchemaAnnotation <schema_annotation>`**: Annotates schemas with additional information.
-4. **:ref:`MatchSchemas <match_schemas>`**: Matches schemas in a directory.
-5. **:ref:`DownloadAssemblies <download_assemblies>`**: Downloads genomic assemblies from various databases.
-6. **:ref:`AdaptLoci <adapt_loci>`**: Adapts loci in fasta format to a schema format.
+1. **:ref:`IdentifyParalogousLoci <Identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
+2. **:ref:`IdentifySpuriousGenes <Identify_spurious_genes>`**: Identifies spurious genes in a schema.
+3. **:ref:`SchemaAnnotation <Schema_annotation>`**: Annotates schemas with additional information.
+4. **:ref:`MatchSchemas <Match_schemas>`**: Matches schemas in a directory.
+5. **:ref:`DownloadAssemblies <Download_assemblies>`**: Downloads genomic assemblies from various databases.
+6. **:ref:`AdaptLoci <Adapt_loci>`**: Adapts loci in fasta format to a schema format.
 
 Modules Usage
 -------------
