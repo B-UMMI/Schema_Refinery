@@ -25,3 +25,16 @@ Procedure
 
 - Replace `/path/to/schema_seed` with the path to the schema seed folder.
 - Replace `/path/to/output` with the path to the output directory.
+
+3. Press Enter to execute the command.
+
+4. Wait for the process to complete.
+
+5. Check the output directory for the identified paralogous loci.
+
+Conclusion
+----------
+
+You have successfully identified paralogous loci in a schema using the `IdentifyParalogousLoci` module.
+
+For more information on the `IdentifyParalogousLoci` module, refer to the :ref:`IdentifyParalogousLoci documentation <Identify_paralogous_loci>`.
