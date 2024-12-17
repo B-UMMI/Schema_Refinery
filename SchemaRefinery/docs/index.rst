@@ -24,5 +24,5 @@ Welcome to SchemaRefinery's documentation!
 External Links:
 ---------------
 
-`chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/index.html>`_
-`chewBBACA GitHub repository <https://github.com/B-UMMI/chewBBACA>`_
+- `chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/index.html>`_
+- `chewBBACA GitHub repository <https://github.com/B-UMMI/chewBBACA>`_
