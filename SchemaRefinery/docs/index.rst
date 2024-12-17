@@ -23,5 +23,5 @@ Welcome to SchemaRefinery's documentation!
    :caption: Tutorials:
 
    SchemaRefinery/tutorials/FullTutorial
-   SchemaRefinery/tutorials/IdentifyParalogousLociTutorial
    SchemaRefinery/tutorials/DownloadAssembliesTutorial
+   SchemaRefinery/tutorials/IdentifyParalogousLociTutorial
