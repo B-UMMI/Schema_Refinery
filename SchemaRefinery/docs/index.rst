@@ -4,26 +4,26 @@ Welcome to SchemaRefinery's documentation!
    :maxdepth: 1
    :caption: Overview:
 
-   SchemaRefinery/modules/SchemaRefinery
+   SchemaRefinery/Overview/SchemaRefinery
 
 .. toctree::
    :maxdepth: 1
    :caption: Modules:
 
-   SchemaRefinery/modules/IdentifySpuriousGenes
-   SchemaRefinery/modules/MatchSchemas
-   SchemaRefinery/modules/SchemaAnnotation
-   SchemaRefinery/modules/IdentifyParalagousLoci
-   SchemaRefinery/modules/DownloadAssemblies
-   SchemaRefinery/modules/AdaptLoci
+   SchemaRefinery/Modules/IdentifySpuriousGenes
+   SchemaRefinery/Modules/MatchSchemas
+   SchemaRefinery/Modules/SchemaAnnotation
+   SchemaRefinery/Modules/IdentifyParalagousLoci
+   SchemaRefinery/Modules/DownloadAssemblies
+   SchemaRefinery/Modules/AdaptLoci
 
 .. toctree::
    :maxdepth: 1
    :caption: Tutorials:
 
-   SchemaRefinery/tutorials/FullTutorial
-   SchemaRefinery/tutorials/DownloadAssembliesTutorial
-   SchemaRefinery/tutorials/IdentifyParalogousLociTutorial
+   SchemaRefinery/Tutorials/FullTutorial
+   SchemaRefinery/Tutorials/DownloadAssembliesTutorial
+   SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial
 
 External Links:
 ---------------
