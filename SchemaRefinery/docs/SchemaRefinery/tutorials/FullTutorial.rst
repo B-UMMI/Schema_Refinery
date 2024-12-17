@@ -28,6 +28,9 @@ Procedure
 
     chewBBACA CreateSchema -i /path/to/input_folder -o /path/to/output_folder -t 4
 
+- Replace `/path/to/input_folder` with the path to the folder containing the downloaded assemblies.
+- Replace `/path/to/output_folder` with the path to the output folder.
+
 .. Note:: The `CreateSchema` module will generate a `schema_seed` folder containing the schema seed.
 
 4. Populate the schema seed with the downloaded assemblies using the `AlleleCall` module from chewBBACA.
