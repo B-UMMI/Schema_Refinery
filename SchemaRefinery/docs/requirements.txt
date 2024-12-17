@@ -1,4 +1,8 @@
-docutils==0.16
+docutils==0.20.1
 numpydoc
 sphinx
 sphinx_rtd_theme
+sphinx-autobuild
+sphinxcontrib-napoleon
+sphinxcontrib-bibtex
+sphinx-copybutton
