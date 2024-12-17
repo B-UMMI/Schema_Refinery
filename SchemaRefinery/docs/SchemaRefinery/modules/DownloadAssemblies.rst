@@ -1,6 +1,6 @@
 .. _DownloadAssemblies:
 
-DownloadAssemblies - Download assembliesand their metadata from specified databases
+DownloadAssemblies - Download assemblie sand their metadata from specified databases
 ====================================================================================
 
 Description
