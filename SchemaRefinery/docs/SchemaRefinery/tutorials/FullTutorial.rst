@@ -36,4 +36,4 @@ Procedure
 
     chewBBACA AlleleCall -i /path/to/schema_seed -g /path/to/genome_folder -o /path/to/output_folder -t 4
 
-
+5. Follow the following steps: :ref: `IdentifyParalogousLoci tutorial <IdentifyParalogousLociTutorial>`.
