@@ -1,19 +1,28 @@
-.. SchemaRefinery documentation master file, created by
-   sphinx-quickstart on Thu Mar 18 14:30:00 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to SchemaRefinery's documentation!
 ==========================================
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Contents:
+   :maxdepth: 1
+   :caption: Contents:
 
-    SchemaRefinery/modules/SchemaRefinery
-    SchemaRefinery/modules/IdentifySpuriousGenes
-    SchemaRefinery/modules/MatchSchemas
-    SchemaRefinery/modules/SchemaAnnotation
-    SchemaRefinery/modules/IdentifyParalagousLoci
-    SchemaRefinery/modules/DownloadAssemblies
-    SchemaRefinery/modules/AdaptLoci
+   SchemaRefinery/modules/SchemaRefinery
+   SchemaRefinery/modules/IdentifySpuriousGenes
+   SchemaRefinery/modules/MatchSchemas
+   SchemaRefinery/modules/SchemaAnnotation
+   SchemaRefinery/modules/IdentifyParalagousLoci
+   SchemaRefinery/modules/DownloadAssemblies
+   SchemaRefinery/modules/AdaptLoci
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials:
+
+   SchemaRefinery/tutorials/FullTutorial
+   SchemaRefinery/tutorials/DownloadAssembliesTutorial
+   SchemaRefinery/tutorials/IdentifyParalogousLociTutorial
+
+External Links:
+---------------
+
+`chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/index.html>`_
+`chewBBACA GitHub repository <https://github.com/B-UMMI/chewBBACA>`_
