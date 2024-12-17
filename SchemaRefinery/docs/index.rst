@@ -1,11 +1,15 @@
 Welcome to SchemaRefinery's documentation!
 ==========================================
+.. toctree::
+   :maxdepth: 1
+   :caption: Overview:
+
+   SchemaRefinery/modules/SchemaRefinery
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
+   :caption: Modules:
 
-   SchemaRefinery/modules/SchemaRefinery
    SchemaRefinery/modules/IdentifySpuriousGenes
    SchemaRefinery/modules/MatchSchemas
    SchemaRefinery/modules/SchemaAnnotation
