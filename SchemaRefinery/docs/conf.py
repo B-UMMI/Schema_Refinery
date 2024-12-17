@@ -38,9 +38,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'sphinx_rtd_theme',
-    # 'sphinxcontrib.httpdomain',
-    # 'sphinxcontrib.autohttp.flask',
-    # 'sphinxcontrib.autohttp.flaskqref'
+    'sphinx.ext.napoleon',
+    'sphinx.ext.intersphinx',
 ]
 
 autodoc_member_order = 'bysource'
