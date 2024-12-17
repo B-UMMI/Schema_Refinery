@@ -5,6 +5,7 @@ IdentifyParalogousLoci - Identify paralogous loci in a schema
 
 Description
 -----------
+
 The `IdentifyParalogousLoci` module is a comprehensive tool designed to identify paralogous loci within a cg/wgMLST schema. This module is essential for researchers and bioinformaticians who need to detect and analyze paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions.
 
 Features

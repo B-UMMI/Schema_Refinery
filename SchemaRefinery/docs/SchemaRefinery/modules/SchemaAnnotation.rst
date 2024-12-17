@@ -6,8 +6,7 @@ SchemaAnnotation - Annotate schemas
 Description
 -----------
 
-The `SchemaAnnotation` module parses command-line arguments and initiates the schema annotation process. This module sets up an argument parser to handle various command-line options for annotating schemas and then calls the main function of the `SchemaAnnotation` class with the parsed arguments.
-
+The `SchemaAnnotation` module is a versatile tool designed to facilitate the annotation of genomic schemas. This module parses command-line arguments and initiates the schema annotation process, providing a flexible and user-friendly interface for researchers and bioinformaticians.
 Features
 --------
 
