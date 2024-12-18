@@ -561,6 +561,28 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
 
     al.main(txt_file, output_folder, cpu, constants[7], constants[6])
 
+    #Fix IDs
+    fasta_files = [f for f in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, f)) and f.endswith('.fasta')]
+    schema_short = os.path.join(output_folder, 'short')
+    fasta_files_short = [f for f in os.listdir(schema_short) if os.path.isfile(os.path.join(schema_short, f)) and f.endswith('.fasta')]
+    for schema_fasta in fasta_files:
+        loci_name = schema_fasta.split('.')[0]
+        fasta_dict = sf.read_fasta_file_dict(os.path.join(output_folder, schema_fasta))
+
+        with open(os.path.join(output_folder, schema_fasta), 'w') as fasta_file:
+            for allele, sequence in fasta_dict.items():
+                fasta_file.write(f">{loci_name}_{allele}\n{str(sequence.seq)}\n")
+            fasta_file.write("\n")
+    
+    for schema_fasta in fasta_files_short:
+        loci_name = schema_fasta.replace('_short.fasta', '')
+        short_fasta_dict = sf.read_fasta_file_dict(os.path.join(schema_short, schema_fasta))
+
+        with open(os.path.join(schema_short, schema_fasta), 'w') as fasta_file:
+            for allele, sequence in short_fasta_dict.items():
+                fasta_file.write(f">{loci_name}_{allele}\n{str(sequence.seq)}\n")
+            fasta_file.write("\n")
+
     # Remove the temporary folder
     shutil.rmtree(temp_folder)
 
