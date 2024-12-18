@@ -440,7 +440,7 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
 
 
 def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, 
-                                         constants: Tuple[Any, ...], classes_outcome: List[str]) -> Tuple[str, ...]:
+                                         constants: Tuple[Any, ...], classes_outcome: List[str]) -> List[str]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
 
@@ -460,9 +460,12 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
         A collection of constants used in the classification criteria. Specifically, `constants[1]`
         is used as a threshold for the percentage identity (pident) in one of the classification conditions.
 
+    classes_outcome : List[str]
+        A list of class identifiers indicating the order of priority for the classes.
+
     Returns
     -------
-    Tuple[str, ...]
+    List[str]
         A tuple of class identifiers indicating the order of priority for the classes.
 
     Notes
@@ -475,30 +478,26 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
       that its elements are accessed by index.
     """
     
-    def add_class_to_dict(class_name: str) -> None:
+    def add_class_to_dict(query: str, id_subject: str, id_: str, class_name: str) -> None:
         """
         Adds a class identifier to a BLAST result within the representative_blast_results dictionary.
 
-        This helper function is used to update the BLASTN result dictionaries with a 'class' key,
-        assigning the specified class identifier based on the classification logic in the outer function.
-
         Parameters
         ----------
+        query : str
+            The query sequence ID.
+        id_subject : str
+            The subject sequence ID.
+        id_ : str
+            The unique identifier for the BLAST result.
         class_name : str
-            The class identifier to be added to the BLASTN result. This should be one of the values
-            from the classes_outcome tuple defined in the outer function.
-
-        Notes
-        -----
-        - This function directly modifies the `representative_blast_results` dictionary from the outer
-          scope, specifically adding or updating the 'class' key for a BLASTN result.
-        - It is designed to be used only within the `separate_blast_results_into_classes` function.
+            The class identifier to be added to the BLASTN result.
         """
-        representative_blast_results[query][id_subject][id_].update({'class': class_name})
+        representative_blast_results[query][id_subject][id_]['class'] = class_name
 
-    pident: float = constants[1]
-    bsr: float = constants[7]
-    size_ratio: float = 1 - constants[8]
+    pident_threshold: float = constants[1]
+    bsr_threshold: float = constants[7]
+    size_ratio_threshold: float = 1 - constants[8]
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
@@ -508,47 +507,38 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
                 query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
                 subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
                 
-                # If one of the frequencies is 0, set the ratio to 0.1 if the other frequency is 10 times greater
                 if query_freq == 0 or subject_freq == 0:
                     freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
                 else:
-                    # Calculate the frequency ratio
                     freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
                 
-                # Classify based on global_palign_all_min and bsr
+                # Extract relevant metrics
                 global_palign_all_min: float = blastn_entry['global_palign_all_min']
                 bsr_value: float = blastn_entry['bsr']
                 pident_value: float = blastn_entry['pident']
                 global_palign_pident_max: float = blastn_entry['global_palign_pident_max']
                 
-                if global_palign_all_min >= size_ratio:
-                    if bsr_value >= bsr:
-                        # Add to class '1a' if bsr is greater than or equal to bsr value
-                        add_class_to_dict('1a')
+                # Classify based on global_palign_all_min and bsr
+                if global_palign_all_min >= size_ratio_threshold:
+                    if bsr_value >= bsr_threshold:
+                        add_class_to_dict(query, id_subject, id_, '1a')
                     elif freq_ratio <= 0.1:
-                        # Add to class '1b' if frequency ratio is less than or equal to 0.1
-                        add_class_to_dict('1b')
+                        add_class_to_dict(query, id_subject, id_, '1b')
                     else:
-                        # Add to class '1c' if none of the above conditions are met
-                        add_class_to_dict('1c')
-                elif 0.4 <= global_palign_all_min < size_ratio:
-                    if pident_value >= pident:
-                        if global_palign_pident_max >= size_ratio:
-                            # Add to class '2a' or '2b' based on frequency ratio
-                            add_class_to_dict('2a' if freq_ratio <= 0.1 else '2b')
+                        add_class_to_dict(query, id_subject, id_, '1c')
+                elif 0.4 <= global_palign_all_min < size_ratio_threshold:
+                    if pident_value >= pident_threshold:
+                        if global_palign_pident_max >= size_ratio_threshold:
+                            add_class_to_dict(query, id_subject, id_, '2a' if freq_ratio <= 0.1 else '2b')
                         else:
-                            # Add to class '3a' or '3b' based on frequency ratio
-                            add_class_to_dict('3a' if freq_ratio <= 0.1 else '3b')
+                            add_class_to_dict(query, id_subject, id_, '3a' if freq_ratio <= 0.1 else '3b')
                     else:
-                        if global_palign_pident_max >= size_ratio:
-                            # Add to class '4a' or '4b' based on frequency ratio
-                            add_class_to_dict('4a' if freq_ratio <= 0.1 else '4b')
+                        if global_palign_pident_max >= size_ratio_threshold:
+                            add_class_to_dict(query, id_subject, id_, '4a' if freq_ratio <= 0.1 else '4b')
                         else:
-                            # Add to class '4c' if none of the above conditions are met
-                            add_class_to_dict('4c')
+                            add_class_to_dict(query, id_subject, id_, '4c')
                 else:
-                    # Add to class '5' for everything that is unrelated
-                    add_class_to_dict('5')
+                    add_class_to_dict(query, id_subject, id_, '5')
 
     return classes_outcome
 
