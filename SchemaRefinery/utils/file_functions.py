@@ -494,7 +494,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
                 folder1_files.remove(locus)
                 folder2_files.remove(identified_hash_in_loci)
             else:
-                seen_hashes_dict[locus_allele].add(hash_sequence)
+                seen_hashes_dict.setdefault(locus_allele, set()).add(hash_sequence)
 
     # Merge the loci with the same alleles
     for loci in merge_loci:
