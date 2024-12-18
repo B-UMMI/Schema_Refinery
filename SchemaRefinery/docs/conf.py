@@ -39,7 +39,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_rtd_theme',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
+    'sphinx.ext.autosectionlabel',
     'sphinx_copybutton',
 ]
 
