@@ -1,19 +1,19 @@
-from typing import Dict, List, TypedDict, Tuple, Set
+from typing import Dict, List, TypedDict, Tuple, Set, Any
 from collections import OrderedDict
 
-class ClustersToKeep(TypedDict):
-    '1a': Dict[int, List[str]]
-    '1b': List[str]
-    '2a': List[str]
-    '3a': List[str]
-    '2b': List[str]
-    '1c': List[str]
-    '3b': List[str]
-    '4a': List[str]
-    '4b': List[str]
-    '4c': List[str]
-    '5': List[str]
-    'Retained_not_matched_by_blastn': List[str]
+class ClustersToKeep(TypedDict, total=False):
+    a1: Dict[int, List[str]]
+    b1: List[str]
+    a2: List[str]
+    a3: List[str]
+    b2: List[str]
+    c1: List[str]
+    b3: List[str]
+    a4: List[str]
+    b4: List[str]
+    c4: List[str]
+    five: List[str]
+    retained_not_matched_by_blastn: List[str]
 
 class BlastResult(TypedDict):
     query: str
