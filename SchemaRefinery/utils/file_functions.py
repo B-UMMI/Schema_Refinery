@@ -457,7 +457,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
             seen_hashes: set = set()
             for locus_allele, sequence in merged_locus_fasta.items():
                 # Check if the sequence has been seen before
-                hash_sequence = sf.hash_sequence(sequence)
+                hash_sequence = sf.hash_sequence(str(sequence))
                 if hash_sequence in seen_hashes:
                     seen_hashes.add(hash_sequence)
                 else:
@@ -472,17 +472,21 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
     folder1_files = [f for f in folder1_files if f not in loci_with_same_name]
     folder2_files = [f for f in folder2_files if f not in loci_with_same_name]
 
+    # Create full paths for the remaining files
+    folder1_files = [os.path.join(folder1, f) for f in folder1_files]
+    folder2_files = [os.path.join(folder2, f) for f in folder2_files]
+
     # Merge the two lists
-    merged_files = [*folder1_files, *folder2_files]
+    merged_files_paths = [*folder1_files, *folder2_files]
     seen_hashes_dict: Dict[str, set] = {}
     merge_loci: list = []
     # Identified the alleles that are the same in different loci from folders
-    for locus in (merged_files):
+    for locus in (merged_files_paths):
         locus_fasta = sf.read_fasta_file_dict(locus)
         # Check for duplicates alleles
         for locus_allele, sequence in locus_fasta.items():
             # Check if the sequence has been seen before
-            hash_sequence = sf.hash_sequence(sequence)
+            hash_sequence = sf.hash_sequence(str(sequence))
             identified_hash_in_loci = itf.identify_string_in_dict_get_key(hash_sequence, seen_hashes_dict)
             if identified_hash_in_loci:
                 merge_loci.append((locus, identified_hash_in_loci))
@@ -506,7 +510,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
         seen_hashes = set()
         for locus_allele, sequence in merged_locus_fasta.items():
             # Check if the sequence has been seen before
-            hash_sequence = sf.hash_sequence(sequence)
+            hash_sequence = sf.hash_sequence(str(sequence))
             if hash_sequence in seen_hashes:
                 seen_hashes.add(hash_sequence)
             else:
