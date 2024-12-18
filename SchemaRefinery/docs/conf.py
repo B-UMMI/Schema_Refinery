@@ -40,6 +40,7 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
+    'sphinx_copybutton',
 ]
 
 autodoc_member_order = 'bysource'
