@@ -524,7 +524,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
         copy_file(os.path.join(folder2, file), temp_folder)
     
     print("\nAdapting loci from the both folder into one Schema")
-    txt_file: str = os.path.join(output_folder, 'AdaptLoci.txt')
+    txt_file: str = os.path.join(temp_folder, 'AdaptLoci.txt')
 
     with open(txt_file, 'w') as f:
         for locus in os.listdir(temp_folder):
@@ -532,6 +532,10 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
             f.write(f"{locus_path}\n")
 
     al.main(txt_file, output_folder, cpu, constants[7], constants[6])
+
+    # Remove the temporary folder
+    shutil.rmtree(temp_folder)
+
 
 def cleanup(directory: str, exclude: List[str]) -> None:
     """
