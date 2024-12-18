@@ -232,6 +232,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_translation_dict = {key: value for key, value in all_translation_dict.items() if key in itf.flatten_list(all_alleles.values())}
         print("\nRetrieving kmers similarity and coverage between representatives...")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
+        # Choose which translation dict to use as representative
         if processing_mode.split('_')[0] == 'alleles':
             trans_dict = all_translation_dict
         else:
