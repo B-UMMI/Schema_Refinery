@@ -6,9 +6,13 @@ from itertools import zip_longest, islice
 from typing import List, Dict, Any, Union
 
 try:
-    from utils import (iterable_functions as itf)
+    from utils import (sequence_functions as sf,
+                       iterable_functions as itf)
+    from AdaptLoci import AdaptLoci as al
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import (iterable_functions as itf)
+    from SchemaRefinery.utils import (sequence_functions as sf,
+                                      iterable_functions as itf)
+    from SchemaRefinery.AdaptLoci import AdaptLoci as al
 
 def create_directory(dir: str) -> bool:
     """
@@ -408,7 +412,7 @@ def copy_folder(src_folder: str, dest_folder: str) -> None:
     shutil.copytree(src_folder, dest_folder, dirs_exist_ok=True)
 
 
-def merge_folders(folder1: str, folder2: str, output_folder: str) -> None:
+def merge_folders(folder1: str, folder2: str, output_folder: str, constants: List, cpu: int) -> None:
     """
     Merge the contents of two folders into an output folder.
 
@@ -431,39 +435,103 @@ def merge_folders(folder1: str, folder2: str, output_folder: str) -> None:
     - If there are file naming conflicts, the conflicting files will be renamed with a "_copy" suffix.
     - The function ensures that all intermediate directories are created as needed.
     """
-    def copy_files(src_folder: str) -> None:
-        """
-        Copy files from the source folder to the output folder.
+    temp_folder: str = os.path.join(output_folder, 'temp')
 
-        Parameters
-        ----------
-        src_folder : str
-            Path to the source folder from which files will be copied.
+    folder1_files: List[str] = [f for f in os.listdir(folder1) if os.path.isfile(os.path.join(folder1, f))]
+    folder2_files: List[str] = [f for f in os.listdir(folder2) if os.path.isfile(os.path.join(folder2, f))]
 
-        Returns
-        -------
-        None
-        """
-        for root, _, files in os.walk(src_folder):
-            for file in files:
-                src_file_path: str = os.path.join(root, file)
-                relative_path: str = os.path.relpath(src_file_path, src_folder)
-                dest_file_path: str = os.path.join(output_folder, relative_path)
-                
-                os.makedirs(os.path.dirname(dest_file_path), exist_ok=True)
-                
-                if os.path.exists(dest_file_path):
-                    base, ext = os.path.splitext(dest_file_path)
-                    dest_file_path = f"{base}_copy{ext}"
-                
-                shutil.copy2(src_file_path, dest_file_path)
+    loci_with_same_name = set(folder1_files) & set(folder2_files)
+    # Deal with loci with the same name
+    if loci_with_same_name:
+        print(f"Warning: The following loci have the same name in both folders and will be merged: {loci_with_same_name}")
+        for locus in loci_with_same_name:
+            # Read the fasta files for the locus from both folders
+            folder1_locus = os.path.join(folder1, locus)
+            folder2_locus = os.path.join(folder2, locus)
+
+            folder1_locus_fasta = sf.read_fasta_file_dict(folder1_locus)
+            folder2_locus_fasta = sf.read_fasta_file_dict(folder2_locus)
+            # Merge the fasta files
+            merged_locus_fasta = {**folder1_locus_fasta, **folder2_locus_fasta}
+            # Check for duplicates alleles
+            seen_hashes: set = set()
+            for locus_allele, sequence in merged_locus_fasta.items():
+                # Check if the sequence has been seen before
+                hash_sequence = sf.hash_sequence(sequence)
+                if hash_sequence in seen_hashes:
+                    seen_hashes.add(hash_sequence)
+                else:
+                    # Remove the duplicate allele
+                    del merged_locus_fasta[locus_allele]
+        
+        # Write the merged locus to the output folder
+        output_locus = os.path.join(temp_folder, locus)
+        sf.write_fasta_file(merged_locus_fasta, output_locus)
     
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    
-    copy_files(folder1)
-    copy_files(folder2)
+    # Remove common files from both lists
+    folder1_files = [f for f in folder1_files if f not in loci_with_same_name]
+    folder2_files = [f for f in folder2_files if f not in loci_with_same_name]
 
+    # Merge the two lists
+    merged_files = [*folder1_files, *folder2_files]
+    seen_hashes_dict: Dict[str, set] = {}
+    merge_loci: list = []
+    # Identified the alleles that are the same in different loci from folders
+    for locus in (merged_files):
+        locus_fasta = sf.read_fasta_file_dict(locus)
+        # Check for duplicates alleles
+        for locus_allele, sequence in locus_fasta.items():
+            # Check if the sequence has been seen before
+            hash_sequence = sf.hash_sequence(sequence)
+            identified_hash_in_loci = itf.identify_string_in_dict_get_key(hash_sequence, seen_hashes_dict)
+            if identified_hash_in_loci:
+                merge_loci.append((locus, identified_hash_in_loci))
+                # Remove from files list
+                folder1_files.remove(locus)
+                folder2_files.remove(identified_hash_in_loci)
+            else:
+                seen_hashes_dict[locus_allele].add(hash_sequence)
+
+    # Merge the loci with the same alleles
+    for loci in merge_loci:
+        # Read the fasta files for the locus from both folders
+        folder1_locus = os.path.join(folder1, loci[0])
+        folder2_locus = os.path.join(folder2, loci[1])
+
+        folder1_locus_fasta = sf.read_fasta_file_dict(folder1_locus)
+        folder2_locus_fasta = sf.read_fasta_file_dict(folder2_locus)
+        # Merge the fasta files
+        merged_locus_fasta = {**folder1_locus_fasta, **folder2_locus_fasta}
+        # Check for duplicates alleles
+        seen_hashes = set()
+        for locus_allele, sequence in merged_locus_fasta.items():
+            # Check if the sequence has been seen before
+            hash_sequence = sf.hash_sequence(sequence)
+            if hash_sequence in seen_hashes:
+                seen_hashes.add(hash_sequence)
+            else:
+                # Remove the duplicate allele
+                del merged_locus_fasta[locus_allele]
+        
+        # Write the merged locus to the output folder
+        output_locus = os.path.join(temp_folder, loci[0])
+        sf.write_fasta_file(merged_locus_fasta, output_locus)
+
+    # Copy the files from the folder to output folder
+    for file in folder1_files:
+        copy_file(os.path.join(folder1, file), temp_folder)
+    for file in folder2_files:
+        copy_file(os.path.join(folder2, file), temp_folder)
+    
+    print("\nAdapting loci from the both folder into one Schema")
+    txt_file: str = os.path.join(output_folder, 'AdaptLoci.txt')
+
+    with open(txt_file, 'w') as f:
+        for locus in os.listdir(temp_folder):
+            locus_path = os.path.join(temp_folder, locus)
+            f.write(f"{locus_path}\n")
+
+    al.main(txt_file, output_folder, cpu, constants[7], constants[6])
 
 def cleanup(directory: str, exclude: List[str]) -> None:
     """

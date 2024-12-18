@@ -264,7 +264,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     else:
         # If we want to run with new possible loci, we merge everything together and run
         if possible_new_loci:
-            ff.merge_folders(schema_directory, possible_new_loci, schema_folder)
+            ff.merge_folders(schema_directory, possible_new_loci, schema_folder, constants, cpu)
         else:
             ff.copy_folder(schema_directory, schema_folder)
 
