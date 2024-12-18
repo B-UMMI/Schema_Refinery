@@ -435,157 +435,191 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
     - If there are file naming conflicts, the conflicting files will be renamed with a "_copy" suffix.
     - The function ensures that all intermediate directories are created as needed.
     """
-    temp_folder: str = os.path.join(output_folder, 'temp')
-    create_directory(temp_folder)
+    def get_fasta_files(folder: str) -> List[str]:
+        """
+        Get a list of .fasta files in the given folder.
 
-    folder1_files: List[str] = [f for f in os.listdir(folder1) if os.path.isfile(os.path.join(folder1, f)) and f.endswith('.fasta')]
-    folder2_files: List[str] = [f for f in os.listdir(folder2) if os.path.isfile(os.path.join(folder2, f)) and f.endswith('.fasta')]
+        Parameters
+        ----------
+        folder : str
+            The path to the folder to search for .fasta files.
 
-    loci_with_same_name = set(folder1_files) & set(folder2_files)
-    # Deal with loci with the same name
-    if loci_with_same_name:
-        print(f"Warning: The following loci have the same name in both folders and will be merged: {loci_with_same_name}")
-        for locus in loci_with_same_name:
-            # Read the fasta files for the locus from both folders
-            folder1_locus = os.path.join(folder1, locus)
-            folder2_locus = os.path.join(folder2, locus)
+        Returns
+        -------
+        List[str]
+            A list of .fasta file names in the folder.
+        """
+        return [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f)) and f.endswith('.fasta')]
 
-            folder1_locus_fasta = sf.read_fasta_file_dict(folder1_locus)
-            folder2_locus_fasta = sf.read_fasta_file_dict(folder2_locus)
-            # Merge the fasta files
-            merged_locus_fasta = {**folder1_locus_fasta, **folder2_locus_fasta}
-            # Check for duplicates alleles
-            seen_hashes: set = set()
-            for locus_allele, sequence in merged_locus_fasta.items():
-                # Check if the sequence has been seen before
-                hash_sequence = sf.hash_sequence(str(sequence))
-                if hash_sequence in seen_hashes:
-                    seen_hashes.add(hash_sequence)
-                else:
-                    # Remove the duplicate allele
-                    del merged_locus_fasta[locus_allele]
-            merged_locus_fasta = {i: str(value.seq) for i, (key, value) in enumerate(merged_locus_fasta.items(), 1)}
-            # Write the merged locus to the output folder
-            output_locus = os.path.join(temp_folder, locus)
-            
-            with open(output_locus, 'w') as fasta_file:
-                for allele, sequence in merged_locus_fasta.items():
-                    fasta_file.write(f">{allele}\n{sequence}\n")
-                fasta_file.write("\n")
-    
-    # Remove common files from both lists
-    folder1_files = [f for f in folder1_files if f not in loci_with_same_name]
-    folder2_files = [f for f in folder2_files if f not in loci_with_same_name]
+    def read_and_merge_fasta_files(folder1: str, folder2: str, locus: str) -> Dict[int, str]:
+        """
+        Read and merge .fasta files from two folders for a given locus.
 
-    # Create full paths for the remaining files
-    folder1_files = [os.path.join(folder1, f) for f in folder1_files]
-    folder2_files = [os.path.join(folder2, f) for f in folder2_files]
+        Parameters
+        ----------
+        folder1 : str
+            Path to the first folder.
+        folder2 : str
+            Path to the second folder.
+        locus : str
+            The name of the locus to merge.
 
-    # Merge the two lists
-    merged_files_paths = [*folder1_files, *folder2_files]
-    seen_hashes_dict: Dict[str, set] = {}
-    merge_loci: list = []
-    # Identified the alleles that are the same in different loci from folders
-    for locus in (merged_files_paths):
-        locus_fasta = sf.read_fasta_file_dict(locus)
-        # Check for duplicates alleles
-        for locus_allele, sequence in locus_fasta.items():
-            # Check if the sequence has been seen before
-            hash_sequence = sf.hash_sequence(str(sequence))
-            identified_hash_in_loci = itf.identify_string_in_dict_get_key(hash_sequence, seen_hashes_dict)
-            if identified_hash_in_loci:
-                merge_loci.append((locus, identified_hash_in_loci))
-                # Remove from files list
-                folder1_files.remove(locus)
-                folder2_files.remove(identified_hash_in_loci)
-            else:
-                seen_hashes_dict.setdefault(locus_allele, set()).add(hash_sequence)
-
-    # Merge the loci with the same alleles
-    for loci in merge_loci:
-        # Read the fasta files for the locus from both folders
-        folder1_locus = os.path.join(folder1, loci[0])
-        folder2_locus = os.path.join(folder2, loci[1])
+        Returns
+        -------
+        Dict[int, str]
+            A dictionary with merged .fasta sequences, with keys as sequential integers starting from 1.
+        """
+        folder1_locus = os.path.join(folder1, locus)
+        folder2_locus = os.path.join(folder2, locus)
 
         folder1_locus_fasta = sf.read_fasta_file_dict(folder1_locus)
         folder2_locus_fasta = sf.read_fasta_file_dict(folder2_locus)
-        # Merge the fasta files
+
         merged_locus_fasta = {**folder1_locus_fasta, **folder2_locus_fasta}
-        # Check for duplicates alleles
         seen_hashes = set()
-        for locus_allele, sequence in merged_locus_fasta.items():
-            # Check if the sequence has been seen before
-            hash_sequence = sf.hash_sequence(str(sequence))
-            if hash_sequence in seen_hashes:
-                seen_hashes.add(hash_sequence)
-            else:
-                # Remove the duplicate allele
-                del merged_locus_fasta[locus_allele]
-        
-        merged_locus_fasta = {i: str(value.seq) for i, (key, value) in enumerate(merged_locus_fasta.items(), 1)}
-        # Write the merged locus to the output folder
-        output_locus = os.path.join(temp_folder, loci[0])
-        with open(output_locus, 'w') as fasta_file:
-            for allele, sequence in merged_locus_fasta.items():
-                fasta_file.write(f">{allele}\n{sequence}\n")
-            fasta_file.write("\n")
+        merged_locus_fasta = {i: str(value.seq) for i, (key, value) in enumerate(
+            {k: v for k, v in merged_locus_fasta.items() if sf.hash_sequence(str(v)) not in seen_hashes and not seen_hashes.add(sf.hash_sequence(str(v)))}.items(), 1)}
+        return merged_locus_fasta
 
-    # Copy the files from the folder to output folder
-    for file in folder1_files:
-        temp_fasta = os.path.join(temp_folder, os.path.basename(file))
-        fasta_dict = sf.read_fasta_file_dict(file)
-        fasta_dict = {i: str(value.seq) for i, (key, value) in enumerate(fasta_dict.items(), 1)}
-        with open(temp_fasta, 'w') as fasta_file:
+    def write_fasta_file(fasta_dict: Dict[int, str], output_path: str) -> None:
+        """
+        Write a dictionary of .fasta sequences to a file.
+
+        Parameters
+        ----------
+        fasta_dict : Dict[int, str]
+            A dictionary with .fasta sequences.
+        output_path : str
+            The path to the output .fasta file.
+        """
+        with open(output_path, 'w') as fasta_file:
             for allele, sequence in fasta_dict.items():
                 fasta_file.write(f">{allele}\n{sequence}\n")
             fasta_file.write("\n")
-    for file in folder2_files:
-        temp_fasta = os.path.join(temp_folder, os.path.basename(file))
-        fasta_dict = sf.read_fasta_file_dict(file)
-        fasta_dict = {i: str(value.seq) for i, (key, value) in enumerate(fasta_dict.items(), 1)}
-        with open(temp_fasta, 'w') as fasta_file:
-            for allele, sequence in fasta_dict.items():
-                fasta_file.write(f">{allele}\n{sequence}\n")
-            fasta_file.write("\n")
-    
-    print("\nAdapting loci from the both folder into one Schema")
-    txt_file: str = os.path.join(temp_folder, 'AdaptLoci.txt')
 
-    with open(txt_file, 'w') as f:
-        # Get only .fasta files from temp_folder
-        fasta_files = [f for f in os.listdir(temp_folder) if os.path.isfile(os.path.join(temp_folder, f)) and f.endswith('.fasta')]
+    def process_loci_with_same_name(folder1: str, folder2: str, loci_with_same_name: set, temp_folder: str) -> None:
+        """
+        Process loci with the same name from two folders and merge them.
 
-        for locus in fasta_files:
-            locus_path = os.path.join(temp_folder, locus)
-            f.write(f"{locus_path}\n")
+        Parameters
+        ----------
+        folder1 : str
+            Path to the first folder.
+        folder2 : str
+            Path to the second folder.
+        loci_with_same_name : set
+            A set of loci names that are present in both folders.
+        temp_folder : str
+            Path to the temporary folder to store merged loci.
+        """
+        for locus in loci_with_same_name:
+            merged_locus_fasta = read_and_merge_fasta_files(folder1, folder2, locus)
+            output_locus = os.path.join(temp_folder, locus)
+            write_fasta_file(merged_locus_fasta, output_locus)
 
-    al.main(txt_file, output_folder, cpu, constants[7], constants[6])
+    def process_remaining_files(files: List[str], folder: str, temp_folder: str) -> None:
+        """
+        Process remaining .fasta files from a folder and copy them to a temporary folder.
 
-    #Fix IDs
-    fasta_files = [f for f in os.listdir(output_folder) if os.path.isfile(os.path.join(output_folder, f)) and f.endswith('.fasta')]
+        Parameters
+        ----------
+        files : List[str]
+            A list of .fasta file names.
+        folder : str
+            Path to the folder containing the .fasta files.
+        temp_folder : str
+            Path to the temporary folder to store the processed files.
+        """
+        for file in files:
+            temp_fasta = os.path.join(temp_folder, os.path.basename(file))
+            fasta_dict = sf.read_fasta_file_dict(os.path.join(folder, file))
+            fasta_dict = {i: str(value.seq) for i, (key, value) in enumerate(fasta_dict.items(), 1)}
+            write_fasta_file(fasta_dict, temp_fasta)
+
+    def write_adapt_loci_file_and_run_it(temp_folder: str, output_folder: str, cpu: int, constants: List[Any]) -> None:
+        """
+        Write an AdaptLoci.txt file and run the AdaptLoci process.
+
+        Parameters
+        ----------
+        temp_folder : str
+            Path to the temporary folder containing the .fasta files.
+        output_folder : str
+            Path to the output folder.
+        cpu : int
+            Number of CPU cores to use.
+        constants : List[Any]
+            A list of constants for the AdaptLoci process.
+        """
+        txt_file = os.path.join(temp_folder, 'AdaptLoci.txt')
+        with open(txt_file, 'w') as f:
+            fasta_files = get_fasta_files(temp_folder)
+            for locus in fasta_files:
+                locus_path = os.path.join(temp_folder, locus)
+                f.write(f"{locus_path}\n")
+        al.main(txt_file, output_folder, cpu, constants[7], constants[6])
+
+    def fix_ids_in_fasta_files(fasta_files: List[str], folder: str, suffix: str = '') -> None:
+        """
+        Fix IDs in .fasta files by adding a suffix to the locus names.
+
+        Parameters
+        ----------
+        fasta_files : List[str]
+            A list of .fasta file names.
+        folder : str
+            Path to the folder containing the .fasta files.
+        suffix : str, optional
+            A suffix to add to the locus names (default is '').
+        """
+        for schema_fasta in fasta_files:
+            loci_name = schema_fasta.replace(suffix, '')
+            fasta_dict = sf.read_fasta_file_dict(os.path.join(folder, schema_fasta))
+            with open(os.path.join(folder, schema_fasta), 'w') as fasta_file:
+                for allele, sequence in fasta_dict.items():
+                    fasta_file.write(f">{loci_name}_{allele}\n{str(sequence.seq)}\n")
+                fasta_file.write("\n")
+
+    # Create a temporary folder to store intermediate files
+    temp_folder = os.path.join(output_folder, 'temp')
+    create_directory(temp_folder)
+
+    # Get the list of .fasta files from both folders
+    folder1_files = get_fasta_files(folder1)
+    folder2_files = get_fasta_files(folder2)
+
+    # Find loci with the same name in both folders
+    loci_with_same_name = set(folder1_files) & set(folder2_files)
+    if loci_with_same_name:
+        print(f"Warning: The following loci have the same name in both folders and will be merged: {loci_with_same_name}")
+        process_loci_with_same_name(folder1, folder2, loci_with_same_name, temp_folder)
+
+    # Remove loci with the same name from the lists
+    folder1_files = [f for f in folder1_files if f not in loci_with_same_name]
+    folder2_files = [f for f in folder2_files if f not in loci_with_same_name]
+
+    # Add full paths to the remaining files
+    folder1_files = [os.path.join(folder1, f) for f in folder1_files]
+    folder2_files = [os.path.join(folder2, f) for f in folder2_files]
+
+    # Process the remaining files and copy them to the temporary folder
+    process_remaining_files(folder1_files, folder1, temp_folder)
+    process_remaining_files(folder2_files, folder2, temp_folder)
+
+    # Write the AdaptLoci.txt file and run the AdaptLoci process
+    print("\nAdapting loci from both folders into one Schema")
+    write_adapt_loci_file_and_run_it(temp_folder, output_folder, cpu, constants)
+
+    # Fix IDs in the .fasta files in the output folder
+    fasta_files = get_fasta_files(output_folder)
     schema_short = os.path.join(output_folder, 'short')
-    fasta_files_short = [f for f in os.listdir(schema_short) if os.path.isfile(os.path.join(schema_short, f)) and f.endswith('.fasta')]
-    for schema_fasta in fasta_files:
-        loci_name = schema_fasta.split('.')[0]
-        fasta_dict = sf.read_fasta_file_dict(os.path.join(output_folder, schema_fasta))
+    fasta_files_short = get_fasta_files(schema_short)
 
-        with open(os.path.join(output_folder, schema_fasta), 'w') as fasta_file:
-            for allele, sequence in fasta_dict.items():
-                fasta_file.write(f">{loci_name}_{allele}\n{str(sequence.seq)}\n")
-            fasta_file.write("\n")
-    
-    for schema_fasta in fasta_files_short:
-        loci_name = schema_fasta.replace('_short.fasta', '')
-        short_fasta_dict = sf.read_fasta_file_dict(os.path.join(schema_short, schema_fasta))
-
-        with open(os.path.join(schema_short, schema_fasta), 'w') as fasta_file:
-            for allele, sequence in short_fasta_dict.items():
-                fasta_file.write(f">{loci_name}_{allele}\n{str(sequence.seq)}\n")
-            fasta_file.write("\n")
+    fix_ids_in_fasta_files(fasta_files, output_folder, '.fasta')
+    fix_ids_in_fasta_files(fasta_files_short, schema_short, '_short.fasta')
 
     # Remove the temporary folder
     shutil.rmtree(temp_folder)
-
 
 def cleanup(directory: str, exclude: List[str]) -> None:
     """
