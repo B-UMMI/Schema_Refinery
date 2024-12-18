@@ -436,9 +436,10 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
     - The function ensures that all intermediate directories are created as needed.
     """
     temp_folder: str = os.path.join(output_folder, 'temp')
+    create_directory(temp_folder)
 
-    folder1_files: List[str] = [f for f in os.listdir(folder1) if os.path.isfile(os.path.join(folder1, f))]
-    folder2_files: List[str] = [f for f in os.listdir(folder2) if os.path.isfile(os.path.join(folder2, f))]
+    folder1_files: List[str] = [f for f in os.listdir(folder1) if os.path.isfile(os.path.join(folder1, f)) and f.endswith('.fasta')]
+    folder2_files: List[str] = [f for f in os.listdir(folder2) if os.path.isfile(os.path.join(folder2, f)) and f.endswith('.fasta')]
 
     loci_with_same_name = set(folder1_files) & set(folder2_files)
     # Deal with loci with the same name
