@@ -5,6 +5,7 @@ Welcome to SchemaRefinery's documentation!
    :caption: Overview:
 
    SchemaRefinery/Overview/SchemaRefinery
+   SchemaRefinery/Overview/Installation
 
 .. toctree::
    :maxdepth: 1
