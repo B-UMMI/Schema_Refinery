@@ -1,5 +1,3 @@
-.. _SchemaAnnotation:
-
 SchemaAnnotation - Annotate schemas
 ===================================
 

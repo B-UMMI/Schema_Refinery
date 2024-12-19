@@ -20,7 +20,7 @@ Procedure
 
 1. Open a terminal window.
 
-2. Follow the following steps: :ref:`DownloadAssemblies tutorial <DownloadAssembliesTutorial>`.
+2. Follow the following steps: :docs:`DownloadAssemblies tutorial <DownloadAssembliesTutorial <SchemaRefinery/Tutorials/DownloadAssembliesTutorial>`.
 
 3. Based on the downloaded assemblies choose those that you want to use as schema seed (e.g best quality, most complete, etc.), create a schema using the `CreateSchema` module from chewBBACA.
 
@@ -39,4 +39,4 @@ Procedure
 
     chewBBACA AlleleCall -i /path/to/schema_seed -g /path/to/genome_folder -o /path/to/output_folder -t 4
 
-5. Follow the following steps: :ref: `IdentifyParalogousLoci tutorial <IdentifyParalogousLociTutorial>`.
+5. Follow the following steps: :doc:`IdentifyParalogousLoci tutorial <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.

@@ -1,5 +1,3 @@
-.. _AdaptLoci:
-
 AdaptLoci - Adapt fastas into a chewBBACA schema
 ================================================
 

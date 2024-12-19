@@ -1,5 +1,3 @@
-.. _MatchSchemas:
-
 MatchSchemas - Match schemas in a directory
 ===========================================
 
