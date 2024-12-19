@@ -19,7 +19,7 @@ Modules
 
 The repository includes the following main modules:
 
-1. **:ref:`IdentifyParalogousLoci <Identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
+1. **:doc:`IdentifyParalogousLoci <Identify_paralogous_loci>`**: Identifies paralogous loci in a schema.
 2. **:ref:`IdentifySpuriousGenes <Identify_spurious_genes>`**: Identifies spurious genes in a schema.
 3. **:ref:`SchemaAnnotation <Schema_annotation>`**: Annotates schemas with additional information.
 4. **:ref:`MatchSchemas <Match_schemas>`**: Matches schemas in a directory.
