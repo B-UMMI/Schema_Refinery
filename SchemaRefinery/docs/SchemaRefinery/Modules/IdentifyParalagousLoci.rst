@@ -1,5 +1,3 @@
-.. _IdentifyParalogousLoci:
-
 IdentifyParalogousLoci - Identify paralogous loci in a schema
 =============================================================
 

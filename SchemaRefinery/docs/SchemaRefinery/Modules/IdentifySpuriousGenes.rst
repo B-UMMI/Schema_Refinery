@@ -1,5 +1,3 @@
-.. _IdentifySpuriousGenes:
-
 IdentifySpuriousGenes - Identify spurious genes in a schema
 ===========================================================
 
