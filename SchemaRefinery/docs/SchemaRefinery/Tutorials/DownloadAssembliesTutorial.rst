@@ -35,6 +35,11 @@ Procedure
 
 5. Check the output directory for the downloaded assemblies.
 
+Example Output Structure
+------------------------
+
+To see the expected output structure, refer to the "Outputs" section in the :ref:`DownloadAssemblies documentation <Download_assemblies>`.
+
 Conclusion
 ----------
 
