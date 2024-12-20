@@ -26,6 +26,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Tutorials/DownloadAssembliesTutorial
    SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial
    SchemaRefinery/Tutorials/AdaptLociTutorial
+   SchemaRefinery/Tutorials/MatchSchemasTutorial
 
 External Links:
 ---------------
