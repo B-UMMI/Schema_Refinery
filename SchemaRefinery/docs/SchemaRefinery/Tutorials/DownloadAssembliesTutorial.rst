@@ -1,5 +1,3 @@
-.. _DownloadAssembliesTutorial:
-
 DownloadAssemblies - Tutorial
 =============================
 
