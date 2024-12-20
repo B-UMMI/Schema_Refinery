@@ -12,7 +12,6 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
-- Requests library (`pip install requests`)
 
 Procedure
 ---------
