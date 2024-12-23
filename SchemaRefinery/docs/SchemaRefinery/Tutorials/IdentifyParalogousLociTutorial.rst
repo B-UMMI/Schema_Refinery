@@ -31,7 +31,7 @@ Procedure
 
 4. Wait for the process to complete.
 
-5. Check the output directory for the identified paralogous loci.
+5. Check the output directory for the identified paralogous loci (The results are also available in the zenodo files).
 
 Conclusion
 ----------

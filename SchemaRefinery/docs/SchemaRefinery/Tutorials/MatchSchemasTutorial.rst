@@ -31,7 +31,7 @@ Procedure
 
 4. Wait for the matching process to complete.
 
-5. Check the output folder for the matched schemas.
+5. Check the output folder for the matched schemas (The results are also available in the zenodo files).
 
 Example Output Structure
 ------------------------
