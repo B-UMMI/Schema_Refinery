@@ -12,6 +12,7 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
+- Download the zenodo file from the link: https://zenodo.org/record/5560007/files/genbank_files.zip
 
 Procedure
 ---------
@@ -22,10 +23,9 @@ Procedure
 
 .. code-block:: bash
 
-    SR MatchSchemas -i /path/to/input_folder -o /path/to/output_folder -t 4
+    SR MatchSchema -qs 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -ss 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/zenodo/MatchSchemas_Results' -tt 4 -pm alleles_vs_alleles -c 6
 
-- Replace `/path/to/input_folder` with the path to the folder containing the genomic schemas.
-- Replace `/path/to/output_folder` with the path to the output folder.
+- Replace `path/to/files/` with the actual path to the files.
 
 3. Press Enter to execute the command.
 
