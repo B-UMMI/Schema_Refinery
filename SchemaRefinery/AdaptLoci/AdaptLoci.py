@@ -30,7 +30,7 @@ except ModuleNotFoundError:
                                       sequence_functions as sf,
                                       blast_functions as bf)
 
-def distribute_loci(inputs: List[List[Union[str, int]]], cores: int, method: str) -> List[List[str]]:
+def distribute_loci(inputs: List[Tuple[str, int, int, int, int]], cores: int, method: str) -> List[List[str]]:
     """Create balanced lists of loci to efficiently parallelize function calls.
 
     Creates balanced lists of loci to distribute per number of
@@ -97,7 +97,7 @@ def function_helper(input_args: List[Any]) -> List[Any]:
         results: List[Any] = input_args[-1](*input_args[0:-1])
     except Exception as e:
         func_name: str = (input_args[-1]).__name__
-        traceback_lines: List[str] = traceback.format_exc()
+        traceback_lines: str = traceback.format_exc()
         traceback_text: str = ''.join(traceback_lines)
         print(f'\nError on {func_name}:\n{traceback_text}\n', flush=True)
         results = [func_name, traceback_text]
@@ -114,7 +114,7 @@ def progress_bar(remaining: int, total: int, previous: Union[int, None], tickval
         Number of remaining tasks to complete.
     total : int
         Total number of inputs that have to be processed.
-    previous : Union[str, None]
+    previous : Union[int, None]
         Percentage of tasks that had been completed in the
         previous function call.
     tickval : int
@@ -547,7 +547,7 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
     loci_list: List[str] = ff.read_lines(input_file, strip=True)
     print(f'Number of loci to adapt: {len(loci_list)}')
     # Count number of sequences and mean length per locus
-    loci_info: List[Any] = []
+    loci_info: List[Tuple[str, int, int, int, int]] = []
     loci_pools: Pool = multiprocessing.Pool(processes=cpu_cores)
     gp: Any = loci_pools.map_async(sf.fasta_stats, loci_list, callback=loci_info.extend)
     gp.wait()
