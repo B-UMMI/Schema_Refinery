@@ -12,6 +12,7 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
+- Download the zenodo file from the link: https://zenodo.org/record/5560007/files/genbank_files.zip
 
 Procedure
 ---------
@@ -22,13 +23,9 @@ Procedure
 
 .. code-block:: bash
 
-    SR SchemaAnnotation -i /path/to/input_folder -o /path/to/output_folder  -ao genbank-files -gf path/to/genbank/files -t 4
+    SR SchemaAnnotation -s 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/output_folder/SchemaAnnotation_Results' -ao genbank -gf 'path/to/files/zenodo/Data/genbanks' -c 6 -tt 4
 
-- Replace `/path/to/input_folder` with the path to the input folder containing the genomic schemas.
-- Replace `/path/to/output_folder` with the path to the output folder.
-- Replace `path/to/genbank/files` with the path to the folder containing the genbank files.
-
-Note: The genbank files can be obtained from the NCBI database or by using the :docs:`DownloadAssemblies module <SchemaRefinery/Modules/DownloadAssemblies>`.
+- Replace `path/to/files/` with the actual path to the files.
 
 3. Press Enter to execute the command.
 
