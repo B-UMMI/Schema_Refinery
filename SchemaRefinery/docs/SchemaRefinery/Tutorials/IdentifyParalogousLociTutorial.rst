@@ -21,10 +21,10 @@ Procedure
 
 .. code-block:: bash
 
-    SR IdentifyParalogousLoci -s /path/to/schema_seed -o /path/to/output -c 4 -pm alleles_vs_alleles
+    SR IdentifyParalogousLoci -s /path/to/schema_seed_folder -o /path/to/output_folder -c 4 -pm alleles_vs_alleles
 
 - Replace `/path/to/schema_seed` with the path to the schema seed folder.
-- Replace `/path/to/output` with the path to the output directory.
+- Replace `/path/to/output_folder` with the path to the output directory.
 
 3. Press Enter to execute the command.
 

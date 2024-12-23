@@ -23,11 +23,10 @@ Procedure
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -t "Mycoplasma pneumonia" -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
+    SR DownloadAssemblies -t "Mycoplasma pneumonia" -db NCBI ENA661K -o /path/to/output_folder -e email@example -th 4 -fm --download
 
-- Replace `/path/to/output` with the path to the output directory.
 - Replace `email@example` with your email address.
-- Replace `/path/to/output` with the path to the output directory.
+- Replace `/path/to/output_folder` with the path to the output directory.
 
 3. Press Enter to execute the command.
 
