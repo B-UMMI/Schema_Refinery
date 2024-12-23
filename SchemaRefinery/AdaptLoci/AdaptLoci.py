@@ -473,7 +473,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
                 # Determine next representative from candidates
                 rep_candidates: List[str] = list(set(hotspots) - hitting_high)
                 # Sort to guarantee reproducible results with same datasets
-                rep_candidates = sorted(rep_candidates, key=lambda x: int(x))
+                rep_candidates = sorted(rep_candidates, key=lambda x: x)
                 representatives, final_representatives = select_candidate(rep_candidates,
                                                                           prot_seqs,
                                                                           ids_to_blast,

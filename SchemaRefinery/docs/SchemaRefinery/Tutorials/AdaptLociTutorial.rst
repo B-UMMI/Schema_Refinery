@@ -22,10 +22,9 @@ Procedure
 
 .. code-block:: bash
 
-    SR AdaptLoci -i /path/to/input_folder -o /path/to/output_folder -t 4
+    SR AdaptLoci -i 'path/to/files/zenodo/Data/fastas_path.txt'  -o 'path/to/files/AdaptLoci_Results' -tt 4 --cpu 6
 
-- Replace `/path/to/input_folder` with the path to the folder containing the FASTA files.
-- Replace `/path/to/output_folder` with the path to the output folder.
+- Replace `path/to/files/` with the actual path to the files.
 
 3. Press Enter to execute the command.
 
