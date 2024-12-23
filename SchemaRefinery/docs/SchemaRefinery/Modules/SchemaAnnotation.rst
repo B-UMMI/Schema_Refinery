@@ -429,6 +429,8 @@ columns description:
     best_matched_loci: The best match for the locus.
     best_matched_loci_BSR: The BSR value for the best BLAST matches.
 
+Note: The annotations_summary.tsv' contains all of the annotations that user chose to annotate with in input arguments.
+
 Examples
 --------
 
