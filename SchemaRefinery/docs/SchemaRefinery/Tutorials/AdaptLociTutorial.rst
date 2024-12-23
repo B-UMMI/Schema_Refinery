@@ -22,7 +22,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR AdaptLoci -i 'path/to/files/zenodo/Data/fastas_path.txt'  -o 'path/to/files/AdaptLoci_Results' -tt 4 --cpu 6
+    SR AdaptLoci -i 'path/to/files/zenodo/Data/fastas_path.txt'  -o 'path/to/files/AdaptLoci_Results' -tt 4 -c 6
 
 - Replace `path/to/files/` with the actual path to the files.
 
