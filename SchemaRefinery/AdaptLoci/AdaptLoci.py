@@ -105,7 +105,7 @@ def function_helper(input_args: List[Any]) -> List[Any]:
     return results
 
 
-def progress_bar(remaining: int, total: int, previous: int, tickval: int = 5, ticknum: int = 20) -> int:
+def progress_bar(remaining: int, total: int, previous: Union[int, None], tickval: int = 5, ticknum: int = 20) -> int:
     """Create and print a progress bar to the stdout.
 
     Parameters
@@ -114,7 +114,7 @@ def progress_bar(remaining: int, total: int, previous: int, tickval: int = 5, ti
         Number of remaining tasks to complete.
     total : int
         Total number of inputs that have to be processed.
-    previous : int
+    previous : Union[str, None]
         Percentage of tasks that had been completed in the
         previous function call.
     tickval : int
