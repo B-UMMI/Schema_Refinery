@@ -112,7 +112,7 @@ def main(args: Namespace) -> None:
                                            args.processing_mode,)
         results_files.append(matched_schemas)
 
-    merged_file_path = os.path.join(args.output_directory, 'merged_file.tsv')
+    merged_file_path = os.path.join(args.output_directory, 'annotations_summary.tsv')
     # If only one result file is present, copy it to the output directory
     if len(results_files) == 1:
         shutil.copy(results_files[0], merged_file_path)

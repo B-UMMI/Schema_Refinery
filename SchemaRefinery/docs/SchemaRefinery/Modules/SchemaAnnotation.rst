@@ -213,7 +213,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── x_translation.fasta
     │       ├── y_translation.fasta
     │       └── ...
-    ├── merged_file.tsv
+    ├── annotations_summary.tsv'
     └── uniprot_annotations # --nocleanup -ao uniprot-proteomes -pt path/to/proteome/table
         ├── best_proteomes_annotations_swiss_prot.tsv
         ├── best_proteomes_annotations_trEMBL.tsv
@@ -341,7 +341,7 @@ x_translation.fasta: Translation for x.
 y_translation.fasta: Translation for y.
 ...: Other translations.
 
-**merged_file.tsv**: Merged file containing all annotations.
+**annotations_summary.tsv'**: Merged file containing all annotations.
 
 uniprot_annotations: Folder containing UniProt annotations.
 best_proteomes_annotations_swiss_prot.tsv: Best annotations for Swiss-Prot proteomes.
@@ -404,7 +404,7 @@ trembl_prots_annotations.tsv: TrEMBL annotations.
 Report files description
 ------------------------
 
-.. csv-table:: Annotations
+.. csv-table:: annotations_summary.tsv'
     :header: "Locus", "Protein_ID", "Protein_product", "Protein_short_name", "BSR", "genebank_origin_id", "genebank_origin_product", "genebank_origin_name", "BSR_best_genbank_annotations", "Best Match", "BSR_best_blast_matches"
     :widths: 20, 20, 20, 20, 15, 20, 20, 20, 20, 20, 15, 5
 
