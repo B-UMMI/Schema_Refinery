@@ -116,10 +116,10 @@ def main(args: Namespace) -> None:
     # If only one result file is present, copy it to the output directory
     if len(results_files) == 1:
         shutil.copy(results_files[0], merged_file_path)
-        return None
+    else:
+        # Merge all results into a single file
+        upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
-    # Merge all results into a single file
-    upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
     # Clean up temporary files
     if not args.no_cleanup:
         print("\nCleaning up temporary files...")
