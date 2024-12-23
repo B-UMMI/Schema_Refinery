@@ -14,6 +14,7 @@ import time
 import shutil
 import traceback
 import multiprocessing
+from multiprocessing.pool import Pool
 from typing import List, Tuple, Dict, Callable, Any, Union
 
 from Bio import SeqIO, Seq
@@ -29,7 +30,7 @@ except ModuleNotFoundError:
                                       sequence_functions as sf,
                                       blast_functions as bf)
 
-def distribute_loci(inputs: List[List[Union[str, int]]], cores: int, method: str) -> List[List[str]]:
+def distribute_loci(inputs: List[Tuple[str, int, int, int, int]], cores: int, method: str) -> List[List[str]]:
     """Create balanced lists of loci to efficiently parallelize function calls.
 
     Creates balanced lists of loci to distribute per number of
@@ -96,7 +97,7 @@ def function_helper(input_args: List[Any]) -> List[Any]:
         results: List[Any] = input_args[-1](*input_args[0:-1])
     except Exception as e:
         func_name: str = (input_args[-1]).__name__
-        traceback_lines: List[str] = traceback.format_exc()
+        traceback_lines: str = traceback.format_exc()
         traceback_text: str = ''.join(traceback_lines)
         print(f'\nError on {func_name}:\n{traceback_text}\n', flush=True)
         results = [func_name, traceback_text]
@@ -104,7 +105,7 @@ def function_helper(input_args: List[Any]) -> List[Any]:
     return results
 
 
-def progress_bar(remaining: int, total: int, previous: int, tickval: int = 5, ticknum: int = 20) -> int:
+def progress_bar(remaining: int, total: int, previous: Union[int, None], tickval: int = 5, ticknum: int = 20) -> int:
     """Create and print a progress bar to the stdout.
 
     Parameters
@@ -113,7 +114,7 @@ def progress_bar(remaining: int, total: int, previous: int, tickval: int = 5, ti
         Number of remaining tasks to complete.
     total : int
         Total number of inputs that have to be processed.
-    previous : int
+    previous : Union[int, None]
         Percentage of tasks that had been completed in the
         previous function call.
     tickval : int
@@ -366,7 +367,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
 
             # Create FASTA file with distinct protein sequences
             protein_file: str = ff.join_paths(locus_temp_dir, [f'{locus_id}_protein.fasta'])
-            protein_data: List[Tuple[str, str]] = [[i, prot_seqs[i]] for i in ids_to_blast]
+            protein_data: List[List[str]] = [[i, prot_seqs[i]] for i in ids_to_blast]
             protein_lines: List[str] = sf.fasta_lines('>{0}\n{1}', protein_data)
             ff.write_lines(protein_lines, protein_file)
 
@@ -382,7 +383,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
             while len(set(ids_to_blast) - set(representatives)) != 0:
                 # create FASTA file with representative sequences
                 rep_file: str = ff.join_paths(locus_temp_dir, [f'{locus_id}_rep_protein.fasta'])
-                rep_protein_data: List[Tuple[str, str]] = [[r, prot_seqs[r]] for r in representatives]
+                rep_protein_data: List[List[str]] = [[r, prot_seqs[r]] for r in representatives]
                 rep_protein_lines: List[str] = sf.fasta_lines('>{0}\n{1}', rep_protein_data)
                 ff.write_lines(rep_protein_lines, rep_file)
 
@@ -431,8 +432,8 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
                 blast_results: List[List[Any]] = ff.read_tabular(blast_output)
 
                 # Divide results into high, low and hot BSR values
-                hitting_high: List[str]
-                hitting_low: List[str]
+                hitting_high: Union[List[str], set[str]]
+                hitting_low: Union[List[str], set[str]]
                 hotspots: List[str]
                 high_reps: Dict[str, List[str]]
                 low_reps: Dict[str, List[str]]
@@ -473,7 +474,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
                 # Determine next representative from candidates
                 rep_candidates: List[str] = list(set(hotspots) - hitting_high)
                 # Sort to guarantee reproducible results with same datasets
-                rep_candidates = sorted(rep_candidates, key=lambda x: int(x))
+                rep_candidates = sorted(rep_candidates, key=lambda x: x)
                 representatives, final_representatives = select_candidate(rep_candidates,
                                                                           prot_seqs,
                                                                           ids_to_blast,
@@ -488,7 +489,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
             final_representatives = list(prot_seqs.keys())
 
         # Write schema file with all alleles
-        locus_data: List[Tuple[str, str]] = [[k, v] for k, v in locus_seqs.items()]
+        locus_data: List[List[str]] = [[k, v] for k, v in locus_seqs.items()]
         locus_lines: List[str] = sf.fasta_lines('>{0}\n{1}', locus_data)
         ff.write_lines(locus_lines, locus_file)
 
@@ -496,7 +497,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
         total_sequences: int = len(locus_lines)
 
         # Write schema file with representatives
-        locus_rep_data: List[Tuple[str, str]] = [[r, locus_seqs[r]] for r in final_representatives]
+        locus_rep_data: List[List[str]] = [[r, locus_seqs[r]] for r in final_representatives]
         locus_rep_lines: List[str] = sf.fasta_lines('>{0}\n{1}', locus_rep_data)
         ff.write_lines(locus_rep_lines, locus_short_file)
 
@@ -546,8 +547,8 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
     loci_list: List[str] = ff.read_lines(input_file, strip=True)
     print(f'Number of loci to adapt: {len(loci_list)}')
     # Count number of sequences and mean length per locus
-    loci_info: List[Any] = []
-    loci_pools: multiprocessing.Pool = multiprocessing.Pool(processes=cpu_cores)
+    loci_info: List[Tuple[str, int, int, int, int]] = []
+    loci_pools: Pool = multiprocessing.Pool(processes=cpu_cores)
     gp: Any = loci_pools.map_async(sf.fasta_stats, loci_list, callback=loci_info.extend)
     gp.wait()
 

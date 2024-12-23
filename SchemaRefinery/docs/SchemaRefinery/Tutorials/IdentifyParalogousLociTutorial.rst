@@ -11,6 +11,7 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
+- Download the zenodo file from the link: https://zenodo.org/record/5560007/files/genbank_files.zip
 
 Procedure
 ---------
@@ -21,16 +22,15 @@ Procedure
 
 .. code-block:: bash
 
-    SR IdentifyParalogousLoci -s /path/to/schema_seed -o /path/to/output -c 4 -pm alleles_vs_alleles
+    SR IdentifyParalagousLoci -s 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/output_folder/IdentifyParalogousLoci_Results' -tt 4 -c 6 -pm alleles_vs_alleles
 
-- Replace `/path/to/schema_seed` with the path to the schema seed folder.
-- Replace `/path/to/output` with the path to the output directory.
+- Replace `path/to/files/` with the actual path to the files.
 
 3. Press Enter to execute the command.
 
 4. Wait for the process to complete.
 
-5. Check the output directory for the identified paralogous loci.
+5. Check the output directory for the identified paralogous loci (The results are also available in the zenodo files).
 
 Conclusion
 ----------

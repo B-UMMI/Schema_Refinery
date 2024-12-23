@@ -1,5 +1,3 @@
-.. _DownloadAssembliesTutorial:
-
 DownloadAssemblies - Tutorial
 =============================
 
@@ -25,17 +23,21 @@ Procedure
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -t "Mycoplasma pneumonia" -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
+    SR DownloadAssemblies -db NCBI -th 3 --download -fm -o 'path/to/files/DownloadAssemblies_Results' -t "Mycoplasma pneumonia" -e your_email@email.com
 
-- Replace `/path/to/output` with the path to the output directory.
-- Replace `email@example` with your email address.
-- Replace `/path/to/output` with the path to the output directory.
+- Replace `path/to/files/` with the actual path to the files.
+- Replace `your_email@email.com` with your email address.
 
 3. Press Enter to execute the command.
 
 4. Wait for the download process to complete.
 
-5. Check the output directory for the downloaded assemblies.
+5. Check the output directory for the downloaded assemblies (The results are also available in the zenodo files).
+
+Example Output Structure
+------------------------
+
+To see the expected output structure, refer to the "Outputs" section in the :ref:`DownloadAssemblies documentation <Download_assemblies>`.
 
 Conclusion
 ----------
