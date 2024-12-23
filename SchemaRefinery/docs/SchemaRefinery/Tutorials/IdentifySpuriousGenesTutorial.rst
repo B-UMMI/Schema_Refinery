@@ -44,3 +44,4 @@ Conclusion
 
 Based on output results the user can decide what loci to remove and keep based on the recomendations of the `IdentifySpuriousGenes` module.
 
+For more information on the `IdentifySpuriousGenes` module, refer to the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
