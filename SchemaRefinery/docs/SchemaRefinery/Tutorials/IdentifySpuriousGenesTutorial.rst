@@ -27,3 +27,20 @@ Procedure
 - Replace `/path/to/input_folder` with the path to the input folder containing the genomic data.
 - Replace `/path/to/output_folder` with the path to the output folder.
 - Replace `/path/to/allele_call_folder` with the path to the allele call folder.
+
+3. Press Enter to execute the command.
+
+4. Wait for the identification process to complete.
+
+5. Check the output folder for the identified spurious genes.
+
+Example Output Structure
+------------------------
+
+To see the expected output structure, refer to the "Outputs" section in the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
+
+Conclusion
+----------
+
+Based on output results the user can decide what loci to remove and keep based on the recomendations of the `IdentifySpuriousGenes` module.
+
