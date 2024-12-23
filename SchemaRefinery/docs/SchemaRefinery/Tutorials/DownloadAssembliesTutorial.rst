@@ -32,7 +32,7 @@ Procedure
 
 4. Wait for the download process to complete.
 
-5. Check the output directory for the downloaded assemblies.
+5. Check the output directory for the downloaded assemblies (The results are also available in the zenodo files).
 
 Example Output Structure
 ------------------------
