@@ -22,11 +22,13 @@ Procedure
 
 .. code-block:: bash
 
-    SR SchemaAnnotation -i /path/to/input_folder -o /path/to/output_folder  -ao genbank-files -gf path/to/genbank/files
+    SR SchemaAnnotation -i /path/to/input_folder -o /path/to/output_folder  -ao genbank-files -gf path/to/genbank/files -t 4
 
 - Replace `/path/to/input_folder` with the path to the input folder containing the genomic schemas.
 - Replace `/path/to/output_folder` with the path to the output folder.
 - Replace `path/to/genbank/files` with the path to the folder containing the genbank files.
+
+Note: The genbank files can be obtained from the NCBI database or by using the :docs:`DownloadAssemblies module <SchemaRefinery/Modules/DownloadAssemblies>`.
 
 3. Press Enter to execute the command.
 
