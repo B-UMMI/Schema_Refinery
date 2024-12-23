@@ -23,7 +23,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR MatchSchema -qs 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -ss 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/MatchSchemas_Results' -tt 4 -pm alleles_vs_alleles -c 6
+    SR MatchSchema -qs 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -ss 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/output_folder/MatchSchemas_Results' -tt 4 -pm alleles_vs_alleles -c 6
 
 - Replace `path/to/files/` with the actual path to the files.
 
