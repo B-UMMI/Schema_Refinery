@@ -213,7 +213,7 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── x_translation.fasta
     │       ├── y_translation.fasta
     │       └── ...
-    ├── annotations_summary.tsv'
+    ├── annotations_summary.tsv
     └── uniprot_annotations # --nocleanup -ao uniprot-proteomes -pt path/to/proteome/table
         ├── best_proteomes_annotations_swiss_prot.tsv
         ├── best_proteomes_annotations_trEMBL.tsv

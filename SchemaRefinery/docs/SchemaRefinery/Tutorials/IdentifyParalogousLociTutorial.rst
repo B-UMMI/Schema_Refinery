@@ -22,7 +22,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR IdentifyParalagousLoci -s 'path/to/files//zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/output_folder/IdentifyParalogousLoci_Results' -tt 4 -c 6 -pm alleles_vs_alleles
+    SR IdentifyParalagousLoci -s 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/output_folder/IdentifyParalogousLoci_Results' -tt 4 -c 6 -pm alleles_vs_alleles
 
 - Replace `path/to/files/` with the actual path to the files.
 
