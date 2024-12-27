@@ -257,12 +257,12 @@ def process_blast_results(blast_results_file: str, constants_threshold: List[flo
     alignment_ratio_threshold, pident_threshold = constants_threshold
 
     # Filter alignments by pident
-    alignments_dict: dict  = {
+    alignments_dict  = {
         key: [alignment for alignment in alignments if alignment["pident"] >= pident_threshold]
         for key, alignments in alignments_dict.items()
     }
     # Remove dictionary entries with zero alignments after filtering by pident
-    alignments_dict: dict = {
+    alignments_dict = {
         key: alignments for key, alignments in alignments_dict.items() if len(alignments) != 0
     }
 

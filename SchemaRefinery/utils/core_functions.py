@@ -769,7 +769,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
-                    frequency_in_genomes: Dict[str, int], merged_all_classes: tp.ClustersToKeep, 
+                    frequency_in_genomes: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
                     dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
@@ -782,7 +782,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         A dictionary with counts of results by class.
     frequency_in_genomes : Dict[str, int]
         A dictionary containing the frequency of the query and subject in genomes.
-    merged_all_classes : tp.ClustersToKeep
+    merged_all_classes : tp.MergedAllClasses
         A dictionary containing identifiers to check for a joined condition.
     dropped_loci_ids : List[str]
         A list of possible loci to drop.
@@ -867,7 +867,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
 
         return clustered_choices
 
-    def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: tp.ClustersToKeep) -> Tuple[str, str, str]:
+    def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: tp.MergedAllClasses) -> Tuple[str, str, str]:
         """
         Process an identifier to check its presence in specific lists.
 
@@ -877,7 +877,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
             The identifier to be processed.
         to_cluster_list : Dict[int, List[str]]
             A list of identifiers to check for the presence of id_.
-        merged_all_classes : tp.ClustersToKeep
+        merged_all_classes : tp.MergedAllClasses
             A dictionary containing identifiers to check for a joined condition.
 
         Returns
@@ -1249,7 +1249,7 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
     return (related_matches_path, count_results_by_cluster_path, recommendations_file_path)
 
 
-def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.ClustersToKeep, 
+def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.MergedAllClasses, 
                 sorted_blast_dict: tp.BlastDict) -> Tuple[Dict[str, Set[str]], Union[Dict[str, Set[str]], None]]:
     """
     Determines the matches between loci and their corresponding alleles or CDS based on the
@@ -1266,7 +1266,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.C
     all_relationships : tp.AllRelationships
         A dictionary containing all relationships between loci and alleles or CDS, with loci as keys
         and lists of related alleles or CDS as values.
-    merged_all_classes : tp.ClustersToKeep
+    merged_all_classes : tp.MergedAllClasses
         A dictionary with classes as keys and lists of CDS or loci IDs to be kept as values.
     sorted_blast_dict : Dict[str, Any]
         A dictionary containing sorted BLAST results, used to identify loci that have matches.
@@ -1536,7 +1536,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
             representative_blast_results_coords_pident, bsr_values, self_score_dict)
 
 
-def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep, 
+def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses, 
                                     representative_blast_results: tp.BlastDict,
                                     classes_outcome: List[str], all_alleles: Dict[str, List[str]], 
                                     is_matched: Dict[str, Set[str]], is_matched_alleles: Dict[str, Set[str]], 
@@ -1546,7 +1546,7 @@ def write_processed_results_to_file(merged_all_classes: tp.ClustersToKeep,
 
     Parameters
     ----------
-    merged_all_classes : tp.ClustersToKeep
+    merged_all_classes : tp.MergedAllClasses
         Dictionary containing clusters to keep, categorized by class.
     representative_blast_results : tp.BlastDict
         Dictionary containing representative BLAST results.
@@ -1716,7 +1716,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     return clusters_to_keep_1a, clusters_to_keep, drop_possible_loci
 
 
-def count_number_of_reps_and_alleles(merged_all_classes: tp.ClustersToKeep, 
+def count_number_of_reps_and_alleles(merged_all_classes: tp.MergedAllClasses, 
                                     processing_mode: str, clusters: Dict[str, List[str]], 
                                     drop_possible_loci: Set[str], group_reps_ids: Dict[str, Set[str]], 
                                     group_alleles_ids: Dict[str, Set[str]]) -> Tuple[Dict[str, Set[str]], Dict[str, Set[str]]]:
@@ -1867,14 +1867,14 @@ def create_graphs(file_path: str, output_path: str, filename: str, other_plots: 
     gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
 
 
-def print_classifications_results(merged_all_classes: tp.ClustersToKeep, drop_possible_loci: List[int], 
+def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_possible_loci: List[int], 
                                   to_blast_paths: Dict[str, str], clusters: Dict[str, Any]) -> None:
     """
     Prints the classification results based on the provided parameters.
 
     Parameters
     ----------
-    merged_all_classes : tp.ClustersToKeep
+    merged_all_classes : tp.MergedAllClasses
         Dictionary containing CDS to keep, classified by their class type.
     drop_possible_loci : List[int]
         List of possible loci dropped.
