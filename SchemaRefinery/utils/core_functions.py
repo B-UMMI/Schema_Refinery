@@ -587,7 +587,7 @@ def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[s
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             # Get the class of the alignment with the highest score
-            class_ = matches[0]['class']
+            class_ = matches[1]['class']
             if query not in temp_dict[class_]:
                 temp_dict[class_][query] = {}
             temp_dict[class_][query][id_subject] = matches
