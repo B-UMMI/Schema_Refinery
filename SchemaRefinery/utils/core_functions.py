@@ -610,6 +610,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
                     tp.CountResultsByClass,
                     tp.CountResultsByClassWithInverse,
                     tp.RepsAndAllelesIds,
+                    List[str],
                     tp.AllRelationships,]:
     """
     Processes BLAST results to determine class-based relationships and counts.
