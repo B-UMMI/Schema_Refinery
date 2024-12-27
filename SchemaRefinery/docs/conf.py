@@ -41,7 +41,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
     'sphinx_copybutton',
-    'sphinx.ext.intersphinx'
 ]
 
 autodoc_member_order = 'bysource'
