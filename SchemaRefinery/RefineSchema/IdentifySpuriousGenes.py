@@ -347,7 +347,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to maintain and to display to user.
-    clusters_to_keep: Dict[str, Any]
+    clusters_to_keep: Dict[str, List[str]]
     dropped_loci_ids: List[str]
     clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
     
