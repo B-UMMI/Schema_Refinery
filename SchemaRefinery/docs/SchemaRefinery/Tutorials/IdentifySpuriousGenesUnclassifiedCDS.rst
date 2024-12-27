@@ -12,6 +12,7 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
+- Download the zenodo file from the link: https://zenodo.org/record/5560007/files/genbank_files.zip
 
 Procedure
 ---------
