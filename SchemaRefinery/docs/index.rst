@@ -27,6 +27,9 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial
    SchemaRefinery/Tutorials/AdaptLociTutorial
    SchemaRefinery/Tutorials/MatchSchemasTutorial
+   SchemaRefinery/Tutorials/SchemaAnnotationTutorial
+   SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
+   SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS
 
 External Links:
 ---------------
