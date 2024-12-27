@@ -22,7 +22,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR IdentifySpuriousGenes -s '/path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -a '/path/to/files/zenodo/Data/NCBI_plus_AllTheBacteria_allelecall_results'  -o '/path/to/files/output_folder/IdentifySpuriousGenesUnclassifiedCDS' -m unclassified_cds -pm alleles_vs_alleles --t 4 -c 6
+    SR IdentifySpuriousGenes -s '/path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -a '/path/to/files/zenodo/Data/NCBI_plus_AllTheBacteria_allelecall_results' -o '/path/to/files/output_folder/IdentifySpuriousGenesUnclassifiedCDS' -m unclassified_cds -pm alleles_vs_alleles --t 4 -c 6
 
 - Replace `/path/to/files/` with the actual path to the files.
 
