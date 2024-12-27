@@ -1101,7 +1101,7 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
                                         recommendations: tp.Recomendations, 
                                         reverse_matches: bool,
                                         classes_outcome: Tuple[str, ...],
-                                        output_directory: str) -> Tuple[str]:
+                                        output_directory: str) -> Tuple[str, str, str]:
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -1216,8 +1216,8 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
                                             "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class_with_inverse.items():
-            query: str
-            subject: str
+            query
+            subject
             query, subject = id_.split('|')
             count_results_by_cluster_file.write('\t'.join(id_.split('|')))
             total_count_origin: int = sum([i[0] for i in classes.values() if i[0] != '-'])
@@ -1225,12 +1225,12 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
             query = itf.try_convert_to_type(id_.split('|')[0], int)
             subject = itf.try_convert_to_type(id_.split('|')[1], int)
             
-            representatives_count_query: int = len(group_reps_ids[query])
-            representatives_count_subject: str = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
-            allele_count_query: str = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
-            allele_count_subject: str = f"{len(group_alleles_ids[subject])}"
-            representatives_count: str = f"{representatives_count_query}|{representatives_count_subject}"
-            allele_count: str = f"{allele_count_query}|{allele_count_subject}"
+            representatives_count_query = f"{len(group_reps_ids[query])}"
+            representatives_count_subject = f"{len(group_reps_ids[subject])}" if reverse_matches else "|-"
+            allele_count_query = f"{len(group_alleles_ids[query])}" if reverse_matches else "-"
+            allele_count_subject = f"{len(group_alleles_ids[subject])}"
+            representatives_count = f"{representatives_count_query}|{representatives_count_subject}"
+            allele_count = f"{allele_count_query}|{allele_count_subject}"
             
             query_frequency: int = frequency_in_genomes[query]
             subject_frequency: int = frequency_in_genomes[subject]

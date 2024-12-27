@@ -132,7 +132,7 @@ def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str
     # Exit if it is not possible to create BLAST db
     if len(stderr) > 0:
         sys.exit(f'Error while running BLASTp for {fasta_file}\n'
-                 f'{blast_path} returned the following error:\n{stderr}')
+                 f'{blast_path} returned the following error:\n{stderr.decode("utf-8")}')
 
     return stdout, stderr
 
