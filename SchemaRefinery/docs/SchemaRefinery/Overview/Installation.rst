@@ -47,6 +47,7 @@ Follow these steps to install the `SchemaRefinery` package on your system.
 
     .. code-block:: bash
 
+        conda install blast
         pip install -r requirements.txt
 
 7. **Install the Package**: Install the `SchemaRefinery` package:
