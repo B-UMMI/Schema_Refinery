@@ -1,8 +1,8 @@
 docutils==0.20.1
-numpydoc
-sphinx
-sphinx_rtd_theme
-sphinx-autobuild
-sphinxcontrib-napoleon
-sphinxcontrib-bibtex
-sphinx-copybutton
+numpydoc==1.2
+sphinx==7.2.6
+sphinx_rtd_theme==1.2.2
+sphinx-autobuild==2023.3.0
+sphinxcontrib-napoleon==0.7
+sphinxcontrib-bibtex==2.5.0
+sphinx-copybutton==0.5.2

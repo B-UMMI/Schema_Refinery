@@ -1,7 +1,7 @@
 from typing import Dict, List, TypedDict, Tuple, Set, Any
 from collections import OrderedDict
 
-class ClustersToKeep(TypedDict, total=False):
+class MergedAllClasses(TypedDict, total=False):
     a1: Dict[int, List[str]]
     b1: List[str]
     a2: List[str]

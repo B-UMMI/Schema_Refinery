@@ -38,7 +38,7 @@ def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) 
         for cds_id, reason in dropped_cds.items():
             dropped_cds_file.write(f"{cds_id}\t{reason}\n")
 
-def update_ids_and_save_changes(merged_all_classes: tp.ClustersToKeep, 
+def update_ids_and_save_changes(merged_all_classes: tp.MergedAllClasses, 
                                 clusters: Dict[str, List[str]], 
                                 cds_original_ids: Dict[str, List[str]], 
                                 dropped_cds: Dict[str, str],
@@ -53,7 +53,7 @@ def update_ids_and_save_changes(merged_all_classes: tp.ClustersToKeep,
 
     Parameters
     ----------
-    merged_all_classes : tp.ClustersToKeep
+    merged_all_classes : tp.MergedAllClasses
         A dictionary where each key is a class and each value is a list of CDS to keep.
     clusters : Dict[str, List[str]]
         A dictionary mapping representative IDs to their cluster members.
@@ -73,7 +73,7 @@ def update_ids_and_save_changes(merged_all_classes: tp.ClustersToKeep,
 
     Notes
     -----
-    The function iterates through the `clusters_to_keep` dictionary, updating IDs for each CDS based on their membership
+    The function iterates through the `merged_all_classes` dictionary, updating IDs for each CDS based on their membership
     in the provided `clusters`. It generates a new ID for each CDS, updates `cds_original_ids` with these new IDs,
     and writes the original and new IDs to a TSV file named 'cds_id_changes.tsv' in the `results_output` directory.
 
@@ -82,16 +82,16 @@ def update_ids_and_save_changes(merged_all_classes: tp.ClustersToKeep,
 
     Examples
     --------
-    Assuming the existence of appropriate dictionaries for `clusters_to_keep`, `clusters`, `cds_original_ids`, and a valid
+    Assuming the existence of appropriate dictionaries for `merged_all_classes`, `clusters`, `cds_original_ids`, and a valid
     path for `results_output`, the function can be called as follows:
 
-    >>> update_ids_and_save_changes(clusters_to_keep, clusters, cds_original_ids, dropped_cds, all_nucleotide_sequences, '/path/to/output')
+    >>> update_ids_and_save_changes(merged_all_classes, clusters, cds_original_ids, dropped_cds, all_nucleotide_sequences, '/path/to/output')
     
     This would process the IDs as described and save the changes to '/path/to/output/cds_id_changes.tsv'.
     """
 
     # Iterate through each class and its CDS group
-    for class_, cds_group in clusters_to_keep.items():
+    for class_, cds_group in merged_all_classes.items():
         for cds in cds_group:
             main_rep: str = cds  # The main representative ID for the CDS group
             
@@ -99,8 +99,8 @@ def update_ids_and_save_changes(merged_all_classes: tp.ClustersToKeep,
             if class_ != '1a':
                 cds = [cds]
             else:
-                # For class '1a', get the CDS group from clusters_to_keep
-                cds = clusters_to_keep[class_][cds]
+                # For class '1a', get the CDS group from merged_all_classes
+                cds = merged_all_classes[class_][cds]
             
             index: int = 1  # Initialize an index for creating new IDs
             
@@ -300,7 +300,7 @@ def replace_ids_in_clusters(clusters: Dict[str, List[str]],
     return cds_original_ids
 
             
-def write_temp_loci(merged_all_classes: tp.ClustersToKeep, 
+def write_temp_loci(merged_all_classes: tp.MergedAllClasses, 
                     all_nucleotide_sequences: Dict[str, str], 
                     clusters: Dict[str, List[str]], 
                     output_path: str) -> Dict[str, str]:
@@ -310,7 +310,7 @@ def write_temp_loci(merged_all_classes: tp.ClustersToKeep,
     
     Parameters
     ----------
-    merged_all_classes : tp.ClustersToKeep
+    merged_all_classes : tp.MergedAllClasses
         Dictionary of the CDS to keep by each classification.
     all_nucleotide_sequences : Dict[str, str]
         Dictionary that contains all of the DNA sequences for all of the alleles.

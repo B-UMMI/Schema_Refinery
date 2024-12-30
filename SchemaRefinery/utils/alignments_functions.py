@@ -2,10 +2,12 @@ from copy import deepcopy
 from typing import List, Tuple, Dict, Any, Set, Union
 try:
     from utils import (iterable_functions as itf,
-                       constants as ct)
+                       constants as ct,
+                       Types as tp)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (iterable_functions as itf,
-                                      constants as ct)
+                                      constants as ct,
+                                      Types as tp)
 
 def join_intervals(alignments: List[List[Any]]) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
@@ -257,12 +259,12 @@ def process_blast_results(blast_results_file: str, constants_threshold: List[flo
     alignment_ratio_threshold, pident_threshold = constants_threshold
 
     # Filter alignments by pident
-    alignments_dict: dict  = {
+    alignments_dict  = {
         key: [alignment for alignment in alignments if alignment["pident"] >= pident_threshold]
         for key, alignments in alignments_dict.items()
     }
     # Remove dictionary entries with zero alignments after filtering by pident
-    alignments_dict: dict = {
+    alignments_dict = {
         key: alignments for key, alignments in alignments_dict.items() if len(alignments) != 0
     }
 
@@ -328,7 +330,7 @@ def get_alignments_dict_from_blast_results(
     skip_reverse_alignments: bool,
     if_alleles: bool,
     multiple_reps: bool
-) -> Tuple[Dict[str, Dict[str, Dict[int, Dict[str, Any]]]], Union[int, Dict[str, int]], Dict[str, Dict[str, Dict[str, List[List[int]]]]], Dict[str, Dict[str, Dict[str, List[List[int]]]]]]:
+) -> Tuple[tp.BlastDict, Union[int, Dict[str, int]], tp.RepresentativeBlastResultsCoords, tp.RepresentativeBlastResultsCoords]:
     """
     Reads BLAST results file and extracts the necessary items. Based on input, also fetches the coordinates 
     based on query sequences and self-score contained inside the BLAST results file.
@@ -366,9 +368,9 @@ def get_alignments_dict_from_blast_results(
     The self_score will be the highest self-score found in the BLAST results file or a dictionary containing the self-score for each representative present.
     """
 
-    alignments_dict: Dict[str, Dict[str, Dict[int, Dict[str, Any]]]] = {}
-    alignment_coords_pident: Dict[str, Dict[str, Dict[str, List[List[int]]]]] = {}
-    alignment_coords_all: Dict[str, Dict[str, Dict[str, List[List[int]]]]] = {}
+    alignments_dict: tp.BlastDict = {}
+    alignment_coords_pident: tp.RepresentativeBlastResultsCoords = {}
+    alignment_coords_all: tp.RepresentativeBlastResultsCoords = {}
     pattern: str = '_(\d+)'
     self_scores: Union[int, Dict[str, int]] = 0 if not multiple_reps else {}
 
@@ -484,7 +486,7 @@ def get_alignments_dict_from_blast_results_simplified(
     pident_threshold: float,
     get_coords: bool,
     skip_reverse_alignments: bool
-) -> Tuple[Dict[str, Dict[str, Dict[int, Dict[str, Any]]]], Union[int, Dict[str, int]], Dict[str, Dict[str, Dict[str, List[List[int]]]]], Dict[str, Dict[str, Dict[str, List[List[int]]]]]]:
+) -> Tuple[tp.BlastDict, tp.RepresentativeBlastResultsCoords, tp.RepresentativeBlastResultsCoords]:
     """
     Reads BLAST results file and extracts the necessary items. Based on input, also fetches the coordinates 
     based on query sequences and self-score contained inside the BLAST results file.
@@ -502,15 +504,15 @@ def get_alignments_dict_from_blast_results_simplified(
 
     Returns
     -------
-    Tuple[Dict[str, Dict[str, Dict[int, Dict[str, Any]]]], Union[int, Dict[str, int]], Dict[str, Dict[str, Dict[str, List[List[int]]]]], Dict[str, Dict[str, Dict[str, List[List[int]]]]]]
+    Tuple[tp.BlastDict, tp.RepresentativeBlastResultsCoords, tp.RepresentativeBlastResultsCoords]
         - alignments_dict: Dictionary containing the results of the BLAST.
         - alignment_coords_all: Contains the coordinates for the query/subject pair, the coordinates are in reference to the query.
         - alignment_coords_pident: Contains the coordinates for the query/subject pair, the coordinates are in reference to the query and filtered by pident threshold.
     """
 
-    alignments_dict: Dict[str, Dict[str, Dict[int, Dict[str, Any]]]] = {}
-    alignment_coords_pident: Dict[str, Dict[str, Dict[str, List[List[int]]]]] = {}
-    alignment_coords_all: Dict[str, Dict[str, Dict[str, List[List[int]]]]] = {}
+    alignments_dict: tp.BlastDict = {}
+    alignment_coords_pident: tp.RepresentativeBlastResultsCoords = {}
+    alignment_coords_all: tp.RepresentativeBlastResultsCoords = {}
 
     with open(blast_results_file, "r") as f:
         lines: List[str] = f.readlines()
