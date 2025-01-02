@@ -274,379 +274,383 @@ Output files and folders description:
 
 **For --run-mode schema:**
 
-**OutputFolderName**
-    The folder where the output files are stored.
+::
 
-1_schema_processing
-    Folder containing schema processing results.
+    **OutputFolderName**
+        The folder where the output files are stored.
 
-    master.fasta
-        Master FASTA file.
+    1_schema_processing
+        Folder containing schema processing results.
 
-    schema
-        Folder containing schema files.
+        master.fasta
+            Master FASTA file.
 
-        loci_x.fasta
-            FASTA file for locus x.
+        schema
+            Folder containing schema files.
 
-        new_loci_y.fasta
-            FASTA file for new locus y.
+            loci_x.fasta
+                FASTA file for locus x.
 
-        ...
-            Other loci files.
-
-    short
-        Folder containing short loci files.
-
-        loci_x.fasta
-            Short FASTA file for locus x.
-
-        new_loci_y.fasta
-            Short FASTA file for new locus y.
-
-        ...
-            Other short loci files.
-
-    schema_translation_folder
-        Folder containing schema translations.
-
-        loci_x.fasta
-            Translation for locus x.
-
-        new_loci_y.fasta
-            Translation for new locus y.
-
-        ...
-            Other translations.
-
-2_BLAST_processing
-    Folder containing BLAST processing results.
-
-    1_BLASTn_processing
-        Folder containing BLASTn processing results.
-
-        blast_db_nucl
-            Folder containing BLASTn database.
-
-            Blast_db_nucleotide.ndb
-                BLASTn nucleotide database file.
-
-            Blast_db_nucleotide.nhr
-                BLASTn nucleotide header file.
-
-            Blast_db_nucleotide.nin
-                BLASTn nucleotide index file.
-
-            Blast_db_nucleotide.nog
-                BLASTn nucleotide organism group file.
-
-            Blast_db_nucleotide.nsd
-                BLASTn nucleotide sequence data file.
-
-            Blast_db_nucleotide.nsi
-                BLASTn nucleotide sequence index file.
-
-            Blast_db_nucleotide.nsq
-                BLASTn nucleotide sequence query file.
-
-            Blast_db_nucleotide.ntf
-                BLASTn nucleotide taxonomy file.
-
-            Blast_db_nucleotide.nto
-                BLASTn nucleotide taxonomy organism file.
-
-        BLASTn_results
-            Folder containing BLASTn results.
-
-            blast_results_x.tsv
-                BLASTn results for x.
-
-            blast_results_y.tsv
-                BLASTn results for y.
+            new_loci_y.fasta
+                FASTA file for new locus y.
 
             ...
-                Other BLASTn results.
+                Other loci files.
 
-    2_BLASTp_processing
-        Folder containing BLASTp processing results.
+        short
+            Folder containing short loci files.
 
-        blastn_results_matches_translations
-            Folder containing BLASTn results matches translations.
+            loci_x.fasta
+                Short FASTA file for locus x.
 
-            cluster_matches_translation_x.tsv
-                Cluster matches translation for x.
-
-            cluster_matches_translation_y.tsv
-                Cluster matches translation for y.
+            new_loci_y.fasta
+                Short FASTA file for new locus y.
 
             ...
-                Other cluster matches translations.
+                Other short loci files.
 
-        BLASTp_results
-            Folder containing BLASTp results.
+        schema_translation_folder
+            Folder containing schema translations.
 
-            blast_results_x.tsv
-                BLASTp results for x.
+            loci_x.fasta
+                Translation for locus x.
 
-            blast_results_y.tsv
-                BLASTp results for y.
-
-            ...
-                Other BLASTp results.
-
-        BLASTp_results_self_score_results
-            Folder containing BLASTp self-score results.
-
-            blast_results_x.tsv
-                BLASTp self-score results for x.
-
-            blast_results_y.tsv
-                BLASTp self-score results for y.
+            new_loci_y.fasta
+                Translation for new locus y.
 
             ...
-                Other BLASTp self-score results.
+                Other translations.
 
-3_processing_results
-    Folder containing processing results.
+    2_BLAST_processing
+        Folder containing BLAST processing results.
 
-    blast_results
-        Folder containing BLAST results.
+        1_BLASTn_processing
+            Folder containing BLASTn processing results.
 
-        blast_all_matches.tsv
-            TSV file containing all BLAST matches.
+            blast_db_nucl
+                Folder containing BLASTn database.
 
-        blast_by_cluster
-            Folder containing BLAST results by cluster.
+                Blast_db_nucleotide.ndb
+                    BLASTn nucleotide database file.
 
-            cluster_x.tsv
-                BLAST results for cluster x.
+                Blast_db_nucleotide.nhr
+                    BLASTn nucleotide header file.
 
-            cluster_y.tsv
-                BLAST results for cluster y.
+                Blast_db_nucleotide.nin
+                    BLASTn nucleotide index file.
+
+                Blast_db_nucleotide.nog
+                    BLASTn nucleotide organism group file.
+
+                Blast_db_nucleotide.nsd
+                    BLASTn nucleotide sequence data file.
+
+                Blast_db_nucleotide.nsi
+                    BLASTn nucleotide sequence index file.
+
+                Blast_db_nucleotide.nsq
+                    BLASTn nucleotide sequence query file.
+
+                Blast_db_nucleotide.ntf
+                    BLASTn nucleotide taxonomy file.
+
+                Blast_db_nucleotide.nto
+                    BLASTn nucleotide taxonomy organism file.
+
+            BLASTn_results
+                Folder containing BLASTn results.
+
+                blast_results_x.tsv
+                    BLASTn results for x.
+
+                blast_results_y.tsv
+                    BLASTn results for y.
+
+                ...
+                    Other BLASTn results.
+
+        2_BLASTp_processing
+            Folder containing BLASTp processing results.
+
+            blastn_results_matches_translations
+                Folder containing BLASTn results matches translations.
+
+                cluster_matches_translation_x.tsv
+                    Cluster matches translation for x.
+
+                cluster_matches_translation_y.tsv
+                    Cluster matches translation for y.
+
+                ...
+                    Other cluster matches translations.
+
+            BLASTp_results
+                Folder containing BLASTp results.
+
+                blast_results_x.tsv
+                    BLASTp results for x.
+
+                blast_results_y.tsv
+                    BLASTp results for y.
+
+                ...
+                    Other BLASTp results.
+
+            BLASTp_results_self_score_results
+                Folder containing BLASTp self-score results.
+
+                blast_results_x.tsv
+                    BLASTp self-score results for x.
+
+                blast_results_y.tsv
+                    BLASTp self-score results for y.
+
+                ...
+                    Other BLASTp self-score results.
+
+    3_processing_results
+        Folder containing processing results.
+
+        blast_results
+            Folder containing BLAST results.
+
+            blast_all_matches.tsv
+                TSV file containing all BLAST matches.
+
+            blast_by_cluster
+                Folder containing BLAST results by cluster.
+
+                cluster_x.tsv
+                    BLAST results for cluster x.
+
+                cluster_y.tsv
+                    BLAST results for cluster y.
+
+                ...
+                    Other cluster results.
+
+            blast_results_by_class
+                Folder containing BLAST results by class.
+
+                class_1.tsv
+                    BLAST results for class 1.
+
+                class_2.tsv
+                    BLAST results for class 2.
+
+                ...
+                    Other class results.
+
+        cds_id_changes.tsv
+            TSV file containing changes in CDS IDs.
+
+        dropped_cds.tsv
+            TSV file containing dropped CDS.
+
+        Graph_folder
+            Folder containing graphs.
+
+            All_of_CDS_graphs.html
+                HTML file containing all CDS graphs.
+
+            graphs_class_1a.html
+                HTML file containing class 1a graphs.
 
             ...
-                Other cluster results.
+                Other graph files.
 
-        blast_results_by_class
-            Folder containing BLAST results by class.
+        **count_results_by_cluster.tsv**
+            TSV file containing count results by cluster.
 
-            class_1.tsv
-                BLAST results for class 1.
+        **drop_loci_reason.tsv**
+            TSV file containing reasons for dropping loci.
 
-            class_2.tsv
-                BLAST results for class 2.
+        **recommendations.tsv**
+            TSV file containing recommendations.
 
-            ...
-                Other class results.
-
-    cds_id_changes.tsv
-        TSV file containing changes in CDS IDs.
-
-    dropped_cds.tsv
-        TSV file containing dropped CDS.
-
-    Graph_folder
-        Folder containing graphs.
-
-        All_of_CDS_graphs.html
-            HTML file containing all CDS graphs.
-
-        graphs_class_1a.html
-            HTML file containing class 1a graphs.
-
-        ...
-            Other graph files.
-
-    **count_results_by_cluster.tsv**
-        TSV file containing count results by cluster.
-
-    **drop_loci_reason.tsv**
-        TSV file containing reasons for dropping loci.
-
-    **recommendations.tsv**
-        TSV file containing recommendations.
-
-    **related_matches.tsv**
-        TSV file containing related matches.
+        **related_matches.tsv**
+            TSV file containing related matches.
 
 **For --run-mode unclassified_cds:**
 
-**OutputFolderName**
-    The folder where the output files are stored.
+::
 
-1_CDS_processing
-    Folder containing CDS processing results.
+    **OutputFolderName**
+        The folder where the output files are stored.
 
-    CDS_not_found.fasta
-        FASTA file containing CDS not found.
+    1_CDS_processing
+        Folder containing CDS processing results.
 
-    CDS_not_found_translation.fasta
-        FASTA file containing translations of CDS not found.
+        CDS_not_found.fasta
+            FASTA file containing CDS not found.
 
-2_BLAST_processing
-    Folder containing BLAST processing results.
+        CDS_not_found_translation.fasta
+            FASTA file containing translations of CDS not found.
 
-    1_BLASTn_processing
-        Folder containing BLASTn processing results.
+    2_BLAST_processing
+        Folder containing BLAST processing results.
 
-        blast_db_nucl
-            Folder containing BLASTn database.
+        1_BLASTn_processing
+            Folder containing BLASTn processing results.
 
-            Blast_db_nucleotide.ndb
-                BLASTn nucleotide database file.
+            blast_db_nucl
+                Folder containing BLASTn database.
 
-            Blast_db_nucleotide.nhr
-                BLASTn nucleotide header file.
+                Blast_db_nucleotide.ndb
+                    BLASTn nucleotide database file.
 
-            Blast_db_nucleotide.nin
-                BLASTn nucleotide index file.
+                Blast_db_nucleotide.nhr
+                    BLASTn nucleotide header file.
 
-            Blast_db_nucleotide.nog
-                BLASTn nucleotide organism group file.
+                Blast_db_nucleotide.nin
+                    BLASTn nucleotide index file.
 
-            Blast_db_nucleotide.nsd
-                BLASTn nucleotide sequence data file.
+                Blast_db_nucleotide.nog
+                    BLASTn nucleotide organism group file.
 
-            Blast_db_nucleotide.nsi
-                BLASTn nucleotide sequence index file.
+                Blast_db_nucleotide.nsd
+                    BLASTn nucleotide sequence data file.
 
-            Blast_db_nucleotide.nsq
-                BLASTn nucleotide sequence query file.
+                Blast_db_nucleotide.nsi
+                    BLASTn nucleotide sequence index file.
 
-            Blast_db_nucleotide.ntf
-                BLASTn nucleotide taxonomy file.
+                Blast_db_nucleotide.nsq
+                    BLASTn nucleotide sequence query file.
 
-            Blast_db_nucleotide.nto
-                BLASTn nucleotide taxonomy organism file.
+                Blast_db_nucleotide.ntf
+                    BLASTn nucleotide taxonomy file.
 
-        BLASTn_results
-            Folder containing BLASTn results.
+                Blast_db_nucleotide.nto
+                    BLASTn nucleotide taxonomy organism file.
 
-            blast_results_x.tsv
-                BLASTn results for x.
+            BLASTn_results
+                Folder containing BLASTn results.
 
-            blast_results_y.tsv
-                BLASTn results for y.
+                blast_results_x.tsv
+                    BLASTn results for x.
+
+                blast_results_y.tsv
+                    BLASTn results for y.
+
+                ...
+                    Other BLASTn results.
+
+        2_BLASTp_processing
+            Folder containing BLASTp processing results.
+
+            blastn_results_matches_translations
+                Folder containing BLASTn results matches translations.
+
+                cluster_matches_translation_x.tsv
+                    Cluster matches translation for x.
+
+                cluster_matches_translation_y.tsv
+                    Cluster matches translation for y.
+
+                ...
+                    Other cluster matches translations.
+
+            BLASTp_results
+                Folder containing BLASTp results.
+
+                blast_results_x.tsv
+                    BLASTp results for x.
+
+                blast_results_y.tsv
+                    BLASTp results for y.
+
+                ...
+                    Other BLASTp results.
+
+            BLASTp_results_self_score_results
+                Folder containing BLASTp self-score results.
+
+                blast_results_x.tsv
+                    BLASTp self-score results for x.
+
+                blast_results_y.tsv
+                    BLASTp self-score results for y.
+
+                ...
+                    Other BLASTp self-score results.
+
+    3_processing_results
+        Folder containing processing results.
+
+        blast_results
+            Folder containing BLAST results.
+
+            blast_all_matches.tsv
+                TSV file containing all BLAST matches.
+
+            blast_by_cluster
+                Folder containing BLAST results by cluster.
+
+                cluster_x.tsv
+                    BLAST results for cluster x.
+
+                cluster_y.tsv
+                    BLAST results for cluster y.
+
+                ...
+                    Other cluster results.
+
+            blast_results_by_class
+                Folder containing BLAST results by class.
+
+                class_1.tsv
+                    BLAST results for class 1.
+
+                class_2.tsv
+                    BLAST results for class 2.
+
+                ...
+                    Other class results.
+
+        cds_id_changes.tsv
+            TSV file containing changes in CDS IDs.
+
+        dropped_cds.tsv
+            TSV file containing dropped CDS.
+
+        Graph_folder
+            Folder containing graphs.
+
+            All_of_CDS_graphs.html
+                HTML file containing all CDS graphs.
+
+            graphs_class_1a.html
+                HTML file containing class 1a graphs.
 
             ...
-                Other BLASTn results.
+                Other graph files.
 
-    2_BLASTp_processing
-        Folder containing BLASTp processing results.
+        **count_results_by_cluster.tsv**
+            TSV file containing count results by cluster.
 
-        blastn_results_matches_translations
-            Folder containing BLASTn results matches translations.
+        **drop_loci_reason.tsv**
+            TSV file containing reasons for dropping loci.
 
-            cluster_matches_translation_x.tsv
-                Cluster matches translation for x.
+        **recommendations.tsv**
+            TSV file containing recommendations.
 
-            cluster_matches_translation_y.tsv
-                Cluster matches translation for y.
+        **related_matches.tsv**
+            TSV file containing related matches.
 
-            ...
-                Other cluster matches translations.
+        **temp_fastas**
+            Folder containing temporary FASTA files.
 
-        BLASTp_results
-            Folder containing BLASTp results.
+            **cluster_x.fasta**
+                Temporary FASTA file for cluster x.
 
-            blast_results_x.tsv
-                BLASTp results for x.
+            **cluster_y.fasta**
+                Temporary FASTA file for cluster y.
 
-            blast_results_y.tsv
-                BLASTp results for y.
+            **...**
+                Other temporary FASTA files.
 
-            ...
-                Other BLASTp results.
-
-        BLASTp_results_self_score_results
-            Folder containing BLASTp self-score results.
-
-            blast_results_x.tsv
-                BLASTp self-score results for x.
-
-            blast_results_y.tsv
-                BLASTp self-score results for y.
-
-            ...
-                Other BLASTp self-score results.
-
-3_processing_results
-    Folder containing processing results.
-
-    blast_results
-        Folder containing BLAST results.
-
-        blast_all_matches.tsv
-            TSV file containing all BLAST matches.
-
-        blast_by_cluster
-            Folder containing BLAST results by cluster.
-
-            cluster_x.tsv
-                BLAST results for cluster x.
-
-            cluster_y.tsv
-                BLAST results for cluster y.
-
-            ...
-                Other cluster results.
-
-        blast_results_by_class
-            Folder containing BLAST results by class.
-
-            class_1.tsv
-                BLAST results for class 1.
-
-            class_2.tsv
-                BLAST results for class 2.
-
-            ...
-                Other class results.
-
-    cds_id_changes.tsv
-        TSV file containing changes in CDS IDs.
-
-    dropped_cds.tsv
-        TSV file containing dropped CDS.
-
-    Graph_folder
-        Folder containing graphs.
-
-        All_of_CDS_graphs.html
-            HTML file containing all CDS graphs.
-
-        graphs_class_1a.html
-            HTML file containing class 1a graphs.
-
-        ...
-            Other graph files.
-
-    **count_results_by_cluster.tsv**
-        TSV file containing count results by cluster.
-
-    **drop_loci_reason.tsv**
-        TSV file containing reasons for dropping loci.
-
-    **recommendations.tsv**
-        TSV file containing recommendations.
-
-    **related_matches.tsv**
-        TSV file containing related matches.
-
-    **temp_fastas**
-        Folder containing temporary FASTA files.
-
-        **cluster_x.fasta**
-            Temporary FASTA file for cluster x.
-
-        **cluster_y.fasta**
-            Temporary FASTA file for cluster y.
-
-        **...**
-            Other temporary FASTA files.
-
-    **temp_fastas_path.txt**
-        Text file containing paths to temporary FASTA files.
+        **temp_fastas_path.txt**
+            Text file containing paths to temporary FASTA files.
 
 Report files description
 ------------------------
