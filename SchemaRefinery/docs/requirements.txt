@@ -1,7 +1,7 @@
-docutils==0.20.1
-numpydoc==1.2
-sphinx==7.2.6
-sphinx_rtd_theme==1.2.2
+sphinx
+docutils
+numpydoc
+sphinx_rtd_theme
 sphinx-autobuild
 sphinxcontrib-napoleon
 sphinxcontrib-bibtex
