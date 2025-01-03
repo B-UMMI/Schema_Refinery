@@ -33,9 +33,14 @@ Procedure
 
 5. Check the output directory for the identified spurious genes (The results are also available in the zenodo files).
 
+Example Output Structure
+------------------------
+
+To see the expected output structure, refer to the "Outputs" section in the `IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`_.
+
 Conclusion
 ----------
 
-You have successfully identified spurious genes in a genomic schema using the `IdentifySpuriousGene` module for `Schema`.
+You have successfully identified spurious genes in a genomic schema using the `IdentifySpuriousGenes` module for `Schema`.
 
-For more information on the `IdentifySpuriousGene` module, refer to the :doc:`IdentifySpuriousGene documentation <SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema>`.
+For more information on the `IdentifySpuriousGenes` module, refer to the `IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`_.

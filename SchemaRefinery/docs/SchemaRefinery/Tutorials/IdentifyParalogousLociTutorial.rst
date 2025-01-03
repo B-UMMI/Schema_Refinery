@@ -32,9 +32,14 @@ Procedure
 
 5. Check the output directory for the identified paralogous loci (The results are also available in the zenodo files).
 
+Example Output Structure
+------------------------
+
+To see the expected output structure, refer to the "Outputs" section in the `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_.
+
 Conclusion
 ----------
 
 You have successfully identified paralogous loci in a schema using the `IdentifyParalogousLoci` module.
 
-For more information on the `IdentifyParalogousLoci` module, refer to the :doc:`IdentifyParalogousLoci documentation <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.
+For more information on the `IdentifyParalogousLoci` module, refer to the `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_.
