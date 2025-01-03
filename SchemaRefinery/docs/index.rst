@@ -10,7 +10,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Overview/Contacts
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Modules:
 
    SchemaRefinery/Modules/IdentifySpuriousGenes
