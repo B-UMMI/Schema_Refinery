@@ -1,5 +1,5 @@
-SchemaRefinery - A Tool for Refining Genomic Schemas
-====================================================
+Overview
+========
 
 Description
 -----------
