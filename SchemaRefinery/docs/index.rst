@@ -12,7 +12,7 @@ Welcome to SchemaRefinery's documentation!
    :maxdepth: 1
    :caption: Modules:
 
-   docs/SchemaRefinery/Modules/IdentifySpuriousGenes
+   SchemaRefinery/Modules/IdentifySpuriousGenes
    SchemaRefinery/Modules/MatchSchemas
    SchemaRefinery/Modules/SchemaAnnotation
    SchemaRefinery/Modules/IdentifyParalagousLoci
@@ -29,7 +29,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Tutorials/AdaptLociTutorial
    SchemaRefinery/Tutorials/MatchSchemasTutorial
    SchemaRefinery/Tutorials/SchemaAnnotationTutorial
-   docs/SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
+   SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
    SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS
 
 External Links:
