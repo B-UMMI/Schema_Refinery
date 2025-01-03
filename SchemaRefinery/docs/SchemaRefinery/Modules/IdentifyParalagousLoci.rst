@@ -209,6 +209,11 @@ Output files and folders description:
     **paralogous_loci_report_passed_all_checks.tsv**
         TSV file containing the report of the paralogous loci clustered by ID that passed all checks.
 
+.. toctree::
+   :maxdepth: 1
+
+   IdentifyParalogousLociOutputExplanation
+
 Report files description
 ------------------------
 

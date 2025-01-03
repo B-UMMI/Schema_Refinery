@@ -221,6 +221,11 @@ Output files and folders description:
     **best_blast_matches.tsv**
         TSV file containing the best BLAST matches for the query and subject schemas.
 
+.. toctree::
+   :maxdepth: 1
+
+   MatchSchemasReportExplanation
+
 Report files description
 ------------------------
 
