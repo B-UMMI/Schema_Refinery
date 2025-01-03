@@ -1,4 +1,4 @@
-DownloadAssemblies - Download assemblie sand their metadata from specified databases
+DownloadAssemblies - Download assemblies and their metadata from specified databases
 ====================================================================================
 
 Description
@@ -230,7 +230,7 @@ Examples
 
 Here are some example commands to use the `DownloadAssemblies` module:
 
-D
+.. code-block:: bash
 
     # Download assemblies from NCBI for a specific taxon
     SR DownloadAssemblies -t "Escherichia coli" -db NCBI -o /path/to/output -e email@example.com -th 4 --download

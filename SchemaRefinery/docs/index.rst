@@ -7,6 +7,7 @@ Welcome to SchemaRefinery's documentation!
 
    SchemaRefinery/Overview/Overview
    SchemaRefinery/Overview/Installation
+   SchemaRefinery/Overview/Contacts
 
 .. toctree::
    :maxdepth: 1
