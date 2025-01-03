@@ -20,7 +20,7 @@ Procedure
 
 1. Open a terminal window.
 
-2. Follow the following steps: :docs:`DownloadAssemblies tutorial <DownloadAssembliesTutorial <SchemaRefinery/Tutorials/DownloadAssembliesTutorial>`.
+2. Follow the following steps: :doc:`DownloadAssemblies tutorial <DownloadAssembliesTutorial <SchemaRefinery/Tutorials/DownloadAssembliesTutorial>`.
 
 3. Based on the downloaded assemblies choose those that you want to use as schema seed (e.g best quality, most complete, etc.), create a schema using the `CreateSchema` module from chewBBACA.
 
@@ -43,7 +43,7 @@ Procedure
 - Replace `/path/to/genome_folder` with the path to the folder containing the downloaded assemblies.
 - Replace `/path/to/output_folder` with the path to the output folder.
 
-5. Follow the following steps: :docs:`IdentifySpuriousGenes Unclassified CDS tutorial <SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS>`.
+5. Follow the following steps: :doc:`IdentifySpuriousGenes Unclassified CDS tutorial <SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS>`.
 
 - In, normal workflow the users would ave to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
 

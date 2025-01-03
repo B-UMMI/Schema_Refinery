@@ -37,11 +37,11 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :ref:`DownloadAssemblies documentation <Download_assemblies>`.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`DownloadAssemblies documentation <Download_assemblies>`.
 
 Conclusion
 ----------
 
 You have successfully downloaded assemblies from NCBI and ENA661K using the `DownloadAssemblies` module.
 
-For more information on the `DownloadAssemblies` module, refer to the :ref:`DownloadAssemblies documentation <Download_assemblies>`.
+For more information on the `DownloadAssemblies` module, refer to the :doc:`DownloadAssemblies documentation <Download_assemblies>`.

@@ -37,4 +37,4 @@ Conclusion
 
 You have successfully identified paralogous loci in a schema using the `IdentifyParalogousLoci` module.
 
-For more information on the `IdentifyParalogousLoci` module, refer to the :ref:`IdentifyParalogousLoci documentation <Identify_paralogous_loci>`.
+For more information on the `IdentifyParalogousLoci` module, refer to the :doc:`IdentifyParalogousLoci documentation <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.

@@ -38,4 +38,4 @@ Conclusion
 
 You have successfully identified spurious genes in a genomic schema using the `IdentifySpuriousGene` module for `Schema`.
 
-For more information on the `IdentifySpuriousGene` module, refer to the :ref:`IdentifySpuriousGene documentation <Identify_spurious_gene>`.
+For more information on the `IdentifySpuriousGene` module, refer to the :doc:`IdentifySpuriousGene documentation <SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema>`.

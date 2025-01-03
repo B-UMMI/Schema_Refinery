@@ -37,5 +37,5 @@ External Links:
 
 - `chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/index.html>`_
 - `chewBBACA GitHub repository <https://github.com/B-UMMI/chewBBACA>`_
-- `ChewieNS <https://chewie-ns.readthedocs.io/en/latest/>`_
+- `ChewieNS documentation <https://chewie-ns.readthedocs.io/en/latest/>`_
 - `ChewieNS website <https://chewbbaca.online>`_

@@ -37,11 +37,11 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
 
 Conclusion
 ----------
 
 Based on output results the user can decide what loci to remove and keep based on the recomendations of the `IdentifySpuriousGenes` module for the Schema.
 
-For more information on the `IdentifySpuriousGenes` module, refer to the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
+For more information on the `IdentifySpuriousGenes` module, refer to the :doc:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
