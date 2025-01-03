@@ -36,11 +36,11 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :doc:`SchemaAnnotation documentation <SchemaRefinery/Modules/Schema_annotation>`.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`SchemaAnnotation documentation <SchemaRefinery/Modules/SchemaAnnotation>`.
 
 Conclusion
 ----------
 
 You have successfully annotated genomic schemas using the `SchemaAnnotation` module.
 
-For more information on the `SchemaAnnotation` module, refer to the :doc:`SchemaAnnotation documentation <SchemaRefinery/Modules/Schema_annotation>`.
+For more information on the `SchemaAnnotation` module, refer to the :doc:`SchemaAnnotation documentation <SchemaRefinery/Modules/SchemaAnnotation>`.

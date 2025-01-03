@@ -42,6 +42,6 @@ To see the expected output structure, refer to the "Outputs" section in the :doc
 Conclusion
 ----------
 
-Based on output results the user can decide what loci to remove and keep based on the recomendations of the `IdentifySpuriousGenes` module.
+Based on output results the user can decide what loci to remove and keep based on the recomendations of the `IdentifySpuriousGenes` module for the Schema.
 
 For more information on the `IdentifySpuriousGenes` module, refer to the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
