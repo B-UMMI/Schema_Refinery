@@ -12,7 +12,7 @@ Welcome to SchemaRefinery's documentation!
    :maxdepth: 1
    :caption: Modules:
 
-   SchemaRefinery/Modules/IdentifySpuriousGenes
+   docs/SchemaRefinery/Modules/IdentifySpuriousGenes
    SchemaRefinery/Modules/MatchSchemas
    SchemaRefinery/Modules/SchemaAnnotation
    SchemaRefinery/Modules/IdentifyParalagousLoci
