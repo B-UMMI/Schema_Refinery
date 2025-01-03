@@ -43,4 +43,4 @@ Conclusion
 
 You have successfully matched genomic schemas using the `MatchSchemas` module.
 
-For more information on the `MatchSchemas` module, refer to the :doc:`MatchSchemas documentation <SchemaRefinery/Modules/Match_schemas>`.
+For more information on the `MatchSchemas` module, refer to the :doc:`MatchSchemas documentation <SchemaRefinery/docs/SchemaRefinery/Modules/Match_schemas>`.
