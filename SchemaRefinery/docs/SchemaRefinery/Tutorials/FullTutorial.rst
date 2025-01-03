@@ -54,10 +54,14 @@ Procedure
 Optional modules to further refine or create a schema:
 ------------------------------------------------------
 
-8. Follow the following steps: :doc:`AdaptLoci tutorial <SchemaRefinery/Tutorials/AdaptLociTutorial>`.
+8. Follow the following steps: :doc:`MatchSchemas tutorial <SchemaRefinery/Tutorials/MatchSchemasTutorial>`.
 
-9. Follow the following steps: :doc:`MatchSchemas tutorial <SchemaRefinery/Tutorials/MatchSchemasTutorial>`.
+- Matches two different schema loci.
 
-10. Follow the following steps: :doc:`SchemaAnnotation tutorial <SchemaRefinery/Tutorials/SchemaAnnotationTutorial>`.
+9. Follow the following steps: :doc:`SchemaAnnotation tutorial <SchemaRefinery/Tutorials/SchemaAnnotationTutorial>`.
 
-11. Follow the following steps: :doc:`IdentifyParalogousLoci tutorial <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.
+- Annotates the schema with additional information from various databases.
+
+10. Follow the following steps: :doc:`IdentifyParalogousLoci tutorial <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.
+
+- Identifies paralogous loci in a schema.
