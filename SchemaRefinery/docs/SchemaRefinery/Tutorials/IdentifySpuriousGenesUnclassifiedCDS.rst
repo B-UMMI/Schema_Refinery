@@ -33,9 +33,14 @@ Procedure
 
 5. Check the output directory for the identified spurious genes (The results are also available in the zenodo files).
 
+Example Output Structure
+------------------------
+
+To see the expected output structure, refer to the "Outputs" section in the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
+
 Conclusion
 ----------
 
 You have successfully classified unclassified coding sequences (CDS) using the `IdentifySpuriousGenes` module for `Unclassified CDS`.
 
-For more information on the `IdentifySpuriousGenes` module, refer to the :ref:`IdentifySpuriousGenes documentation <Identify_spurious_genes>`.
+For more information on the `IdentifySpuriousGenes` module, refer to the :ref:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
