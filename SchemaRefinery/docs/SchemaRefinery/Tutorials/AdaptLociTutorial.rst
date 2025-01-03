@@ -35,11 +35,11 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :doc:`AdaptLoci documentation <SchemaRefinery/Modules/AdaptLoci>`.
+To see the expected output structure, refer to the "Outputs" section in the `AdaptLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/AdaptLoci.html>`_.
 
 Conclusion
 ----------
 
-You have successfully adapted loci from FASTA files into a chewBBACA-compatible schema using the `AdaptLoci` module.
+You have successfully adapted loci in genomic schemas using the `AdaptLoci` module.
 
-For more information on the `AdaptLoci` module, refer to the :doc:`AdaptLoci documentation <SchemaRefinery/Modules/AdaptLoci>`.
+For more information on the `AdaptLoci` module, refer to the `AdaptLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/AdaptLoci.html>`_.

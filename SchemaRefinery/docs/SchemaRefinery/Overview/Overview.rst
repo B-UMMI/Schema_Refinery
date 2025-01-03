@@ -19,49 +19,49 @@ Modules
 
 The repository includes the following main modules:
 
-1. **:doc:`IdentifyParalogousLoci <../SchemaRefinery/Modules/IdentifyParalogousLoci>`**: Identifies paralogous loci in a schema.
-2. **:doc:`IdentifySpuriousGenes <../SchemaRefinery/Modules/Identify_spurious_genes>`**: Identifies spurious genes in a schema.
-3. **:doc:`SchemaAnnotation <../SchemaRefinery/Modules/Schema_annotation>`**: Annotates schemas with additional information.
-4. **:doc:`MatchSchemas <../SchemaRefinery/Modules/Match_schemas>`**: Matches schemas in a directory.
-5. **:doc:`DownloadAssemblies <../SchemaRefinery/Modules/Download_assemblies>`**: Downloads genomic assemblies from various databases.
-6. **:doc:`AdaptLoci <../SchemaRefinery/Modules/Adapt_loci>`**: Adapts loci in fasta format to a schema format.
+1. **`IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`**: Identifies paralogous loci in a schema.
+2. **`IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`**: Identifies spurious genes in a schema.
+3. **`SchemaAnnotation documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/SchemaAnnotation.html>`**: Annotates schemas with additional information.
+4. **`MatchSchemas documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/MatchSchemas.html>`**: Matches schemas in a directory.
+5. **`DownloadAssemblies documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/DownloadAssemblies.html>`**: Downloads genomic assemblies from various databases.
+6. **`AdaptLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/AdaptLoci.html>`**: Adapts loci in fasta format to a schema format.
 
 Modules Usage
 -------------
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-### :doc:`IdentifyParalogousLoci <../SchemaRefinery/Modules/IdentifyParalogousLoci>`
+### `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_
 
 .. code-block:: bash
 
     SR IdentifyParalogousLoci --help
 
-### :doc:`IdentifySpuriousGenes <../SchemaRefinery/Modules/Identify_spurious_genes>`
+### `IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`_
 
 .. code-block:: bash
 
     SR IdentifySpuriousGenes --help
 
-### :doc:`SchemaAnnotation <../SchemaRefinery/Modules/Schema_annotation>`
+### `SchemaAnnotation documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/SchemaAnnotation.html>`_
 
 .. code-block:: bash
 
     SR SchemaAnnotation --help
 
-### :doc:`MatchSchemas <../SchemaRefinery/Modules/Match_schemas>`
+### `MatchSchemas documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/MatchSchemas.html>`_
 
 .. code-block:: bash
 
     SR MatchSchemas --help
 
-### :doc:`DownloadAssemblies <../SchemaRefinery/Modules/Download_assemblies>`
+### `DownloadAssemblies documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/DownloadAssemblies.html>`_
 
 .. code-block:: bash
 
     SR DownloadAssemblies --help
 
-### :doc:`AdaptLoci <../SchemaRefinery/Modules/Adapt_loci>`
+### `AdaptLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/AdaptLoci.html>`_
 
 .. code-block:: bash
 
