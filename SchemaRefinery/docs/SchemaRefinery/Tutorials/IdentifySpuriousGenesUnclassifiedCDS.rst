@@ -36,11 +36,11 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :docs:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
+To see the expected output structure, refer to the "Outputs" section in the :docs:`IdentifySpuriousGenes documentation <docs/SchemaRefinery/Modules/IdentifySpuriousGenes>`.
 
 Conclusion
 ----------
 
 You have successfully classified unclassified coding sequences (CDS) using the `IdentifySpuriousGenes` module for `Unclassified CDS`.
 
-For more information on the `IdentifySpuriousGenes` module, refer to the :ref:`IdentifySpuriousGenes documentation <SchemaRefinery/Modules/IdentifySpuriousGenes>`.
+For more information on the `IdentifySpuriousGenes` module, refer to the :ref:`IdentifySpuriousGenes documentation <docs/SchemaRefinery/Modules/IdentifySpuriousGenes>`.

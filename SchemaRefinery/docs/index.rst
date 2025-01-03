@@ -29,7 +29,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Tutorials/AdaptLociTutorial
    SchemaRefinery/Tutorials/MatchSchemasTutorial
    SchemaRefinery/Tutorials/SchemaAnnotationTutorial
-   SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
+   docs/SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
    SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS
 
 External Links:
