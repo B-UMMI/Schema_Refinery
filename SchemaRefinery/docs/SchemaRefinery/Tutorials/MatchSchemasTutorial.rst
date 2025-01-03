@@ -36,11 +36,11 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :doc:`MatchSchemas documentation <SchemaRefinery/Modules/MatchSchemas>`.
+To see the expected output structure, refer to the "Outputs" section in the `MatchSchemas documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/MatchSchemas.html>`_.
 
 Conclusion
 ----------
 
 You have successfully matched genomic schemas using the `MatchSchemas` module.
 
-For more information on the `MatchSchemas` module, refer to the :doc:`MatchSchemas documentation <SchemaRefinery/Modules/MatchSchemas>`.
+For more information on the `MatchSchemas` module, refer to the `MatchSchemas documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/MatchSchemas.html>`_.
