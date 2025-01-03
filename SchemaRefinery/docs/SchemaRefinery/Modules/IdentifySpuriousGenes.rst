@@ -6,6 +6,8 @@ Description
 
 The `IdentifySpuriousGenes` module parses command-line arguments and initiates the process to identify spurious genes in a schema. This module sets up an argument parser to handle various command-line options for identifying spurious genes and then calls the main function of the `IdentifySpuriousGenes` class with the parsed arguments.
 
+This module takes unclassified CDS or schema loci and matches them against each other, providing a classification for each match. Based on the classification, the best class is chosen to represent the relationship between the two loci. Using these relationships, the user can select the appropriate loci or unclassified CDS group to be included in the schema removing those that are spurious.
+
 Features
 --------
 
