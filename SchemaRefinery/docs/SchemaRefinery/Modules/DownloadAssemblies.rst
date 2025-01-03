@@ -1,4 +1,4 @@
-DownloadAssemblies - Download assemblie sand their metadata from specified databases
+DownloadAssemblies - Download assemblies and their metadata from specified databases
 ====================================================================================
 
 Description
@@ -157,80 +157,17 @@ Folder and file structure for the output directory of the `DownloadAssemblies` m
         ├── failed_to_download.tsv
         └── id_failed_criteria.tsv
 
-Output files and folders description:
--------------------------------------
+.. toctree::
+   :maxdepth: 1
 
-::
-
-    **OutputFolderName**
-        The folder where the output files are stored.
-
-    **assemblies_ncbi.zip**
-        Zip file containing all the assemblies and extra information that the user wants downloaded from NCBI.
-
-    **ena661k_assemblies**
-        Folder containing the assemblies downloaded from ENA661K.
-        
-        **x.contigs.fa.gz**
-            Gzipped FASTA file containing the contigs for the assembly x.
-        
-        **y.contigs.fa.gz**
-            Gzipped FASTA file containing the contigs for the assembly y.
-        
-        **z.contigs.fa.gz**
-            Gzipped FASTA file containing the contigs for the assembly z.
-        
-        **...**
-            Other gzipped FASTA files for the assemblies.
-
-    **metadata_all**
-        Folder containing all the metadata downloaded from NCBI and ENA661K.
-        
-        **biosamples_ids.tsv**
-            TSV file containing the BioSample IDs for the assemblies.
-        
-        **id_matches.tsv**
-            TSV file containing the matches between the BioSample IDs and the assembly IDs and SRA IDs.
-        
-        **all_ids_fetched.tsv**
-            TSV file containing all the IDs fetched from the database.
-        
-        **metadata_biosamples.tsv**
-            TSV file containing the metadata for the BioSamples.
-
-    assemblies_metadata_ena661k.tsv
-        TSV file containing the selected samples from the ENA661K database.
-
-    assemblies_metadata_ncbi.tsv
-        TSV file containing the metadata for the assemblies downloaded from NCBI.
-
-    metadata_ncbi
-        Folder containing metadata related to the NCBI run.
-        
-        assemblies_ids_to_download.tsv
-            TSV file containing the assembly IDs to download.
-        
-        id_failed_criteria.tsv
-            TSV file containing the assembly IDs that failed the filtering criteria.
-
-    metadata_ena661k
-        Folder containing metadata related to the ENA661K run.
-        
-        assemblies_ids_to_download.tsv
-            TSV file containing the assembly IDs to download.
-        
-        failed_to_download.tsv
-            TSV file containing the assembly IDs that failed to download.
-        
-        id_failed_criteria.tsv
-            TSV file containing the assembly IDs that failed the filtering criteria.
+   DownloadAssembliesOutputExplanation
 
 Examples
 --------
 
 Here are some example commands to use the `DownloadAssemblies` module:
 
-D
+.. code-block:: bash
 
     # Download assemblies from NCBI for a specific taxon
     SR DownloadAssemblies -t "Escherichia coli" -db NCBI -o /path/to/output -e email@example.com -th 4 --download

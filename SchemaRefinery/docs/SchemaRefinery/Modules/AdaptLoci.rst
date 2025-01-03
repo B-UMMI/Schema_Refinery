@@ -69,40 +69,10 @@ Folder and file structure for the output directory of the `AdaptLoci` module is 
         ├── z_short.fasta
         └── ...
 
-Output files and folders description:
--------------------------------------
+.. toctree::
+   :maxdepth: 1
 
-::
-
-    **OutputFolderName**
-        The folder where the output files are stored.
-
-    **x.fasta**
-        The fasta file containing the loci.
-
-    **y.fasta**
-        The fasta file containing the loci.
-
-    **z.fasta**
-        The fasta file containing the loci.
-
-    **...**
-        Other fasta files containing the loci.
-
-    **short**
-        The folder containing the short loci.
-        
-        **x_short.fasta**
-            The short fasta file containing the loci.
-        
-        **y_short.fasta**
-            The short fasta file containing the loci.
-        
-        **z_short.fasta**
-            The short fasta file containing the loci.
-        
-        **...**
-            Other short fasta files containing the loci.
+   AdaptLociOutputDescription
 
 Examples
 --------
