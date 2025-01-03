@@ -39,4 +39,25 @@ Procedure
 
     chewBBACA AlleleCall -i /path/to/schema_seed -g /path/to/genome_folder -o /path/to/output_folder -t 4
 
-5. Follow the following steps: :doc:`IdentifyParalogousLoci tutorial <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.
+5. Follow the following steps: :docs:`IdentifySpuriousGenes Unclassified CDS tutorial <SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS>`.
+
+- In, normal workflow the users would ave to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
+
+6. Follow the following steps: :doc:`AdaptLoci tutorial <SchemaRefinery/Tutorials/AdaptLociTutorial>`.
+
+- Pass as input the temp_fastas_path.txt, that has the paths for temp_fastas folder generated in the `IdentifySpuriousGenes` module.
+
+7. Follow the following steps: :doc:`IdentifySpuriousGenes tutorial <SchemaRefinery/Tutorials/IdentifySpuriousGenesTutorialSchema>`.
+
+- In, normal workflow the users would ave to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
+
+Optional modules to further refine or create a schema:
+------------------------------------------------------
+
+8. Follow the following steps: :doc:`AdaptLoci tutorial <SchemaRefinery/Tutorials/AdaptLociTutorial>`.
+
+9. Follow the following steps: :doc:`MatchSchemas tutorial <SchemaRefinery/Tutorials/MatchSchemasTutorial>`.
+
+10. Follow the following steps: :doc:`SchemaAnnotation tutorial <SchemaRefinery/Tutorials/SchemaAnnotationTutorial>`.
+
+11. Follow the following steps: :doc:`IdentifyParalogousLoci tutorial <SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial>`.
