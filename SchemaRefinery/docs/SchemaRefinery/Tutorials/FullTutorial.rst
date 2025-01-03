@@ -39,6 +39,10 @@ Procedure
 
     chewBBACA AlleleCall -i /path/to/schema_seed -g /path/to/genome_folder -o /path/to/output_folder -t 4
 
+- Replace `/path/to/schema_seed` with the path to the `schema_seed` folder.
+- Replace `/path/to/genome_folder` with the path to the folder containing the downloaded assemblies.
+- Replace `/path/to/output_folder` with the path to the output folder.
+
 5. Follow the following steps: :docs:`IdentifySpuriousGenes Unclassified CDS tutorial <SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS>`.
 
 - In, normal workflow the users would ave to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
