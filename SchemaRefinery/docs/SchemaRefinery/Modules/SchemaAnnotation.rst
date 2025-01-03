@@ -462,6 +462,11 @@ Output files and folders description:
         trembl_prots_annotations.tsv
             TrEMBL annotations.
 
+.. toctree::
+   :maxdepth: 1
+
+   SchemaAnnotationOutputExplanation
+
 Report files description
 ------------------------
 
