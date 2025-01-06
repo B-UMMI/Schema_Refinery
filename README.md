@@ -4,48 +4,73 @@
 
 The `SchemaRefinery` repository contains tools and modules for refining genomic schemas. These tools help in identifying paralogous loci, spurious genes, and annotating schemas. The repository supports various genomic data processing tasks and provides configurable parameters for different processes.
 
-## Installation
+# Installation Guide
 
-Current implementation of `SchemaRefinery` is available as a Python package available at [SchemaRefinery GitHub repository](https://github.com/B-UMMI/Schema_Refinery). To install the package, run the following command:
+Follow these steps to install the `SchemaRefinery` package on your system.
 
-1. **Install Python**: Ensure you have Python 3.9 or higher installed. You can download Python from the [official website](https://www.python.org/downloads/).
-
-2. **Install Git**: If you don't have Git installed, you can install it using the following command:
+1. **Install Git**: Ensure that Git is installed on your system. You can install Git using the following command:
 
     ```bash
-    sudo apt-get install git # For Debian-based systems
-    sudo yum install git # For Red Hat-based systems
-    brew install git # For macOS
+    # For macOS
+    brew install git
+
+    # For Ubuntu/Debian
+    sudo apt-get install git
+
+    # For Fedora
+    sudo dnf install git
     ```
 
-3. **Clone the Repository**: Clone the `SchemaRefinery` repository from GitHub:
+2. **Install Conda**: Ensure that Conda is installed on your system. You can install Miniconda (a minimal Conda installer) using the following commands:
 
     ```bash
-    git clone https://github.com/MForofontov/Schema_Refinery.git # Clone the repository
+    # For macOS and Linux
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
+    ```
+
+3. **Clone the Repository**: Clone the [SchemaRefinery](http://_vscodecontentref_/0) repository from GitHub:
+
+    ```bash
+    git clone https://github.com/MForofontov/Schema_Refinery.git
     ```
 
 4. **Change Directory**: Navigate to the cloned repository:
 
     ```bash
-    cd Schema_Refinery # Change directory to the repository
+    cd Schema_Refinery
     ```
 
-5. **Install Dependencies**: Install the required Python packages:
+5. **Create a Conda Environment**: It is recommended to create a conda environment to manage dependencies:
 
     ```bash
-    pip install biopython
+    conda create --name schema_refinery python=3.9
+    conda activate schema_refinery
     ```
 
-6. **Install the Package**: Install the `SchemaRefinery` package:
+6. **Install Dependencies**: Install the required Python packages:
+
+    ```bash
+    conda install blast
+    pip install -r requirements.txt
+    ```
+
+7. **Install the Package**: Install the [SchemaRefinery](http://_vscodecontentref_/1) package:
 
     ```bash
     python setup.py install
     ```
 
-7. **Verify Installation**: Verify the installation by running the following command:
+8. **Verify Installation**: Verify the installation by running the following command:
 
     ```bash
     SR --help
+    ```
+
+9. **Deactivate the Conda Environment**: Once you are done, you can deactivate the conda environment:
+
+    ```bash
+    conda deactivate
     ```
 
 ## Modules
