@@ -74,7 +74,8 @@ Optional modules to further refine or create a schema:
 
 Note
 ----
-The
+
+The assemblies present in NCBI may change, so the results may vary. For exact results as provided in the Zenodo files, use the provided assemblies.
 
 Conclusion
 ----------
