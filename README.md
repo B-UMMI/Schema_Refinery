@@ -77,12 +77,12 @@ Follow these steps to install the `SchemaRefinery` package on your system.
 
 The repository includes the following main modules:
 
-1. **[IdentifyParalogousLoci](#identifyparalogousloci)**: Identifies paralogous loci in a schema.
-2. **[IdentifySpuriousGenes](#identifyspuriousgenes)**: Identifies spurious genes in a schema.
-3. **[SchemaAnnotation](#schemaannotation)**: Annotates schemas with additional information.
-4. **[MatchSchemas](#matchschemas)**: Matches schemas in a directory.
-5. **[DownloadAssemblies](#downloadassemblies)**: Downloads genomic assemblies from various databases.
-6. **[AdaptLoci](#adaptloci)**: Adapts loci in fasta format to a schema format.
+1. **IdentifyParalogousLoci**: Identifies paralogous loci in a schema.
+2. **IdentifySpuriousGenes**: Identifies spurious genes in a schema.
+3. **SchemaAnnotation**: Annotates schemas with additional information.
+4. **MatchSchemas**: Matches schemas in a directory.
+5. **DownloadAssemblies**: Downloads genomic assemblies from various databases.
+6. **AdaptLoci**: Adapts loci in fasta format to a schema format.
 
 ## Dependencies
 
