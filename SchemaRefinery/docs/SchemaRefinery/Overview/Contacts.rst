@@ -10,4 +10,4 @@ For any inquiries or support, please contact the SchemaRefinery team:
 Support
 -------
 
-For technical support, please visit our [GitHub Issues page](https://github.com/B-UMMI/Schema_Refinery/issues) or email us at `imm-bioinfo@medicina.ulisboa.pt <mailto:imm-bioinfo@medicina.ulisboa.pt>`_.
+For technical support, please visit our `GitHub repository <https://github.com/B-UMMI/Schema_Refinery/issues>`_ or email us at `imm-bioinfo@medicina.ulisboa.pt <mailto:imm-bioinfo@medicina.ulisboa.pt>`_.
