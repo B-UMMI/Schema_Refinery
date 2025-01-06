@@ -8,6 +8,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Overview/Overview
    SchemaRefinery/Overview/Installation
    SchemaRefinery/Overview/Contacts
+   SchemaRefinery/Overview/License
 
 .. toctree::
    :maxdepth: 1
