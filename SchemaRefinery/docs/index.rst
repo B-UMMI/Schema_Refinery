@@ -49,3 +49,4 @@ External Links:
 - `Python <https://www.python.org/>`_
 - `Biopython <https://biopython.org/>`_
 - `Requests <https://docs.python-requests.org/en/master/>`_
+- `SchemaRefinery GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_
