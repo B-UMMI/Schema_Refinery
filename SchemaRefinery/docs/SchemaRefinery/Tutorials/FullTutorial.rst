@@ -71,3 +71,14 @@ Optional modules to further refine or create a schema:
 10. Follow the following steps: `IdentifyParalogousLoci tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial.html>`.
 
 - Identifies paralogous loci in a schema.
+
+Note
+----
+The
+
+Conclusion
+----------
+
+You have successfully completed the full workflow of SchemaRefinery, from schema creation to schema refinement using the `SchemaRefinery` modules.
+
+For more information on the `SchemaRefinery` modules, refer to the `SchemaRefinery documentation <https://schema-refinery.readthedocs.io/en/latest/index.html>`_.
