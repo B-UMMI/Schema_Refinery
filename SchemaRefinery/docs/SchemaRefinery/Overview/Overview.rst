@@ -19,19 +19,19 @@ Modules
 
 The repository includes the following main modules:
 
-1. **`IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`**: Identifies paralogous loci in a schema.
-2. **`IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`**: Identifies spurious genes in a schema.
-3. **`SchemaAnnotation documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/SchemaAnnotation.html>`**: Annotates schemas with additional information.
-4. **`MatchSchemas documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/MatchSchemas.html>`**: Matches schemas in a directory.
-5. **`DownloadAssemblies documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/DownloadAssemblies.html>`**: Downloads genomic assemblies from various databases.
-6. **`AdaptLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/AdaptLoci.html>`**: Adapts loci in fasta format to a schema format.
+1. **IdentifyParalogousLoci**: Identifies paralogous loci in a schema.
+2. **IdentifySpuriousGenes**: Identifies spurious genes in a schema.
+3. **SchemaAnnotation**: Annotates schemas with additional information.
+4. **MatchSchemas **: Matches schemas in a directory.
+5. **DownloadAssemblies**: Downloads genomic assemblies from various databases.
+6. **AdaptLoci **: Adapts loci in fasta format to a schema format.
 
 Modules Usage
 -------------
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-### `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_
+### `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalagousLoci.html>`_
 
 .. code-block:: bash
 

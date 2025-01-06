@@ -111,9 +111,6 @@ Folder and file structure for the output directory of the `IdentifyParalogousLoc
     ├── paralogous_loci_report_cluster_by_id.tsv
     └── paralogous_loci_report_passed_all_checks.tsv
 
-Output files and folders description:
--------------------------------------
-
 .. toctree::
    :maxdepth: 1
 
