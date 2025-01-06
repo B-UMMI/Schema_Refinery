@@ -30,6 +30,7 @@ Procedure
 
 - Replace `/path/to/input_folder` with the path to the folder containing the downloaded assemblies.
 - Replace `/path/to/output_folder` with the path to the output folder.
+- For more information on the `CreateSchema` module, refer to the `chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/user/modules/CreateSchema.html>`_.
 
 .. Note:: The `CreateSchema` module will generate a `schema_seed` folder containing the schema seed.
 
@@ -42,6 +43,7 @@ Procedure
 - Replace `/path/to/schema_seed` with the path to the `schema_seed` folder.
 - Replace `/path/to/genome_folder` with the path to the folder containing the downloaded assemblies.
 - Replace `/path/to/output_folder` with the path to the output folder.
+- For more information on the `AlleleCall` module, refer to the `chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/user/modules/AlleleCall.html>`_.
 
 5. Follow the following steps: `IdentifySpuriousGenes Unclassified CDS tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS.html>`.
 
