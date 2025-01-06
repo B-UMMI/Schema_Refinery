@@ -85,4 +85,4 @@ Additional Information
 
         pip uninstall SchemaRefinery
 
-- **Troubleshooting**: If you encounter any issues during installation, ensure that all dependencies are installed and that you are using a compatible version of Python. You can also refer to the [GitHub repository](https://github.com/MForofontov/Schema_Refinery) for more information and support.
+- **Troubleshooting**: If you encounter any issues during installation, ensure that all dependencies are installed and that you are using a compatible version of Python. You can also refer to the `GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_ for more information and support.
