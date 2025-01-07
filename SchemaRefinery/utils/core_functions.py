@@ -1596,7 +1596,7 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
             # If the cluster is matched and not joined, write the results
             if is_matched.get(cluster_id) and class_ != '1a':
                 queries: Set[str] = is_matched[cluster_id]
-                cluster: Set[str] = is_matched_alleles[cluster_id]
+                cluster = is_matched_alleles[cluster_id]
                 write_dict = {
                     query: {
                         subject: {id_: entry for id_, entry in entries.items()}

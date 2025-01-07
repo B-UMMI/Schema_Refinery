@@ -268,7 +268,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         else:
             ff.copy_folder(schema_directory, schema_folder)
 
-        dropped_alleles: Dict[str, str] = {} # Empty dict to store dropped alleles
+        dropped_alleles = {} # Empty dict to store dropped alleles
         # Get all the relevant data
         (all_nucleotide_sequences,
         master_file_path,
