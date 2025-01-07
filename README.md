@@ -1,6 +1,6 @@
 # SchemaRefinery - A Tool for Refining Genomic Schemas
 
-For more detailed description refer to [SchemaRefeniry documentation][https://schema-refinery.readthedocs.io/en/latest/index.html]
+For more detailed description refer to [SchemaRefinery documentation](https://schema-refinery.readthedocs.io/en/latest/index.html)
 
 ## Description
 
@@ -31,7 +31,7 @@ Follow these steps to install the `SchemaRefinery` package on your system.
     bash Miniconda3-latest-Linux-x86_64.sh
     ```
 
-3. **Clone the Repository**: Clone the [SchemaRefinery](http://_vscodecontentref_/0) repository from GitHub:
+3. **Clone the Repository**: Clone the [SchemaRefinery](https://github.com/B-UMMI/Schema_Refinery.git) repository from GitHub:
 
     ```bash
     git clone https://github.com/MForofontov/Schema_Refinery.git
@@ -57,7 +57,7 @@ Follow these steps to install the `SchemaRefinery` package on your system.
     pip install -r requirements.txt
     ```
 
-7. **Install the Package**: Install the [SchemaRefinery](http://_vscodecontentref_/1) package:
+7. **Install the Package**: Install the [SchemaRefinery](https://github.com/B-UMMI/Schema_Refinery.git) package:
 
     ```bash
     python setup.py install
