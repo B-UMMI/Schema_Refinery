@@ -3,7 +3,7 @@
 
 import os
 import sys
-from typing import Any, List, Dict, Optional, Set
+from typing import Any, List, Dict, Optional, Set, Tuple
 
 try:
     from utils import (core_functions as cof,
@@ -320,7 +320,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nFiltering BLAST results into classes...")
     # Separate results into different classes.
-    classes_outcome: List[str] = cof.separate_blast_results_into_classes(representative_blast_results,
+    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
     print("\nProcessing classes...")
@@ -346,7 +346,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to maintain and to display to user.
-    clusters_to_keep: Dict[str, List[str]]
+    clusters_to_keep: tp.MergedAllClasses
     dropped_loci_ids: List[str]
     clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
     

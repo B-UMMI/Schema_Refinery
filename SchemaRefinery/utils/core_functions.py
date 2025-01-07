@@ -771,7 +771,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
-                    dropped_loci_ids: List[str], classes_outcome: List[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
+                    dropped_loci_ids: List[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
 
@@ -787,7 +787,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         A dictionary containing identifiers to check for a joined condition.
     dropped_loci_ids : List[str]
         A list of possible loci to drop.
-    classes_outcome : List[str]
+    classes_outcome : Tuple[str]
         A list of class outcomes.
 
     Returns
@@ -1510,7 +1510,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
             
-            filtered_alignments_dict: Dict[str, Dict[str, Any]]
+            filtered_alignments_dict
             filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
 
             # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
@@ -1573,7 +1573,7 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
             # Determine cluster type
             if isinstance(cds, dict):
                 cluster_id: str = cluster[0]
-                cluster: List[str] = cluster[1]
+                cluster = cluster[1]
                 cluster_type: str = 'joined_cluster'
                 cluster = cds[cluster_id]
             else:
@@ -1611,14 +1611,14 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
 
     # Process classes
     for class_ in classes_outcome:
-        write_dict: Dict[str, Dict[str, Dict[str, Any]]] = {
+        write_dict = {
             query: {
                 subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
                 for subject, entries in subjects.items()
             }
             for query, subjects in representative_blast_results.items()
         }
-        report_file_path: str = os.path.join(blast_results_by_class_output, f"blastn_group_{class_}.tsv")
+        report_file_path = os.path.join(blast_results_by_class_output, f"blastn_group_{class_}.tsv")
         alignment_dict_to_file(write_dict, report_file_path, 'w')
 
 
@@ -2018,115 +2018,6 @@ def add_cds_to_dropped_cds(drop_possible_loci: List[str], dropped_cds: Dict[str,
         else:
             for cds_id in clusters[drop_id]:
                 dropped_cds[cds_id] = reason
-
-
-#Unused
-def identify_problematic_new_loci(clusters_to_keep: Dict[str, Dict[int, List[int]]], all_alleles: Dict[int, List[int]], 
-                                  cds_present: str, all_nucleotide_sequences: Dict[int, str], constants: List[Any], 
-                                  results_output: str) -> Set[int]:
-    """
-    Identify problematic new loci based on the presence of NIPHs and NIPHEMs.
-
-    Parameters
-    ----------
-    clusters_to_keep : Dict[str, Dict[int, List[int]]]
-        A dictionary where keys are class labels and values are dictionaries with cluster IDs as keys 
-        and lists of cluster members as values. For key '1a', the values are dicts with joined cluster
-        ID as key and list as value.
-    all_alleles : Dict[int, List[int]]
-        A dictionary where keys are cluster IDs and values are lists of allele IDs.
-    cds_present : str
-        Path to the distinct.hashtable file.
-    all_nucleotide_sequences : Dict[int, str]
-        A dictionary where keys are allele IDs and values are sequences not included in the schema.
-    constants : List[Any]
-        A list of constants used in the function. The 9th element (index 8) is the threshold for 
-        problematic proportion.
-    results_output : str
-        The path to the directory where the output file will be saved.
-
-    Returns
-    -------
-    dropped_problematic : Set[int]
-        The updated set of cluster IDs that should be dropped.
-
-    Notes
-    -----
-    - The function first decodes the CDS sequences from the provided file.
-    - It then iterates through the clusters to keep, identifying NIPHs and NIPHEMs for each cluster.
-    - It calculates the proportion of problematic genomes for each cluster and determines if it should be dropped.
-    - Finally, it writes the results to a TSV file in the specified output directory.
-    """
-    # Initialize the set to store problematic cluster IDs to be dropped
-    dropped_problematic: Set[int] = set()
-    
-    # Decode the CDS sequences from the provided file
-    decoded_sequences_ids: Dict[str, List[Any]] = itf.decode_CDS_sequences_ids(cds_present)
-    
-    # Initialize dictionaries to store NIPHEMs and NIPHs in possible new loci
-    niphems_in_possible_new_loci: Dict[int, List[int]] = {}
-    niphs_in_possible_new_loci: Dict[int, Set[int]] = {}
-    temp_niphs_in_possible_new_loci: Dict[int, Dict[int, Set[int]]] = {}
-    total_possible_new_loci_genome_presence: Dict[int, int] = {}
-    problematic_loci: Dict[int, float] = {}
-    
-    # Iterate through the clusters to keep
-    for class_, cluster_keep in clusters_to_keep.items():
-        for cluster_id in cluster_keep:
-            niphems_in_possible_new_loci.setdefault(cluster_id, [])
-            temp_niphs_in_possible_new_loci.setdefault(cluster_id, {})
-            
-            # Flatten the list of alleles for class '1a'
-            if class_ == '1a':
-                cluster: List[int] = itf.flatten_list([all_alleles[i] for i in clusters_to_keep['1a'][cluster_id]])
-            else:
-                cluster = all_alleles[cluster_id]
-            
-            # Iterate through each allele in the cluster
-            for allele_id in cluster:
-                sequence: str = all_nucleotide_sequences[allele_id]
-                hashed_seq: str = sf.seq_to_hash(str(sequence))
-                allele_presence_in_genomes: List[int] = decoded_sequences_ids[hashed_seq][1:]
-                
-                # NIPHs
-                temp_niphs_in_possible_new_loci[cluster_id].setdefault(allele_id, set(allele_presence_in_genomes))
-                
-                # NIPHEMs
-                unique_elements: Set[int] = set(allele_presence_in_genomes)
-                if len(unique_elements) != len(allele_presence_in_genomes):
-                    niphems_genomes: List[int] = itf.get_duplicates(allele_presence_in_genomes)
-                    niphems_in_possible_new_loci.setdefault(cluster_id, []).extend(niphems_genomes)
-            
-            # Get shared NIPHs in genomes
-            niphs_in_genomes: Set[int] = set(itf.get_shared_elements(temp_niphs_in_possible_new_loci[cluster_id]))
-            niphs_in_possible_new_loci.setdefault(cluster_id, niphs_in_genomes)
-            
-            # Get NIPHEMs in genomes
-            niphems_in_genomes: Set[int] = set(niphems_in_possible_new_loci[cluster_id])
-            
-            # Calculate problematic genomes in possible new loci
-            problematic_genomes_in_possible_new_loci: Set[int] = niphs_in_genomes | niphems_in_genomes
-            
-            # Calculate total possible new loci genome presence
-            total_possible_new_loci_genome_presence[cluster_id] = len(set(itf.flatten_list(temp_niphs_in_possible_new_loci[cluster_id].values())))
-            
-            # Calculate problematic proportion
-            problematic_proportion: float = len(problematic_genomes_in_possible_new_loci) / total_possible_new_loci_genome_presence[cluster_id]
-            problematic_loci.setdefault(cluster_id, problematic_proportion)
-            
-            # Determine if the cluster should be dropped
-            if problematic_proportion >= constants[8]:
-                dropped_problematic.add(cluster_id)
-    
-    # Write the groups that were removed due to the presence of NIPHs or NIPHEMs
-    niphems_and_niphs_file: str = os.path.join(results_output, 'niphems_and_niphs_groups.tsv')
-    with open(niphems_and_niphs_file, 'w') as niphems_and_niphs:
-        niphems_and_niphs.write('Group_ID\tProportion_of_NIPHs_and_NIPHEMs\tOutcome\n')
-        for group, proportion in problematic_loci.items():
-            outcome: str = 'Dropped' if group in dropped_problematic else 'Kept'
-            niphems_and_niphs.write(f"{group}\t{proportion}\t{outcome}\n")
-    
-    return dropped_problematic
 
 
 def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], dropped_cds: Dict[str, str], 
