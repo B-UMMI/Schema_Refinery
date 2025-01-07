@@ -1310,7 +1310,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
     relationships: List[Tuple[str, str]] = itf.flatten_list(all_relationships.values())
     
     # Change IDs to remove suffixes
-    changed_ids: List[Tuple[str, str]] = [[r[0], r[1].split('_')[0]] for r in relationships]
+    changed_ids: List[List[str]] = [[r[0], r[1].split('_')[0]] for r in relationships]
     
     # Identify loci that had matches in the sorted BLAST results
     had_matches: Set[str] = set([rep.split('_')[0] for rep in sorted_blast_dict])
