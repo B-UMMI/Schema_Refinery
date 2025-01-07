@@ -26,7 +26,7 @@ except ModuleNotFoundError:
                                         constants as ct,
                                         Types as tp)
 
-def create_directories(output_directory: str, run_mode: str) -> List[Optional[str]]:
+def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """
     Create necessary directories for the processing pipeline.
 
@@ -75,7 +75,7 @@ def create_directories(output_directory: str, run_mode: str) -> List[Optional[st
     blast_results: str = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
     
-    return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
+    return initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results
 
 
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
@@ -360,8 +360,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a,  frequency_in_genomes)
     
         # Open dict to store IDs of the reps and alleles
-        group_reps_ids: Dict[str, Set[str]] = {}
-        group_alleles_ids: Dict[str, Set[str]] = {}
+        group_reps_ids = {}
+        group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
         group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
                                                                                 processing_mode,
