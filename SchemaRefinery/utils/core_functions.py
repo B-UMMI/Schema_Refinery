@@ -1510,10 +1510,10 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
                                 repeat(blastp_results_ss_folder)):
             
             self_score: Dict[str, float]
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, True, True, True, False)
+            _, self_scores, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, True)
     
             # Save self-score
-            self_score_dict[res[0]] = self_score
+            self_score_dict.update(self_scores)
                             
             print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
             i += 1
@@ -1539,7 +1539,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
                 for subject_id, results in subjects_dict.items():
                     # Highest score (First one)
                     subject_score: float = next(iter(results.values()))['score']
-                    bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[res[0]])})
+                    bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
         
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
