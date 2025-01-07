@@ -307,8 +307,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                         to_blast_paths,
                         blast_output,
                         constants,
-                        cpu,
-                        all_alleles)
+                        cpu)
     
     # Add various results to the dict
     cof.add_items_to_results(representative_blast_results,

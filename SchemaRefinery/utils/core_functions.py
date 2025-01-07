@@ -1334,9 +1334,8 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
     return is_matched, is_matched_alleles
 
 
-def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
-               output_dir: str, constants: List[Any], cpu: int,
-               multi_fasta: Dict[str, List[str]]) -> Tuple[tp.BlastDict, 
+def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
+               output_dir: str, constants: List[Any], cpu: int) -> Tuple[tp.BlastDict, 
                                                            tp.RepresentativeBlastResultsCoords, 
                                                            tp.RepresentativeBlastResultsCoords, 
                                                            tp.BSRValues, 
@@ -1348,7 +1347,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     ----------
     blast_db : str
         Path to the BLAST db folder.
-    cds_to_blast : List[str]
+    all_alleles : Dict[str, List[str]]
         A list of CDS IDs to be used for BLASTn against the BLAST db.
     reps_translation_dict : Dict[str, str]
         A dictionary mapping sequence IDs to their translations (amino acid sequences).
@@ -1360,9 +1359,6 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
         A list of constants used within the function, such as thresholds for filtering BLAST results.
     cpu : int
         The number of CPU cores to use for parallel processing.
-    multi_fasta : Dict[str, List[str]]
-        A dictionary used when the input FASTA files contain multiple CDSs, to ensure correct BLASTn
-        execution.
 
     Returns
     -------
@@ -1384,7 +1380,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     ff.create_directory(blastn_results_folder)
     # Run BLASTn
     # Calculate max id length for print.
-    max_id_length: int = len(max(cds_to_blast, key=len))
+    max_id_length: int = len(max(all_alleles, key=len))
     total_reps: int = len(rep_paths_nuc)
     representative_blast_results: tp.BlastDict = {}
     representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords = {}
@@ -1397,7 +1393,7 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
                                 repeat(get_blastn_exec),
                                 repeat(blast_db),
                                 rep_paths_nuc.values(),
-                                cds_to_blast,
+                                all_alleles,
                                 repeat(blastn_results_folder)):
             filtered_alignments_dict: Dict[str, Dict[str, Any]]
             alignment_coords_all: Dict[str, Dict[str, Any]]
@@ -1416,8 +1412,8 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
 
     print("\nRunning BLASTp based on BLASTn results matches...")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
-    # Based on BLASTn results.
-    blastp_runs_to_do: Dict[str, List[str]] = {query: itf.flatten_list([[subject[1]['subject']
+    # Based on BLASTn results get all alleles that matches by BLASTn.
+    alleles_matches: Dict[str, List[str]] = {query: itf.flatten_list([[subject[1]['subject']
                                             for subject in subjects.values()]]) 
                          for query, subjects in representative_blast_results.items()}
     
@@ -1443,56 +1439,50 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     # Write the protein FASTA files.
     rep_paths_prot: Dict[str, str] = {}
     rep_matches_prot: Dict[str, str] = {}
-    if multi_fasta:
-        blasts_to_run: Dict[str, Set[str]] = {}
-        seen_entries: Dict[str, Set[str]] = {}
-    for query_id, subjects_ids in blastp_runs_to_do.items():
-        
-        filename: Union[str, None] = itf.identify_string_in_dict_get_key(query_id, multi_fasta)
-        if filename is not None:
-            blasts_to_run.setdefault(filename, set()).update(subjects_ids)
-            seen_entries[filename] = set()
-        else:
-            filename = query_id
-            seen_entries[filename] = set()
-            blasts_to_run.setdefault(filename, set()).update(subjects_ids)
+
+    blastp_runs_to_do: Dict[str, Set[str]] = {}
+    seen_entries: Dict[str, Set[str]] = {}
+    for query_id, subjects_ids in alleles_matches.items():
+        # Get the filename
+        filename: str = query_id.split('_')[0]
         # First write the representative protein sequence.
         rep_translation_file: str = os.path.join(representatives_blastp_folder,
                                             f"cluster_rep_translation_{filename}.fasta")
         
         write_type: str = 'a' if os.path.exists(rep_translation_file) else 'w'
-        
+        # Write the query allele translation
         rep_paths_prot[filename] = rep_translation_file
         with open(rep_translation_file, write_type) as trans_fasta_rep:
             trans_fasta_rep.writelines(">"+query_id+"\n")
             trans_fasta_rep.writelines(str(reps_translation_dict[query_id])+"\n")
+
         # Then write in another file all of the matches for that protein sequence
-        # including the representative itself.
         rep_matches_translation_file: str = os.path.join(blastn_results_matches_translations,
                                                     f"cluster_matches_translation_{filename}.fasta")
-        
+        # Write the matches protein sequences
         rep_matches_prot[filename] = rep_matches_translation_file
+        seen_entries.setdefault(filename, set())
+        blastp_runs_to_do.setdefault(filename, set())
         with open(rep_matches_translation_file, write_type) as trans_fasta:            
             for subject_id in subjects_ids:
-                if multi_fasta:
-                    if subject_id in seen_entries[filename]:
-                        continue
+                if subject_id in seen_entries[filename]:
+                    continue
 
                 trans_fasta.writelines(">"+subject_id+"\n")
                 trans_fasta.writelines(str(reps_translation_dict[subject_id])+"\n")
-                
-            if multi_fasta:  
-                seen_entries.setdefault(filename, set()).update(subjects_ids)
+
+                blastp_runs_to_do[filename].add(subject_id)
+
+            seen_entries[filename].update(subjects_ids)
 
     # Calculate BSR based on BLASTp.
     bsr_values: tp.BSRValues = {}
     
     # Create query entries
-    for query in blastp_runs_to_do:
+    for query in alleles_matches.keys():
         bsr_values[query] = {}
-        
-    if multi_fasta:
-        blastp_runs_to_do = blasts_to_run
+    
+
     # Total number of runs
     total_blasts: int = len(blastp_runs_to_do)
     # If there is need to calculate self-score
