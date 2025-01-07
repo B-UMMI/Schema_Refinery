@@ -1497,26 +1497,15 @@ def run_blasts(blast_db: str, cds_to_blast: List[str], reps_translation_dict: Di
     total_blasts: int = len(blastp_runs_to_do)
     # If there is need to calculate self-score
     print("\nCalculate self-score for the CDSs...")
-    self_score_dict: Dict[str, float] = {}
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
     i = 1
     # Calculate self-score
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_self_score_multiprocessing,
-                                rep_paths_prot.keys(),
-                                repeat(get_blastp_exec),
-                                rep_paths_prot.values(),
-                                repeat(blastp_results_ss_folder)):
-            
-            self_score: Dict[str, float]
-            _, self_scores, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, True)
-    
-            # Save self-score
-            self_score_dict.update(self_scores)
-                            
-            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
-            i += 1
+    self_score_dict: Dict[str, float] = bf.calculate_self_score(rep_paths_prot,
+                                                                get_blastp_exec,
+                                                                blastp_results_ss_folder,
+                                                                max_id_length,
+                                                                cpu)
     # Print newline
     print('\n')  
     
