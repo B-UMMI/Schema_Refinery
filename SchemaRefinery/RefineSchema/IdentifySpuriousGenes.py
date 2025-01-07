@@ -3,7 +3,7 @@
 
 import os
 import sys
-from typing import Any, List, Dict, Optional, Set
+from typing import Any, List, Dict, Optional, Set, Tuple
 
 try:
     from utils import (core_functions as cof,
@@ -26,7 +26,7 @@ except ModuleNotFoundError:
                                         constants as ct,
                                         Types as tp)
 
-def create_directories(output_directory: str, run_mode: str) -> List[Optional[str]]:
+def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """
     Create necessary directories for the processing pipeline.
 
@@ -75,7 +75,7 @@ def create_directories(output_directory: str, run_mode: str) -> List[Optional[st
     blast_results: str = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
     
-    return [initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results]
+    return initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results
 
 
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
@@ -268,7 +268,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         else:
             ff.copy_folder(schema_directory, schema_folder)
 
-        dropped_alleles: Dict[str, str] = {} # Empty dict to store dropped alleles
+        dropped_alleles = {} # Empty dict to store dropped alleles
         # Get all the relevant data
         (all_nucleotide_sequences,
         master_file_path,
@@ -307,8 +307,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                         to_blast_paths,
                         blast_output,
                         constants,
-                        cpu,
-                        all_alleles)
+                        cpu)
     
     # Add various results to the dict
     cof.add_items_to_results(representative_blast_results,
@@ -321,7 +320,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     print("\nFiltering BLAST results into classes...")
     # Separate results into different classes.
-    classes_outcome: List[str] = cof.separate_blast_results_into_classes(representative_blast_results,
+    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
     print("\nProcessing classes...")
@@ -347,7 +346,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to maintain and to display to user.
-    clusters_to_keep: Dict[str, List[str]]
+    clusters_to_keep: tp.MergedAllClasses
     dropped_loci_ids: List[str]
     clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
     
@@ -361,8 +360,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a,  frequency_in_genomes)
     
         # Open dict to store IDs of the reps and alleles
-        group_reps_ids: Dict[str, Set[str]] = {}
-        group_alleles_ids: Dict[str, Set[str]] = {}
+        group_reps_ids = {}
+        group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
         group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
                                                                                 processing_mode,

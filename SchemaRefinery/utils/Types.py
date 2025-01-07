@@ -13,7 +13,7 @@ class MergedAllClasses(TypedDict, total=False):
     b4: List[str]
     c4: List[str]
     five: List[str]
-    retained_not_matched_by_blastn: List[str]
+    retained_not_matched_by_blastn: Set[str]
 
 class BlastResult(TypedDict):
     query: str
@@ -40,14 +40,11 @@ class BlastResult(TypedDict):
     local_palign_min: float
     class_: str 
 
-class BlastDict(TypedDict):
-    query: Dict[str, Dict[int, BlastResult]]
+BlastDict = Dict[str, Dict[str, List[BlastResult]]]
 
-class RepresentativeBlastResultsCoords(TypedDict):
-    query: Dict[str, Dict[str, List[Tuple[int, int]]]]
+RepresentativeBlastResultsCoords = Dict[str, Dict[str, Dict[str, List[Tuple[int, int]]]]]
 
-class BSRValues(TypedDict):
-    query_id: Dict[str, float]
+BSRValues = Dict[str, Dict[str, float]]
 
 class ProcessedResult(TypedDict):
     class_: str
@@ -56,30 +53,23 @@ class ProcessedResult(TypedDict):
     pair: Tuple[str, str]
     combined_list: List[str]
 
-class ProcessedResults(TypedDict):
-    query_subject: Tuple[ProcessedResult]
+ProcessedResults = Dict[str, Tuple[ProcessedResult]]
 
-class CountResultsByClass(TypedDict):
-    query_subject: Dict[str, OrderedDict[str, int]]
+CountResultsByClass = Dict[str, Dict[str, OrderedDict[str, int]]]
 
 class ClassCount(TypedDict):
     direct_class: int
     inverse_class: int
 
-class CountResultsByClassWithInverse(TypedDict):
-    query_subject: Dict[str, Dict[str, List[ClassCount]]]
+CountResultsByClassWithInverse = Dict[str, Dict[str, Dict[str, List[ClassCount]]]]
 
-class RepsAndAllelesIds(TypedDict):
-    query_subject: Tuple[Set[str], Set[str]]
+RepsAndAllelesIds = Dict[str, Tuple[Set[str], Set[str]]]
 
-class AllRelationships(TypedDict):
-    class_: List[List[str]]
+AllRelationships = Dict[str, List[List[str]]]
 
-class RelatedClusters(TypedDict):
-    cluster_id: Dict[int, List[str]]
+RelatedClusters = Dict[str, Dict[int, List[str]]]
 
-class Recomendations(TypedDict):
-    cluster_id: Dict[int, Dict[str, Set[str]]]
+Recomendations = Dict[str, Dict[int, Dict[str, Set[str]]]]
 
 class Metadata(TypedDict):
     total_count: int
