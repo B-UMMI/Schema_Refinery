@@ -846,6 +846,17 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         # Additional condition for the choice data (* means Dropped loci ID)
         additional_condition = lambda v: '*' in v[4][0] or '*' in v[4][1]
 
+        return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) 
+                                                                          for v in processed_results.values()
+                                                                          if v[0] not in ['1a', '1b', '2a', '3a', '4a', '4c','5']
+                                                                          or ((itf.identify_string_in_dict_get_key(v[3][0], to_cluster_list)
+                                                                               and additional_condition(v))
+                                                                               or (itf.identify_string_in_dict_get_key(v[3][1], to_cluster_list)
+                                                                                   and additional_condition(v)))]), 1)}
+
+        """
+        Code to separate the choices into clusters based on the class of choice.
+
         classes_to_fetch_choice = ['1c', '2b', '3b'] # Classes of choice
         choices_to_cluster = {keys: [] for keys in classes_to_fetch_choice}
         # For each choice class, select every entry ID that are part of the same to_cluster_list and share similiar class.
@@ -856,7 +867,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                         choices_to_cluster[class_].append(key_extractor(v))
                 else:
                     continue
-        
+
         clustered_choices = {}
         i = 0
         # Cluster the selected choices
@@ -865,9 +876,9 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
             for cluster in clustered:
                 clustered_choices[i] = cluster
                 i += 1
-
+                
         return clustered_choices
-
+        """
     def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: tp.MergedAllClasses) -> Tuple[str, str, str]:
         """
         Process an identifier to check its presence in specific lists.
@@ -1055,16 +1066,16 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                 if not if_query_dropped and not if_subject_dropped and not if_same_joined:
                     # If not already reported (other Joined elements already reported with Joined ID)
                     if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
-                        add_to_recommendations(f'Choice_{results[0]}', query_to_write, key, recommendations, choice_id)
-                        add_to_recommendations(f'Choice_{results[0]}', subject_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice', query_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice', subject_to_write, key, recommendations, choice_id)
             # Process cases where some ID is dropped
             elif results[0] in ['1b', '2a', '3a', '4a']:
                 # If it is part of a joined cluster and it gets dropped, add to the recommendations
                 if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]) and not if_same_joined:
                     # If not already reported (other Joined elements already reported with Joined ID)
                     if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
-                        add_to_recommendations(f'Choice_{results[0]}', query_to_write, key, recommendations, choice_id)
-                        add_to_recommendations(f'Choice_{results[0]}', subject_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice', query_to_write, key, recommendations, choice_id)
+                        add_to_recommendations(f'Choice', subject_to_write, key, recommendations, choice_id)
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
                 if if_query_dropped:
                     # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
@@ -1633,7 +1644,7 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
 
 
 def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: tp.CountResultsByClass, 
-                            drop_mark: Set[int]) -> Tuple[Dict[int, List[str]], Dict[str, List[str]], Set[str]]]]:
+                            drop_mark: Set[int]) -> Tuple[Dict[int, List[str]], Dict[str, List[str]], Set[str]]:
     """
     Extracts and organizes CDS (Coding Sequences) to keep based on classification outcomes.
 

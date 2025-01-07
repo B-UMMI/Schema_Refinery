@@ -100,18 +100,18 @@ def create_schema_structure(instructions_file: str,
                             continue
                         else:
                             processed_files.append(id) # Add the ID to the processed_files list
-                            fasta_file: str = fastas_files.pop(id) # Get the FASTA file path
-                            output_file: str = os.path.join(output_directory, f'{fasta_file}.fasta')
+                            fasta_file = fastas_files.pop(id) # Get the FASTA file path
+                            output_file = os.path.join(output_directory, f'{fasta_file}.fasta')
                             shutil.copy(fasta_file, output_file)
                             print(f'File {id} copied to {output_file}')
             else:
                 processed_files.append(ids_list[0]) # Add the ID to the processed_files list
-                fasta_file: str = fastas_files.pop(ids_list[0]) # Get the FASTA file path
+                fasta_file = fastas_files.pop(ids_list[0]) # Get the FASTA file path
                 print(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action")
 
     print("Adding all of the remaining files that were not dropped or had action to do.")
     # For each ID in the fastas_files dictionary
     for id, fasta_file in fastas_files.items():
-        output_file: str = os.path.join(output_directory, f'{id}.fasta') # Create the output file path
+        output_file = os.path.join(output_directory, f'{id}.fasta') # Create the output file path
         shutil.copy(fasta_file, output_file) # Copy the FASTA file to the output file
         print(f'File {id} copied to {output_file}')
