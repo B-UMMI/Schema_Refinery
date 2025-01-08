@@ -103,8 +103,7 @@ We welcome contributions to the SchemaRefinery project. If you would like to con
 License
 -------
 
-This project is licensed under the MIT License. See the `LICENSE <https://opensource.org/license/mit>`_ file for details.
-
+This project is licensed under the GNU General Public License v3.0. See the `LICENSE <https://www.gnu.org/licenses/gpl-3.0.html>`_ file for details.
 Contact Information
 -------------------
 
