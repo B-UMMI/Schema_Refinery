@@ -324,7 +324,7 @@ columns description:
     :widths: 20, 80
 
     Joined_x, "x,y,z"
-    Choice_2b, "x,u,t"
+    Choice, "x,u,t"
     Drop, j
     #,
     Joined_a, "a,b,c"
