@@ -108,7 +108,7 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
         # If selected_columns is not empty, extract the values for the selected columns
         if selected_columns:
             # Get database name
-            db_name = selected_columns[0].split('_')[0]
+            db_name = selected_columns[1].split('_')[0]
             # Get the selected columns from the row as a dictionary
             selected_columns_dict = row[selected_columns].to_dict()
             # Add the database name to the dictionary

@@ -206,6 +206,8 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         Number of CPU cores to use.
     processing_mode : str
         Mode of processing.
+    no_cleanup : bool
+        If True, temporary files will not be removed.
 
     Returns
     -------
