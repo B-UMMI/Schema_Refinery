@@ -42,10 +42,6 @@ def main(args: Namespace) -> None:
     # Initialize a list to store result files
     results_files: List[str] = []
 
-    # Add Chewie annotations to the results files if provided
-    if args.chewie_annotations:
-        results_files.extend(args.chewie_annotations)
-
     # Check if 'uniprot-proteomes' is in the annotation options
     if 'uniprot-proteomes' in args.annotation_options:
         uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
@@ -120,7 +116,12 @@ def main(args: Namespace) -> None:
         
         results_files.append(matched_schemas)
 
+    # Add Chewie annotations to the results files if provided
+    if args.chewie_annotations:
+        results_files.extend(args.chewie_annotations)
+
     merged_file_path = os.path.join(args.output_directory, 'annotations_summary.tsv')
+
     # If only one result file is present, copy it to the output directory
     if len(results_files) == 1:
         shutil.copy(results_files[0], merged_file_path)

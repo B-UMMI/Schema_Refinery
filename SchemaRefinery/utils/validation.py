@@ -349,6 +349,10 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     # Verify if files or directories exist
     verify_schema_sctructure(args.schema_directory)
 
+    # Chewie annotations
+    if args.chewie_annotations:
+        verify_path_exists(args.chewie_annotations, 'file')
+
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
         if args.proteome_ids_to_add and not args.proteome_table:

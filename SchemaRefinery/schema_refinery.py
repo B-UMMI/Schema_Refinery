@@ -223,6 +223,14 @@ def schema_annotation() -> None:
                         dest='genbank_files',
                         help='Path to the directory that contains Genbank files with annotations to extract.')
 
+    parser.add_argument('-ca',
+                        '--chewie-annotations',
+                        type=str,
+                        required=False,
+                        nargs='+',
+                        dest='chewie_annotations',
+                        help='File with the results from chewBBACA UniprotFinder module.')
+
     parser.add_argument('-ss',
                         '--subject-schema',
                         type=str,
