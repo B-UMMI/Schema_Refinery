@@ -110,8 +110,8 @@ def main(args: Namespace) -> None:
         # Merge matched loci with their annotation
         upf.merge_files_by_column_values(matched_schemas,
                                         args.subject_annotations,
-                                        0,
                                         1,
+                                        0,
                                         matched_schemas)
         
         results_files.append(matched_schemas)

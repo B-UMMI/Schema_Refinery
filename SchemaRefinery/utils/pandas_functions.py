@@ -96,8 +96,23 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
         column_value2 = df2.columns[column_value2]
 
     # Merge the dataframes based on the specified column values
-    merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='outer', suffixes=('_file1', '_file2')).fillna('NA')
+    merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='outer')
     
+    # Drop the 'Locus_y' which is original subject id column and rename 'Locus_x' to 'Locus'
+    if 'Locus_y' in merged_table.columns:
+        merged_table.drop(columns=['Locus_y'], inplace=True)
+    if 'Locus_x' in merged_table.columns:
+        merged_table.rename(columns={'Locus_x': 'Locus'}, inplace=True)
+
+    # Rename specified columns by adding 'matched_' prefix
+    columns_to_rename = {
+        'Protein_ID': 'matched_Protein_ID',
+        'Protein_product': 'matched_Protein_product',
+        'Protein_short_name': 'matched_Protein_short_name',
+        'Protein_BSR': 'matched_Protein_BSR'
+    }
+    merged_table.rename(columns=columns_to_rename, inplace=True)
+
     # Save the merged table to a TSV file
     merged_table.to_csv(output_file, sep='\t', index=False)
 
