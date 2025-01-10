@@ -119,7 +119,7 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
         result_rows.append(result_row)
 
     # Concatenate all result rows into a single DataFrame
-    result_df = pd.concat(result_rows, axis=1).T
+    result_df = pd.DataFrame(result_rows, columns=output_columns)
 
     # Write the processed DataFrame to a TSV file with specific columns
     result_df.to_csv(output_file, sep='\t', index=False, columns=output_columns)
