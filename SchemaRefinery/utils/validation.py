@@ -381,10 +381,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     if args.subject_schema:
         verify_path_exists(args.subject_schema, 'directory')
 
-    # Check for mutually inclusive options
-    if args.processing_mode is not None and args.subject_schema is None:
-        sys.exit("-ss --subject_schema is required when you want to add processing mode.")
-
 def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the download assemblies module.
