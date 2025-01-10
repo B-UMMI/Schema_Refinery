@@ -99,9 +99,9 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
         # Iterate over the priority dictionary
         for priority_column, columns_to_return in priority_dict.items():
             # Check if the priority column value is greater than the other priority columns
-            if all(row[priority_column] > row[other_column] for other_column in priority_dict if other_column != priority_column):
+            if all(float(row[priority_column]) > float(row[other_column]) for other_column in priority_dict if other_column != priority_column):
                 # Check if the minimum value in the priority columns meets the best_annotations_bsr threshold
-                if row[priority_column] >= best_annotations_bsr:
+                if float(row[priority_column]) >= best_annotations_bsr:
                     # Get Database name
                     db_name = priority_column.split('_')[0]
                     # Add the columns to return to the selected columns list

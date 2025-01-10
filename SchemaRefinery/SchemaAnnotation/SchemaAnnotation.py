@@ -137,7 +137,7 @@ def main(args: Namespace) -> None:
         output_file = os.path.join(args.output_directory, 'best_annotations_user_input.tsv')
         # Define the columns to include in the output file
         output_columns = ['Locus', 'Protein_ID', 'Protein_product', 'Protein_short_name', 'Protein_BSR']
-        upf.process_dataframe_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
+        upf.process_tsv_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
     # Clean up temporary files
     if not args.no_cleanup:
         print("\nCleaning up temporary files...")
