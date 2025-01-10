@@ -110,6 +110,9 @@ def main(args: Namespace) -> None:
                                            args.translation_table,
                                            args.cpu,
                                            args.processing_mode,)
+        # Merge matched loci with their annotation
+        upf.merge_files_into_same_file_by_key([matched_schemas, args.subject_annotations], 'best_matched_loci', matched_schemas)
+        
         results_files.append(matched_schemas)
 
     merged_file_path = os.path.join(args.output_directory, 'annotations_summary.tsv')
