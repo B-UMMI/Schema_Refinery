@@ -393,7 +393,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 
     for file, loci_results in best_bsr_values_per_proteome_file.items():
         # Save what loci each proteome file matched
-        matched_loci = {'swiss-prot': [], 'trembl': []}
+        matched_loci: Dict[str, List[str]] = {'swiss-prot': [], 'trembl': []}
         # Create Swiss-Prot and TrEMBL annotations files
         swiss_prot_annotations: str = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
         trembl_annotations: str = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")

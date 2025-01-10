@@ -123,6 +123,19 @@ def main(args: Namespace) -> None:
         # Merge all results into a single file
         upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
+    if args.best_annotations_bsr:
+        priority_dict = {}
+        if 'genbank' in args.annotation_options:
+            priority_dict.update({
+                'genbank_BSR' : ['Locus', 'genbank_ID', 'genbank_product', 'genbank_name']
+            })
+        if 'uniprot-proteomes' in args.annotation_options:
+            priority_dict.update({
+                'Uniprot_BSR' : ['Locus', 'Uniprot_protein_ID', 'Uniprot_protein_product', 'Uniprot_protein_short_name']
+            })
+        output_file = os.path.join(args.output_directory, 'best_annotations_user_input.tsv')
+        output_columns = ['Locus', 'Protein_ID', 'Protein_product', 'Protein_short_name', 'Protein_BSR']
+        upf.process_dataframe_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
     # Clean up temporary files
     if not args.no_cleanup:
         print("\nCleaning up temporary files...")

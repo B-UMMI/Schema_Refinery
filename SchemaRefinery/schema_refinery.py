@@ -201,6 +201,14 @@ def schema_annotation() -> None:
                         choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
                         help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
 
+    parser.add_argument('-ba',
+                        '--best_annotations_bsr',
+                        type=float,
+                        required=False,
+                        default=0.6,
+                        dest='best_annotations_bsr',
+                        help='In the output file chooses best annotation based on BSR')
+
     parser.add_argument('-pt',
                         '--proteome-table',
                         type=str,

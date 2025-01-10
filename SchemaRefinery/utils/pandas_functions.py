@@ -60,3 +60,61 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
     
     # Save the merged table to a TSV file
     merged_table.to_csv(output_file, sep='\t', index=False)
+
+def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str]],
+                              output_file: str, best_annotations_bsr: float, 
+                              output_columns: List[str]) -> None:
+    """
+    Process a TSV file based on a dictionary specifying columns and their corresponding values,
+    and write the processed DataFrame to a TSV file.
+
+    Parameters
+    ----------
+    input_file : str
+        The path to the input TSV file.
+    priority_dict : Dict[str, List[str]]
+        A dictionary where the key is a column name (ordered by priority) and the value is a list of column names to return.
+    output_file : str
+        The path to the output TSV file where the processed DataFrame will be saved.
+    best_annotations_bsr : float
+        The minimum value threshold for the priority columns.
+    output_columns : List[str]
+        The list of columns to include in the output TSV file.
+
+    Returns
+    -------
+    None
+    """
+    # Read the input TSV file into a DataFrame
+    df = pd.read_csv(input_file, delimiter='\t', dtype=str, index_col=False)
+
+    # Initialize an empty DataFrame to store the results
+    result_df = pd.DataFrame()
+
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        # Initialize a variable to store the selected columns for the current row
+        selected_columns = []
+
+        # Iterate over the priority dictionary
+        for priority_column, columns_to_return in priority_dict.items():
+            # Check if the priority column value is greater than the other priority columns
+            if all(row[priority_column] > row[other_column] for other_column in priority_dict if other_column != priority_column):
+                # Check if the minimum value in the priority columns meets the best_annotations_bsr threshold
+                if row[priority_column] >= best_annotations_bsr:
+                    # Add the columns to return to the selected columns list
+                    selected_columns.extend(columns_to_return)
+                    break
+
+        # If selected_columns is not empty, extract the values for the selected columns
+        if selected_columns:
+            result_row = row[selected_columns]
+        else:
+            # If the value is smaller than the best_annotations_bsr, get the 'Locus' column
+            result_row = row[['Locus']]
+
+        # Append the result row to the result DataFrame
+        result_df = result_df.append(result_row, ignore_index=True)
+
+    # Write the processed DataFrame to a TSV file with specific columns
+    result_df.to_csv(output_file, sep='\t', index=False, columns=output_columns)
