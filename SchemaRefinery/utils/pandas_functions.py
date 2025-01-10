@@ -89,7 +89,7 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
     df = pd.read_csv(input_file, delimiter='\t', dtype=str, index_col=False)
 
     # Initialize an empty DataFrame to store the results
-    result_df = pd.DataFrame()
+    result_df = pd.DataFrame(columns=output_columns)
 
     # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
@@ -110,7 +110,7 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
             # Get database name
             db_name = selected_columns[0].split('_')[0]
             # Get the selected columns from the row
-            result_row = row[selected_columns] + pd.Series([db_name])
+            result_row = pd.concat(row[selected_columns], pd.Series([db_name]))
         else:
             # If the value is smaller than the best_annotations_bsr, get the 'Locus' column
             result_row = row[['Locus']]
