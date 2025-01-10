@@ -2,6 +2,7 @@ import os
 import sys
 import ast
 import csv
+import argparse
 import platform
 from typing import Tuple, Dict, Any, List, Union, Optional
 
@@ -336,7 +337,7 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
         return parameter_values
 
 
-def validate_schema_annotation_module_arguments(args: dict) -> None:
+def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the schema annotation module.
 
@@ -366,19 +367,25 @@ def validate_schema_annotation_module_arguments(args: dict) -> None:
         for annotation in args.chewie_annotations:
             verify_path_exists(annotation, 'file')
 
+    if any([args.subject_schema, args.subject_annotations, args.processing_mode]) and not all([args.subject_schema, args.subject_annotations, args.processing_mode]):
+        missing_args = []
+        if not args.subject_schema:
+            missing_args.append('subject_schema')
+        if not args.subject_annotations:
+            missing_args.append('subject_annotations')
+        if not args.processing_mode:
+            missing_args.append('processing_mode')
+
+        sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject_schema', 'subject_annotations', and 'processing_mode' must be provided together.")
+        
     if args.subject_schema:
         verify_path_exists(args.subject_schema, 'directory')
-
-    # Check for mutually inclusive options
-    if args.processing_mode is None and args.subject_schema is not None:
-        verify_path_exists(args.subject_schema, 'directory')
-        sys.exit("-pm --processing-mode is required when you want to add match with subject schema.")
 
     # Check for mutually inclusive options
     if args.processing_mode is not None and args.subject_schema is None:
         sys.exit("-ss --subject_schema is required when you want to add processing mode.")
 
-def validate_download_assemblies_module_arguments(args: dict) -> None:
+def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the download assemblies module.
 
