@@ -366,7 +366,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     if args.chewie_annotations:
         for annotation in args.chewie_annotations:
             verify_path_exists(annotation, 'file')
-
+    # Arguments to match schemas
     if any([args.subject_schema, args.subject_annotations, args.processing_mode]) and not all([args.subject_schema, args.subject_annotations, args.processing_mode]):
         missing_args = []
         if not args.subject_schema:
