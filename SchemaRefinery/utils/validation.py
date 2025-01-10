@@ -351,7 +351,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
-        if args.proteome_ids and not args.proteome_table:
+        if args.proteome_ids_to_add and not args.proteome_table:
             sys.exit("\nError: 'proteome_ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
         if not args.proteome_table:
             sys.exit("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
@@ -360,7 +360,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             # Verify if files or directories exist
             verify_path_exists(args.proteome_table, 'file')
     else:
-        if any([args.proteome_ids, args.proteome_table]):
+        if any([args.proteome_ids_to_add, args.proteome_table]):
             sys.exit("\nError: 'proteome_ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
 
     # Arguments to match genbank
