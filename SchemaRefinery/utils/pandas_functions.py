@@ -102,7 +102,10 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
             if all(row[priority_column] > row[other_column] for other_column in priority_dict if other_column != priority_column):
                 # Check if the minimum value in the priority columns meets the best_annotations_bsr threshold
                 if row[priority_column] >= best_annotations_bsr:
+                    # Get Database name
+                    db_name = priority_column.split('_')[0]
                     # Add the columns to return to the selected columns list
+                    columns_to_return.append(db_name)
                     selected_columns.extend(columns_to_return)
                     break
 

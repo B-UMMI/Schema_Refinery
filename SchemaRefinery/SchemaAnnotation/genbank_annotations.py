@@ -313,7 +313,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     merge_files: List[str] = []
     # Save annotations
     tab = '\t'
-    header: str = f"Locus\tgenbank_ID\tgenbank_product\tgenbank_name\tgenbank_BSR{tab if extra_genbank_table_columns else ''}{tab.join(extra_genbank_table_columns)}\n"
+    header: str = f"Locus\tGenbank_ID\tGenbank_product\tGenbank_name\tGenbank_BSR{tab if extra_genbank_table_columns else ''}{tab.join(extra_genbank_table_columns)}\n"
     # Create the best annotations file
     best_annotations_all_genbank_files: str = os.path.join(output_directory, "best_annotations_all_genbank_files")
     ff.create_directory(best_annotations_all_genbank_files)
