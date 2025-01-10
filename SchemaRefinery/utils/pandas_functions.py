@@ -109,17 +109,27 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
         if selected_columns:
             # Get database name
             db_name = selected_columns[0].split('_')[0]
-            # Get the selected columns from the row
-            result_row = row[selected_columns]
+            # Get the selected columns from the row as a dictionary
+            selected_columns_dict = row[selected_columns].to_dict()
+            # Add the database name to the dictionary
+            selected_columns_dict['Database'] = db_name
+
+            # Rename the dictionary keys using new_column_names
+            selected_columns_dict = {output_columns[i]: v for i, v in enumerate(selected_columns_dict.values())}
+            result_row = selected_columns_dict
         else:
             # If the value is smaller than the best_annotations_bsr, get the 'Locus' column
-            result_row = row[['Locus']]
+            result_row = row[['Locus']].to_dict()
+            # Add a placeholder for the missing columns
+            for col in output_columns:
+                if col not in result_row:
+                    result_row[col] = None
 
         # Append the result row to the list
         result_rows.append(result_row)
 
     # Concatenate all result rows into a single DataFrame
-    result_df = pd.DataFrame(result_rows, columns=output_columns)
+    result_df = pd.DataFrame(result_rows)
 
     # Write the processed DataFrame to a TSV file with specific columns
     result_df.to_csv(output_file, sep='\t', index=False, columns=output_columns)
