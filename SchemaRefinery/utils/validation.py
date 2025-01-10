@@ -349,37 +349,60 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     # Verify if files or directories exist
     verify_schema_sctructure(args.schema_directory)
 
-    # Verify if files or directories exist
-    if args.proteome_table:
-        verify_path_exists(args.proteome_table, 'file')
-
-    # Verify if files or directories exist
-    if args.genbank_files:
+    # Arguments to match uniprot-proteomes
+    if 'uniprot-proteomes' in args.annotation_options:
+        if args.proteome_ids and not args.proteome_table:
+            sys.exit("\nError: 'proteome_ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
+        if not args.proteome_table:
+            sys.exit("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
         # Verify if files or directories exist
-        verify_path_exists(args.genbank_files, 'directory')
-        # Verify if the GenBank files directory is empty
-        if_genbank_files_empty = not os.listdir(args.genbank_files)
-        if if_genbank_files_empty:
-            sys.exit("\nError: The GenBank files directory is empty.")
+        if args.proteome_table:
+            # Verify if files or directories exist
+            verify_path_exists(args.proteome_table, 'file')
+    else:
+        if any([args.proteome_ids, args.proteome_table]):
+            sys.exit("\nError: 'proteome_ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
 
-    # Verify if files or directories exist
-    if args.chewie_annotations:
-        for annotation in args.chewie_annotations:
-            verify_path_exists(annotation, 'file')
+    # Arguments to match genbank
+    if 'genbank' in args.annotation_options:
+        if args.genbank_ids_to_add and not args.genbank_files:
+            sys.exit("\nError: 'genbank-ids-to-add' can only be used with '--genbank-files' and 'genbank' annotation option.")
+        if not args.genbank_files:
+            sys.exit("\nError: 'genbank-files' is required with 'genbank' annotation option.")
+        # Verify if files or directories exist
+        if args.genbank_files:
+            # Verify if files or directories exist
+            verify_path_exists(args.genbank_files, 'directory')
+            # Verify if the GenBank files directory is empty
+            if_genbank_files_empty = not os.listdir(args.genbank_files)
+            if if_genbank_files_empty:
+                sys.exit("\nError: The GenBank files directory is empty.")
+    else:
+        if any([args.genbank_files, args.genbank_ids_to_add]):
+            sys.exit("\nError: 'genbank-files' and 'genbank-ids-to-add' can only be used with '--annotation-options genbank'.")
+
     # Arguments to match schemas
-    if any([args.subject_schema, args.subject_annotations, args.processing_mode]) and not all([args.subject_schema, args.subject_annotations, args.processing_mode]):
-        missing_args = []
-        if not args.subject_schema:
-            missing_args.append('subject_schema')
-        if not args.subject_annotations:
-            missing_args.append('subject_annotations')
-        if not args.processing_mode:
-            missing_args.append('processing_mode')
+    if 'match-schemas' in args.annotation_options:
+        if any([args.subject_schema, args.subject_annotations, args.processing_mode]) and not all([args.subject_schema, args.subject_annotations, args.processing_mode]):
+            missing_args = []
+            if not args.subject_schema:
+                missing_args.append('subject_schema')
+            if not args.subject_annotations:
+                missing_args.append('subject_annotations')
+            if not args.processing_mode:
+                missing_args.append('processing_mode')
 
-        sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject_schema', 'subject_annotations', and 'processing_mode' must be provided together.")
+            sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject_schema', 'subject_annotations', and 'processing_mode' must be provided together.")
         
-    if args.subject_schema:
-        verify_path_exists(args.subject_schema, 'directory')
+        if args.subject_schema:
+            verify_path_exists(args.subject_schema, 'directory')
+
+        if args.subject_annotations:
+            verify_path_exists(args.subject_annotations, 'file')
+    else:
+        if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
+            sys.exit("\nError: 'subject_schema', 'subject_annotations', and 'processing_mode' can only be used with '--annotation-options match-schemas'.")
+
 
 def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
