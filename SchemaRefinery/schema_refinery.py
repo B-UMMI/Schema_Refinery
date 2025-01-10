@@ -214,7 +214,8 @@ def schema_annotation() -> None:
                         type=str,
                         required=False,
                         dest='proteome_table',
-                        help='TSV file downloaded from UniProt that contains the list of proteomes.')
+                        help='TSV file downloaded from UniProt that contains the list of proteomes.'
+                        'Should be used with --annotation-options uniprot-proteomes')
 
     parser.add_argument('-gf',
                         '--genbank-files',
@@ -245,7 +246,8 @@ def schema_annotation() -> None:
                         required=False,
                         default=None,
                         dest='subject_annotations',
-                        help='Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.')
+                        help='Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.'
+                        'Should be used with --annotation-options match_schema and --subject-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.')
 
     parser.add_argument('--bsr',
                         type=float,
@@ -354,7 +356,8 @@ def schema_annotation() -> None:
                     dest='proteome_ids_to_add',
                     nargs='+',
                     default=[],
-                    help='List of Proteome IDs to add to final results.')
+                    help='List of Proteome IDs to add to final results.'
+                    'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
 
     parser.add_argument('--nocleanup',
                         action='store_true',
