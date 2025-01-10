@@ -88,8 +88,8 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
     # Read the input TSV file into a DataFrame
     df = pd.read_csv(input_file, delimiter='\t', dtype=str, index_col=False)
 
-    # Initialize an empty DataFrame to store the results
-    result_df = pd.DataFrame(columns=output_columns)
+    # Initialize a list to store the result rows
+    result_rows = []
 
     # Iterate over each row in the DataFrame
     for index, row in df.iterrows():
@@ -110,13 +110,16 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
             # Get database name
             db_name = selected_columns[0].split('_')[0]
             # Get the selected columns from the row
-            result_row = pd.concat(row[selected_columns], [pd.Series([db_name])])
+            result_row = row[selected_columns]
         else:
             # If the value is smaller than the best_annotations_bsr, get the 'Locus' column
             result_row = row[['Locus']]
 
-        # Append the result row to the result DataFrame
-        result_df = result_df.append(result_row, ignore_index=True)
+        # Append the result row to the list
+        result_rows.append(result_row)
+
+    # Concatenate all result rows into a single DataFrame
+    result_df = pd.concat(result_rows, axis=1).T
 
     # Write the processed DataFrame to a TSV file with specific columns
     result_df.to_csv(output_file, sep='\t', index=False, columns=output_columns)

@@ -142,4 +142,4 @@ def main(args: Namespace) -> None:
     if not args.no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files
-        ff.cleanup(args.output_directory, [merged_file_path])
+        ff.cleanup(args.output_directory, [merged_file_path, output_file])
