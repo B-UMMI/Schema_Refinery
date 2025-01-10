@@ -112,9 +112,11 @@ def main(args: Namespace) -> None:
                                            args.processing_mode,
                                            False,)
         # Merge matched loci with their annotation
-        upf.merge_files_into_same_file_by_key([matched_schemas, args.subject_annotations],
-                                              'best_matched_loci',
-                                              matched_schemas)
+        upf.merge_files_by_column_values(matched_schemas,
+                                        args.subject_annotations,
+                                        0,
+                                        1,
+                                        matched_schemas)
         
         results_files.append(matched_schemas)
 

@@ -61,6 +61,43 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
     # Save the merged table to a TSV file
     merged_table.to_csv(output_file, sep='\t', index=False)
 
+def merge_files_by_column_values(file1: str, file2: str, column_value1: str, column_value2: str, output_file: str) -> pd.DataFrame:
+    """
+    Merge two TSV files into a single file based on specified column values.
+
+    This function reads two TSV files, merges them into a single DataFrame based on specified column values,
+    and writes the merged DataFrame to an output TSV file.
+
+    Parameters
+    ----------
+    file1 : str
+        File path to the first TSV file.
+    file2 : str
+        File path to the second TSV file.
+    column_value1 : str
+        The column value to merge the first file on.
+    column_value2 : str
+        The column value to merge the second file on.
+    output_file : str
+        The path to the output TSV file where the merged DataFrame will be saved.
+
+    Returns
+    -------
+    pd.DataFrame
+        The merged DataFrame.
+    """
+    # Read the TSV files into DataFrames
+    df1 = pd.read_csv(file1, delimiter='\t', dtype=str, index_col=False)
+    df2 = pd.read_csv(file2, delimiter='\t', dtype=str, index_col=False)
+
+    # Merge the dataframes based on the specified column values
+    merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='outer', suffixes=('_file1', '_file2')).fillna('NA')
+    
+    # Save the merged table to a TSV file
+    merged_table.to_csv(output_file, sep='\t', index=False)
+
+    return merged_table
+
 def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str]],
                               output_file: str, best_annotations_bsr: float, 
                               output_columns: List[str]) -> None:
