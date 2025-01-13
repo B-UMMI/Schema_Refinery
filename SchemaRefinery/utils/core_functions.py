@@ -1387,7 +1387,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
-    blastn_results_files: List[str] = []
+    blastn_results_files: List[str] = [] # List to store the results files
     i: int = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blastdb_multiprocessing,
@@ -1509,7 +1509,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     
     print("Running BLASTp...")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
-    blastp_results_files: List[str] = []
+    blastp_results_files: List[str] = [] # To store the results files
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blast_fastas_multiprocessing,
