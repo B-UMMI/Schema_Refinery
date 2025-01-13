@@ -361,7 +361,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             sys.exit("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
         # Verify if files or directories exist
         if args.proteome_table:
-            # Verify if files or directories exist
             verify_path_exists(args.proteome_table, 'file')
     else:
         if any([args.proteome_ids_to_add, args.proteome_table]):
@@ -375,7 +374,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             sys.exit("\nError: 'genbank-files' is required with 'genbank' annotation option.")
         # Verify if files or directories exist
         if args.genbank_files:
-            # Verify if files or directories exist
             verify_path_exists(args.genbank_files, 'directory')
             # Verify if the GenBank files directory is empty
             if_genbank_files_empty = not os.listdir(args.genbank_files)
@@ -406,7 +404,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     else:
         if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
             sys.exit("\nError: 'subject_schema', 'subject_annotations', and 'processing_mode' can only be used with '--annotation-options match-schemas'.")
-
 
 def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
