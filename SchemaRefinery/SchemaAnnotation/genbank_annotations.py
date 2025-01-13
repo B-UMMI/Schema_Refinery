@@ -15,6 +15,7 @@ try:
         clustering_functions as cf,
         iterable_functions as itf,
         pandas_functions as pf,
+        Types as tp
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -26,6 +27,7 @@ except ModuleNotFoundError:
         clustering_functions as cf,
         iterable_functions as itf,
         pandas_functions as pf,
+        Types as tp
     )
 
 def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: List[str]) -> Dict[str, List[str]]:
@@ -212,8 +214,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, List[Union[str, float]]] = {}
-    best_bsr_values_per_genbank_file: Dict[str, Dict[str, Dict[str, Union[int, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
+    best_bsr_values_per_genbank_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts: int = len(reps_ids)
+    blastp_results_files: List[str] = []
     i = 1
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -223,56 +226,60 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
             repeat(blast_db_files),
             translations_paths.values(),
             translations_paths.keys(),
-            repeat(blastp_results_folder)
-        ):
-            # Get the alignments
-            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, Union[int, float]]]]]
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+            repeat(blastp_results_folder)):
 
-            # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                # Get the loci name
-                loci: str = query.split('_')[0]
-                # Create the dict of the query
-                bsr_values.setdefault(query, {})
-                for subject_id, results in subjects_dict.items():
-                    if '|' in subject_id:
-                        subject_id = subject_id.split('|')[1]  # Get the original ID and not the modified Blast version
-                    # Highest score (First one)
-                    subject_score: float = next(iter(results.values()))['score']
-                    # Calculate BSR value
-                    bsr_value: float = bf.compute_bsr(subject_score, self_score_dict[query])
-                    # Check if the BSR value is higher than the threshold
-                    if bsr_value >= bsr:
-                        # Round BSR values if they are superior to 1.0 to 1 decimal place
-                        if bsr_value > 1.0:
-                            bsr_value = round(bsr_value, 1)
-                        # Save all of the different matches that this query had and their BSR values
-                        bsr_values[query].update({subject_id: bsr_value})
-                    else:
-                        continue
-
-                    # Extract extra information
-                    extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_id]]
-                    # Check if the BSR value is the best for the locus
-                    current_best_bsr: List[Union[str, float]] = best_bsr_values.get(loci)
-                    # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    # We are interested in the best match only
-                    if not current_best_bsr:
-                        best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
-                    elif bsr_value > current_best_bsr[1]:
-                        best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
-
-                    # Get best value for genbank file
-                    genbank_file: str = itf.identify_string_in_dict_get_key(subject_id, all_genbank_files_ids)
-                    current_best_in_genbank_file: List[Union[str, float]] = best_bsr_values_per_genbank_file[genbank_file].get(loci)
-                    if current_best_in_genbank_file and bsr_value > current_best_in_genbank_file[1]:
-                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
-                    else:
-                        best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
+            # Save the path to the BLASTp results file
+            blastp_results_files.append(res[1])
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
+
+    for blast_result_file in blastp_results_files:
+        # Get the alignments
+        filtered_alignments_dict: tp.BlastDict 
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_result_file, 0, True, False, True, True, False)
+
+        # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
+        for query, subjects_dict in filtered_alignments_dict.items():
+            # Get the loci name
+            loci: str = query.split('_')[0]
+            # Create the dict of the query
+            bsr_values.setdefault(query, {})
+            for subject_id, results in subjects_dict.items():
+                if '|' in subject_id:
+                    subject_id = subject_id.split('|')[1]  # Get the original ID and not the modified Blast version
+                # Highest score (First one)
+                subject_score: float = next(iter(results.values()))['score']
+                # Calculate BSR value
+                bsr_value: float = bf.compute_bsr(subject_score, self_score_dict[query])
+                # Check if the BSR value is higher than the threshold
+                if bsr_value >= bsr:
+                    # Round BSR values if they are superior to 1.0 to 1 decimal place
+                    if bsr_value > 1.0:
+                        bsr_value = round(bsr_value, 1)
+                    # Save all of the different matches that this query had and their BSR values
+                    bsr_values[query].update({subject_id: bsr_value})
+                else:
+                    continue
+
+                # Extract extra information
+                extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[subject_id]]
+                # Check if the BSR value is the best for the locus
+                current_best_bsr: List[Union[str, float]] = best_bsr_values.get(loci, [])
+                # If there is a previous BSR value for the locus, check if the current BSR value is higher
+                # We are interested in the best match only
+                if not current_best_bsr:
+                    best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
+                elif bsr_value > current_best_bsr[1]:
+                    best_bsr_values[loci] = [subject_id, bsr_value, *extra_info]
+
+                # Get best value for genbank file
+                genbank_file: str = itf.identify_string_in_dict_get_key(subject_id, all_genbank_files_ids)
+                current_best_in_genbank_file: List[Union[str, float]] = best_bsr_values_per_genbank_file[genbank_file].get(loci,[])
+                if current_best_in_genbank_file and bsr_value > current_best_in_genbank_file[1]:
+                    best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
+                else:
+                    best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
 
     print("\nExtracting best annotations for genbank files for proteins that were deduplicated and clustered...")
     # Add all the other best matches that files may have but are being represented by other sequence
@@ -287,12 +294,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                 # For all of the elements that the representative represents add them to the dict
                 for id_, *info in same_protein:
                     # Get genbank file for that ID
-                    genbank_file: str = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
+                    genbank_file = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
                     # If the genbank file is the same as the one that the representative is in, skip (may be copy protein)
                     if gbk_file == genbank_file:
                         continue
                     # Add 'NA' if element is empty
-                    extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[id_]]
+                    extra_info = ['NA' if element == '' else element for element in all_cds_info[id_]]
                     # Verify if genbank file is in the dict
                     best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, bsr_value, extra_info])
             # For clustered elements
@@ -301,12 +308,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                 for values in rep_cluster:
                     id_ = values[0]
                     # Get genbank file for that ID
-                    genbank_file: str = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
+                    genbank_file = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
                     # If the genbank file is the same as the one that the representative is in, skip (may be paralogous protein)
                     if gbk_file == genbank_file:
                         continue
                     # Add 'NA' if element is empty
-                    extra_info: List[str] = ['NA' if element == '' else element for element in all_cds_info[id_]]
+                    extra_info = ['NA' if element == '' else element for element in all_cds_info[id_]]
                     # Verify if genbank file is in the dict
                     best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, bsr_value, extra_info])
 

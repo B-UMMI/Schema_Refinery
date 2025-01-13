@@ -167,6 +167,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Tuple[str, float]] = {}
     total_blasts: int = len(translations_paths)
+    blastp_results_files: List[str] = []
     i: int = 1
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -176,49 +177,53 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
                                 translations_paths.values(),
                                 translations_paths.keys(),
                                 repeat(blastp_results_folder)):
-            # Get the alignments
-            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
-
-            # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                # Get the loci name
-                loci: str = query.split('_')[0]
-                # Create the dict of the query
-                bsr_values.setdefault(query, {})
-                for subject_id, results in subjects_dict.items():
-                    # Highest score (First one)
-                    subject_score: float = next(iter(results.values()))['score']
-                    # Calculate BSR value
-                    bsr_value: float = bf.compute_bsr(subject_score, self_score_dict[query])
-                    # Check if the BSR value is higher than the threshold
-                    if bsr_value >= bsr:
-                        # Round BSR values if they are superior to 1.0 to 1 decimal place
-                        if bsr_value > 1.0:
-                            bsr_value = round(bsr_value, 1)
-                        # Save all of the different matches that this query had and their BSR values
-                        bsr_values[query].update({subject_id: bsr_value})
-                    else:
-                        continue
-                    # Check if the BSR value is the best for the locus
-                    current_best_bsr: Optional[Tuple[str, float]] = best_bsr_values.get(loci)
-                    # If there is a previous BSR value for the locus, check if the current BSR value is higher
-                    # We are interested in the best match only
-                    if not current_best_bsr:
-                        best_bsr_values[loci] = (subject_id, bsr_value)
-                    elif bsr_value > current_best_bsr[1]:
-                        best_bsr_values[loci] = (subject_id, bsr_value)
-                        
-                    # Get best value for genbank file
-                    proteome_file: str = itf.identify_string_in_dict_get_key(subject_id, proteome_file_ids)
-                    current_best_in_proteome_file: Optional[Tuple[str, float]] = best_bsr_values_per_proteome_file[proteome_file].get(loci)
-                    if current_best_in_proteome_file and bsr_value > current_best_in_proteome_file[1]:
-                        best_bsr_values_per_proteome_file[proteome_file][loci] = (subject_id, bsr_value)
-                    else:
-                        best_bsr_values_per_proteome_file[proteome_file][loci] = (subject_id, bsr_value)
+            # Save the path to the BLASTp results file
+            blastp_results_files.append(res[1])
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
+
+    for blast_results_file in blastp_results_files
+        # Get the alignments
+        filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_results_file, 0, True, False, True, True, False)
+
+        # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
+        for query, subjects_dict in filtered_alignments_dict.items():
+            # Get the loci name
+            loci: str = query.split('_')[0]
+            # Create the dict of the query
+            bsr_values.setdefault(query, {})
+            for subject_id, results in subjects_dict.items():
+                # Highest score (First one)
+                subject_score: float = next(iter(results.values()))['score']
+                # Calculate BSR value
+                bsr_value: float = bf.compute_bsr(subject_score, self_score_dict[query])
+                # Check if the BSR value is higher than the threshold
+                if bsr_value >= bsr:
+                    # Round BSR values if they are superior to 1.0 to 1 decimal place
+                    if bsr_value > 1.0:
+                        bsr_value = round(bsr_value, 1)
+                    # Save all of the different matches that this query had and their BSR values
+                    bsr_values[query].update({subject_id: bsr_value})
+                else:
+                    continue
+                # Check if the BSR value is the best for the locus
+                current_best_bsr: Optional[Tuple[str, float]] = best_bsr_values.get(loci)
+                # If there is a previous BSR value for the locus, check if the current BSR value is higher
+                # We are interested in the best match only
+                if not current_best_bsr:
+                    best_bsr_values[loci] = (subject_id, bsr_value)
+                elif bsr_value > current_best_bsr[1]:
+                    best_bsr_values[loci] = (subject_id, bsr_value)
+                    
+                # Get best value for genbank file
+                proteome_file: str = itf.identify_string_in_dict_get_key(subject_id, proteome_file_ids)
+                current_best_in_proteome_file: Optional[Tuple[str, float]] = best_bsr_values_per_proteome_file[proteome_file].get(loci)
+                if current_best_in_proteome_file and bsr_value > current_best_in_proteome_file[1]:
+                    best_bsr_values_per_proteome_file[proteome_file][loci] = (subject_id, bsr_value)
+                else:
+                    best_bsr_values_per_proteome_file[proteome_file][loci] = (subject_id, bsr_value)
 
     return best_bsr_values
 

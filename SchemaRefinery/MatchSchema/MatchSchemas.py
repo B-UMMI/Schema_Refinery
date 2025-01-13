@@ -10,6 +10,7 @@ try:
                         linux_functions as lf,
                         file_functions as ff,
                         alignments_functions as af,
+                        Types as tp
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -18,6 +19,7 @@ except ModuleNotFoundError:
                                     linux_functions as lf,
                                     file_functions as ff,
                                     alignments_functions as af,
+                                    Types as tp
                                     
     )
 
@@ -113,7 +115,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
     for blast_result_file in blastp_results_files:
         # Get the alignments
-        filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
+        filtered_alignments_dict: tp.BlastDict 
         filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results_simplified(blast_result_file,
                                                                                                     0,
                                                                                                     False,
