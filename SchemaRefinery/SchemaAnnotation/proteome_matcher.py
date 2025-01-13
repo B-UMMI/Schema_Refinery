@@ -183,7 +183,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
 
-    for blast_results_file in blastp_results_files
+    for blast_results_file in blastp_results_files:
         # Get the alignments
         filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
         filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_results_file, 0, True, False, True, True, False)
