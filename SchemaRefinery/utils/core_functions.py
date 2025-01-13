@@ -1387,6 +1387,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
+    blastn_results_files: List[str] = []
     i: int = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blastdb_multiprocessing,
@@ -1395,20 +1396,27 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                 rep_paths_nuc.values(),
                                 all_alleles,
                                 repeat(blastn_results_folder)):
-            filtered_alignments_dict: Dict[str, Dict[str, Any]]
-            alignment_coords_all: Dict[str, Dict[str, Any]]
-            alignment_coords_pident: Dict[str, Dict[str, Any]]
-            filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-                res[1], constants[1], True, False, True, True, False)
-            # Save the BLASTn results
-            representative_blast_results.update(filtered_alignments_dict)
-            representative_blast_results_coords_all.update(alignment_coords_all)
-            representative_blast_results_coords_pident.update(alignment_coords_pident)
-
+            # Append the results file to the list
+            blastn_results_files.append(res[1])
             print(
                 f"\rRunning BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", 
                 end='', flush=True)
             i += 1
+
+    # Process the obtained BLAST results files
+    for blast_result_file in blastn_results_files:
+
+        filtered_alignments_dict: Dict[str, Dict[str, Any]]
+        alignment_coords_all: Dict[str, Dict[str, Any]]
+        alignment_coords_pident: Dict[str, Dict[str, Any]]
+        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
+            blast_result_file, constants[1], True, False, True, True, False)
+        
+        # Save the BLASTn results
+        representative_blast_results.update(filtered_alignments_dict)
+        representative_blast_results_coords_all.update(alignment_coords_all)
+        representative_blast_results_coords_pident.update(alignment_coords_pident)
+
 
     print("\nRunning BLASTp based on BLASTn results matches...")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
@@ -1500,7 +1508,8 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     print('\n')  
     
     print("Running BLASTp...")
-    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).      
+    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
+    blastp_results_files: List[str] = []
     i = 1
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_blast_fastas_multiprocessing,
@@ -1509,19 +1518,23 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                 repeat(blastp_results_folder),
                                 repeat(rep_paths_prot),
                                 rep_matches_prot.values()):
-            
-            filtered_alignments_dict
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+            # Append the results file to the list
+            blastp_results_files.append(res[1])
 
-            # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                for subject_id, results in subjects_dict.items():
-                    # Highest score (First one)
-                    subject_score: float = next(iter(results.values()))['score']
-                    bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
-        
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
+
+   # Process the obtained BLASTp results files
+    for blast_result_file in blastp_results_files:
+        filtered_alignments_dict
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+
+        # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
+        for query, subjects_dict in filtered_alignments_dict.items():
+            for subject_id, results in subjects_dict.items():
+                # Highest score (First one)
+                subject_score: float = next(iter(results.values()))['score']
+                bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
 
     return (representative_blast_results, representative_blast_results_coords_all,
             representative_blast_results_coords_pident, bsr_values, self_score_dict)
