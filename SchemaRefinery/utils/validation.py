@@ -488,7 +488,7 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
     if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
         sys.exit("\nError: Must provide either taxon or input table.")
     
-    if args.filtering_criteria.input_table and not 'NCBI' not in args.database: 
+    if args.filtering_criteria.input_table and 'NCBI' not in args.database: 
        sys.exit("\nError: Input table can only be used with NCBI database.")
 
     elif args.filtering_criteria.input_table:
