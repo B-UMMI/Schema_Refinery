@@ -51,7 +51,7 @@ Command-Line Arguments
         (Optional) BSR value to consider alleles as the same locus.
         Default: 0.6
 
-    -tt, --translation_table
+    -tt, --translation-table
         (Optional) Translation table to use for the CDS translation.
         Default: 11
 

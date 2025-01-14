@@ -34,7 +34,7 @@ Command-Line Arguments
 
 ::
 
-    -i, --input_file
+    -i, --input-file
         (Required) TSV file with the loci path to be adapted.
 
     -o, --output-directory

@@ -547,7 +547,7 @@ def adapt_loci() -> None:
 
     # Add arguments to the parser
     parser.add_argument('-i',
-                        '--input_file',
+                        '--input-file',
                         type=str,
                         required=True,
                         dest='input_file',

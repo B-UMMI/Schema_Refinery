@@ -48,11 +48,11 @@ Command-Line Arguments
     -pnl, --possible-new-loci
         (Optional) Path to the directory that contains possible new loci.
 
-    -at, --alignment_ratio_threshold
+    -at, --alignment-ratio-threshold
         (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
         Default: 0.9
 
-    -pt, --pident_threshold
+    -pt, --pident-threshold
         (Optional) Threshold value for pident values used to identify spurious CDS (int 0-100).
         Default: 90
 
@@ -64,14 +64,14 @@ Command-Line Arguments
         (Optional) Coverage value for kmers representatives (float: 0-1).
         Default: 0.9
 
-    -gp, --genome_presence
+    -gp, --genome-presence
         (Optional) The minimum number of genomes specific cluster of CDS must be present in order to be considered.
 
-    -as, --absolute_size
+    -as, --absolute-size
         (Optional) Size of the CDS to consider processing.
         Default: 201
 
-    -tt, --translation_table
+    -tt, --translation-table
         (Optional) Translation table to use for the CDS translation.
         Default: 11
 
@@ -79,7 +79,7 @@ Command-Line Arguments
         (Optional) BSR value to consider alleles as the same locus.
         Default: 0.6
 
-    -sr, --size_ratio
+    -sr, --size-ratio
         (Optional) Size ratio to consider alleles as the same locus.
         Default: 0.8
 
