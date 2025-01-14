@@ -517,7 +517,9 @@ def identify_spurious_genes() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
-    
+
+    val.validate_identify_spurious_genes_module_arguments(args)
+
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
     IdentifySpuriousGenes.main(**vars(args))
 
