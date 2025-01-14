@@ -409,7 +409,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
         if args.proteome_ids_to_add and not args.proteome_table:
-            sys.exit("\nError: 'proteome_ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
+            sys.exit("\nError: 'proteome-ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
         if not args.proteome_table:
             sys.exit("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
         # Verify if files or directories exist
@@ -417,7 +417,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             verify_path_exists(args.proteome_table, 'file')
     else:
         if any([args.proteome_ids_to_add, args.proteome_table]):
-            sys.exit("\nError: 'proteome_ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
+            sys.exit("\nError: 'proteome-ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
 
     # Arguments to match genbank
     if 'genbank' in args.annotation_options:
@@ -447,7 +447,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             if not args.processing_mode:
                 missing_args.append('processing_mode')
 
-            sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject_schema', 'subject_annotations', and 'processing_mode' must be provided together.")
+            sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema', 'subject-annotations', and 'processing-mode' must be provided together.")
         
         if args.subject_schema:
             verify_path_exists(args.subject_schema, 'directory')
@@ -459,7 +459,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             sys.exit("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
     else:
         if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
-            sys.exit("\nError: 'subject_schema', 'subject_annotations', and 'processing_mode' can only be used with '--annotation-options match-schemas'.")
+            sys.exit("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
 
 def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -525,27 +525,27 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     if args.possible_new_loci:
         verify_schema_sctructure(args.possible_new_loci)
 
-    if args.run_mode == 'unclassified_cds':
+    if args.run_mode == 'unclassified-cds':
         if args.possible_new_loci:
-            sys.exit("\nError: 'possible_new_loci' cannot be used with 'unclassified_cds' run mode.")
+            sys.exit("\nError: 'possible-new-loci' cannot be used with 'unclassified_cds' run mode.")
     
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
-        sys.exit("\nError: 'alignment_ratio_threshold' must be a value between 0 and 1.")
+        sys.exit("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
     
     if args.pident_threshold < 0 or args.pident_threshold >= 100:
-        sys.exit("\nError: 'pident_threshold' must be a value between 0 and 100.")
+        sys.exit("\nError: 'pident-threshold' must be a value between 0 and 100.")
     
     if args.clustering_sim_threshold < 0 or args.clustering_sim_threshold >= 1:
-        sys.exit("\nError: 'clustering_sim_threshold' must be a value between 0 and 1.")
+        sys.exit("\nError: 'clustering-sim-threshold' must be a value between 0 and 1.")
     
     if args.clustering_cov_threshold < 0 or args.clustering_cov_threshold >= 1:
-        sys.exit("\nError: 'clustering_cov_threshold' must be a value between 0 and 1.")
+        sys.exit("\nError: 'clustering-cov-threshold' must be a value between 0 and 1.")
     
     if args.genome_presence < 0:
-        sys.exit("\nError: 'genome_presence' must be a value greater than 0.")
+        sys.exit("\nError: 'genome-presence' must be a value greater than 0.")
     
     if args.absolute_size < 0:
-        sys.exit("\nError: 'absolute_size' must be a value greater than 0.")
+        sys.exit("\nError: 'absolute-size' must be a value greater than 0.")
     
     if args.translation_table < 0 or args.translation_table >= 25:
         sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
