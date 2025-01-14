@@ -146,6 +146,7 @@ def main(args: Namespace) -> None:
         upf.process_tsv_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
     # Clean up temporary files
     if not args.no_cleanup:
-        print("\nCleaning up temporary files...")
+        if 'match-schemas' not in args.annotation_options:
+            print("\nCleaning up temporary files...")
         # Remove temporary files
         ff.cleanup(args.output_directory, [merged_file_path, output_file])
