@@ -44,6 +44,26 @@ def validate_python_version(minimum_version: Tuple[int, int, int] = ct.MIN_PYTHO
 
     return python_version
 
+def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
+    """
+    Validate the number of CPUs available in the system and return the optimal number of CPUs to use.
+
+    Parameters
+    ----------
+    given_number_of_cpus : int
+        The number of CPUs to use.
+
+    Returns
+    -------
+    int
+        The number of CPUs to use.
+    """
+    max_cpus: int = os.cpu_count()
+    if max_cpus < given_number_of_cpus:
+        optimal_cpus: int = max_cpus - 1
+        print(f'The number of CPUs available in the system is less than the given number of CPUs: {max_cpus} < {given_number_of_cpus}, setting cpu count to {optimal_cpus}')
+        return optimal_cpus
+    return given_number_of_cpus
 
 def verify_path_exists(path: str, path_type: str) -> None:
     """
@@ -341,6 +361,11 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     """
     Validate the arguments passed to the schema annotation module.
 
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the schema annotation module.
+
     Raises
     ------
     SystemExit
@@ -349,9 +374,37 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     # Verify if files or directories exist
     verify_schema_sctructure(args.schema_directory)
 
+    verify_path_exists(args.output_directory, 'directory')
+
     # Chewie annotations
     if args.chewie_annotations:
         verify_path_exists(args.chewie_annotations, 'file')
+    
+    if args.bsr <= 0 or args.bsr > 1:
+        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+    
+    if args.threads <= 0:
+        sys.exit("\nError: 'threads' must be a value greater than 0.")
+    
+    if args.cpu <= 0:
+        sys.exit("\nError: 'cpu' must be a value greater than 0.")
+
+    args.cpu = validate_system_max_cpus_number(args.cpu)
+
+    if args.retry <= 0:
+        sys.exit("\nError: 'retry' must be a value greater than 0.")
+    
+    if args.translation_table < 0 or args.translation_table > 31:
+        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+
+    if args.clustering_sim <= 0 or args.clustering_sim >= 1:
+        sys.exit("\nError: 'clustering-sim' must be a value between 0 and 1.")
+    
+    if args.clustering_cov <= 0 or args.clustering_cov >= 1:
+        sys.exit("\nError: 'clustering-cov' must be a value between 0 and 1.")
+    
+    if args.size_ratio <= 0 or args.size_ratio >= 1:
+        sys.exit("\nError: 'size-ratio' must be a value between 0 and 1.")
 
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
@@ -401,6 +454,9 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
         if args.subject_annotations:
             verify_path_exists(args.subject_annotations, 'file')
+        # Verify if best-annotations-bsr is a value between 0 and 1
+        if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
+            sys.exit("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
     else:
         if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
             sys.exit("\nError: 'subject_schema', 'subject_annotations', and 'processing_mode' can only be used with '--annotation-options match-schemas'.")
@@ -408,6 +464,11 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the download assemblies module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the download assemblies module.
 
     Raises
     ------
@@ -434,4 +495,29 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
         verify_path_exists(args.filtering_criteria.input_table, 'file')
     
     if args.threads <= 0:
-        sys.exist("\nError: the number of threads should atleast be 1")
+        sys.exist("\nError: 'threads' must be a value greater than 0.")
+    
+    if args.retry <= 0:
+        sys.exist("\n Error: 'retry' must be a value greater than 0.")
+
+def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the identify spurious genes module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the identify spurious genes module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+
+    # Verify if files or directories exist
+    verify_schema_sctructure(args.schema_directory)
+
+    verify_path_exists(args.output_directory, 'directory')
+
+    verify_path_exists(args.allelecall_directory, 'file')
