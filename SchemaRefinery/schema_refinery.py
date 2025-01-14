@@ -517,10 +517,6 @@ def identify_spurious_genes() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
-
-    # Validate the possible_new_loci argument
-    if args.possible_new_loci and args.run_mode != 'loci_vs_cds':
-        sys.exit("Argument -p --possible_new_loci can only be used with -m --run-mode of loci_vs_cds.")
     
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
     IdentifySpuriousGenes.main(**vars(args))

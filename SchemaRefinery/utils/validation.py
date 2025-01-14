@@ -380,7 +380,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     if args.chewie_annotations:
         verify_path_exists(args.chewie_annotations, 'file')
     
-    if args.bsr <= 0 or args.bsr > 1:
+    if args.bsr <= 0 or args.bsr >= 1:
         sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
     
     if args.threads <= 0:
@@ -394,7 +394,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     if args.retry <= 0:
         sys.exit("\nError: 'retry' must be a value greater than 0.")
     
-    if args.translation_table < 0 or args.translation_table > 31:
+    if args.translation_table < 0 or args.translation_table >= 25:
         sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
 
     if args.clustering_sim <= 0 or args.clustering_sim >= 1:
@@ -521,3 +521,40 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     verify_path_exists(args.output_directory, 'directory')
 
     verify_path_exists(args.allelecall_directory, 'file')
+
+
+    if args.run_mode == 'loci_vs_cds':
+        if not args.possible_new_loci:
+            sys.exit("Argument -p --possible_new_loci is required with -m --run-mode of loci_vs_cds.")
+    
+    if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
+        sys.exit("\nError: 'alignment_ratio_threshold' must be a value between 0 and 1.")
+    
+    if args.pident_threshold < 0 or args.pident_threshold >= 100:
+        sys.exit("\nError: 'pident_threshold' must be a value between 0 and 100.")
+    
+    if args.clustering_sim_threshold < 0 or args.clustering_sim_threshold >= 1:
+        sys.exit("\nError: 'clustering_sim_threshold' must be a value between 0 and 1.")
+    
+    if args.clustering_cov_threshold < 0 or args.clustering_cov_threshold >= 1:
+        sys.exit("\nError: 'clustering_cov_threshold' must be a value between 0 and 1.")
+    
+    if args.genome_presence < 0:
+        sys.exit("\nError: 'genome_presence' must be a value greater than 0.")
+    
+    if args.absolute_size < 0:
+        sys.exit("\nError: 'absolute_size' must be a value greater than 0.")
+    
+    if args.translation_table < 0 or args.translation_table >= 25:
+        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+    
+    if args.bsr < 0 or args.bsr >= 1:
+        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+    
+    if args.size_ratio < 0 or args.size_ratio >= 1:
+        sys.exit("\nError: 'size-ratio' must be a value between 0 and 1.")
+    
+    if args.cpu <= 0:
+        sys.exit("\nError: 'cpu' must be a value greater than 0.")
+
+    args.cpu = validate_system_max_cpus_number(args.cpu)
