@@ -129,6 +129,7 @@ Filtering criteria file should be a TSV file with the following columns:
     exclude_atypical: Exclude atypical (NCBI) (True, False, None)
 
 Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
+Note: When None or empty value is provided, the filtering criteria will not be applied.
 
 Outputs
 -------
