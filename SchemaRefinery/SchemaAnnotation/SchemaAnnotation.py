@@ -42,10 +42,6 @@ def main(args: Namespace) -> None:
     # Initialize a list to store result files
     results_files: List[str] = []
 
-    # Add Chewie annotations to the results files if provided
-    if args.chewie_annotations:
-        results_files.extend(args.chewie_annotations)
-
     # Check if 'uniprot-proteomes' is in the annotation options
     if 'uniprot-proteomes' in args.annotation_options:
         uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
@@ -109,10 +105,23 @@ def main(args: Namespace) -> None:
                                            args.bsr,
                                            args.translation_table,
                                            args.cpu,
-                                           args.processing_mode,)
+                                           args.processing_mode,
+                                           False,)
+        # Merge matched loci with their annotation
+        upf.merge_files_by_column_values(matched_schemas,
+                                        args.subject_annotations,
+                                        1,
+                                        0,
+                                        matched_schemas)
+        
         results_files.append(matched_schemas)
 
+    # Add Chewie annotations to the results files if provided
+    if args.chewie_annotations:
+        results_files.extend(args.chewie_annotations)
+
     merged_file_path = os.path.join(args.output_directory, 'annotations_summary.tsv')
+
     # If only one result file is present, copy it to the output directory
     if len(results_files) == 1:
         shutil.copy(results_files[0], merged_file_path)
@@ -120,8 +129,23 @@ def main(args: Namespace) -> None:
         # Merge all results into a single file
         upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
+    if args.best_annotations_bsr:
+        priority_dict = {}
+        if 'genbank' in args.annotation_options:
+            priority_dict.update({
+                'Genbank_BSR' : ['Locus', 'Genbank_ID', 'Genbank_product', 'Genbank_name', 'Genbank_BSR']
+            })
+        if 'uniprot-proteomes' in args.annotation_options:
+            priority_dict.update({
+                'Uniprot_BSR' : ['Locus', 'Uniprot_protein_ID', 'Uniprot_protein_product', 'Uniprot_protein_short_name', 'Uniprot_BSR']
+            })
+        # Process the merged file based on the priority dictionary
+        output_file = os.path.join(args.output_directory, 'best_annotations_user_input.tsv')
+        # Define the columns to include in the output file
+        output_columns = ['Locus', 'Protein_ID', 'Protein_product', 'Protein_short_name', 'Protein_BSR', 'Database']
+        upf.process_tsv_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
     # Clean up temporary files
     if not args.no_cleanup:
         print("\nCleaning up temporary files...")
         # Remove temporary files
-        ff.cleanup(args.output_directory, [merged_file_path])
+        ff.cleanup(args.output_directory, [merged_file_path, output_file])

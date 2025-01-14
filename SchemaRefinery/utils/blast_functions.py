@@ -412,6 +412,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     ff.create_directory(self_score_folder)
 
     self_score_dict: Dict[str, Any] = {}
+    self_score_results_files: List[str] = [] # List to store paths to BLAST results
     i: int = 1
     # Calculate self-score
     print("\nCalculating self-score for each loci:")
@@ -421,15 +422,17 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
                                 itertools.repeat(blast_exec),
                                 paths_dict.values(),
                                 itertools.repeat(self_score_folder)):
-            
-            # Extract self-score from BLAST results
-            _, self_score, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, False, True, True, True, True)
-    
-            # Save self-score
-            self_score_dict.update(self_score)
+            self_score_results_files.append(res[1])
                             
             # Print progress
             print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
             i += 1    
-            
+
+    for blast_results_file in self_score_results_files:
+        # Extract self-score from BLAST results
+        _, self_score, _, _ = af.get_alignments_dict_from_blast_results(blast_results_file, 0, False, True, True, True, True)
+
+        # Save self-score
+        self_score_dict.update(self_score)
+
     return self_score_dict

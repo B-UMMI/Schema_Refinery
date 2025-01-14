@@ -56,44 +56,50 @@ FILE_EXTENSIONS = ['genome', 'rna', 'protein',
                    'cds', 'gff3', 'gtf',
                    'gbff', 'seq-report', 'none']
 
-CRITERIA_ERRORS = {'abundance':
-                       ['abundance: must be float between 0.0 and 1.0.',
+CRITERIA_ERRORS = {'taxon': 
+                        ['taxon: must be a valid taxon ID.',
+                        [str, None, None, None, None]],
+                    'input_table': 
+                        ['input_table: must be a valid path to a file.',
+                        [str, None, None, True, None]],
+                    'abundance':
+                        ['abundance: must be float between 0.0 and 1.0.',
                         [float, 0.0, 1.0, None, None]],
                    'genome_size':
-                       ['genome_size: must be int greater than 0.',
+                        ['genome_size: must be int greater than 0.',
                         [int, 0, None, None, None]],
                    'size_threshold':
-                       ['size_threshold: must be float between 0.0 and 1.0.',
+                        ['size_threshold: must be float between 0.0 and 1.0.',
                         [float, 0.0, 1.0, None, None]],
                    'max_contig_number':
-                       ['max_contig_number: must be int greater than 0.',
+                        ['max_contig_number: must be int greater than 0.',
                         [int, 1, None, None, None]],
                    'known_st':
-                       ['known_st: must be True or False.',
+                        ['known_st: must be True or False.',
                         [bool, None, None, None, None]],
                    'any_quality':
-                       ['any_quality: must be True or False.',
+                        ['any_quality: must be True or False.',
                         [bool, None, None, None, None]],
                    'ST_list_path':
-                       ['ST_list_path: must be a valid path to a file.',
+                        ['ST_list_path: must be a valid path to a file.',
                         [str, None, None, True, None]],
                    'assembly_level':
-                       ['assembly_level: one or more of the following separated by a comma: chromosome,complete,contig,scaffold',
+                        ['assembly_level: one or more of the following separated by a comma: chromosome,complete,contig,scaffold',
                         [str, None, None, None, ASSEMBLY_LEVELS]],
                    'reference':
-                       ['reference: must be True or False.',
+                        ['reference: must be True or False.',
                         [bool, None, None, None, None]],
                    'assembly_source':
-                       ['assembly_source: one of the following: RefSeq,GenBank,all',
+                        ['assembly_source: one of the following: RefSeq,GenBank,all',
                         [str, None, None, None, ASSEMBLY_SOURCES]],
                    'file_to_include':
-                       ['file_to_include: one or more of the following separated by comma: genome,rna,protein,cds,gff3,gtf,gbff,seq-report,none',
+                        ['file_to_include: one or more of the following separated by comma: genome,rna,protein,cds,gff3,gtf,gbff,seq-report,none',
                         [str, None, None, None, FILE_EXTENSIONS]],
                    'verify_status':
-                       ['verify_status: bool or None',
+                        ['verify_status: bool or None',
                         [bool, None, None, None, None]],
                    'exclude_atypical':
-                       ['exclude_atypical: bool or None',
+                        ['exclude_atypical: bool or None',
                         [bool, None, None, None, None]]}
 
 EBI_FTP = 'http://ftp.ebi.ac.uk'

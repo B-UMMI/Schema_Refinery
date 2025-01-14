@@ -10,6 +10,7 @@ try:
                         linux_functions as lf,
                         file_functions as ff,
                         alignments_functions as af,
+                        Types as tp
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -18,6 +19,7 @@ except ModuleNotFoundError:
                                     linux_functions as lf,
                                     file_functions as ff,
                                     alignments_functions as af,
+                                    Types as tp
                                     
     )
 
@@ -95,6 +97,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_translations_paths)
+    blastp_results_files: List[str] = [] # List to store the paths to the BLASTp results files
     i: int = 1
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -104,46 +107,49 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
                                 query_translations_paths.values(),
                                 query_translations_paths.keys(),
                                 repeat(blastp_results_folder)):
-            # Get the alignments
-            filtered_alignments_dict: Dict[str, Dict[str, Dict[str, Dict[str, float]]]]
-            filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results_simplified(res[1],
-                                                                                                        0,
-                                                                                                        False,
-                                                                                                        True)
-
-            # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                # Get the loci name
-                query_loci_id: str = query.split('_')[0]
-
-                best_bsr_values.setdefault(query_loci_id, {})
-                # Create the dict of the query
-                bsr_values.setdefault(query, {})
-                for subject_id, results in subjects_dict.items():
-                    subject_loci_id = subject_id.split('_')[0]
-                    # Highest score (First one)
-                    subject_score: float = next(iter(results.values()))['score']
-                    # Calculate BSR value
-                    computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
-                    # Check if the BSR value is higher than the threshold
-                    if computed_score >= bsr:
-                        # Round BSR values if they are superior to 1.0 to 1 decimal place
-                        if computed_score > 1.0:
-                            computed_score = round(computed_score, 1)
-                        # Save all of the different matches that this query had and their BSR values
-                        bsr_values[query].update({subject_id: computed_score})
-                    else:
-                        continue
-                    # Save the best match for each query and subject matches
-                    subject_loci_id = subject_id.split('_')[0]
-                    if not best_bsr_values[query_loci_id].get(subject_loci_id):
-                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
-                    elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
-                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
-
+            # Save the path to the BLASTp results file
+            blastp_results_files.append(res[1])
 
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
+
+    for blast_result_file in blastp_results_files:
+        # Get the alignments
+        filtered_alignments_dict: tp.BlastDict 
+        filtered_alignments_dict, _, _ = af.get_alignments_dict_from_blast_results_simplified(blast_result_file,
+                                                                                                    0,
+                                                                                                    False,
+                                                                                                    True)
+
+        # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
+        for query, subjects_dict in filtered_alignments_dict.items():
+            # Get the loci name
+            query_loci_id: str = query.split('_')[0]
+
+            best_bsr_values.setdefault(query_loci_id, {})
+            # Create the dict of the query
+            bsr_values.setdefault(query, {})
+            for subject_id, results in subjects_dict.items():
+                subject_loci_id = subject_id.split('_')[0]
+                # Highest score (First one)
+                subject_score: float = next(iter(results.values()))['score']
+                # Calculate BSR value
+                computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
+                # Check if the BSR value is higher than the threshold
+                if computed_score >= bsr:
+                    # Round BSR values if they are superior to 1.0 to 1 decimal place
+                    if computed_score > 1.0:
+                        computed_score = round(computed_score, 1)
+                    # Save all of the different matches that this query had and their BSR values
+                    bsr_values[query].update({subject_id: computed_score})
+                else:
+                    continue
+                # Save the best match for each query and subject matches
+                subject_loci_id = subject_id.split('_')[0]
+                if not best_bsr_values[query_loci_id].get(subject_loci_id):
+                    best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+                elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
+                    best_bsr_values[query_loci_id][subject_loci_id] = computed_score
 
     return best_bsr_values
 
@@ -206,6 +212,8 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         Number of CPU cores to use.
     processing_mode : str
         Mode of processing.
+    no_cleanup : bool
+        If True, temporary files will not be removed.
 
     Returns
     -------

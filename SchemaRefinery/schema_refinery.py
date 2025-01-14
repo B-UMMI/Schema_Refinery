@@ -81,13 +81,6 @@ def download_assemblies() -> None:
                         dest='email',
                         help='Email provided to Entrez.')
 
-    parser.add_argument('-t',
-                        '--taxon',
-                        type=str,
-                        required=False,
-                        dest='taxon',
-                        help='Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.')
-
     parser.add_argument('-th',
                         '--threads',
                         type=int,
@@ -133,14 +126,6 @@ def download_assemblies() -> None:
                         dest='download',
                         help='If the assemblies that passed the filtering criteria should be downloaded.')
 
-    # Arguments specific for NCBI
-    parser.add_argument('-i',
-                        '--input-table',
-                        type=str,
-                        required=False,
-                        dest='input_table',
-                        help='Text file with a list of accession numbers for the NCBI Assembly database.')
-
     parser.add_argument('--nocleanup',
                         action='store_true',
                         required=False,
@@ -151,6 +136,10 @@ def download_assemblies() -> None:
     args = parser.parse_args()
 
     val.validate_download_assemblies_module_arguments(args)
+    
+    # Transfer values from criteria file to the args namespace
+    args['taxon'] = args.filtering_criteria.pop('taxon', None)
+    args['input_table'] = args.filtering_criteria.pop('input_table', None)
 
     # Call the main function of the DownloadAssemblies class with the parsed arguments
     DownloadAssemblies.main(args)
@@ -201,12 +190,21 @@ def schema_annotation() -> None:
                         choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
                         help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
 
+    parser.add_argument('-ba',
+                        '--best-annotations-bsr',
+                        type=float,
+                        required=False,
+                        default=0.6,
+                        dest='best_annotations_bsr',
+                        help='In the output file chooses best annotation based on BSR')
+
     parser.add_argument('-pt',
                         '--proteome-table',
                         type=str,
                         required=False,
                         dest='proteome_table',
-                        help='TSV file downloaded from UniProt that contains the list of proteomes.')
+                        help='TSV file downloaded from UniProt that contains the list of proteomes.'
+                        'Should be used with --annotation-options uniprot-proteomes')
 
     parser.add_argument('-gf',
                         '--genbank-files',
@@ -230,6 +228,15 @@ def schema_annotation() -> None:
                         default=None,
                         dest='subject_schema',
                         help='Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.')
+
+    parser.add_argument('-sa',
+                        '--subject-annotations',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='subject_annotations',
+                        help='Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.'
+                        'Should be used with --annotation-options match_schema and --subject-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.')
 
     parser.add_argument('--bsr',
                         type=float,
@@ -287,7 +294,7 @@ def schema_annotation() -> None:
                         help='Coverage value for kmers representatives (float: 0-1).')
     
     parser.add_argument('-sr',
-                        '--size_ratio',
+                        '--size-ratio',
                         type=float,
                         required=False,
                         dest='size_ratio',
@@ -314,7 +321,7 @@ def schema_annotation() -> None:
                         'reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
     parser.add_argument('-egtc',
-                        '--extra_genbank_table_columns',
+                        '--extra-genbank-table-columns',
                         type=str,
                         required=False,
                         dest='extra_genbank_table_columns',
@@ -323,28 +330,29 @@ def schema_annotation() -> None:
                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
 
     parser.add_argument('-gia',
-                    '--genbank-ids-to-add',
-                    type=str,
-                    required=False,
-                    dest='genbank_ids_to_add',
-                    nargs='+',
-                    default=[],
-                    help='List of GenBank IDs to add to final results (example.gbk).')
+                        '--genbank-ids-to-add',
+                        type=str,
+                        required=False,
+                        dest='genbank_ids_to_add',
+                        nargs='+',
+                        default=[],
+                        help='List of GenBank IDs to add to final results (example.gbk).')
     
     parser.add_argument('-pia',
-                    '--proteome-ids-to-add',
-                    type=str,
-                    required=False,
-                    dest='proteome_ids_to_add',
-                    nargs='+',
-                    default=[],
-                    help='List of Proteome IDs to add to final results.')
+                        '--proteome-ids-to-add',
+                        type=str,
+                        required=False,
+                        dest='proteome_ids_to_add',
+                        nargs='+',
+                        default=[],
+                        help='List of Proteome IDs to add to final results.'
+                        'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
 
     parser.add_argument('--nocleanup',
-                        action='store_true',
-                        required=False,
-                        dest='no_cleanup',
-                        help='Flag to indicate whether to skip cleanup after running the module.')
+                            action='store_true',
+                            required=False,
+                            dest='no_cleanup',
+                            help='Flag to indicate whether to skip cleanup after running the module.')
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -401,11 +409,11 @@ def identify_spurious_genes() -> None:
                         '--possible-new-loci',
                         type=str,
                         required=False,
-                        dest='possible_new_loci',
+                        dest='possible-new-loci',
                         help='Path to the directory that contains possible new loci.')
 
     parser.add_argument('-at',
-                        '--alignment_ratio_threshold',
+                        '--alignment-ratio-threshold',
                         type=float,
                         required=False,
                         dest='alignment_ratio_threshold',
@@ -413,7 +421,7 @@ def identify_spurious_genes() -> None:
                         help='Threshold value for alignment used to identify spurious CDS (float: 0-1).')
 
     parser.add_argument('-pt',
-                        '--pident_threshold',
+                        '--pident-threshold',
                         type=int,
                         required=False,
                         dest='pident_threshold',
@@ -437,14 +445,14 @@ def identify_spurious_genes() -> None:
                         help='Coverage value for kmers representatives (float: 0-1).')
 
     parser.add_argument('-gp',
-                        '--genome_presence',
+                        '--genome-presence',
                         type=int,
                         required=False,
                         dest='genome_presence',
                         help='The minimum number of genomes specific cluster of CDS must be present in order to be considered.')
 
     parser.add_argument('-as',
-                        '--absolute_size',
+                        '--absolute-size',
                         type=int,
                         required=False,
                         dest='absolute_size',
@@ -452,7 +460,7 @@ def identify_spurious_genes() -> None:
                         help='Size of the CDS to consider processing.')
 
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -468,7 +476,7 @@ def identify_spurious_genes() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-sr',
-                        '--size_ratio',
+                        '--size-ratio',
                         type=float,
                         required=False,
                         dest='size_ratio',
@@ -510,10 +518,8 @@ def identify_spurious_genes() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Validate the possible_new_loci argument
-    if args.possible_new_loci and args.run_mode != 'loci_vs_cds':
-        sys.exit("Argument -p --possible_new_loci can only be used with -m --run-mode of loci_vs_cds.")
-    
+    val.validate_identify_spurious_genes_module_arguments(args)
+
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
     IdentifySpuriousGenes.main(**vars(args))
 
@@ -571,7 +577,7 @@ def adapt_loci() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -638,7 +644,7 @@ def identify_paralogous_loci() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -646,7 +652,7 @@ def identify_paralogous_loci() -> None:
                         help='Translation table to use for the CDS translation.')
     
     parser.add_argument('-st',
-                        '--size_threshold',
+                        '--size-threshold',
                         type=float,
                         required=False,
                         dest='size_threshold',
@@ -734,7 +740,7 @@ def match_schemas() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',

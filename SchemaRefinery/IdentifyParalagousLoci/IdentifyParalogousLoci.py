@@ -164,6 +164,7 @@ def identify_paralogous_loci(schema_directory: str,
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_paths_dict)
+    blastp_results_files: List[str] = [] # List to store the paths of the BLASTp results files
     i = 1
     print(f"\nRunning BLASTp...")
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
@@ -173,45 +174,49 @@ def identify_paralogous_loci(schema_directory: str,
                                 query_paths_dict.values(),
                                 query_paths_dict.keys(),
                                 itertools.repeat(blast_output_folder)):
-            
-            filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1],
-                                                                                          0,
-                                                                                          True,
-                                                                                          False,
-                                                                                          True,
-                                                                                          True,
-                                                                                          False)
+            # Save the results file
+            blastp_results_files.append(res[1])
 
-            # Since BLAST may find several local alignments choose the largest one to calculate BSR.
-            for query, subjects_dict in filtered_alignments_dict.items():
-                query_loci_id: str = query.split('_')[0]
-                best_bsr_values.setdefault(query_loci_id, {})
-                bsr_values.setdefault(query, {})
-                for subject_id, results in subjects_dict.items():
-                    # Highest score (First one)
-                    subject_score: float = next(iter(results.values()))['score']
-                    computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
-                    # Check if the BSR value is higher than the threshold
-                    if computed_score >= bsr:
-                        # Round BSR values if they are superior to 1.0 to 1 decimal place
-                        if computed_score > 1.0:
-                            computed_score = round(computed_score, 1)
-                        # Save all of the different matches that this query had and their BSR values
-                        bsr_values[query].update({subject_id: computed_score})
-                    else:
-                        continue
-                    # Get the best BSR value between loci
-                    # If the BSR is better than the current best, update it
-                    # Since there may be several paralogous we save the various matches
-                    subject_loci_id: str = subject_id.split('_')[0]
-                    if not best_bsr_values[query_loci_id].get(subject_loci_id):
-                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
-                    elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
-                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
-                    
             print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
             i += 1
-            
+    
+    for blast_result_file in blastp_results_files:
+        # Get the filtered alignments
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_result_file,
+                                                                                        0,
+                                                                                        True,
+                                                                                        False,
+                                                                                        True,
+                                                                                        True,
+                                                                                        False)
+
+        # Since BLAST may find several local alignments choose the largest one to calculate BSR.
+        for query, subjects_dict in filtered_alignments_dict.items():
+            query_loci_id: str = query.split('_')[0]
+            best_bsr_values.setdefault(query_loci_id, {})
+            bsr_values.setdefault(query, {})
+            for subject_id, results in subjects_dict.items():
+                # Highest score (First one)
+                subject_score: float = next(iter(results.values()))['score']
+                computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
+                # Check if the BSR value is higher than the threshold
+                if computed_score >= bsr:
+                    # Round BSR values if they are superior to 1.0 to 1 decimal place
+                    if computed_score > 1.0:
+                        computed_score = round(computed_score, 1)
+                    # Save all of the different matches that this query had and their BSR values
+                    bsr_values[query].update({subject_id: computed_score})
+                else:
+                    continue
+                # Get the best BSR value between loci
+                # If the BSR is better than the current best, update it
+                # Since there may be several paralogous we save the various matches
+                subject_loci_id: str = subject_id.split('_')[0]
+                if not best_bsr_values[query_loci_id].get(subject_loci_id):
+                    best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+                elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
+                    best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+
     # Print newline
     print('\n')
     
