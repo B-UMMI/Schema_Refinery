@@ -112,20 +112,21 @@ Filtering criteria example
 Filtering criteria file should be a TSV file with the following columns:
 
 .. code-block:: tsv
-
-    abundance   0.8
-    genome_size 2000000
-    size_threshold  0.2
-    max_contig_number   150
-    known_st    False
-    any_quality False
-    ST_list_path    None
-    assembly_level  chromosome,complete,contig,scaffold
-    reference   False
-    assembly_source all
-    file_to_include genome,gbff
-    verify_status   True
-    exclude_atypical    True
+    taxon: Scientific name of the taxon (NCBI, ENA661K)
+    input_table: Text file with a list of accession numbers for the NCBI Assembly database (NCBI)
+    abundance: Abundance of the taxon in the environment (ENA661K) (0-1)
+    genome_size: Genome size in Mbp (NCBI, ENA661K) (>1)
+    size_threshold: Threshold for genome size in Mbp (NCBI, ENA661K) (0-1)
+    max_contig_number: Maximum number of contigs in the assembly (NCBI, ENA661K) (>1)
+    known_st: Known sequence type (ENA661K) (True, False, None)
+    any_quality: Any quality (ENA661K) (True, False, None)
+    ST_list_path: Path to the sequence type list (ENA661K) (path, None)
+    assembly_level: Assembly level (NCBI, ENA661K) (chromosome,complete,contig,scaffold)
+    reference: If reference genome (NCBI) (True, False, None)
+    assembly_source: Assembly source (NCBI) (all, refseq, genbank)
+    file_to_include: files to include (NCBI) (genome, rna, protein, cds, gff3, gtf, gbff, seq-report, none)
+    verify_status: Verify status (NCBI) (True, False, None)
+    exclude_atypical: Exclude atypical (NCBI) (True, False, None)
 
 Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
 
