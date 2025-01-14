@@ -415,23 +415,20 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
         - If the arguments are invalid
     """
     # Verify if files or directories exist
-    if args.input_table:
-        verify_path_exists(args.input_table, 'file')
-
-    # Check for mutually exclusive options
-    if args.input_table is not None and args.taxon is not None:
-        sys.exit("\nError: Downloading from input table or downloading by taxon are mutually exclusive.")
-
-    # Ensure that either input table or taxon name is provided
-    if args.input_table is None and args.taxon is None:
-        sys.exit("\nError: Must provide an input table or a taxon name.")
+    verify_path_exists(args.output_directory, 'directory')
 
     # Ensure that ENA661K is not used with an input table
     if args.input_table is not None and 'ENA661K' in args.database:
         sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
+    
+    if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
+        sys.exit("\nError: Taxon and input table are mutually exclusive.")
 
-    # Handle filtering criteria
-    if args.filtering_criteria:
-        criteria: Dict[str, Any] = args.filtering_criteria
-        if criteria['assembly_source'] == ['GenBank'] and (criteria['verify_status'] is True or criteria['verify_status'] is None):
-            sys.exit("\nError: Assembly status can only be verified for assemblies obtained from RefSeq (Set to False, Default(None) = True)")
+    if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
+        sys.exit("\nError: Must provide either taxon or input table.")
+    
+    if args.filtering_criteria.input_table and not 'NCBI' not in args.database: 
+       sys.exit("\nError: Input table can only be used with NCBI database.")
+
+    elif args.filtering_criteria.input_table:
+        verify_path_exists(args.filtering_criteria.input_table, 'file')

@@ -81,13 +81,6 @@ def download_assemblies() -> None:
                         dest='email',
                         help='Email provided to Entrez.')
 
-    parser.add_argument('-t',
-                        '--taxon',
-                        type=str,
-                        required=False,
-                        dest='taxon',
-                        help='Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.')
-
     parser.add_argument('-th',
                         '--threads',
                         type=int,
@@ -133,14 +126,6 @@ def download_assemblies() -> None:
                         dest='download',
                         help='If the assemblies that passed the filtering criteria should be downloaded.')
 
-    # Arguments specific for NCBI
-    parser.add_argument('-i',
-                        '--input-table',
-                        type=str,
-                        required=False,
-                        dest='input_table',
-                        help='Text file with a list of accession numbers for the NCBI Assembly database.')
-
     parser.add_argument('--nocleanup',
                         action='store_true',
                         required=False,
@@ -151,6 +136,10 @@ def download_assemblies() -> None:
     args = parser.parse_args()
 
     val.validate_download_assemblies_module_arguments(args)
+    
+    # Transfer values from criteria file to the args namespace
+    args['taxon'] = args.filtering_criteria.pop('taxon', None)
+    args['input_table'] = args.filtering_criteria.pop('input_table', None)
 
     # Call the main function of the DownloadAssemblies class with the parsed arguments
     DownloadAssemblies.main(args)
@@ -341,29 +330,29 @@ def schema_annotation() -> None:
                         help='List of columns to add to annotation file (locus_tag, note, codon_start, function, protein_id, db_xref).')
 
     parser.add_argument('-gia',
-                    '--genbank-ids-to-add',
-                    type=str,
-                    required=False,
-                    dest='genbank_ids_to_add',
-                    nargs='+',
-                    default=[],
-                    help='List of GenBank IDs to add to final results (example.gbk).')
+                        '--genbank-ids-to-add',
+                        type=str,
+                        required=False,
+                        dest='genbank_ids_to_add',
+                        nargs='+',
+                        default=[],
+                        help='List of GenBank IDs to add to final results (example.gbk).')
     
     parser.add_argument('-pia',
-                    '--proteome-ids-to-add',
-                    type=str,
-                    required=False,
-                    dest='proteome_ids_to_add',
-                    nargs='+',
-                    default=[],
-                    help='List of Proteome IDs to add to final results.'
-                    'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
+                        '--proteome-ids-to-add',
+                        type=str,
+                        required=False,
+                        dest='proteome_ids_to_add',
+                        nargs='+',
+                        default=[],
+                        help='List of Proteome IDs to add to final results.'
+                        'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
 
     parser.add_argument('--nocleanup',
-                        action='store_true',
-                        required=False,
-                        dest='no_cleanup',
-                        help='Flag to indicate whether to skip cleanup after running the module.')
+                            action='store_true',
+                            required=False,
+                            dest='no_cleanup',
+                            help='Flag to indicate whether to skip cleanup after running the module.')
 
     # Parse the command-line arguments
     args = parser.parse_args()
