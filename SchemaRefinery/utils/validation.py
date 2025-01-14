@@ -432,3 +432,6 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
 
     elif args.filtering_criteria.input_table:
         verify_path_exists(args.filtering_criteria.input_table, 'file')
+    
+    if args.threads <= 0:
+        sys.exist("\nError: the number of threads should atleast be 1")
