@@ -191,7 +191,7 @@ def schema_annotation() -> None:
                         help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
 
     parser.add_argument('-ba',
-                        '--best_annotations_bsr',
+                        '--best-annotations-bsr',
                         type=float,
                         required=False,
                         default=0.6,
@@ -230,7 +230,7 @@ def schema_annotation() -> None:
                         help='Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.')
 
     parser.add_argument('-sa',
-                        '--subject_annotations',
+                        '--subject-annotations',
                         type=str,
                         required=False,
                         default=None,
@@ -294,7 +294,7 @@ def schema_annotation() -> None:
                         help='Coverage value for kmers representatives (float: 0-1).')
     
     parser.add_argument('-sr',
-                        '--size_ratio',
+                        '--size-ratio',
                         type=float,
                         required=False,
                         dest='size_ratio',
@@ -321,7 +321,7 @@ def schema_annotation() -> None:
                         'reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
     
     parser.add_argument('-egtc',
-                        '--extra_genbank_table_columns',
+                        '--extra-genbank-table-columns',
                         type=str,
                         required=False,
                         dest='extra_genbank_table_columns',
@@ -409,11 +409,11 @@ def identify_spurious_genes() -> None:
                         '--possible-new-loci',
                         type=str,
                         required=False,
-                        dest='possible_new_loci',
+                        dest='possible-new-loci',
                         help='Path to the directory that contains possible new loci.')
 
     parser.add_argument('-at',
-                        '--alignment_ratio_threshold',
+                        '--alignment-ratio-threshold',
                         type=float,
                         required=False,
                         dest='alignment_ratio_threshold',
@@ -421,7 +421,7 @@ def identify_spurious_genes() -> None:
                         help='Threshold value for alignment used to identify spurious CDS (float: 0-1).')
 
     parser.add_argument('-pt',
-                        '--pident_threshold',
+                        '--pident-threshold',
                         type=int,
                         required=False,
                         dest='pident_threshold',
@@ -445,14 +445,14 @@ def identify_spurious_genes() -> None:
                         help='Coverage value for kmers representatives (float: 0-1).')
 
     parser.add_argument('-gp',
-                        '--genome_presence',
+                        '--genome-presence',
                         type=int,
                         required=False,
                         dest='genome_presence',
                         help='The minimum number of genomes specific cluster of CDS must be present in order to be considered.')
 
     parser.add_argument('-as',
-                        '--absolute_size',
+                        '--absolute-size',
                         type=int,
                         required=False,
                         dest='absolute_size',
@@ -460,7 +460,7 @@ def identify_spurious_genes() -> None:
                         help='Size of the CDS to consider processing.')
 
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -476,7 +476,7 @@ def identify_spurious_genes() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-sr',
-                        '--size_ratio',
+                        '--size-ratio',
                         type=float,
                         required=False,
                         dest='size_ratio',
@@ -575,7 +575,7 @@ def adapt_loci() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -642,7 +642,7 @@ def identify_paralogous_loci() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',
@@ -650,7 +650,7 @@ def identify_paralogous_loci() -> None:
                         help='Translation table to use for the CDS translation.')
     
     parser.add_argument('-st',
-                        '--size_threshold',
+                        '--size-threshold',
                         type=float,
                         required=False,
                         dest='size_threshold',
@@ -738,7 +738,7 @@ def match_schemas() -> None:
                         help='BSR value to consider alleles as the same locus.')
     
     parser.add_argument('-tt',
-                        '--translation_table',
+                        '--translation-table',
                         type=int,
                         required=False,
                         dest='translation_table',

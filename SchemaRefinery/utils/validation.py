@@ -522,10 +522,12 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
 
     verify_path_exists(args.allelecall_directory, 'file')
 
+    if args.possible_new_loci:
+        verify_schema_sctructure(args.possible_new_loci)
 
-    if args.run_mode == 'loci_vs_cds':
-        if not args.possible_new_loci:
-            sys.exit("Argument -p --possible_new_loci is required with -m --run-mode of loci_vs_cds.")
+    if args.run_mode == 'unclassified_cds':
+        if args.possible_new_loci:
+            sys.exit("\nError: 'possible_new_loci' cannot be used with 'unclassified_cds' run mode.")
     
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
         sys.exit("\nError: 'alignment_ratio_threshold' must be a value between 0 and 1.")
