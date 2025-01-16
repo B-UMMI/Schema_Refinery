@@ -65,9 +65,9 @@ def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
         return optimal_cpus
     return given_number_of_cpus
 
-def verify_path_exists(path: str, path_type: str) -> None:
+def verify_path_exists(path: str, path_type: str, errors: List[str]) -> None:
     """
-    Verify if a file or directory exists.
+    Verify if a file or directory exists and append errors to the provided list.
 
     Parameters
     ----------
@@ -75,45 +75,43 @@ def verify_path_exists(path: str, path_type: str) -> None:
         The path to the file or directory.
     path_type : str
         The type of path ('file' or 'directory').
-
-    Raises
-    ------
-    FileNotFoundError
-        If the file or directory does not exist.
+    errors : List[str]
+        The list to append error messages to.
     """
     if not os.path.exists(path):
-        raise FileNotFoundError(f"The specified {path_type} does not exist: {path}")
+        errors.append(f"The specified {path_type} does not exist: {path}")
 
-def verify_schema_sctructure(schema_directory: str) -> None:
+def verify_schema_structure(schema_directory: str, errors: List[str]) -> None:
     """
-    Verify if the schema directory has the correct structure.
+    Verify the structure of the schema directory and append errors to the provided list.
 
     Parameters
     ----------
     schema_directory : str
         The path to the schema directory.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the schema directory does not have the correct structure.
+    errors : List[str]
+        The list to append error messages to.
     """
-    if not os.path.exists(os.path.join(schema_directory)):
-        raise FileNotFoundError(f"The schema directory does not exist: {schema_directory}")
+    if not os.path.exists(schema_directory):
+        errors.append(f"The schema directory does not exist: {schema_directory}")
 
     files = [os.path.join(schema_directory, f) for f in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, f))]
     folders = [os.path.join(schema_directory, f) for f in os.listdir(schema_directory) if os.path.isdir(os.path.join(schema_directory, f))]
+    
     if len(files) == 0:
-        raise FileNotFoundError(f"The schema directory is empty: {schema_directory}")
+        errors.append(f"The schema directory is empty: {schema_directory}")
     
     if len(folders) == 0:
-        raise FileNotFoundError(f"The schema directory is missing the schema short: {schema_directory}")
+        errors.append(f"The schema directory is missing the schema short: {schema_directory}")
     
     short_schema_directory = os.path.join(schema_directory, 'short')
+    if not os.path.exists(short_schema_directory):
+        errors.append(f"The schema short directory does not exist: {short_schema_directory}")
+
     short_files = [os.path.join(short_schema_directory, f) for f in os.listdir(short_schema_directory) if os.path.isfile(os.path.join(short_schema_directory, f))]
 
     if len(short_files) == 0:
-        raise FileNotFoundError(f"The schema short directory is empty: {short_schema_directory}")
+        errors.append(f"The schema short directory is empty: {short_schema_directory}")
 
 def tryeval(val):
     """
@@ -410,7 +408,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
         - If the arguments are invalid.
     """
     # Verify if files or directories exist
-    verify_schema_sctructure(args.schema_directory)
+    verify_schema_structure(args.schema_directory)
 
     verify_path_exists(args.output_directory, 'directory')
 
@@ -515,14 +513,14 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     """
 
     # Verify if files or directories exist
-    verify_schema_sctructure(args.schema_directory)
+    verify_schema_structure(args.schema_directory)
 
     verify_path_exists(args.output_directory, 'directory')
 
     verify_path_exists(args.allelecall_directory, 'file')
 
     if args.possible_new_loci:
-        verify_schema_sctructure(args.possible_new_loci)
+        verify_schema_structure(args.possible_new_loci)
 
     if args.run_mode == 'unclassified-cds':
         if args.possible_new_loci:
@@ -607,21 +605,64 @@ def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> Non
         - If the arguments are invalid
     """
 
-    # Verify if files or directories exist
-    verify_schema_sctructure(args.schema_directory)
+    errors = []
 
-    verify_path_exists(args.output_directory, 'directory')
+    # Verify if files or directories exist
+    verify_schema_structure(args.schema_directory, errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
 
     if args.cpu <= 0:
-        sys.exit("\nError: 'cpu' must be a value greater than 0.")
-
-    args.cpu = validate_system_max_cpus_number(args.cpu)
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
 
     if args.bsr < 0 or args.bsr >= 1:
-        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
 
     if args.translation_table < 0 or args.translation_table >= 25:
-        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
     
     if args.size_threshold < 0 or args.size_threshold >= 1:
-        sys.exit("\nError: 'size-threshold' must be a value between 0 and 1.")
+        errors.append("Error: 'size-threshold' must be a value between 0 and 1.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
+
+def validate_match_schemas(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the match schemas module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the match schemas module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+    errors = []
+
+    # Verify if files or directories exist
+    verify_schema_structure(args.query_schema_directory, errors)
+
+    verify_schema_structure(args.subject_schema_directory, errors)
+
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    if args.cpu <= 0:
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
+
+    if args.bsr < 0 or args.bsr >= 1:
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
