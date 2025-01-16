@@ -65,9 +65,9 @@ def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
         return optimal_cpus
     return given_number_of_cpus
 
-def verify_path_exists(path: str, path_type: str) -> None:
+def verify_path_exists(path: str, path_type: str, errors: List[str]) -> None:
     """
-    Verify if a file or directory exists.
+    Verify if a file or directory exists and append errors to the provided list.
 
     Parameters
     ----------
@@ -75,45 +75,43 @@ def verify_path_exists(path: str, path_type: str) -> None:
         The path to the file or directory.
     path_type : str
         The type of path ('file' or 'directory').
-
-    Raises
-    ------
-    FileNotFoundError
-        If the file or directory does not exist.
+    errors : List[str]
+        The list to append error messages to.
     """
     if not os.path.exists(path):
-        raise FileNotFoundError(f"The specified {path_type} does not exist: {path}")
+        errors.append(f"The specified {path_type} does not exist: {path}")
 
-def verify_schema_sctructure(schema_directory: str) -> None:
+def verify_schema_structure(schema_directory: str, errors: List[str]) -> None:
     """
-    Verify if the schema directory has the correct structure.
+    Verify the structure of the schema directory and append errors to the provided list.
 
     Parameters
     ----------
     schema_directory : str
         The path to the schema directory.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the schema directory does not have the correct structure.
+    errors : List[str]
+        The list to append error messages to.
     """
-    if not os.path.exists(os.path.join(schema_directory)):
-        raise FileNotFoundError(f"The schema directory does not exist: {schema_directory}")
+    if not os.path.exists(schema_directory):
+        errors.append(f"The schema directory does not exist: {schema_directory}")
 
     files = [os.path.join(schema_directory, f) for f in os.listdir(schema_directory) if os.path.isfile(os.path.join(schema_directory, f))]
     folders = [os.path.join(schema_directory, f) for f in os.listdir(schema_directory) if os.path.isdir(os.path.join(schema_directory, f))]
+    
     if len(files) == 0:
-        raise FileNotFoundError(f"The schema directory is empty: {schema_directory}")
+        errors.append(f"The schema directory is empty: {schema_directory}")
     
     if len(folders) == 0:
-        raise FileNotFoundError(f"The schema directory is missing the schema short: {schema_directory}")
+        errors.append(f"The schema directory is missing the schema short: {schema_directory}")
     
     short_schema_directory = os.path.join(schema_directory, 'short')
+    if not os.path.exists(short_schema_directory):
+        errors.append(f"The schema short directory does not exist: {short_schema_directory}")
+
     short_files = [os.path.join(short_schema_directory, f) for f in os.listdir(short_schema_directory) if os.path.isfile(os.path.join(short_schema_directory, f))]
 
     if len(short_files) == 0:
-        raise FileNotFoundError(f"The schema short directory is empty: {short_schema_directory}")
+        errors.append(f"The schema short directory is empty: {short_schema_directory}")
 
 def tryeval(val):
     """
@@ -356,6 +354,50 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
     else:
         return parameter_values
 
+def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the download assemblies module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the download assemblies module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+    errors: List[str] = []
+
+    # Verify if files or directories exist
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    # Ensure that ENA661K is not used with an input table
+    if args.input_table is not None and 'ENA661K' in args.database:
+        errors.append("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
+    
+    if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
+        errors.append("\nError: Taxon and input table are mutually exclusive.")
+
+    if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
+        errors.append("\nError: Must provide either taxon or input table.")
+    
+    if args.filtering_criteria.input_table and 'NCBI' not in args.database: 
+        errors.append("\nError: Input table can only be used with NCBI database.")
+
+    elif args.filtering_criteria.input_table:
+        verify_path_exists(args.filtering_criteria.input_table, 'file', errors)
+    
+    if args.threads <= 0:
+        errors.append("\nError: 'threads' must be a value greater than 0.")
+    
+    if args.retry <= 0:
+        errors.append("\nError: 'retry' must be a value greater than 0.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
 
 def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -371,70 +413,71 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     SystemExit
         - If the arguments are invalid.
     """
-    # Verify if files or directories exist
-    verify_schema_sctructure(args.schema_directory)
+    errors: List[str] = []
 
-    verify_path_exists(args.output_directory, 'directory')
+    # Verify if files or directories exist
+    verify_schema_structure(args.schema_directory, errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
 
     # Chewie annotations
     if args.chewie_annotations:
-        verify_path_exists(args.chewie_annotations, 'file')
+        verify_path_exists(args.chewie_annotations, 'file', errors)
     
     if args.bsr <= 0 or args.bsr >= 1:
-        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+        errors.append("\nError: 'bsr' must be a value between 0 and 1.")
     
     if args.threads <= 0:
-        sys.exit("\nError: 'threads' must be a value greater than 0.")
+        errors.append("\nError: 'threads' must be a value greater than 0.")
     
     if args.cpu <= 0:
-        sys.exit("\nError: 'cpu' must be a value greater than 0.")
-
-    args.cpu = validate_system_max_cpus_number(args.cpu)
+        errors.append("\nError: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
 
     if args.retry <= 0:
-        sys.exit("\nError: 'retry' must be a value greater than 0.")
+        errors.append("\nError: 'retry' must be a value greater than 0.")
     
     if args.translation_table < 0 or args.translation_table >= 25:
-        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+        errors.append("\nError: 'translation-table' must be a value between 0 and 25.")
 
     if args.clustering_sim <= 0 or args.clustering_sim >= 1:
-        sys.exit("\nError: 'clustering-sim' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-sim' must be a value between 0 and 1.")
     
     if args.clustering_cov <= 0 or args.clustering_cov >= 1:
-        sys.exit("\nError: 'clustering-cov' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-cov' must be a value between 0 and 1.")
     
     if args.size_ratio <= 0 or args.size_ratio >= 1:
-        sys.exit("\nError: 'size-ratio' must be a value between 0 and 1.")
+        errors.append("\nError: 'size-ratio' must be a value between 0 and 1.")
 
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
         if args.proteome_ids_to_add and not args.proteome_table:
-            sys.exit("\nError: 'proteome-ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
+            errors.append("\nError: 'proteome-ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
         if not args.proteome_table:
-            sys.exit("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
+            errors.append("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
         # Verify if files or directories exist
         if args.proteome_table:
-            verify_path_exists(args.proteome_table, 'file')
+            verify_path_exists(args.proteome_table, 'file', errors)
     else:
         if any([args.proteome_ids_to_add, args.proteome_table]):
-            sys.exit("\nError: 'proteome-ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
+            errors.append("\nError: 'proteome-ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
 
     # Arguments to match genbank
     if 'genbank' in args.annotation_options:
         if args.genbank_ids_to_add and not args.genbank_files:
-            sys.exit("\nError: 'genbank-ids-to-add' can only be used with '--genbank-files' and 'genbank' annotation option.")
+            errors.append("\nError: 'genbank-ids-to-add' can only be used with '--genbank-files' and 'genbank' annotation option.")
         if not args.genbank_files:
-            sys.exit("\nError: 'genbank-files' is required with 'genbank' annotation option.")
+            errors.append("\nError: 'genbank-files' is required with 'genbank' annotation option.")
         # Verify if files or directories exist
         if args.genbank_files:
-            verify_path_exists(args.genbank_files, 'directory')
+            verify_path_exists(args.genbank_files, 'directory', errors)
             # Verify if the GenBank files directory is empty
             if_genbank_files_empty = not os.listdir(args.genbank_files)
             if if_genbank_files_empty:
-                sys.exit("\nError: The GenBank files directory is empty.")
+                errors.append("\nError: The GenBank files directory is empty.")
     else:
         if any([args.genbank_files, args.genbank_ids_to_add]):
-            sys.exit("\nError: 'genbank-files' and 'genbank-ids-to-add' can only be used with '--annotation-options genbank'.")
+            errors.append("\nError: 'genbank-files' and 'genbank-ids-to-add' can only be used with '--annotation-options genbank'.")
 
     # Arguments to match schemas
     if 'match-schemas' in args.annotation_options:
@@ -447,58 +490,23 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             if not args.processing_mode:
                 missing_args.append('processing_mode')
 
-            sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema', 'subject-annotations', and 'processing-mode' must be provided together.")
+            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema', 'subject-annotations', and 'processing-mode' must be provided together.")
         
         if args.subject_schema:
-            verify_path_exists(args.subject_schema, 'directory')
+            verify_path_exists(args.subject_schema, 'directory', errors)
 
         if args.subject_annotations:
-            verify_path_exists(args.subject_annotations, 'file')
+            verify_path_exists(args.subject_annotations, 'file', errors)
         # Verify if best-annotations-bsr is a value between 0 and 1
         if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
-            sys.exit("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
+            errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
     else:
         if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
-            sys.exit("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
+            errors.append("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
 
-def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
-    """
-    Validate the arguments passed to the download assemblies module.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        The arguments passed to the download assemblies module.
-
-    Raises
-    ------
-    SystemExit
-        - If the arguments are invalid
-    """
-    # Verify if files or directories exist
-    verify_path_exists(args.output_directory, 'directory')
-
-    # Ensure that ENA661K is not used with an input table
-    if args.input_table is not None and 'ENA661K' in args.database:
-        sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
-    
-    if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
-        sys.exit("\nError: Taxon and input table are mutually exclusive.")
-
-    if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
-        sys.exit("\nError: Must provide either taxon or input table.")
-    
-    if args.filtering_criteria.input_table and not 'NCBI' not in args.database: 
-       sys.exit("\nError: Input table can only be used with NCBI database.")
-
-    elif args.filtering_criteria.input_table:
-        verify_path_exists(args.filtering_criteria.input_table, 'file')
-    
-    if args.threads <= 0:
-        sys.exist("\nError: 'threads' must be a value greater than 0.")
-    
-    if args.retry <= 0:
-        sys.exist("\n Error: 'retry' must be a value greater than 0.")
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
 
 def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -515,48 +523,202 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
         - If the arguments are invalid
     """
 
+    errors: List[str] = []
+
     # Verify if files or directories exist
-    verify_schema_sctructure(args.schema_directory)
-
-    verify_path_exists(args.output_directory, 'directory')
-
-    verify_path_exists(args.allelecall_directory, 'file')
+    verify_schema_structure(args.schema_directory, errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
+    verify_path_exists(args.allelecall_directory, 'file', errors)
 
     if args.possible_new_loci:
-        verify_schema_sctructure(args.possible_new_loci)
+        verify_schema_structure(args.possible_new_loci, errors)
 
     if args.run_mode == 'unclassified-cds':
         if args.possible_new_loci:
-            sys.exit("\nError: 'possible-new-loci' cannot be used with 'unclassified_cds' run mode.")
+            errors.append("\nError: 'possible-new-loci' cannot be used with 'unclassified_cds' run mode.")
     
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
-        sys.exit("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
+        errors.append("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
     
     if args.pident_threshold < 0 or args.pident_threshold >= 100:
-        sys.exit("\nError: 'pident-threshold' must be a value between 0 and 100.")
+        errors.append("\nError: 'pident-threshold' must be a value between 0 and 100.")
     
     if args.clustering_sim_threshold < 0 or args.clustering_sim_threshold >= 1:
-        sys.exit("\nError: 'clustering-sim-threshold' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-sim-threshold' must be a value between 0 and 1.")
     
     if args.clustering_cov_threshold < 0 or args.clustering_cov_threshold >= 1:
-        sys.exit("\nError: 'clustering-cov-threshold' must be a value between 0 and 1.")
-    
-    if args.genome_presence < 0:
-        sys.exit("\nError: 'genome-presence' must be a value greater than 0.")
+        errors.append("\nError: 'clustering-cov-threshold' must be a value between 0 and 1.")
+
+    if args.genome_presence:
+        if args.genome_presence < 0:
+            errors.append("\nError: 'genome-presence' must be a value greater than 0.")
     
     if args.absolute_size < 0:
-        sys.exit("\nError: 'absolute-size' must be a value greater than 0.")
+        errors.append("\nError: 'absolute-size' must be a value greater than 0.")
     
     if args.translation_table < 0 or args.translation_table >= 25:
-        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+        errors.append("\nError: 'translation-table' must be a value between 0 and 25.")
     
     if args.bsr < 0 or args.bsr >= 1:
-        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+        errors.append("\nError: 'bsr' must be a value between 0 and 1.")
     
     if args.size_ratio < 0 or args.size_ratio >= 1:
-        sys.exit("\nError: 'size-ratio' must be a value between 0 and 1.")
+        errors.append("\nError: 'size-ratio' must be a value between 0 and 1.")
     
     if args.cpu <= 0:
-        sys.exit("\nError: 'cpu' must be a value greater than 0.")
+        errors.append("\nError: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
 
-    args.cpu = validate_system_max_cpus_number(args.cpu)
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
+
+def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the adapt loci module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the adapt loci module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+
+    errors: List[str] = []
+
+    # Verify if files or directories exist
+    verify_path_exists(args.input_file, 'file', errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    if args.cpu <= 0:
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
+
+    if args.bsr < 0 or args.bsr >= 1:
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
+    
+def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the identify paralogous loci module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the identify paralogous loci module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+
+    errors: List[str] = []
+
+    # Verify if files or directories exist
+    verify_schema_structure(args.schema_directory, errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    if args.cpu <= 0:
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
+
+    if args.bsr < 0 or args.bsr >= 1:
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
+    
+    if args.size_threshold < 0 or args.size_threshold >= 1:
+        errors.append("Error: 'size-threshold' must be a value between 0 and 1.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
+
+def validate_match_schemas(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the match schemas module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the match schemas module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+    errors: List[str] = []
+
+    # Verify if files or directories exist
+    verify_schema_structure(args.query_schema_directory, errors)
+
+    verify_schema_structure(args.subject_schema_directory, errors)
+
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    if args.cpu <= 0:
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
+
+    if args.bsr < 0 or args.bsr >= 1:
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
+
+def validate_create_schema_structure(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the create schema structure module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the create schema structure module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+    errors: List[str] = []
+
+    # Verify if files or directories exist
+    verify_path_exists(args.recommendations_file, 'file', errors)
+    verify_path_exists(args.fastas_folder, 'directory', errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    if args.cpu <= 0:
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
+    
+    if args.bsr < 0 or args.bsr >= 1:
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
+    
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))

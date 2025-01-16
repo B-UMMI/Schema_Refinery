@@ -12,7 +12,9 @@ Code documentation
 """
 
 import sys
+import shutil
 import argparse
+import webbrowser
 
 try:
     from DownloadAssemblies import DownloadAssemblies
@@ -21,6 +23,7 @@ try:
     from IdentifyParalagousLoci import IdentifyParalogousLoci
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
+    from CreateSchemaStructure import CreateSchemaStructure
     from utils import (constants as ct,
                        validation as val)
      
@@ -31,6 +34,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
+    from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
     from SchemaRefinery.utils import (constants as ct,
                                       validation as val)
 
@@ -357,7 +361,9 @@ def schema_annotation() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
     val.validate_schema_annotation_module_arguments(args)
+
     # Call the main function of the SchemaAnnotation class with the parsed arguments
     SchemaAnnotation.main(args)
 
@@ -409,7 +415,7 @@ def identify_spurious_genes() -> None:
                         '--possible-new-loci',
                         type=str,
                         required=False,
-                        dest='possible-new-loci',
+                        dest='possible_new_loci',
                         help='Path to the directory that contains possible new loci.')
 
     parser.add_argument('-at',
@@ -432,7 +438,7 @@ def identify_spurious_genes() -> None:
                         '--clustering-sim',
                         type=float,
                         required=False,
-                        dest='clustering_sim',
+                        dest='clustering_sim_threshold',
                         default=0.9,
                         help='Similarity value for kmers representatives (float: 0-1).')
 
@@ -440,7 +446,7 @@ def identify_spurious_genes() -> None:
                         '--clustering-cov',
                         type=float,
                         required=False,
-                        dest='clustering_cov',
+                        dest='clustering_cov_threshold',
                         default=0.9,
                         help='Coverage value for kmers representatives (float: 0-1).')
 
@@ -518,6 +524,7 @@ def identify_spurious_genes() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
     val.validate_identify_spurious_genes_module_arguments(args)
 
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
@@ -547,7 +554,7 @@ def adapt_loci() -> None:
 
     # Add arguments to the parser
     parser.add_argument('-i',
-                        '--input_file',
+                        '--input-file',
                         type=str,
                         required=True,
                         dest='input_file',
@@ -586,6 +593,9 @@ def adapt_loci() -> None:
     
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Validate the arguments
+    val.validate_adapt_loci_module_arguments(args)
 
     # Call the main function of the AdaptLoci class with the parsed arguments
     AdaptLoci.main(**vars(args))
@@ -767,22 +777,168 @@ def match_schemas() -> None:
 
     # Call the main function of the MatchSchemas class with the parsed arguments
     MatchSchemas.match_schemas(**vars(args))
+
+def create_schema_structure() -> None:
+    """
+    Parse command-line arguments and initiate the process to create schema structure.
+
+    This function sets up an argument parser to handle various command-line options
+    for creating a schema structure. It then calls the main function of the
+    CreateSchemaStructure class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     
+    # Add arguments to the parser
+    parser.add_argument('-rf',
+                        '--recommendations-file',
+                        type=str,
+                        required=True,
+                        dest='recommendations_file',
+                        help='Path to the file containing the recommendations.')
+    
+    parser.add_argument('-ff',
+                        '--fastas-folder',
+                        type=str,
+                        required=True,
+                        dest='fastas_folder',
+                        help='Path to the folder containing the FASTA files (Just Fastas or schema).')
+
+    parser.add_argument('-o',
+                        '--output-directory',
+                        type=str,
+                        required=True,
+                        dest='output_directory',
+                        help='Path to the directory where the output files will be saved.')
+    
+    parser.add_argument('-c',
+                        '--cpu',
+                        type=int,
+                        required=False,
+                        default=1,
+                        dest='cpu',
+                        help='Number of CPU cores for multiprocessing.')
+    
+    parser.add_argument('-bsr',
+                        '--blast-score-ratio',
+                        type=float,
+                        required=False,
+                        default=0.6,
+                        dest='bsr',
+                        help='BSR value to consider alleles as the same locus.')
+    
+    parser.add_argument('-tt',
+                        '--translation-table',
+                        type=int,
+                        required=False,
+                        default=11,
+                        dest='translation_table',
+                        help='Translation table to use for the CDS translation.')
+    
+    parser.add_argument('--no-cleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+    
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Call the main function of the CreateSchemaStructure class with the parsed arguments
+    CreateSchemaStructure.create_schema_structure(**vars(args))
+    
+def print_logo() -> None:
+    """
+    Print the SchemaRefinery logo.
+
+    This function prints the SchemaRefinery logo in the terminal.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    big_logo = """
+
+
+███████╗ ██████╗██╗  ██╗███████╗███╗   ███╗ █████╗ ██████╗ ███████╗███████╗██╗███╗   ██╗███████╗██████╗ ██╗   ██╗
+██╔════╝██╔════╝██║  ██║██╔════╝████╗ ████║██╔══██╗██╔══██╗██╔════╝██╔════╝██║████╗  ██║██╔════╝██╔══██╗╚██╗ ██╔╝
+███████╗██║     ███████║█████╗  ██╔████╔██║███████║██████╔╝█████╗  █████╗  ██║██╔██╗ ██║█████╗  ██████╔╝ ╚████╔╝ 
+╚════██║██║     ██╔══██║██╔══╝  ██║╚██╔╝██║██╔══██║██╔══██╗██╔══╝  ██╔══╝  ██║██║╚██╗██║██╔══╝  ██╔══██╗  ╚██╔╝  
+███████║╚██████╗██║  ██║███████╗██║ ╚═╝ ██║██║  ██║██║  ██║███████╗██║     ██║██║ ╚████║███████╗██║  ██║   ██║   
+╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝   ╚═╝   
+                                                                                                                 
+                                                                                                                 
+
+    """
+
+    small_logo = """
+
+███████╗██████╗ 
+██╔════╝██╔══██╗
+███████╗██████╔╝
+╚════██║██╔══██╗
+███████║██║  ██║
+╚══════╝╚═╝  ╚═╝
+                
+    """
+
+    size = shutil.get_terminal_size()
+    if size.columns < 100:
+        # Center the small logo
+        for line in small_logo.splitlines():
+            print(line.center(size.columns))
+    else:
+        # Center the big logo
+        for line in big_logo.splitlines():
+            print(line.center(size.columns))
+
+def open_docs() -> None:
+    """
+    Open the SchemaRefinery documentation in a web browser.
+
+    This function opens the SchemaRefinery documentation in a web browser.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    url = "https://schema-refinery.readthedocs.io/en/latest/index.html#"
+    webbrowser.open(url)
+    sys.exit(f"Opening documentation at {url}")
 
 def main():
+    # Print the SchemaRefinery logo
+    print_logo()
 
-    module_info = {'DownloadAssemblies': ["Downloads assemblies from the NCBI "
-                                    "and the ENA661K database.", download_assemblies],
-                        'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot '
-                                            'records, and based on alignment against Genbank '
-                                            'files and other schemas.',
-                                            schema_annotation],
-                        'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or"
-                                        " against unclassified CDS to infer new loci and identify problematic genes.",
-                                        identify_spurious_genes],
-                        'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
-                        'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
-                        'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas]}
+    module_info = {
+        'DownloadAssemblies': ["Downloads assemblies from the NCBI and the ENA661K database.", download_assemblies],
+        'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based on alignment against Genbank files and other schemas.', schema_annotation],
+        'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against unclassified CDS to infer new loci and identify problematic genes.", identify_spurious_genes],
+        'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
+        'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
+        'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas],
+        'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
+        'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
+    }
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')

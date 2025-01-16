@@ -299,6 +299,37 @@ def replace_ids_in_clusters(clusters: Dict[str, List[str]],
 
     return cds_original_ids
 
+def write_fastas_to_files(clusters: Dict[str, List[str]], all_nucleotide_sequences: Dict[str, str], output_path: str) -> str:
+    """
+    Write the cluster sequences to FASTA files.
+
+    Parameters
+    ----------
+    clusters : Dict[str, List[str]]
+        Dictionary of clusters with their members.
+    all_nucleotide_sequences : Dict[str, str]
+        Dictionary of allele IDs and their DNA sequences.
+    output_path : str
+        The directory path where the output files will be saved.
+    
+    Returns
+    -------
+    temp_fastas_folder : str
+        The path to the folder containing the FASTA files.
+    """
+
+    # Create a directory for the cluster FASTA files
+    temp_fastas_folder: str = os.path.join(output_path, 'temp_fastas')
+    ff.create_directory(temp_fastas_folder)
+
+    # Write the cluster sequences to FASTA files
+    for cluster, members in clusters.items():
+        cluster_file: str = os.path.join(temp_fastas_folder, f'{cluster}.fasta')
+        with open(cluster_file, 'w') as cluster_fasta:
+            for member in members:
+                cluster_fasta.write(f">{member}\n{all_nucleotide_sequences[member]}\n")
+    
+    return temp_fastas_folder
             
 def write_temp_loci(merged_all_classes: tp.MergedAllClasses, 
                     all_nucleotide_sequences: Dict[str, str], 

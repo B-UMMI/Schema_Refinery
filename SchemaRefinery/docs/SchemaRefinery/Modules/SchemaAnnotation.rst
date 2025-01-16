@@ -83,7 +83,7 @@ Command-Line Arguments
         (Optional) Coverage value for kmers representatives (float: 0-1).
         Default: 0.9
 
-    -sr, --size_ratio
+    -sr, --size-ratio
         (Optional) Size ratio to consider alleles as the same locus.
         Default: 0.8
 
@@ -97,7 +97,7 @@ Command-Line Arguments
         Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
         Default: None
 
-    -egtc, --extra_genbank_table_columns
+    -egtc, --extra-genbank-table-columns
         (Optional) List of columns to add to annotation file.
         Default: []
 
