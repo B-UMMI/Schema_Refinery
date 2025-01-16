@@ -409,7 +409,7 @@ def identify_spurious_genes() -> None:
                         '--possible-new-loci',
                         type=str,
                         required=False,
-                        dest='possible-new-loci',
+                        dest='possible_new_loci',
                         help='Path to the directory that contains possible new loci.')
 
     parser.add_argument('-at',
@@ -432,7 +432,7 @@ def identify_spurious_genes() -> None:
                         '--clustering-sim',
                         type=float,
                         required=False,
-                        dest='clustering_sim',
+                        dest='clustering_sim_threshold',
                         default=0.9,
                         help='Similarity value for kmers representatives (float: 0-1).')
 
@@ -440,7 +440,7 @@ def identify_spurious_genes() -> None:
                         '--clustering-cov',
                         type=float,
                         required=False,
-                        dest='clustering_cov',
+                        dest='clustering_cov_threshold',
                         default=0.9,
                         help='Coverage value for kmers representatives (float: 0-1).')
 

@@ -460,11 +460,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                         all_alleles)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
-        print("\nWriting temp loci file...")
-        temp_fastas_paths, fastas_paths_txt, temp_fastas_folder = ccf.write_temp_loci(merged_all_classes,
-                                                                                all_nucleotide_sequences,
-                                                                                all_alleles,
-                                                                                output_directory)
+        print("\nWriting temp fastas to file...")
+        temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_directory)
 
         print("\nCreate graphs for the BLAST results...")
         cds_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
@@ -489,13 +486,12 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                       count_results_by_cluster_path,
                                       recommendations_file_path,
                                       drop_possible_loci_output,
-                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
-                                      fastas_paths_txt if run_mode == 'unclassified_cds' else None,])
+                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
         possible_new_loci: str, alignment_ratio_threshold: float, 
-        pident_threshold: float, clustering_sim: float, clustering_cov:float,
+        pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
         bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
         no_cleanup: bool) -> None:
@@ -516,9 +512,9 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Threshold for alignment ratio.
     pident_threshold : float
         Threshold for percentage identity.
-    clustering_sim : float
+    clustering_sim_threshold : float
         Similarity threshold for clustering.
-    clustering_cov : float
+    clustering_cov_threshold : float
         Coverage threshold for clustering.
     genome_presence : int
         Minimum genome presence required.
@@ -550,8 +546,8 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
     constants: List[Any] = [alignment_ratio_threshold, 
                 pident_threshold,
                 genome_presence,
-                clustering_sim,
-                clustering_cov,
+                clustering_sim_threshold,
+                clustering_cov_threshold,
                 absolute_size,
                 translation_table,
                 bsr,

@@ -540,9 +540,10 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     
     if args.clustering_cov_threshold < 0 or args.clustering_cov_threshold >= 1:
         sys.exit("\nError: 'clustering-cov-threshold' must be a value between 0 and 1.")
-    
-    if args.genome_presence < 0:
-        sys.exit("\nError: 'genome-presence' must be a value greater than 0.")
+
+    if args.genome_presence:
+        if args.genome_presence < 0:
+            sys.exit("\nError: 'genome-presence' must be a value greater than 0.")
     
     if args.absolute_size < 0:
         sys.exit("\nError: 'absolute-size' must be a value greater than 0.")
