@@ -858,19 +858,15 @@ def create_schema_structure() -> None:
 
 def main():
 
-    module_info = {'DownloadAssemblies': ["Downloads assemblies from the NCBI "
-                                    "and the ENA661K database.", download_assemblies],
-                        'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot '
-                                            'records, and based on alignment against Genbank '
-                                            'files and other schemas.',
-                                            schema_annotation],
-                        'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or"
-                                        " against unclassified CDS to infer new loci and identify problematic genes.",
-                                        identify_spurious_genes],
-                        'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
-                        'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
-                        'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas],
-                        'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure]}
+    module_info = {
+        'DownloadAssemblies': ["Downloads assemblies from the NCBI and the ENA661K database.", download_assemblies],
+        'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based on alignment against Genbank files and other schemas.', schema_annotation],
+        'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against unclassified CDS to infer new loci and identify problematic genes.", identify_spurious_genes],
+        'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
+        'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
+        'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas],
+        'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure]
+    }
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')
