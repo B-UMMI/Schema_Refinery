@@ -512,52 +512,56 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
         - If the arguments are invalid
     """
 
+    errors = []
+
     # Verify if files or directories exist
-    verify_schema_structure(args.schema_directory)
-
-    verify_path_exists(args.output_directory, 'directory')
-
-    verify_path_exists(args.allelecall_directory, 'file')
+    verify_schema_structure(args.schema_directory, errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
+    verify_path_exists(args.allelecall_directory, 'file', errors)
 
     if args.possible_new_loci:
-        verify_schema_structure(args.possible_new_loci)
+        verify_schema_structure(args.possible_new_loci, errors)
 
     if args.run_mode == 'unclassified-cds':
         if args.possible_new_loci:
-            sys.exit("\nError: 'possible-new-loci' cannot be used with 'unclassified_cds' run mode.")
+            errors.append("\nError: 'possible-new-loci' cannot be used with 'unclassified_cds' run mode.")
     
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
-        sys.exit("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
+        errors.append("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
     
     if args.pident_threshold < 0 or args.pident_threshold >= 100:
-        sys.exit("\nError: 'pident-threshold' must be a value between 0 and 100.")
+        errors.append("\nError: 'pident-threshold' must be a value between 0 and 100.")
     
     if args.clustering_sim_threshold < 0 or args.clustering_sim_threshold >= 1:
-        sys.exit("\nError: 'clustering-sim-threshold' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-sim-threshold' must be a value between 0 and 1.")
     
     if args.clustering_cov_threshold < 0 or args.clustering_cov_threshold >= 1:
-        sys.exit("\nError: 'clustering-cov-threshold' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-cov-threshold' must be a value between 0 and 1.")
 
     if args.genome_presence:
         if args.genome_presence < 0:
-            sys.exit("\nError: 'genome-presence' must be a value greater than 0.")
+            errors.append("\nError: 'genome-presence' must be a value greater than 0.")
     
     if args.absolute_size < 0:
-        sys.exit("\nError: 'absolute-size' must be a value greater than 0.")
+        errors.append("\nError: 'absolute-size' must be a value greater than 0.")
     
     if args.translation_table < 0 or args.translation_table >= 25:
-        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+        errors.append("\nError: 'translation-table' must be a value between 0 and 25.")
     
     if args.bsr < 0 or args.bsr >= 1:
-        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+        errors.append("\nError: 'bsr' must be a value between 0 and 1.")
     
     if args.size_ratio < 0 or args.size_ratio >= 1:
-        sys.exit("\nError: 'size-ratio' must be a value between 0 and 1.")
+        errors.append("\nError: 'size-ratio' must be a value between 0 and 1.")
     
     if args.cpu <= 0:
-        sys.exit("\nError: 'cpu' must be a value greater than 0.")
+        errors.append("\nError: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
 
-    args.cpu = validate_system_max_cpus_number(args.cpu)
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
 
 def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
     """
