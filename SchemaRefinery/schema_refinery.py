@@ -14,6 +14,7 @@ Code documentation
 import sys
 import shutil
 import argparse
+import webbrowser
 
 try:
     from DownloadAssemblies import DownloadAssemblies
@@ -906,8 +907,13 @@ def print_logo() -> None:
         for line in big_logo.splitlines():
             print(line.center(size.columns))
 
-def main():
+def open_docs():
+    url = "https://schema-refinery.readthedocs.io/en/latest/index.html#"
+    webbrowser.open(url)
+    sys.exit(f"Opening documentation at {url}")
 
+def main():
+    # Print the SchemaRefinery logo
     print_logo()
 
     module_info = {
@@ -917,7 +923,8 @@ def main():
         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
         'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
         'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas],
-        'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure]
+        'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
+        'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
     }
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
