@@ -12,8 +12,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.AdaptLoci import AdaptLoci
 
 def create_schema_structure(recommendations_file: str, 
-                            fastas_folder: str, 
-                            skip_choices: bool, 
+                            fastas_folder: str,
                             output_directory: str,
                             cpu: int,
                             bsr: float,
@@ -110,17 +109,14 @@ def create_schema_structure(recommendations_file: str,
                             print(f'File {id} not found in the FASTA folder')
             # If the recommendation is 'Choice'
             elif "Choice" in recommendation:
-                if skip_choices:
-                    continue
-                else:
-                    for id_ in ids_list:
-                        processed_files.append(id_) # Add the ID to the processed_files list
-                        output_file = os.path.join(temp_fasta_folder, f'{id_}.fasta')
-                        # Append the new FASTA file path to the new_fastas_path list
-                        new_fastas_path.append(output_file)
-                        fasta_file: str = fastas_files[id_]  # Get the FASTA file path
-                        shutil.copy(fasta_file, output_file)
-                        print(f'File {id_} copied to {output_file}')
+                for id_ in ids_list:
+                    processed_files.append(id_) # Add the ID to the processed_files list
+                    output_file = os.path.join(temp_fasta_folder, f'{id_}.fasta')
+                    # Append the new FASTA file path to the new_fastas_path list
+                    new_fastas_path.append(output_file)
+                    fasta_file: str = fastas_files[id_]  # Get the FASTA file path
+                    shutil.copy(fasta_file, output_file)
+                    print(f'File {id_} copied to {output_file}')
             else:
                 processed_files.extend(ids_list) # Add the IDS to the processed_files list
                 print(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action")

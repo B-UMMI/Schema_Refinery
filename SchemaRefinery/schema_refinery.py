@@ -21,6 +21,7 @@ try:
     from IdentifyParalagousLoci import IdentifyParalogousLoci
     from AdaptLoci import AdaptLoci
     from MatchSchema import MatchSchemas
+    from CreateSchemaStructure import CreateSchemaStructure
     from utils import (constants as ct,
                        validation as val)
      
@@ -31,6 +32,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
     from SchemaRefinery.AdaptLoci import AdaptLoci
     from SchemaRefinery.MatchSchema import MatchSchemas
+    from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
     from SchemaRefinery.utils import (constants as ct,
                                       validation as val)
 
@@ -767,6 +769,85 @@ def match_schemas() -> None:
 
     # Call the main function of the MatchSchemas class with the parsed arguments
     MatchSchemas.match_schemas(**vars(args))
+
+def create_schema_structure() -> None:
+    """
+    Parse command-line arguments and initiate the process to create schema structure.
+
+    This function sets up an argument parser to handle various command-line options
+    for creating a schema structure. It then calls the main function of the
+    CreateSchemaStructure class with the parsed arguments.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    
+    # Add arguments to the parser
+    parser.add_argument('-rf',
+                        '--recommendations-file',
+                        type=str,
+                        required=True,
+                        dest='recommendations_file',
+                        help='Path to the file containing the recommendations.')
+    
+    parser.add_argument('-ff',
+                        '--fastas-folder',
+                        type=str,
+                        required=True,
+                        dest='fastas_folder',
+                        help='Path to the folder containing the FASTA files (Just Fastas or schema).')
+
+    parser.add_argument('-od',
+                        '--output-directory',
+                        type=str,
+                        required=True,
+                        dest='output_directory',
+                        help='Path to the directory where the output files will be saved.')
+    
+    parser.add_argument('-c',
+                        '--cpu',
+                        type=int,
+                        required=False,
+                        default=1,
+                        dest='cpu',
+                        help='Number of CPU cores for multiprocessing.')
+    
+    parser.add_argument('-bsr',
+                        '--blast-score-ratio',
+                        type=float,
+                        required=False,
+                        default=0.6,
+                        dest='bsr',
+                        help='BSR value to consider alleles as the same locus.')
+    
+    parser.add_argument('-tt',
+                        '--translation-table',
+                        type=int,
+                        required=False,
+                        default=11,
+                        dest='translation_table',
+                        help='Translation table to use for the CDS translation.')
+    
+    parser.add_argument('--no-cleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
+    
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Call the main function of the CreateSchemaStructure class with the parsed arguments
+    CreateSchemaStructure.create_schema_structure(**vars(args))
     
 
 def main():
