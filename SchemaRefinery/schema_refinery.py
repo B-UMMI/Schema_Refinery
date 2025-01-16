@@ -359,7 +359,9 @@ def schema_annotation() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
     val.validate_schema_annotation_module_arguments(args)
+
     # Call the main function of the SchemaAnnotation class with the parsed arguments
     SchemaAnnotation.main(args)
 
@@ -520,6 +522,7 @@ def identify_spurious_genes() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
     val.validate_identify_spurious_genes_module_arguments(args)
 
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
@@ -588,6 +591,9 @@ def adapt_loci() -> None:
     
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Validate the arguments
+    val.validate_adapt_loci_module_arguments(args)
 
     # Call the main function of the AdaptLoci class with the parsed arguments
     AdaptLoci.main(**vars(args))
