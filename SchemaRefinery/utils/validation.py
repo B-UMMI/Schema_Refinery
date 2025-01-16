@@ -368,30 +368,36 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
     SystemExit
         - If the arguments are invalid
     """
+    errors = []
+
     # Verify if files or directories exist
-    verify_path_exists(args.output_directory, 'directory')
+    verify_path_exists(args.output_directory, 'directory', errors)
 
     # Ensure that ENA661K is not used with an input table
     if args.input_table is not None and 'ENA661K' in args.database:
-        sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
+        errors.append("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
     
     if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
-        sys.exit("\nError: Taxon and input table are mutually exclusive.")
+        errors.append("\nError: Taxon and input table are mutually exclusive.")
 
     if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
-        sys.exit("\nError: Must provide either taxon or input table.")
+        errors.append("\nError: Must provide either taxon or input table.")
     
     if args.filtering_criteria.input_table and 'NCBI' not in args.database: 
-       sys.exit("\nError: Input table can only be used with NCBI database.")
+        errors.append("\nError: Input table can only be used with NCBI database.")
 
     elif args.filtering_criteria.input_table:
-        verify_path_exists(args.filtering_criteria.input_table, 'file')
+        verify_path_exists(args.filtering_criteria.input_table, 'file', errors)
     
     if args.threads <= 0:
-        sys.exist("\nError: 'threads' must be a value greater than 0.")
+        errors.append("\nError: 'threads' must be a value greater than 0.")
     
     if args.retry <= 0:
-        sys.exist("\n Error: 'retry' must be a value greater than 0.")
+        errors.append("\nError: 'retry' must be a value greater than 0.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
 
 def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> None:
     """
