@@ -907,7 +907,20 @@ def print_logo() -> None:
         for line in big_logo.splitlines():
             print(line.center(size.columns))
 
-def open_docs():
+def open_docs() -> None:
+    """
+    Open the SchemaRefinery documentation in a web browser.
+
+    This function opens the SchemaRefinery documentation in a web browser.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     url = "https://schema-refinery.readthedocs.io/en/latest/index.html#"
     webbrowser.open(url)
     sys.exit(f"Opening documentation at {url}")
