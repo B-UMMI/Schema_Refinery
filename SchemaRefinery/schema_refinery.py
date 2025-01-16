@@ -812,7 +812,7 @@ def create_schema_structure() -> None:
                         dest='fastas_folder',
                         help='Path to the folder containing the FASTA files (Just Fastas or schema).')
 
-    parser.add_argument('-od',
+    parser.add_argument('-o',
                         '--output-directory',
                         type=str,
                         required=True,
@@ -869,7 +869,8 @@ def main():
                                         identify_spurious_genes],
                         'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
                         'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
-                        'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas]}
+                        'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas],
+                        'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure]}
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         print('USAGE: SchemaRefinery [module] -h \n')

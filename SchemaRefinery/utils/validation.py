@@ -368,7 +368,7 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
     SystemExit
         - If the arguments are invalid
     """
-    errors = []
+    errors: List[str] = []
 
     # Verify if files or directories exist
     verify_path_exists(args.output_directory, 'directory', errors)
@@ -413,7 +413,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     SystemExit
         - If the arguments are invalid.
     """
-    errors = []
+    errors: List[str] = []
 
     # Verify if files or directories exist
     verify_schema_structure(args.schema_directory, errors)
@@ -523,7 +523,7 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
         - If the arguments are invalid
     """
 
-    errors = []
+    errors: List[str] = []
 
     # Verify if files or directories exist
     verify_schema_structure(args.schema_directory, errors)
@@ -589,7 +589,7 @@ def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
         - If the arguments are invalid
     """
 
-    errors = []
+    errors: List[str] = []
 
     # Verify if files or directories exist
     verify_path_exists(args.input_file, 'file', errors)
@@ -625,7 +625,7 @@ def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> Non
         - If the arguments are invalid
     """
 
-    errors = []
+    errors: List[str] = []
 
     # Verify if files or directories exist
     verify_schema_structure(args.schema_directory, errors)
@@ -663,7 +663,7 @@ def validate_match_schemas(args: argparse.Namespace) -> None:
     SystemExit
         - If the arguments are invalid
     """
-    errors = []
+    errors: List[str] = []
 
     # Verify if files or directories exist
     verify_schema_structure(args.query_schema_directory, errors)
@@ -683,6 +683,42 @@ def validate_match_schemas(args: argparse.Namespace) -> None:
     if args.translation_table < 0 or args.translation_table >= 25:
         errors.append("Error: 'translation-table' must be a value between 0 and 25.")
 
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
+
+def validate_create_schema_structure(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the create schema structure module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the create schema structure module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+    errors: List[str] = []
+
+    # Verify if files or directories exist
+    verify_path_exists(args.recommendations_file, 'file', errors)
+    verify_path_exists(args.fastas_folder, 'directory', errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
+
+    if args.cpu <= 0:
+        errors.append("Error: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
+    
+    if args.bsr < 0 or args.bsr >= 1:
+        errors.append("Error: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        errors.append("Error: 'translation-table' must be a value between 0 and 25.")
+    
     # Display all errors at once if there are any
     if errors:
         sys.exit("\n".join(errors))
