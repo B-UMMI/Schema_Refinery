@@ -407,70 +407,71 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     SystemExit
         - If the arguments are invalid.
     """
-    # Verify if files or directories exist
-    verify_schema_structure(args.schema_directory)
+    errors = []
 
-    verify_path_exists(args.output_directory, 'directory')
+    # Verify if files or directories exist
+    verify_schema_structure(args.schema_directory, errors)
+    verify_path_exists(args.output_directory, 'directory', errors)
 
     # Chewie annotations
     if args.chewie_annotations:
-        verify_path_exists(args.chewie_annotations, 'file')
+        verify_path_exists(args.chewie_annotations, 'file', errors)
     
     if args.bsr <= 0 or args.bsr >= 1:
-        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+        errors.append("\nError: 'bsr' must be a value between 0 and 1.")
     
     if args.threads <= 0:
-        sys.exit("\nError: 'threads' must be a value greater than 0.")
+        errors.append("\nError: 'threads' must be a value greater than 0.")
     
     if args.cpu <= 0:
-        sys.exit("\nError: 'cpu' must be a value greater than 0.")
-
-    args.cpu = validate_system_max_cpus_number(args.cpu)
+        errors.append("\nError: 'cpu' must be a value greater than 0.")
+    else:
+        args.cpu = validate_system_max_cpus_number(args.cpu)
 
     if args.retry <= 0:
-        sys.exit("\nError: 'retry' must be a value greater than 0.")
+        errors.append("\nError: 'retry' must be a value greater than 0.")
     
     if args.translation_table < 0 or args.translation_table >= 25:
-        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+        errors.append("\nError: 'translation-table' must be a value between 0 and 25.")
 
     if args.clustering_sim <= 0 or args.clustering_sim >= 1:
-        sys.exit("\nError: 'clustering-sim' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-sim' must be a value between 0 and 1.")
     
     if args.clustering_cov <= 0 or args.clustering_cov >= 1:
-        sys.exit("\nError: 'clustering-cov' must be a value between 0 and 1.")
+        errors.append("\nError: 'clustering-cov' must be a value between 0 and 1.")
     
     if args.size_ratio <= 0 or args.size_ratio >= 1:
-        sys.exit("\nError: 'size-ratio' must be a value between 0 and 1.")
+        errors.append("\nError: 'size-ratio' must be a value between 0 and 1.")
 
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
         if args.proteome_ids_to_add and not args.proteome_table:
-            sys.exit("\nError: 'proteome-ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
+            errors.append("\nError: 'proteome-ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
         if not args.proteome_table:
-            sys.exit("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
+            errors.append("\nError: 'proteome-table' is required with 'uniprot-proteomes' annotation option.")
         # Verify if files or directories exist
         if args.proteome_table:
-            verify_path_exists(args.proteome_table, 'file')
+            verify_path_exists(args.proteome_table, 'file', errors)
     else:
         if any([args.proteome_ids_to_add, args.proteome_table]):
-            sys.exit("\nError: 'proteome-ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
+            errors.append("\nError: 'proteome-ids' and 'proteome-table' can only be used with '--annotation-options uniprot-proteomes'.")
 
     # Arguments to match genbank
     if 'genbank' in args.annotation_options:
         if args.genbank_ids_to_add and not args.genbank_files:
-            sys.exit("\nError: 'genbank-ids-to-add' can only be used with '--genbank-files' and 'genbank' annotation option.")
+            errors.append("\nError: 'genbank-ids-to-add' can only be used with '--genbank-files' and 'genbank' annotation option.")
         if not args.genbank_files:
-            sys.exit("\nError: 'genbank-files' is required with 'genbank' annotation option.")
+            errors.append("\nError: 'genbank-files' is required with 'genbank' annotation option.")
         # Verify if files or directories exist
         if args.genbank_files:
-            verify_path_exists(args.genbank_files, 'directory')
+            verify_path_exists(args.genbank_files, 'directory', errors)
             # Verify if the GenBank files directory is empty
             if_genbank_files_empty = not os.listdir(args.genbank_files)
             if if_genbank_files_empty:
-                sys.exit("\nError: The GenBank files directory is empty.")
+                errors.append("\nError: The GenBank files directory is empty.")
     else:
         if any([args.genbank_files, args.genbank_ids_to_add]):
-            sys.exit("\nError: 'genbank-files' and 'genbank-ids-to-add' can only be used with '--annotation-options genbank'.")
+            errors.append("\nError: 'genbank-files' and 'genbank-ids-to-add' can only be used with '--annotation-options genbank'.")
 
     # Arguments to match schemas
     if 'match-schemas' in args.annotation_options:
@@ -483,19 +484,23 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             if not args.processing_mode:
                 missing_args.append('processing_mode')
 
-            sys.exit(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema', 'subject-annotations', and 'processing-mode' must be provided together.")
+            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema', 'subject-annotations', and 'processing-mode' must be provided together.")
         
         if args.subject_schema:
-            verify_path_exists(args.subject_schema, 'directory')
+            verify_path_exists(args.subject_schema, 'directory', errors)
 
         if args.subject_annotations:
-            verify_path_exists(args.subject_annotations, 'file')
+            verify_path_exists(args.subject_annotations, 'file', errors)
         # Verify if best-annotations-bsr is a value between 0 and 1
         if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
-            sys.exit("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
+            errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
     else:
         if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
-            sys.exit("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
+            errors.append("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
+
+    # Display all errors at once if there are any
+    if errors:
+        sys.exit("\n".join(errors))
 
 def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) -> None:
     """
