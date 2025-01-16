@@ -592,3 +592,36 @@ def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
     if args.translation_table < 0 or args.translation_table >= 25:
         sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
     
+def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the identify paralogous loci module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the identify paralogous loci module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+
+    # Verify if files or directories exist
+    verify_schema_sctructure(args.schema_directory)
+
+    verify_path_exists(args.output_directory, 'directory')
+
+    if args.cpu <= 0:
+        sys.exit("\nError: 'cpu' must be a value greater than 0.")
+
+    args.cpu = validate_system_max_cpus_number(args.cpu)
+
+    if args.bsr < 0 or args.bsr >= 1:
+        sys.exit("\nError: 'bsr' must be a value between 0 and 1.")
+
+    if args.translation_table < 0 or args.translation_table >= 25:
+        sys.exit("\nError: 'translation-table' must be a value between 0 and 25.")
+    
+    if args.size_threshold < 0 or args.size_threshold >= 1:
+        sys.exit("\nError: 'size-threshold' must be a value between 0 and 1.")
