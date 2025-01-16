@@ -356,6 +356,44 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
     else:
         return parameter_values
 
+def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
+    """
+    Validate the arguments passed to the download assemblies module.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The arguments passed to the download assemblies module.
+
+    Raises
+    ------
+    SystemExit
+        - If the arguments are invalid
+    """
+    # Verify if files or directories exist
+    verify_path_exists(args.output_directory, 'directory')
+
+    # Ensure that ENA661K is not used with an input table
+    if args.input_table is not None and 'ENA661K' in args.database:
+        sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
+    
+    if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
+        sys.exit("\nError: Taxon and input table are mutually exclusive.")
+
+    if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
+        sys.exit("\nError: Must provide either taxon or input table.")
+    
+    if args.filtering_criteria.input_table and 'NCBI' not in args.database: 
+       sys.exit("\nError: Input table can only be used with NCBI database.")
+
+    elif args.filtering_criteria.input_table:
+        verify_path_exists(args.filtering_criteria.input_table, 'file')
+    
+    if args.threads <= 0:
+        sys.exist("\nError: 'threads' must be a value greater than 0.")
+    
+    if args.retry <= 0:
+        sys.exist("\n Error: 'retry' must be a value greater than 0.")
 
 def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -460,45 +498,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     else:
         if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
             sys.exit("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
-
-def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
-    """
-    Validate the arguments passed to the download assemblies module.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        The arguments passed to the download assemblies module.
-
-    Raises
-    ------
-    SystemExit
-        - If the arguments are invalid
-    """
-    # Verify if files or directories exist
-    verify_path_exists(args.output_directory, 'directory')
-
-    # Ensure that ENA661K is not used with an input table
-    if args.input_table is not None and 'ENA661K' in args.database:
-        sys.exit("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
-    
-    if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
-        sys.exit("\nError: Taxon and input table are mutually exclusive.")
-
-    if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
-        sys.exit("\nError: Must provide either taxon or input table.")
-    
-    if args.filtering_criteria.input_table and 'NCBI' not in args.database: 
-       sys.exit("\nError: Input table can only be used with NCBI database.")
-
-    elif args.filtering_criteria.input_table:
-        verify_path_exists(args.filtering_criteria.input_table, 'file')
-    
-    if args.threads <= 0:
-        sys.exist("\nError: 'threads' must be a value greater than 0.")
-    
-    if args.retry <= 0:
-        sys.exist("\n Error: 'retry' must be a value greater than 0.")
 
 def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) -> None:
     """
