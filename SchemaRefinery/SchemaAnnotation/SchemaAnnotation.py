@@ -12,7 +12,8 @@ try:
                                   proteome_matcher as pm,
                                   genbank_annotations as ga)
     from utils import (file_functions as ff,
-                       pandas_functions as upf)
+                       pandas_functions as upf,
+                       print_functions as pf)
     from MatchSchema import (MatchSchemas as ms)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
@@ -20,7 +21,8 @@ except ModuleNotFoundError:
                                                 proteome_matcher as pm,
                                                 genbank_annotations as ga)
     from SchemaRefinery.utils import (file_functions as ff,
-                                      pandas_functions as upf)
+                                      pandas_functions as upf,
+                                      print_functions as pf)
     from SchemaRefinery.MatchSchema import (MatchSchemas as ms)
 
 def main(args: Namespace) -> None:
@@ -147,6 +149,6 @@ def main(args: Namespace) -> None:
     # Clean up temporary files
     if not args.no_cleanup:
         if 'match-schemas' not in args.annotation_options:
-            print("\nCleaning up temporary files...")
+            pf.print_message("Cleaning up temporary files...", 'info')
         # Remove temporary files
         ff.cleanup(args.output_directory, [merged_file_path, output_file])
