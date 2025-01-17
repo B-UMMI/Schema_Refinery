@@ -7,14 +7,16 @@ try:
                        clustering_functions as cf,
                        iterable_functions as itf,
                        kmers_functions as kf,
-                       Types as tp)
+                       Types as tp,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                         sequence_functions as sf,
                                         clustering_functions as cf,
                                         iterable_functions as itf,
                                         kmers_functions as kf,
-                                        Types as tp)
+                                        Types as tp,
+                                        print_functions as pf)
 
 def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) -> None:
     """
@@ -408,7 +410,7 @@ def write_temp_loci(merged_all_classes: tp.MergedAllClasses,
                         index += 1
 
     temp_fastas_paths: Dict[str, str] = {}
-    print("Writing FASTA and additional files for possible new loci...")
+    pf.print_message("Writing FASTA and additional files for possible new loci...", 'info')
     temp_fastas_folder: str = os.path.join(output_path, 'temp_fastas')
     ff.create_directory(temp_fastas_folder)
     # Process each class and CDS list in clusters_to_keep
@@ -452,7 +454,7 @@ def set_minimum_genomes_threshold(temp_folder: str, constants: List[Union[int, f
         else:
             constants[2] = round(number_of_genomes * 0.01)
     except Exception as e:
-        print(f"Error setting minimum genomes threshold: {e}")
+        pf.print_message(f"Setting minimum genomes threshold: {e}", 'error')
         constants[2] = 5  # Default value in case of error
 
 
@@ -477,16 +479,16 @@ def filter_cds_by_size(all_nucleotide_sequences: Dict[str, str], size_threshold:
 
     dropped_cds: Dict[str, str] = {}
     total_cds: int = len(all_nucleotide_sequences)
-    print(f"\nIdentified {total_cds} valid CDS not present in the schema.")
+    pf.print_message(f"\nIdentified {total_cds} valid CDS not present in the schema.", 'info')
 
     # Filter by size
     if size_threshold:
         all_nucleotide_sequences = {key: sequence for key, sequence in all_nucleotide_sequences.items() if cds_size[key] >= size_threshold}
         dropped_cds = {key: 'Dropped_due_to_cds_size' for key, length in cds_size.items() if length < size_threshold}
-        print(f"{len(all_nucleotide_sequences)}/{total_cds} have size greater or equal to {size_threshold} bp.")
+        pf.print_message(f"{len(all_nucleotide_sequences)}/{total_cds} have size greater or equal to {size_threshold} bp.", 'info')
     else:
         size_threshold = 0
-        print("No size threshold was applied to the CDS filtering.")
+        pf.print_message("No size threshold was applied to the CDS filtering.", 'info')
 
     return cds_size, all_nucleotide_sequences, dropped_cds
 
@@ -560,7 +562,7 @@ def process_cds_not_present(initial_processing_output: str, temp_folder: str, al
     Tuple[str, Dict[str, int], Dict[str, List[str]]]
         A tuple containing the path to the CDS present file, frequency of CDS, and their presence in genomes.
     """
-    print("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...")
+    pf.print_message("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...", 'info')
     
     cds_not_present_file_path: str = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
     write_cds_to_fasta(all_nucleotide_sequences, cds_not_present_file_path)
@@ -614,7 +616,7 @@ def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str],
     cds_translation_size: Dict[str, int] = {key: len(sequence) for key, sequence in all_translation_dict.items()}
 
     # Print additional information about translations and deduplications
-    print(f"\n{len(all_translation_dict)}/{len(all_nucleotide_sequences)} unique protein translations.")
+    pf.print_message(f"\n{len(all_translation_dict)}/{len(all_nucleotide_sequences)} unique protein translations.", 'info')
 
     return all_translation_dict, protein_hashes, cds_translation_size
 
