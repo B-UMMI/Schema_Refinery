@@ -8,11 +8,13 @@ from typing import Dict, Any, List, Tuple, Union, Optional
 try:
     from utils import (file_functions as ff,
                        blast_functions as bf,
-                       alignments_functions as af)
+                       alignments_functions as af,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       blast_functions as bf,
-                                      alignments_functions as af)
+                                      alignments_functions as af,
+                                      print_functions as pf)
 
 def make_blast_db(makeblastdb_path: str, input_fasta: str, output_path: str, db_type: str) -> Tuple[bytes, Union[bytes, str]]:
     """
@@ -127,12 +129,13 @@ def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str
     stderr: bytes
     stdout, stderr = blast_process.communicate()
 
-    print(stderr)
+    pf.print_message(stderr, 'error')
 
     # Exit if it is not possible to create BLAST db
     if len(stderr) > 0:
-        sys.exit(f'Error while running BLASTp for {fasta_file}\n'
-                 f'{blast_path} returned the following error:\n{stderr.decode("utf-8")}')
+        pf.print_message(f'Error while running BLASTp for {fasta_file}\n'
+                        f'{blast_path} returned the following error:\n{stderr.decode("utf-8")}', 'error')
+        sys.exit()
 
     return stdout, stderr
 
@@ -156,7 +159,7 @@ def run_blast_with_args_only(blast_args: List[str]) -> None:
 
     stderr: List[bytes] = blast_proc.stderr.readlines()
     if len(stderr) > 0:
-        print(stderr)
+        pf.print_message(stderr, 'error')
 
 
 def run_blast_fastas_multiprocessing(id_: str, blast_exec: str, blast_results: str,
@@ -415,7 +418,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     self_score_results_files: List[str] = [] # List to store paths to BLAST results
     i: int = 1
     # Calculate self-score
-    print("\nCalculating self-score for each loci:")
+    pf.print_message("\nCalculating self-score for each loci:", 'info')
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 paths_dict.keys(),
@@ -425,7 +428,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
             self_score_results_files.append(res[1])
                             
             # Print progress
-            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
+            pf.print_message(f"Running BLASTp to calculate self-score for {res[0]: <{max_id_length}}", "info", end='\r', flush=True)
             i += 1    
 
     for blast_results_file in self_score_results_files:
