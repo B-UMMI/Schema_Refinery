@@ -25,7 +25,8 @@ try:
     from CreateSchemaStructure import CreateSchemaStructure
     from utils import (constants as ct,
                        validation as val,
-                       print_functions as pf)
+                       print_functions as pf,
+                       decorators as dec)
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -37,7 +38,8 @@ except ModuleNotFoundError:
     from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
     from SchemaRefinery.utils import (constants as ct,
                                       validation as val,
-                                      print_functions as pf)
+                                      print_functions as pf,
+                                      decorators as dec)
 
 
 def download_assemblies() -> None:
@@ -876,6 +878,7 @@ def open_docs() -> None:
     webbrowser.open(url)
     sys.exit(f"Opening documentation at {url}")
 
+@dec.time_function
 def main():
     # Print the SchemaRefinery logo
     pf.print_logo()
@@ -892,19 +895,19 @@ def main():
     }
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
-        print('USAGE: SchemaRefinery [module] -h \n')
-        print('Select one of the following modules:\n')
+        pf.print_message("Use SchemaRefinery [module] -h to see module arguments", "info")
+        pf.print_message("Select one of the following modules:", "info")
         for f in module_info:
-            print('{0}: {1}'.format(f, module_info[f][0]))
+            pf.print_message('{0}: {1}'.format(f, module_info[f][0]), "info")
         sys.exit(0)
 
     module = sys.argv[1]
     sys.argv.remove(module)
     #Print the module name
     pf.print_module_currently_running(module)
+    pf.print_message(f"Running {module} module...", message_type="info")
     # Call the function of the selected module
     module_info[module][1]()
 
 if __name__ == "__main__":
-
     main()
