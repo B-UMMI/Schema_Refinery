@@ -7,11 +7,11 @@ from typing import List, Dict, Any, Union
 
 try:
     from utils import (sequence_functions as sf,
-                       iterable_functions as itf)
+                       print_functions as pf)
     from AdaptLoci import AdaptLoci as al
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (sequence_functions as sf,
-                                      iterable_functions as itf)
+                                      print_functions as pf)
     from SchemaRefinery.AdaptLoci import AdaptLoci as al
 
 def create_directory(dir: str) -> bool:
@@ -591,7 +591,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
     # Find loci with the same name in both folders
     loci_with_same_name = set(folder1_files) & set(folder2_files)
     if loci_with_same_name:
-        print(f"Warning: The following loci have the same name in both folders and will be merged: {loci_with_same_name}")
+        pf.print_message(f"The following loci have the same name in both folders and will be merged: {loci_with_same_name}", "warning")
         process_loci_with_same_name(folder1, folder2, loci_with_same_name, temp_folder)
 
     # Remove loci with the same name from the lists
@@ -607,7 +607,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
     process_remaining_files(folder2_files, folder2, temp_folder)
 
     # Write the AdaptLoci.txt file and run the AdaptLoci process
-    print("\nAdapting loci from both folders into one Schema")
+    pf.print_message("\nAdapting loci from both folders into one Schema")
     write_adapt_loci_file_and_run_it(temp_folder, output_folder, cpu, constants)
 
     # Fix IDs in the .fasta files in the output folder
