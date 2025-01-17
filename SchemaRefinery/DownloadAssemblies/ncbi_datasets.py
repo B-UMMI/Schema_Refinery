@@ -134,18 +134,18 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
             assembly_ids: List[str] = id_list.read().splitlines()
 
         if len(assembly_ids) == 0:
-            pf.print_message("\nNo assembly IDs were found in the input file.", "warning")
+            pf.print_message("No assembly IDs were found in the input file.", "warning")
 
         if criteria is not None:
             metadata: tp.Metadata = fetch_metadata(input_table, None, criteria, api_key)
             if metadata['total_count'] == 0:
-                pf.print_message("\nNo assemblies that satisfy the selected criteria were found for NCBI.", "warning")
+                pf.print_message("No assemblies that satisfy the selected criteria were found for NCBI.", "warning")
                 sys.exit()
     else:
         # Fetch from taxon identifier
         metadata = fetch_metadata(None, taxon, criteria, api_key)
         if metadata['total_count'] == 0:
-            pf.print_message("\nNo assemblies that satisfy the selected criteria were found for NCBI.", "warning")
+            pf.print_message("No assemblies that satisfy the selected criteria were found for NCBI.", "warning")
             continue_run = False
         else:
             continue_run = True
@@ -180,7 +180,7 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
                 # Update metadata to only include passed assemblies
                 metadata = {'total_count': len(assembly_ids), 'reports': passed_metadata}
 
-            pf.print_message(f"\n{len(assembly_ids)} passed filtering criteria.", "info")
+            pf.print_message(f"{len(assembly_ids)} passed filtering criteria.", "info")
 
         ncbi_metadata_directory: str = os.path.join(output_directory, 'metadata_ncbi')
         if not os.path.exists(ncbi_metadata_directory):
@@ -272,8 +272,8 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
 
         # If any assembly passed filtering criteria
         if len(assembly_ids) == 0:
-            pf.print_message("\nNo assemblies meet the desired filtering criteria.", "warning")
-            pf.print_message("\nAssemblies that failed are in the following TSV file: {}".format(failed_ids_file), "info")
+            pf.print_message("No assemblies meet the desired filtering criteria.", "warning")
+            pf.print_message("Assemblies that failed are in the following TSV file: {}".format(failed_ids_file), "info")
             sys.exit()
 
         # Download assemblies
@@ -291,9 +291,9 @@ def main(input_table: Optional[str], taxon: Optional[str], criteria: Optional[Di
 
             assemblies_zip = os.path.join(output_directory, 'assemblies_ncbi.zip')
             arguments.extend(['--filename', assemblies_zip])
-            pf.print_message("\nDownloading assemblies...", "info")
+            pf.print_message("Downloading assemblies...", "info")
             subprocess.run(arguments, check=False)
         else:
-            pf.print_message("\nThe list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(ncbi_valid_ids_file), "info")
+            pf.print_message("The list of identifiers for the assemblies that passed the filtering criteria was saved to: {}".format(ncbi_valid_ids_file), "info")
 
     return ncbi_metadata_directory, ncbi_valid_ids_file, assemblies_zip
