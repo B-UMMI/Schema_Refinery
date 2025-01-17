@@ -293,7 +293,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     blast_db_nuc: str = os.path.join(blast_db, 'Blast_db_nucleotide')
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_nuc, 'nucl')
 
-    pf.print_message("Running BLASTn...", "info")
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
     representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords

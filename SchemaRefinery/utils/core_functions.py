@@ -1401,7 +1401,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
             blastn_results_files.append(res[1])
             prf.print_message(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
             i += 1
-
+    prf.print_message("", None)
     # Process the obtained BLAST results files
     for blast_result_file in blastn_results_files:
 
@@ -1500,9 +1500,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                                                 blastp_results_ss_folder,
                                                                 max_id_length,
                                                                 cpu)
-    # Print newline
-    prf.print_message("\n", None)
-    
+    prf.print_message("", None)
     prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     blastp_results_files: List[str] = [] # To store the results files
@@ -1519,7 +1517,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
 
             prf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
             i += 1
-
+    prf.print_message("", None)
    # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
         filtered_alignments_dict
