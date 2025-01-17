@@ -4,9 +4,11 @@ import ast
 import csv
 
 try:
-    from utils import constants as ct
+    from utils import (constants as ct,
+                       print_functions as pf)
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import constants as ct
+    from SchemaRefinery.utils import (constants as ct,
+                                      print_functions as pf)
 
 
 def tryeval(val):
@@ -229,9 +231,9 @@ def validate_criteria_file(file_path, expected_criteria=ct.FILTERING_CRITERIA):
                        if x not in expected_criteria]
 
     if len(unexpected_keys) > 0:
-        print("\nError: Following unexpected criteria:")
+        pf.print_message("Following unexpected criteria:", "error")
         unexpected_keys = '\n'.join(unexpected_keys)
-        print(unexpected_keys)
+        pf.print_message(unexpected_keys, None)
         sys.exit()
 
     missing_keys = [x
@@ -239,9 +241,9 @@ def validate_criteria_file(file_path, expected_criteria=ct.FILTERING_CRITERIA):
                     if x not in criteria]
 
     if len(missing_keys) > 0:
-        print("\nError: Missing following criteria:")
+        pf.print_message("Missing following criteria:", "error")
         missing_keys = '\n'.join(missing_keys)
-        print(missing_keys)
+        pf.print_message(missing_keys, None)
         sys.exit()
 
     warnings = []

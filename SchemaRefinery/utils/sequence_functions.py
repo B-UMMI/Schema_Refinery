@@ -7,10 +7,12 @@ from Bio import SeqIO
 
 try:
     from utils import (file_functions as ff,
-                       constants as ct)
+                       constants as ct,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
-                                      constants as ct)
+                                      constants as ct,
+                                      print_functions as pf)
 
 def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) -> bool:
     """
@@ -436,10 +438,10 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, untr
             if isinstance(protein_translation, tuple):
                 protein_translation = str(protein_translation[0][0])
                 if count_seq:
-                    print(f"\rTranslated {i}/{total} CDS", end='', flush=True)
+                    pf.print_message(f"Translated {i}/{total} CDS", "info", end='\r')
             else:
                 if count_seq:
-                    print(f"\rFailed to translate {id_s}", end='', flush=True)
+                    pf.print_message(f"Failed to translate {id_s}" "error", end='\r', flush=True)
                 untras_seq.setdefault(id_s, protein_translation)
                 continue
             if deduplicate:
@@ -481,7 +483,7 @@ def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
     i = 1
     for rec in read_fasta_file_iterator(file_path):
         if count_seq:
-            print(f"\rProcessed {i} CDS", end='', flush=True)
+            pf.print_message(f"Processed {i} CDS", "info", end='\r', flush=True)
             i += 1
         fasta_dict[rec.id] = str(rec.seq)
     return fasta_dict
@@ -621,7 +623,7 @@ def translate_schema_loci(schema_directory: str,
     
     # Choose what files to use for the BLAST search
     files_to_run: Dict[str, str] = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
-    print("\nTranslating sequences...")
+    pf.print_message("\nTranslating sequences...", "info")
     
     # Create directory for translated sequences
     reps_translations_folder: str = os.path.join(output_directory, 'reps_translations')
@@ -636,7 +638,7 @@ def translate_schema_loci(schema_directory: str,
     for loci, loci_path in files_to_run.items():
         # Get the fasta sequences
         fasta_dict: Dict[str, str] = fetch_fasta_dict(loci_path, False)
-        print(f"\rTranslating schema reps: {loci}", end='', flush=True)
+        pf.print_message(f"Translating schema reps: {loci}", "info", end='\r', flush=True)
         
         # Add allele IDs to the reps_ids dictionary
         reps_ids.setdefault(loci, []).extend(fasta_dict.keys())
