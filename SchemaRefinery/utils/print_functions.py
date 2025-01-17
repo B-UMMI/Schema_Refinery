@@ -100,6 +100,8 @@ def print_message(message: str, message_type: str = "info", logger: bool = False
         formatted_message = f"[WARNING] {current_time} - {message}"
     elif message_type == "error":
         formatted_message = f"[ERROR] {current_time} - {message}"
+    elif message_type == "debug":
+        formatted_message = f"[DEBUG] {current_time} - {message}"
     elif message_type == None:
         formatted_message = f"{message}"
     else:

@@ -1,4 +1,5 @@
 import time
+import shutil
 import psutil
 import threading
 from typing import Callable, Any
@@ -135,6 +136,14 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
 
             end_time = time.time()
             execution_time = end_time - start_time
+
+            # Get terminal window size
+            terminal_width = shutil.get_terminal_size().columns
+
+            # Print messages between === lines
+            separator = "=" * terminal_width
+            pf.print_message(separator, None)
+            pf.print_message("Running Stats".center(terminal_width), None)
             pf.print_message(f"Execution time: {execution_time:.2f} seconds", "info")
             if monitor_memory:
                 pf.print_message(f"Maximum memory usage: {max_memory_usage / (1024 * 1024):.2f} MB", "info")
@@ -146,6 +155,8 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
                 write_ops = final_io_counters.write_count - initial_io_counters.write_count
                 pf.print_message(f"Read operations: {read_ops}", "info")
                 pf.print_message(f"Write operations: {write_ops}", "info")
+            
+            pf.print_message(separator, None)
             return result
 
         return wrapper
