@@ -1,6 +1,8 @@
 import os
 import shutil
-from typing import Dict, List
+import logging
+from typing import Dict, List, Optional
+
 
 try:
     from utils import (sequence_functions as sf,
@@ -18,7 +20,8 @@ def create_schema_structure(recommendations_file: str,
                             bsr: float,
                             translation_table: int,
                             no_cleanup:bool,
-                            debug: bool) -> None:
+                            debug: bool,
+                            logger: Optional[logging.Logger]) -> None:
     """
     Creates a schema structure based on the recommendations provided in the recommendations file.
 

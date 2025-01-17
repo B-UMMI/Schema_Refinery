@@ -13,9 +13,10 @@ import os
 import time
 import shutil
 import traceback
+import logging
 import multiprocessing
 from multiprocessing.pool import Pool
-from typing import List, Tuple, Dict, Callable, Any, Union
+from typing import List, Tuple, Dict, Callable, Any, Union, Optional
 
 from Bio import SeqIO, Seq
 
@@ -511,7 +512,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
 
 
 def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_ratio: float,
-         translation_table: int, debug: bool) -> bool:
+         translation_table: int, debug: bool, logger: Optional[logging.Logger]) -> bool:
     """
     Adapt a schema to be used with chewBBACA.
 

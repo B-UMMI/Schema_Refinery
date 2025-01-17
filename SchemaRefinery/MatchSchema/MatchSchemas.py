@@ -1,4 +1,5 @@
 import os
+import logging
 import concurrent.futures
 from typing import Dict, List, Tuple, Optional
 from itertools import repeat
@@ -194,7 +195,8 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
 
 
 def match_schemas(query_schema_directory: str, subject_schema_directory: str, output_directory: str, bsr: float,
-                  translation_table: int, cpu: int, processing_mode: str, no_cleanup: bool, debug: bool) -> str:
+                  translation_table: int, cpu: int, processing_mode: str, no_cleanup: bool, debug: bool,
+                  logger: Optional[logging.Logger]) -> str:
     """
     Match schemas between query and subject directories.
 

@@ -2,7 +2,8 @@ import os
 import concurrent.futures
 import itertools
 import statistics
-from typing import Dict, List, Tuple
+import logging
+from typing import Dict, List, Tuple, Optional
 
 try:
     from utils import (
@@ -35,7 +36,8 @@ def identify_paralogous_loci(schema_directory: str,
                              size_threshold: float, 
                              processing_mode: str,
                              no_cleanup: bool,
-                             debug: bool) -> None:
+                             debug: bool,
+                             logger: Optional[logging.Logger]) -> None:
     """
     Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
 

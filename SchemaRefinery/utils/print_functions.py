@@ -1,5 +1,12 @@
 import shutil
+import logging
 from datetime import datetime
+from typing import Optional
+
+try:
+    from utils import globals as gb
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import globals as gb
 
 def print_logo() -> None:
     """
@@ -75,7 +82,7 @@ def print_module_currently_running(module: str) -> None:
 
     print(to_print)
 
-def print_message(message: str, message_type: str = "info", logger: bool = False, end = '\n', flush: bool = False) -> None:
+def print_message(message: str, message_type: str = "info", end = '\n', flush: bool = False) -> None:
     """
     Print a formatted message with the current time and message type.
 
@@ -92,6 +99,7 @@ def print_message(message: str, message_type: str = "info", logger: bool = False
     -------
     None
     """
+    logger: Optional[logging.Logger] = gb.LOGGER # This can change to a logger object if user uses --logger
 
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if message_type == "info":
@@ -106,5 +114,17 @@ def print_message(message: str, message_type: str = "info", logger: bool = False
         formatted_message = f"{message}"
     else:
         formatted_message = f"{current_time} - {message}"
-
+    # Log the message if logger is not None
+    if logger:
+        if message_type == "info":
+            logger.info(message)
+        elif message_type == "warning":
+            logger.warning(message)
+        elif message_type == "error":
+            logger.error(message)
+        elif message_type == "debug":
+            logger.debug(message)
+        else:
+            logger.info(message)
+    
     print(formatted_message, end = end, flush = flush)

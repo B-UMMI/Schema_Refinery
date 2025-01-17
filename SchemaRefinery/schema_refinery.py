@@ -10,7 +10,7 @@ as input depending on the desired module.
 Code documentation
 ------------------
 """
-
+import os
 import sys
 import argparse
 import webbrowser
@@ -26,7 +26,9 @@ try:
     from utils import (constants as ct,
                        validation as val,
                        print_functions as pf,
-                       decorators as dec)
+                       decorators as dec,
+                       logger_functions as lf,
+                       globals as gb)
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -39,7 +41,9 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (constants as ct,
                                       validation as val,
                                       print_functions as pf,
-                                      decorators as dec)
+                                      decorators as dec,
+                                      logger_functions as lf,
+                                      globals as gb)
 
 
 def download_assemblies() -> None:
@@ -145,9 +149,22 @@ def download_assemblies() -> None:
                         dest='debug',
                         help='Flag to indicate whether to run the module in debug mode.')
 
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
+    # Validate the arguments
     val.validate_download_assemblies_module_arguments(args)
     
     # Transfer values from criteria file to the args namespace
@@ -373,8 +390,20 @@ def schema_annotation() -> None:
                         dest='debug',
                         help='Flag to indicate whether to run the module in debug mode.')
 
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Validate the arguments
     val.validate_schema_annotation_module_arguments(args)
@@ -542,8 +571,20 @@ def identify_spurious_genes() -> None:
                         dest='debug',
                         help='Flag to indicate whether to run the module in debug mode.')
 
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Validate the arguments
     val.validate_identify_spurious_genes_module_arguments(args)
@@ -618,8 +659,20 @@ def adapt_loci() -> None:
                     dest='debug',
                     help='Flag to indicate whether to run the module in debug mode.')
 
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Validate the arguments
     val.validate_adapt_loci_module_arguments(args)
@@ -717,8 +770,20 @@ def identify_paralogous_loci() -> None:
                         dest='debug',
                         help='Flag to indicate whether to run the module in debug mode.')
 
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Call the main function of the IdentifyParalogousLoci class with the parsed arguments
     IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
@@ -811,8 +876,20 @@ def match_schemas() -> None:
                         dest='debug',
                         help='Flag to indicate whether to run the module in debug mode.')
 
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Call the main function of the MatchSchemas class with the parsed arguments
     MatchSchemas.match_schemas(**vars(args))
@@ -895,9 +972,21 @@ def create_schema_structure() -> None:
                         required=False,
                         dest='debug',
                         help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
     
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Call the main function of the CreateSchemaStructure class with the parsed arguments
     CreateSchemaStructure.create_schema_structure(**vars(args))
@@ -950,13 +1039,36 @@ def main():
     # Call the function of the selected module
     module_info[module][1]()
 
-def pre_main():
-    # First parser to handle the --debug argument
-    parser = argparse.ArgumentParser(description="SchemaRefinery")
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode with resource monitoring')
-    args, remaining_argv = parser.parse_known_args()
+def entry_point():
+    # Extract arguments using sys.argv
+    argv = sys.argv[1:]
+
+    # Initialize default values
+    debug = False
+    logger = None
+
+    # Manually parse arguments
+    i = 0
+    while i < len(argv):
+        if argv[i] == '--debug':
+            debug = True
+        elif argv[i] == '--logger' and i + 1 < len(argv):
+            logger = argv[i + 1]
+            i += 1
+        i += 1
+
+    if logger:
+        # Create the logger file if it does not exist
+        if not os.path.exists(logger):
+            os.makedirs(os.path.dirname(logger), exist_ok=True)
+            with open(logger, 'w') as f:
+                pass  # Just create the file
+        
+        gb.LOGGER = lf.setup_logger(logger) # Setup logger
+
     # Add resource monitoring to the main function if debug
-    if args.debug:
+    if debug:
+        gb.DEBUG = True
         decorated_main = dec.time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io=True)(main)
         decorated_main()
     else:
@@ -964,4 +1076,4 @@ def pre_main():
 
 if __name__ == "__main__":
 
-    pre_main()
+    entry_point()

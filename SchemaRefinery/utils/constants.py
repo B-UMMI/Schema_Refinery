@@ -10,8 +10,8 @@ parameters.
 Code documentation
 ------------------
 """
-
-from typing import Tuple
+import logging
+from typing import Tuple, Optional
 
 # GitHub repository and contacts
 REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'

@@ -3,6 +3,7 @@
 
 import os
 import sys
+import logging
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 try:
@@ -494,7 +495,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
         bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
-        no_cleanup: bool, debug: bool) -> None:
+        no_cleanup: bool, debug: bool, logger: Optional[logging.Logger]) -> None:
     """
     Main function to identify spurious genes in a schema.
 
@@ -532,6 +533,12 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Mode of processing.
     cpu : int
         Number of CPU cores to use.
+    no_cleanup : bool
+        Flag to indicate whether to clean up temporary files.
+    debug : bool
+        Flag to indicate whether to run in debug mode.
+    logger : Optional[logging.Logger]
+        Logger object to use.
 
     Returns
     -------
