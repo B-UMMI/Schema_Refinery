@@ -1072,9 +1072,10 @@ def entry_point():
         decorated_main = dec.time_and_resource_function(monitor_memory=True, 
                                                         monitor_cpu=True, 
                                                         monitor_io=True, 
-                                                        monitor_network=True, 
+                                                        monitor_network=False, 
                                                         monitor_disk=True, 
-                                                        monitor_threads=True)(main)
+                                                        monitor_threads=True,
+                                                        interval=0.1)(main)
         decorated_main()
     else:
         main()
