@@ -13,6 +13,10 @@ import pandas as pd
 from tqdm import tqdm
 from Bio import Entrez
 
+try:
+    from utils import (print_functions as pf)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (print_functions as pf)
 
 def find_internal_id(query_id: str) -> Union[str, int]:
     """
@@ -117,7 +121,7 @@ def get_metadata(xml_root: Union[ET.Element, str]) -> Dict[str, Any]:
             metadata_dict.update(organism_element.attrib)
         else:
             # Print a message if the "Organism" element is not found
-            print("Organism not found in metadata")
+            pf.print_message("Organism element not found.", "warning")
 
         # Iterate over all "Attributes" elements in the XML tree
         for attributes in xml_root.iter('Attributes'):
