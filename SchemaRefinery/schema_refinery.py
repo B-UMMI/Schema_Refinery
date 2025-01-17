@@ -12,7 +12,6 @@ Code documentation
 """
 
 import sys
-import shutil
 import argparse
 import webbrowser
 
@@ -25,7 +24,8 @@ try:
     from MatchSchema import MatchSchemas
     from CreateSchemaStructure import CreateSchemaStructure
     from utils import (constants as ct,
-                       validation as val)
+                       validation as val,
+                       print_functions as pf)
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -36,7 +36,8 @@ except ModuleNotFoundError:
     from SchemaRefinery.MatchSchema import MatchSchemas
     from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
     from SchemaRefinery.utils import (constants as ct,
-                                      validation as val)
+                                      validation as val,
+                                      print_functions as pf)
 
 
 def download_assemblies() -> None:
@@ -856,56 +857,6 @@ def create_schema_structure() -> None:
 
     # Call the main function of the CreateSchemaStructure class with the parsed arguments
     CreateSchemaStructure.create_schema_structure(**vars(args))
-    
-def print_logo() -> None:
-    """
-    Print the SchemaRefinery logo.
-
-    This function prints the SchemaRefinery logo in the terminal.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-    """
-
-    big_logo = """
-
-
-███████╗ ██████╗██╗  ██╗███████╗███╗   ███╗ █████╗ ██████╗ ███████╗███████╗██╗███╗   ██╗███████╗██████╗ ██╗   ██╗
-██╔════╝██╔════╝██║  ██║██╔════╝████╗ ████║██╔══██╗██╔══██╗██╔════╝██╔════╝██║████╗  ██║██╔════╝██╔══██╗╚██╗ ██╔╝
-███████╗██║     ███████║█████╗  ██╔████╔██║███████║██████╔╝█████╗  █████╗  ██║██╔██╗ ██║█████╗  ██████╔╝ ╚████╔╝ 
-╚════██║██║     ██╔══██║██╔══╝  ██║╚██╔╝██║██╔══██║██╔══██╗██╔══╝  ██╔══╝  ██║██║╚██╗██║██╔══╝  ██╔══██╗  ╚██╔╝  
-███████║╚██████╗██║  ██║███████╗██║ ╚═╝ ██║██║  ██║██║  ██║███████╗██║     ██║██║ ╚████║███████╗██║  ██║   ██║   
-╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝   ╚═╝   
-                                                                                                                 
-                                                                                                                 
-
-    """
-
-    small_logo = """
-
-███████╗██████╗ 
-██╔════╝██╔══██╗
-███████╗██████╔╝
-╚════██║██╔══██╗
-███████║██║  ██║
-╚══════╝╚═╝  ╚═╝
-                
-    """
-
-    size = shutil.get_terminal_size()
-    if size.columns < 100:
-        # Center the small logo
-        for line in small_logo.splitlines():
-            print(line.center(size.columns))
-    else:
-        # Center the big logo
-        for line in big_logo.splitlines():
-            print(line.center(size.columns))
 
 def open_docs() -> None:
     """
@@ -927,7 +878,7 @@ def open_docs() -> None:
 
 def main():
     # Print the SchemaRefinery logo
-    print_logo()
+    pf.print_logo()
 
     module_info = {
         'DownloadAssemblies': ["Downloads assemblies from the NCBI and the ENA661K database.", download_assemblies],
@@ -949,6 +900,9 @@ def main():
 
     module = sys.argv[1]
     sys.argv.remove(module)
+    #Print the module name
+    pf.print_module_currently_running(module)
+    # Call the function of the selected module
     module_info[module][1]()
 
 if __name__ == "__main__":

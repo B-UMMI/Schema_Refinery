@@ -11,13 +11,15 @@ try:
     from DownloadAssemblies import ncbi_datasets
     from DownloadAssemblies import ncbi_linked_ids
     from DownloadAssemblies import fetch_metadata
-    from utils import file_functions as ff
+    from utils import (file_functions as ff,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import ena661k_assembly_fetcher
     from SchemaRefinery.DownloadAssemblies import ncbi_datasets
     from SchemaRefinery.DownloadAssemblies import ncbi_linked_ids
     from SchemaRefinery.DownloadAssemblies import fetch_metadata
-    from SchemaRefinery.utils import file_functions as ff
+    from SchemaRefinery.utils import (file_functions as ff,
+                                      print_functions as pf)
 
 
 def find_local_conda_env() -> str:
@@ -98,13 +100,13 @@ def main(args: Any) -> None:
         criteria: Dict[str, Any] = args.filtering_criteria
     else:
         criteria = None
-        print("No criteria provided. Fetching all assemblies.")
+        pf.print_message("No criteria provided. Fetching all assemblies.", "info")
 
     # Create output directory if it does not exist
     if not os.path.isdir(args.output_directory):
         os.mkdir(args.output_directory)
 
-    print(f"\nFetching assemblies from {args.database} datasets.")
+    pf.print_message(f"Fetching assemblies from {args.database} datasets.", "info")
     if 'NCBI' in args.database:
         [ncbi_metadata_directory,
          ncbi_valid_ids_file,
