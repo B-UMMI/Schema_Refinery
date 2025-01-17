@@ -878,7 +878,7 @@ def open_docs() -> None:
     webbrowser.open(url)
     sys.exit(f"Opening documentation at {url}")
 
-@dec.time_function
+@dec.time_and_memory_function
 def main():
     # Print the SchemaRefinery logo
     pf.print_logo()
