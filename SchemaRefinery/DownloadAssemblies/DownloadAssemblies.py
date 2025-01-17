@@ -180,7 +180,8 @@ def main(args: Any) -> None:
 
 
         ncbi_valid_ids_file
-        print("\nFetching RefSeq, Genbank and SRA IDs linked to the assembly ID...")
+        pf.print_message("Fetching RefSeq, Genbank and SRA IDs linked to the assembly ID...", "info")
+
         ncbi_linked_ids.main(ids_file,
                              linked_ids_file,
                              args.email,
@@ -197,7 +198,8 @@ def main(args: Any) -> None:
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples) + '\n')
 
-        print("\nFetching metadata associated to the BioSample ID...")
+        pf.print_message("Fetching metadata associated to the BioSample ID...", "info")
+
         fetch_metadata.main(biosample_file,
                             all_metadata_directory,
                             args.email,
@@ -208,7 +210,7 @@ def main(args: Any) -> None:
         all_metadata_directory = None
         
     if not args.no_cleanup:
-        print("\nCleaning up temporary files...")
+        pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(args.output_directory, [all_metadata_directory,
                                            assemblies_directory,
