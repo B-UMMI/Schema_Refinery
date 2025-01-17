@@ -1069,7 +1069,12 @@ def entry_point():
     # Add resource monitoring to the main function if debug
     if debug:
         gb.DEBUG = True
-        decorated_main = dec.time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io=True)(main)
+        decorated_main = dec.time_and_resource_function(monitor_memory=True, 
+                                                        monitor_cpu=True, 
+                                                        monitor_io=True, 
+                                                        monitor_network=True, 
+                                                        monitor_disk=True, 
+                                                        monitor_threads=True)(main)
         decorated_main()
     else:
         main()
