@@ -12,7 +12,8 @@ try:
                        linux_functions as lf,
                        alignments_functions as af,
                        iterable_functions as itf,
-                       pandas_functions as pf)
+                       pandas_functions as pf,
+                       print_functions as prf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (sequence_functions as sf,
                                       file_functions as ff,
@@ -21,7 +22,8 @@ except ModuleNotFoundError:
                                       linux_functions as lf,
                                       alignments_functions as af,
                                       iterable_functions as itf,
-                                      pandas_functions as pf)
+                                      pandas_functions as pf,
+                                      print_functions as prf)
 
 def create_database_files(proteome_file: str, clustering_sim: float, clustering_cov: float, size_ratio: float,
                           blast_processing_folder: str) -> Union[tuple[str, Dict[str, List[str]], Dict[str, str]], Tuple[None, None, None]]:
@@ -56,14 +58,14 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     # Create dictionaries to store the representatives ID and what it representes
     same_protein_other_annotations: Dict[str, List[str]] = {}
 
-    print(f"\nExtracting protein from proteome file: {os.path.basename(proteome_file)}...")
+    prf.print_message(f"\nExtracting protein from proteome file: {os.path.basename(proteome_file)}...", "info")
     
     # Fetch protein sequences from the proteome file
     fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(proteome_file, False)
     total_proteins: int = len(fasta_dict)
     
     if total_proteins == 0:
-        print(f"No proteins found in {os.path.basename(proteome_file)}")
+        prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
         return (None, None, None)
 
     # Process each protein sequence
@@ -78,9 +80,9 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
             all_translation_dict[id_] = sequence
             hash_to_rep_id[protein_hash] = id_
 
-    print(f"\nOut of {total_proteins} protein sequences, {len(all_translation_dict)} are unique proteins\n")
+    prf.print_message(f"\nOut of {total_proteins} protein sequences, {len(all_translation_dict)} are unique proteins", "info")
     
-    print("Clustering protein sequences...")
+    prf.print_message(f"\nClustering protein sequences...", "info")
     all_alleles: Dict[str, str] = {}
     reps_sequences: Dict[str, str] = {}
     reps_groups: Dict[str, List[str]] = {}
@@ -102,8 +104,8 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
         True,
         size_ratio
     )
-    
-    print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.")
+
+    prf.print_message(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters", "info")
     
     # Save clustered protein sequences to a file
     clustered_protein_master_file: str = os.path.join(blast_processing_folder, f"{file_name}")
@@ -159,7 +161,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
     get_blastp_exec: str = lf.get_tool_path('blastp')
     
     # Run BLASTp
-    print("Running BLASTp...")
+    prf.print_message("\nRunning BLASTp...", "info")
     blastp_results_folder: str = os.path.join(blast_processing_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     
@@ -180,7 +182,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
             # Save the path to the BLASTp results file
             blastp_results_files.append(res[1])
 
-            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
+            prf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
             i += 1
 
     for blast_results_file in blastp_results_files:
@@ -300,7 +302,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     # For better prints get max length of string
     max_id_length: int = len(max(reps_ids, key=len))
     
-    print('\n')
+    prf.print_message("\n", None)
     # Get path to the blastp executable
     blast_exec: str = lf.get_tool_path('blastp')
     self_score_dict: Dict[str, float] = bf.calculate_self_score(translations_paths,
@@ -308,15 +310,15 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                                 proteome_matcher_output,
                                                                 max_id_length,
                                                                 cpu)
-    print('\n')
+    prf.print_message("\n", None)
     merge_files: List[List[str]] = [[], []]
     for i, (file_name, paths) in enumerate(proteomes_data_paths.items()):
         if paths[2] is None:
-            print(f"\nSkipping proteome file BLAST: {file_name} due to lack of proteins")
+            prf.print_message(f"Skipping proteome file BLAST: {file_name} due to lack of proteins", "warning")
             continue
         # Get proteome file name without extension
         file_name_without_extension: str = file_name.split('.')[0]
-        print(f"\nProcessing proteome for: {file_name_without_extension}")
+        prf.print_message(f"Processing proteome for: {file_name_without_extension}", "info")
         # Get paths
         [proteome_folder, blast_processing_folder, blast_db_files] = paths
         # Run Blasts and save to file
