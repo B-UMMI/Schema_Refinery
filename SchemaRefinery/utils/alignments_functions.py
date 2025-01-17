@@ -3,11 +3,13 @@ from typing import List, Tuple, Dict, Any, Set, Union
 try:
     from utils import (iterable_functions as itf,
                        constants as ct,
-                       Types as tp)
+                       Types as tp,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (iterable_functions as itf,
                                       constants as ct,
-                                      Types as tp)
+                                      Types as tp,
+                                      print_functions as pf)
 
 def join_intervals(alignments: List[List[Any]]) -> Tuple[List[str], List[Dict[str, Any]]]:
     """
@@ -146,7 +148,7 @@ def process_alignments_for_graphs(alignments_dict: Dict[str, List[Dict[str, Any]
     keys_set: set = set()
     processed_alignments_dict: Dict[str, List[Dict[str, Any]]] = {}
 
-    print("Processing alignments for graphs...")
+    pf.print_message("Processing alignments for graphs...", "info")
 
     for key in alignments_dict.keys():
         locus_1, locus_2 = key.split(";")
