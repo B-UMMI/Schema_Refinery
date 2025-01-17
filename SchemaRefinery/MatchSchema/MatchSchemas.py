@@ -10,7 +10,8 @@ try:
                         linux_functions as lf,
                         file_functions as ff,
                         alignments_functions as af,
-                        Types as tp
+                        Types as tp,
+                        print_functions as pf
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -19,7 +20,8 @@ except ModuleNotFoundError:
                                     linux_functions as lf,
                                     file_functions as ff,
                                     alignments_functions as af,
-                                    Types as tp
+                                    Types as tp,
+                                    print_functions as pf
                                     
     )
 
@@ -89,7 +91,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
     """
     
     # Run BLASTp
-    print("Running BLASTp...")
+    pf.print_message("Running BLASTp...", "info")
     blastp_results_folder: str = os.path.join(blast_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     
@@ -110,7 +112,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
             # Save the path to the BLASTp results file
             blastp_results_files.append(res[1])
 
-            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
+            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
             i += 1
 
     for blast_result_file in blastp_results_files:
@@ -219,7 +221,6 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     -------
     None
     """
-    print("\nRunning MatchSchemas...")
     # Query schema files
     query_files: Dict[str, str]
     query_files_short: Dict[str, str]
@@ -246,10 +247,10 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     query_ids: Dict[str, List[List[str]]] = {}
     query_translations_paths: Dict[str, str] = {}
     i = 0
-    print("\nTranslating sequences for query schema...")
+    pf.print_message("Translating sequences for query schema...", "info")
     for query_loci, path in query_fastas.items():
         i += 1
-        print(f"\rTranslated query loci FASTA: {i}/{len_query_fastas}", end='', flush=True)
+        pf.print_message(f"Translated query loci FASTA: {i}/{len_query_fastas}", "info", end='\r', flush=True)
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -274,10 +275,10 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     subject_translations_paths: Dict[str, str] = {}
     master_file_path: str = os.path.join(blast_folder, 'subject_master_file.fasta')
     i = 0
-    print("\nTranslating sequences for subject schema...")
+    pf.print_message("Translating sequences for subject schema...", "info")
     for subject_loci, path in subject_fastas.items():
         i += 1
-        print(f"\rTranslated subject loci FASTA: {i}/{len_subject_fasta}", end='', flush=True)
+        pf.print_message(f"Translated subject loci FASTA: {i}/{len_subject_fasta}", "info", end='\r', flush=True)
         # Get the fasta sequences for the query
         fasta_dict = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -323,7 +324,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_files, 'prot')
 
     # Run BLAST
-    print("\nRunning BLASTs between schemas...")
+    pf.print_message("Running BLASTs between schemas...", "info")
     best_bsr_values: Dict[str, Dict[str, float]] = run_blasts_match_schemas(query_translations_paths,
                                                                             blast_db_files,
                                                                             blast_folder,
@@ -336,7 +337,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
     # Clean up temporary files
     if not no_cleanup:
-        print("\nCleaning up temporary files...")
+        pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_directory, [best_blast_matches_file])
 
