@@ -19,7 +19,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 try:
     from utils import (Types as tp,
                        print_functions as pf)
-
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (Types as tp,
                                       print_functions as pf)
