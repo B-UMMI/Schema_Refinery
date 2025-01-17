@@ -98,7 +98,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     str
         Path to the annotations file.
     """
-    prf.print_message("\nLoading GenBank files...", "info")
+    prf.print_message("Loading GenBank files...", "info")
     # List and sort GenBank files
     gbk_files: List[str] = [os.path.join(genbank_files, f) for f in os.listdir(genbank_files)]
     gbk_files.sort()
@@ -144,9 +144,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
 
             all_cds_info.update(cds_info)
 
-    prf.print_message(f"\nOut of {total_proteins} proteins sequences {len(all_translation_dict)} are unique proteins", "info")
+    prf.print_message(f"Out of {total_proteins} proteins sequences {len(all_translation_dict)} are unique proteins", "info")
 
-    prf.print_message("\nClustering protein sequences...", "info")
+    prf.print_message("Clustering protein sequences...", "info")
     all_alleles: Dict[str, List[str]] = {}
     reps_sequences: Dict[str, str] = {}
     reps_groups: Dict[str, List[str]] = {}
@@ -172,7 +172,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                                             size_ratio
     )
     # Print the number of clusters
-    prf.print_message(f"\nClustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.", "info")
+    prf.print_message(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.", "info")
 
     # Save extracted protein sequences to a file
     blast_processing_folder: str = os.path.join(output_directory, 'blast_processing')

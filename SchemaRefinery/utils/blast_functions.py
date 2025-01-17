@@ -435,5 +435,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 
         # Save self-score
         self_score_dict.update(self_score)
+    
+    pf.print_message("", None)
 
     return self_score_dict

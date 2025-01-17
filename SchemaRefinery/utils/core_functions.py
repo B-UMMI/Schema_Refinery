@@ -1500,7 +1500,6 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                                                 blastp_results_ss_folder,
                                                                 max_id_length,
                                                                 cpu)
-    prf.print_message("", None)
     prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     blastp_results_files: List[str] = [] # To store the results files

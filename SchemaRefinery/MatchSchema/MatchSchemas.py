@@ -333,6 +333,7 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
                                                                             get_blastp_exec,
                                                                             bsr,
                                                                             cpu)
+    pf.print_message("", None)
     # Write the best BLAST matches to a file
     best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_paths, output_directory)
     # Clean up temporary files

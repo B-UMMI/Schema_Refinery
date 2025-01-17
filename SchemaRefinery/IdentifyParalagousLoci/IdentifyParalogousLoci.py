@@ -219,8 +219,7 @@ def identify_paralogous_loci(schema_directory: str,
                 elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
                     best_bsr_values[query_loci_id][subject_loci_id] = computed_score
 
-    # Print newline
-    pf.print_message(f"\n", None)
+    pf.print_message(f"", None)
     
     paralogous_loci_report: str = os.path.join(output_directory, 'paralogous_loci_report.tsv')
     paralogous_list: List[Tuple[str, str]] = []
