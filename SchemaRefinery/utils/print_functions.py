@@ -75,7 +75,7 @@ def print_module_currently_running(module: str) -> None:
 
     print(to_print)
 
-def print_message(message: str, message_type: str = "info", logger: bool = False) -> None:
+def print_message(message: str, message_type: str = "info", logger: bool = False, end = '\n') -> None:
     """
     Print a formatted message with the current time and message type.
 
@@ -100,7 +100,9 @@ def print_message(message: str, message_type: str = "info", logger: bool = False
         formatted_message = f"[WARNING] {current_time} - {message}"
     elif message_type == "error":
         formatted_message = f"[ERROR] {current_time} - {message}"
+    elif message_type == None:
+        formatted_message = f"{message}"
     else:
         formatted_message = f"{current_time} - {message}"
 
-    print(formatted_message)
+    print(formatted_message, end = end)
