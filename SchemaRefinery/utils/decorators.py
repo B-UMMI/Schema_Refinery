@@ -13,20 +13,44 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
     """
     Decorator to measure the execution time and optionally monitor resource usage.
 
-    Parameters:
-    - monitor_memory: Monitor memory usage (default: True).
-    - monitor_cpu: Monitor CPU usage (default: True).
-    - monitor_io: Monitor I/O operations (default: True).
-    - monitor_network: Monitor network usage (default: True).
-    - monitor_disk: Monitor disk usage (default: True).
-    - monitor_threads: Monitor the number of threads (default: True).
-    - interval: Interval in seconds for resource measurement (default: 0.1).
+    Parameters
+    ----------
+    monitor_memory : bool, optional
+        Monitor memory usage, by default True
+    monitor_cpu : bool, optional
+        Monitor CPU usage, by default True
+    monitor_io : bool, optional
+        Monitor I/O operations, by default True
+    monitor_network : bool, optional
+        Monitor network usage, by default True
+    monitor_disk : bool, optional
+        Monitor disk usage, by default True
+    monitor_threads : bool, optional
+        Monitor number of threads, by default True
+    interval : float, optional
+        Monitoring interval in seconds, by default 0.1
 
-    Returns:
-    - Wrapped function with resource monitoring.
+    Returns
+    -------
+    Callable[..., Any]
+        Wrapped function with resource monitoring.
+    
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        """
+        Decorator to measure the execution time and optionally monitor resource usage.
+
+        Parameters
+        ----------
+        func : Callable[..., Any]
+            Function to be wrapped.
+        
+        Returns
+        -------
+        Callable[..., Any]
+            Wrapped function with resource monitoring.
+        """
         def wrapper(*args, **kwargs) -> Any:
             process = psutil.Process()
             start_time = time.time()
