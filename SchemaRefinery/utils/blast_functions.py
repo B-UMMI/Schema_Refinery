@@ -133,8 +133,7 @@ def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str
 
     # Exit if it is not possible to create BLAST db
     if len(stderr) > 0:
-        pf.print_message(f'Error while running BLASTp for {fasta_file}\n'
-                        f'{blast_path} returned the following error:\n{stderr.decode("utf-8")}', 'error')
+        pf.print_message(f'Error while running BLASTp for {fasta_file}, {blast_path} returned the following error: {stderr.decode("utf-8")}', 'error')
         sys.exit()
 
     return stdout, stderr
@@ -381,8 +380,7 @@ def run_blastdb_aliastool(blastdb_aliastool_path: str, seqid_infile: str, seqid_
 
     # Exit if it is not possible to create BLAST db
     if len(stderr) > 0:
-        sys.exit(f'Could not convert {seqid_infile} to binary format.\n'
-                 f'{blastdb_aliastool_path} returned the following error:\n{stderr}')
+        sys.exit(f'Could not convert {seqid_infile} to binary format. {blastdb_aliastool_path} returned the following error: {stderr}')
 
     return stdout, stderr
 
