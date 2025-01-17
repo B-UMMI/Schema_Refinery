@@ -256,7 +256,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
     metadata_header: List[str] = metadata_lines[0]
 
     # Select lines based on taxon name, e.g Brucella, Streptococcus pneumonia
-    pf.print_message("\nFiltering by chosen taxon...", "info")
+    pf.print_message("Filtering by chosen taxon...", "info")
     taxon_index: int = metadata_header.index('species')
     taxon_lines: List[List[str]] = [line for line in metadata_lines[1:] if all(t in line[taxon_index].split() for t in taxon.split())]
 
@@ -335,12 +335,12 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         ids_to_tsv.write("\n".join(failed_list) + '\n')
 
     if len(sample_ids) == 0:
-        sys.exit('\nNo assemblies meet the desired filtering criteria.')
+        sys.exit('No assemblies meet the desired filtering criteria.')
     else:
         if criteria is not None:
-            pf.print_message('\nSelected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)), "info")
+            pf.print_message('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)), "info")
         else:
-            pf.print_message("\nNo filtering criteria were provided. All samples were selected.", "info")
+            pf.print_message("No filtering criteria were provided. All samples were selected.", "info")
 
     selected_file_ena661k: str = os.path.join(output_directory, 'assemblies_metadata_ena661k.tsv')
     with open(selected_file_ena661k, 'w', encoding='utf-8') as outfile:
@@ -384,7 +384,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         if len(remote_urls) < len(sample_ids):
             pf.print_message('{0} assemblies had already been downloaded.'.format(len(sample_ids) - len(remote_urls)), "info")
 
-        pf.print_message('\nDownloading {0} assemblies...'.format(len(remote_urls)), "info")
+        pf.print_message('Downloading {0} assemblies...'.format(len(remote_urls)), "info")
         failed: int = 0
         downloaded: int = 0
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
@@ -395,7 +395,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
                 else:
                     failed += 1
         # Print failed downloads
-        pf.print_message(f'\nFailed download for {failed} files.', "info")
+        pf.print_message(f'Failed download for {failed} files.', "info")
         
         failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
         # Write failed downloads to file
