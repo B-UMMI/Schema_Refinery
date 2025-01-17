@@ -15,6 +15,9 @@ try:
                         statistics as stats,
                         clustering_functions as cf,
                         print_functions as pf,
+                        logger_functions as logf,
+                        globals as gb,
+
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -26,6 +29,8 @@ except ModuleNotFoundError:
                                     statistics as stats,
                                     clustering_functions as cf,
                                     print_functions as pf,
+                                    logger_functions as logf,
+                                    globals as gb,
     )
 
 def identify_paralogous_loci(schema_directory: str, 
@@ -289,4 +294,5 @@ def identify_paralogous_loci(schema_directory: str,
         # Remove temporary files
         ff.cleanup(output_directory, [paralogous_loci_report,
                                       paralogous_loci_report_cluster_by_id,
-                                      paralogous_list_check,])
+                                      paralogous_list_check,
+                                      logf.get_log_file_path(gb.LOGGER)])

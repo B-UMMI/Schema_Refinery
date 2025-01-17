@@ -6,11 +6,15 @@ from typing import Dict, List, Optional
 
 try:
     from utils import (sequence_functions as sf,
-                       file_functions as ff)
+                       file_functions as ff,
+                       logger_functions as logf,
+                       globals as gb)
     from AdaptLoci import AdaptLoci
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (sequence_functions as sf,
-                                      file_functions as ff)
+                                      file_functions as ff,
+                                      logger_functions as logf,
+                                      globals as gb)
     from SchemaRefinery.AdaptLoci import AdaptLoci
 
 def create_schema_structure(recommendations_file: str, 
@@ -116,7 +120,7 @@ def create_schema_structure(recommendations_file: str,
                     output_file = os.path.join(temp_fasta_folder, f'{id_}.fasta')
                     # Append the new FASTA file path to the new_fastas_path list
                     new_fastas_path.append(output_file)
-                    fasta_file: str = fastas_files[id_]  # Get the FASTA file path
+                    fasta_file= fastas_files[id_]  # Get the FASTA file path
                     shutil.copy(fasta_file, output_file)
                     print(f'File {id_} copied to {output_file}')
             else:
@@ -152,4 +156,4 @@ def create_schema_structure(recommendations_file: str,
 
     if not no_cleanup:
         print("\nCleaning up temporary files...")
-        ff.cleanup(output_directory, [schema_path])
+        ff.cleanup(output_directory, [schema_path, logf.get_log_file_path(gb.LOGGER)])

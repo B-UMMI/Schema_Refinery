@@ -12,14 +12,18 @@ try:
     from DownloadAssemblies import ncbi_linked_ids
     from DownloadAssemblies import fetch_metadata
     from utils import (file_functions as ff,
-                       print_functions as pf)
+                       print_functions as pf,
+                       logger_functions as logf,
+                       globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import ena661k_assembly_fetcher
     from SchemaRefinery.DownloadAssemblies import ncbi_datasets
     from SchemaRefinery.DownloadAssemblies import ncbi_linked_ids
     from SchemaRefinery.DownloadAssemblies import fetch_metadata
     from SchemaRefinery.utils import (file_functions as ff,
-                                      print_functions as pf)
+                                      print_functions as pf,
+                                      logger_functions as logf,
+                                      globals as gb)
 
 
 def find_local_conda_env() -> str:
@@ -215,4 +219,5 @@ def main(args: Any) -> None:
         ff.cleanup(args.output_directory, [all_metadata_directory,
                                            assemblies_directory,
                                            assemblies_zip,
-                                           selected_file_ena661k])
+                                           selected_file_ena661k,
+                                           logf.get_log_file_path(gb.LOGGER)])

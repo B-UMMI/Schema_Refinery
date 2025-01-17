@@ -3,7 +3,6 @@
 
 import os
 import sys
-import logging
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 try:
@@ -16,7 +15,9 @@ try:
                        classify_cds_functions as ccf,
                        constants as ct,
                        Types as tp,
-                       print_functions as pf)
+                       print_functions as pf,
+                       logger_functions as logf,
+                       globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
@@ -27,7 +28,9 @@ except ModuleNotFoundError:
                                         classify_cds_functions as ccf,
                                         constants as ct,
                                         Types as tp,
-                                        print_functions as pf)
+                                        print_functions as pf,
+                                        logger_functions as logf,
+                                        globals as gb)
 
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """
@@ -487,7 +490,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                       count_results_by_cluster_path,
                                       recommendations_file_path,
                                       drop_possible_loci_output,
-                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None])
+                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                      logf.get_log_file_path(gb.LOGGER)])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,

@@ -12,7 +12,9 @@ try:
                         file_functions as ff,
                         alignments_functions as af,
                         Types as tp,
-                        print_functions as pf
+                        print_functions as pf,
+                        logger_functions as logf,
+                        globals as gb
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -22,7 +24,9 @@ except ModuleNotFoundError:
                                     file_functions as ff,
                                     alignments_functions as af,
                                     Types as tp,
-                                    print_functions as pf
+                                    print_functions as pf,
+                                    logger_functions as logf,
+                                    globals as gb
                                     
     )
 
@@ -341,6 +345,6 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     if not no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
-        ff.cleanup(output_directory, [best_blast_matches_file])
+        ff.cleanup(output_directory, [best_blast_matches_file, logf.get_log_file_path(gb.LOGGER)])
 
     return best_blast_matches_file
