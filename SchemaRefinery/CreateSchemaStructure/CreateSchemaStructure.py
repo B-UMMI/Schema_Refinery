@@ -19,9 +19,7 @@ def create_schema_structure(recommendations_file: str,
                             cpu: int,
                             bsr: float,
                             translation_table: int,
-                            no_cleanup:bool,
-                            debug: bool,
-                            logger: Optional[logging.Logger]) -> None:
+                            no_cleanup:bool,) -> None:
     """
     Creates a schema structure based on the recommendations provided in the recommendations file.
 
