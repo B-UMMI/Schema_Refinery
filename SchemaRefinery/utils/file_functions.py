@@ -607,7 +607,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, constants: Lis
     process_remaining_files(folder2_files, folder2, temp_folder)
 
     # Write the AdaptLoci.txt file and run the AdaptLoci process
-    pf.print_message("\nAdapting loci from both folders into one Schema")
+    pf.print_message("Adapting loci from both folders into one Schema")
     write_adapt_loci_file_and_run_it(temp_folder, output_folder, cpu, constants)
 
     # Fix IDs in the .fasta files in the output folder

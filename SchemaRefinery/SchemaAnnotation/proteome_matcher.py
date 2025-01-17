@@ -58,7 +58,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
     # Create dictionaries to store the representatives ID and what it representes
     same_protein_other_annotations: Dict[str, List[str]] = {}
 
-    prf.print_message(f"\nExtracting protein from proteome file: {os.path.basename(proteome_file)}...", "info")
+    prf.print_message(f"Extracting protein from proteome file: {os.path.basename(proteome_file)}...", "info")
     
     # Fetch protein sequences from the proteome file
     fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(proteome_file, False)
@@ -80,9 +80,9 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
             all_translation_dict[id_] = sequence
             hash_to_rep_id[protein_hash] = id_
 
-    prf.print_message(f"\nOut of {total_proteins} protein sequences, {len(all_translation_dict)} are unique proteins", "info")
+    prf.print_message(f"Out of {total_proteins} protein sequences, {len(all_translation_dict)} are unique proteins", "info")
     
-    prf.print_message(f"\nClustering protein sequences...", "info")
+    prf.print_message(f"Clustering protein sequences...", "info")
     all_alleles: Dict[str, str] = {}
     reps_sequences: Dict[str, str] = {}
     reps_groups: Dict[str, List[str]] = {}
@@ -161,7 +161,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
     get_blastp_exec: str = lf.get_tool_path('blastp')
     
     # Run BLASTp
-    prf.print_message("\nRunning BLASTp...", "info")
+    prf.print_message("Running BLASTp...", "info")
     blastp_results_folder: str = os.path.join(blast_processing_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     
@@ -301,8 +301,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 
     # For better prints get max length of string
     max_id_length: int = len(max(reps_ids, key=len))
-    
-    prf.print_message("\n", None)
+
     # Get path to the blastp executable
     blast_exec: str = lf.get_tool_path('blastp')
     self_score_dict: Dict[str, float] = bf.calculate_self_score(translations_paths,
@@ -310,7 +309,6 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                                 proteome_matcher_output,
                                                                 max_id_length,
                                                                 cpu)
-    prf.print_message("\n", None)
     merge_files: List[List[str]] = [[], []]
     for i, (file_name, paths) in enumerate(proteomes_data_paths.items()):
         if paths[2] is None:

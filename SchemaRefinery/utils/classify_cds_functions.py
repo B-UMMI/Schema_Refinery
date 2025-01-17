@@ -479,7 +479,7 @@ def filter_cds_by_size(all_nucleotide_sequences: Dict[str, str], size_threshold:
 
     dropped_cds: Dict[str, str] = {}
     total_cds: int = len(all_nucleotide_sequences)
-    pf.print_message(f"\nIdentified {total_cds} valid CDS not present in the schema.", 'info')
+    pf.print_message(f"Identified {total_cds} valid CDS not present in the schema.", 'info')
 
     # Filter by size
     if size_threshold:
@@ -616,7 +616,7 @@ def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str],
     cds_translation_size: Dict[str, int] = {key: len(sequence) for key, sequence in all_translation_dict.items()}
 
     # Print additional information about translations and deduplications
-    pf.print_message(f"\n{len(all_translation_dict)}/{len(all_nucleotide_sequences)} unique protein translations.", 'info')
+    pf.print_message(f"{len(all_translation_dict)}/{len(all_nucleotide_sequences)} unique protein translations.", 'info')
 
     return all_translation_dict, protein_hashes, cds_translation_size
 

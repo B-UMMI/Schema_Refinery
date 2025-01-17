@@ -63,7 +63,7 @@ def proteome_fetcher(proteome_table: str, output_directory: str, threads: int, r
     filenames: List[str] = ['{0}.fasta.gz'.format(pid) for pid in proteome_ids]
     filepaths: List[str] = [os.path.join(proteomes_directory, filename) for filename in filenames]
 
-    pf.print_message(f"\nStarting download of {num_proteomes} proteomes...", 'info')
+    pf.print_message(f"Starting download of {num_proteomes} proteomes...", 'info')
 
     # We can use a with statement to ensure threads are cleaned up promptly
     success: int = 0
@@ -80,6 +80,6 @@ def proteome_fetcher(proteome_table: str, output_directory: str, threads: int, r
                 success += 1
                 pf.print_message(f'Downloaded {success}/{num_proteomes}', "info", end='\r', flush=True)
 
-    pf.print_message(f"\nFailed download for {len(failures)} proteomes.", 'warning')
+    pf.print_message(f"Failed download for {len(failures)} proteomes.", 'warning')
 
     return proteomes_directory

@@ -623,7 +623,7 @@ def translate_schema_loci(schema_directory: str,
     
     # Choose what files to use for the BLAST search
     files_to_run: Dict[str, str] = fasta_files_dict if run_mode == 'alleles' else fasta_files_short_dict
-    pf.print_message("\nTranslating sequences...", "info")
+    pf.print_message("Translating sequences...", "info")
     
     # Create directory for translated sequences
     reps_translations_folder: str = os.path.join(output_directory, 'reps_translations')
