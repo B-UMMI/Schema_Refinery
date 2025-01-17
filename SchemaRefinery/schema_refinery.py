@@ -1075,6 +1075,10 @@ def entry_point():
                                                         monitor_network=False, 
                                                         monitor_disk=True, 
                                                         monitor_threads=True,
+                                                        monitor_gc=True,
+                                                        monitor_context_switches=True,
+                                                        monitor_open_files=True,
+                                                        monitor_page_faults=True,
                                                         interval=0.1)(main)
         decorated_main()
     else:
