@@ -4,6 +4,11 @@ import http.client
 from http.client import HTTPMessage
 from typing import Union, Tuple
 
+try:
+    from utils import print_functions as pf
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import print_functions as pf
+
 def download_file(url: str, file_name: str, retry: int) -> tuple[Union[str, tuple[str, HTTPMessage]], str]:
     """
     Downloads a file from the given URL and saves it with the specified file name. Retries the download
@@ -33,7 +38,7 @@ def download_file(url: str, file_name: str, retry: int) -> tuple[Union[str, tupl
         except Exception:
             response = f'Failed: {file_name}'
             tries += 1
-            print(f'Retrying {file_name.split("/")[-1]} ...{tries}')
+            pf.print_message(f'Retrying {file_name.split("/")[-1]} ...{tries}', message_type='warning')
             time.sleep(1)
 
     return response, file_name
