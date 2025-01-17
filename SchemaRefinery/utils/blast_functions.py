@@ -418,7 +418,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     self_score_results_files: List[str] = [] # List to store paths to BLAST results
     i: int = 1
     # Calculate self-score
-    pf.print_message("\nCalculating self-score for each loci:", 'info')
+    pf.print_message("Calculating self-score for each loci:", 'info')
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 paths_dict.keys(),

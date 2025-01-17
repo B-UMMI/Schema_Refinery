@@ -1491,8 +1491,6 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
 
     # Total number of runs
     total_blasts: int = len(blastp_runs_to_do)
-    # If there is need to calculate self-score
-    prf.print_message("Calculate self-score for the CDSs...", "info")
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
     i = 1

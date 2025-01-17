@@ -232,7 +232,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         all_alleles = filtered_alleles
         # Filter also the all_translation_dict dict
         all_translation_dict = {key: value for key, value in all_translation_dict.items() if key in itf.flatten_list(all_alleles.values())}
-        pf.print_message("\nRetrieving kmers similarity and coverage between representatives...", "info")
+        pf.print_message("Retrieving kmers similarity and coverage between representatives...", "info")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
         # Choose which translation dict to use as representative
         if processing_mode.split('_')[0] == 'alleles':
@@ -398,7 +398,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                             dropped_loci_ids,
                                                             classes_outcome)
 
-    pf.print_message("\nWriting count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
+    pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
     reverse_matches: bool = True
     (related_matches_path,
@@ -421,7 +421,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                     merged_all_classes,
                                                     sorted_blast_dict)
 
-    pf.print_message("\nWriting classes and cluster results to files...", "info")
+    pf.print_message("Writing classes and cluster results to files...", "info")
     report_file_path: str = os.path.join(blast_results, 'blast_all_matches.tsv')
     # Write all of the alignments results to a file.
     cof.alignment_dict_to_file(representative_blast_results,
@@ -437,7 +437,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                     blast_results)
 
     if run_mode == 'unclassified_cds':
-        pf.print_message("\nUpdating IDs and saving changes in cds_id_changes.tsv...", "info")
+        pf.print_message("Updating IDs and saving changes in cds_id_changes.tsv...", "info")
         # Update the IDs and save the changes in a file.
         ccf.update_ids_and_save_changes(merged_all_classes,
                                     all_alleles,
@@ -445,11 +445,11 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                     dropped_alleles,
                                     all_nucleotide_sequences,
                                     results_output)
-        pf.print_message("\nWriting dropped CDSs to file...", "info")
+        pf.print_message("Writing dropped CDSs to file...", "info")
         # Write the dropped CDS to a file.
         ccf.write_dropped_cds_to_file(dropped_alleles, results_output)
 
-    pf.print_message("\nWriting dropped possible new loci to file...", "info")
+    pf.print_message("Writing dropped possible new loci to file...", "info")
     # Write the dropped possible new loci to a file.
     drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                                         dropped_alleles,
@@ -461,10 +461,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                         all_alleles)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
-        pf.print_message("\nWriting temporary fastas to file...", "info")
+        pf.print_message("Writing temporary fastas to file...", "info")
         temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_directory)
 
-        pf.print_message("\nCreating graphs for the BLAST results...", "info")
+        pf.print_message("Creating graphs for the BLAST results...", "info")
         cds_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
                         'Size': cds_size.values()}
         cds_translation_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
@@ -481,7 +481,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
     # Clean up temporary files
     if not no_cleanup:
-        pf.print_message("\nCleaning up temporary files...", "info")
+        pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_directory, [related_matches_path,
                                       count_results_by_cluster_path,
