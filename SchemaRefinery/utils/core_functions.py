@@ -14,7 +14,8 @@ try:
                        graphical_functions as gf,
                        pandas_functions as pf,
                        sequence_functions as sf,
-                       Types as tp)
+                       Types as tp,
+                       print_functions as prf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       clustering_functions as cf,
@@ -25,7 +26,8 @@ except ModuleNotFoundError:
                                       graphical_functions as gf,
                                       pandas_functions as pf,
                                       sequence_functions as sf,
-                                      Types as tp)
+                                      Types as tp,
+                                      print_functions as prf)
 
 def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                            file_path: str, write_type: str) -> None:
@@ -1370,8 +1372,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
         - bsr_values: Dict that contains BSR values between CDS.
         - self_score_dict: Dict that contains the self-score values for all of the CDSs that are processed in this function.
     """
-    
-    print("\nRunning BLASTn...")
+    prf.print_message("Running BLASTn...", "info")
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '1_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1398,9 +1399,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                 repeat(blastn_results_folder)):
             # Append the results file to the list
             blastn_results_files.append(res[1])
-            print(
-                f"\rRunning BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", 
-                end='', flush=True)
+            prf.print_message(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
             i += 1
 
     # Process the obtained BLAST results files
@@ -1417,8 +1416,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
         representative_blast_results_coords_all.update(alignment_coords_all)
         representative_blast_results_coords_pident.update(alignment_coords_pident)
 
-
-    print("\nRunning BLASTp based on BLASTn results matches...")
+    prf.print_message("Running BLASTp based on BLASTn results matches...", "info")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
     # Based on BLASTn results get all alleles that matches by BLASTn.
     alleles_matches: Dict[str, List[str]] = {query: itf.flatten_list([[subject[1]['subject']
@@ -1494,7 +1492,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     # Total number of runs
     total_blasts: int = len(blastp_runs_to_do)
     # If there is need to calculate self-score
-    print("\nCalculate self-score for the CDSs...")
+    prf.print_message("Calculate self-score for the CDSs...", "info")
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
     i = 1
@@ -1505,9 +1503,9 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                                                 max_id_length,
                                                                 cpu)
     # Print newline
-    print('\n')  
+    prf.print_message("\n", None)
     
-    print("Running BLASTp...")
+    prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     blastp_results_files: List[str] = [] # To store the results files
     i = 1
@@ -1521,7 +1519,7 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
             # Append the results file to the list
             blastp_results_files.append(res[1])
 
-            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
+            prf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
             i += 1
 
    # Process the obtained BLASTp results files
@@ -1927,16 +1925,16 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         """
         if count > 0:
             if class_ in ['2b', '4b']:
-                print(f"\t\tOut of those groups, {count} are classified as {class_} and were retained"
-                      " but it is recommended to verify them as they may be contained or contain partially inside"
-                      " their BLAST match.")
+                prf.print_message(f"\t\tOut of those groups, {count} are classified as {class_} and were retained"
+                            " but it is recommended to verify them as they may be contained or contain partially inside"
+                            " their BLAST match.", None)
             elif class_ == '1a':
-                print(f"\t\tOut of those groups, {count} {'CDSs groups'} are classified as {class_}"
-                      f" and are contained in {len(printout['1a'])} joined groups that were retained.")
+                prf.print_message(f"\t\tOut of those groups, {count} {'CDSs groups'} are classified as {class_}"
+                            f" and are contained in {len(printout['1a'])} joined groups that were retained.", None)
             elif class_ == 'dropped':
-                print(f"\t\tOut of those {count} have been dropped due to frequency")
+                prf.print_message(f"\t\tOut of those {count} have been dropped due to frequency", None)
             else:
-                print(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.")
+                prf.print_message(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.", None)
 
     # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
     retained_not_matched_by_blastn: Optional[Any] = merged_all_classes.pop('Retained_not_matched_by_blastn', None)
@@ -1954,13 +1952,11 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     count_cases['dropped'] = len(drop_possible_loci)
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
-
-    print(f"Out of {len(to_blast_paths)}:")
-    print(f"\t{total_loci} representatives had matches with BLASTn against the.")
+    prf.print_message(f"Out of {len(to_blast_paths)}:", None)
+    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the.", None)
     for class_, count in count_cases.items():
         print_results(class_, count, merged_all_classes)
-
-    print(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches")
+    prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches", None)
 
     if retained_not_matched_by_blastn:
         merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
