@@ -494,7 +494,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
         bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
-        no_cleanup: bool) -> None:
+        no_cleanup: bool, debug: bool) -> None:
     """
     Main function to identify spurious genes in a schema.
 

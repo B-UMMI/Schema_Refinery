@@ -511,7 +511,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
 
 
 def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_ratio: float,
-         translation_table: int) -> bool:
+         translation_table: int, debug: bool) -> bool:
     """
     Adapt a schema to be used with chewBBACA.
 

@@ -53,6 +53,6 @@ setup(
 
     packages = packages,
 
-    entry_points={'console_scripts': ["SchemaRefinery = SchemaRefinery.schema_refinery:main",
-                                    "SR = SchemaRefinery.schema_refinery:main"]}
+    entry_points={'console_scripts': ["SchemaRefinery = SchemaRefinery.schema_refinery:pre_main",
+                                    "SR = SchemaRefinery.schema_refinery:pre_main"]}
 )

@@ -139,6 +139,12 @@ def download_assemblies() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -361,6 +367,12 @@ def schema_annotation() -> None:
                             dest='no_cleanup',
                             help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -524,6 +536,12 @@ def identify_spurious_genes() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -594,6 +612,12 @@ def adapt_loci() -> None:
                         default=11,
                         help='Translation table to use for the CDS translation.')
     
+    parser.add_argument('--debug',
+                    action='store_true',
+                    required=False,
+                    dest='debug',
+                    help='Flag to indicate whether to run the module in debug mode.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -687,6 +711,12 @@ def identify_paralogous_loci() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -775,6 +805,12 @@ def match_schemas() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
@@ -853,6 +889,12 @@ def create_schema_structure() -> None:
                         required=False,
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
+
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
     
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -878,7 +920,6 @@ def open_docs() -> None:
     webbrowser.open(url)
     sys.exit(f"Opening documentation at {url}")
 
-@dec.time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io=True)
 def main():
     # Print the SchemaRefinery logo
     pf.print_logo()
@@ -909,5 +950,18 @@ def main():
     # Call the function of the selected module
     module_info[module][1]()
 
+def pre_main():
+    # First parser to handle the --debug argument
+    parser = argparse.ArgumentParser(description="SchemaRefinery")
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode with resource monitoring')
+    args, remaining_argv = parser.parse_known_args()
+    # Add resource monitoring to the main function if debug
+    if args.debug:
+        decorated_main = dec.time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io=True)(main)
+        decorated_main()
+    else:
+        main()
+
 if __name__ == "__main__":
-    main()
+
+    pre_main()

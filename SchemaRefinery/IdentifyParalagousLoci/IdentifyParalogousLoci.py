@@ -34,7 +34,8 @@ def identify_paralogous_loci(schema_directory: str,
                              translation_table: int, 
                              size_threshold: float, 
                              processing_mode: str,
-                             no_cleanup: bool) -> None:
+                             no_cleanup: bool,
+                             debug: bool) -> None:
     """
     Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
 
