@@ -1,3 +1,5 @@
+import os
+import time
 import shutil
 import psutil
 import logging
@@ -171,6 +173,16 @@ def print_system_info():
     print_message(f"Total memory: {psutil.virtual_memory().total / (1024 * 1024):.2f} MB", 'info')
     print_message(f"Available memory: {psutil.virtual_memory().available / (1024 * 1024):.2f} MB", 'info')
     print_message(f"Disk usage: {psutil.disk_usage('/').percent}%", 'info')
+    # Calculate and print system uptime in days, hours, and seconds
+    current_time = time.time()
+    boot_time = psutil.boot_time()
+    uptime_seconds = current_time - boot_time
+
+    uptime_days = int(uptime_seconds // (24 * 3600))
+    uptime_hours = int((uptime_seconds % (24 * 3600)) // 3600)
+    uptime_minutes = int((uptime_seconds % 3600) // 60)
+    uptime_remaining_seconds = int(uptime_seconds % 60)
+    print_message(f"System Uptime: {uptime_days} days, {uptime_hours} hours, {uptime_minutes} minutes, {uptime_remaining_seconds} seconds", 'info')
     print_message(separator, None)
 
 def print_schema_refinery_info():
