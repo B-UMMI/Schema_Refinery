@@ -178,11 +178,8 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
             if monitor_memory:
                 pf.print_message(f"Maximum memory usage: {max_memory_usage / (1024 * 1024):.2f} MB", "info")
             if monitor_cpu:
-                num_cores = psutil.cpu_count()
                 pf.print_message(f"Maximum CPU usage: {max_cpu_usage:.2f}%", "info")
                 pf.print_message(f"Maximum CPU cores used: {max_cpu_cores:.2f}", "info")
-                pf.print_message(f"Number of physical CPU cores: {psutil.cpu_count(logical=False)}", "info")
-                pf.print_message(f"Number of logical CPU cores: {num_cores}", "info")
             if monitor_io and initial_io_counters and final_io_counters:
                 read_ops = final_io_counters.read_count - initial_io_counters.read_count + total_read_ops
                 write_ops = final_io_counters.write_count - initial_io_counters.write_count + total_write_ops
