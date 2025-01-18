@@ -84,6 +84,14 @@ Command-Line Arguments
     -i, --input-table
         (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
 
+    --debug
+        (Optional) Flag to indicate whether to run the module in debug mode.
+        Default: False
+
+    --logger
+        (Optional) Path to the logger file.
+        Default: None
+
 Algorithm Explanation
 ---------------------
 

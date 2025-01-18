@@ -68,6 +68,14 @@ Command-Line Arguments
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
+    --debug
+        (Optional) Flag to indicate whether to run the module in debug mode.
+        Default: False
+
+    --logger
+        (Optional) Path to the logger file.
+        Default: None
+
 Algorithm Explanation
 ---------------------
 

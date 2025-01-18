@@ -57,6 +57,18 @@ Command-Line Arguments
         (Optional) Translation table to use for the CDS translation.
         Default: 11
 
+    --debug
+        (Optional) Flag to indicate whether to run the module in debug mode.
+        Default: False
+
+    --logger
+        (Optional) Path to the logger file.
+        Default: None
+
+Algorithm Explanation
+---------------------
+#TODO: Add algorithm explanation
+
 Outputs
 -------
 Folder and file structure for the output directory of the `AdaptLoci` module is shown below. The output directory contains the following files and folders:
