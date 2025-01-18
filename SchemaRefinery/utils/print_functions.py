@@ -102,6 +102,10 @@ def print_message(message: str, message_type: Optional[str] = "info", end = '\n'
         The type of message (e.g., "info", "warning", "error").
     logger : bool
         Whether to log the message.
+    end : str
+        The character to print at the end of the message.
+    flush : bool
+        Whether to flush the output buffer.
 
     Returns
     -------
