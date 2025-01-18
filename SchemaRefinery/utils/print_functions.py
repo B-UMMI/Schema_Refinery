@@ -218,7 +218,8 @@ def print_dependencies_info(dependencies):
 
     Parameters
     ----------
-    None
+    dependencies : list
+        A list of dependencies.
 
     Returns
     -------
