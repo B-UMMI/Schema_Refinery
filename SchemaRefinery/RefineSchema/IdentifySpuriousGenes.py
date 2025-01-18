@@ -302,26 +302,15 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords
     representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords
     bsr_values: tp.BSRValues
-    (representative_blast_results,
-     representative_blast_results_coords_all,
-     representative_blast_results_coords_pident,
-     bsr_values,
-     _) = cof.run_blasts(blast_db_nuc,
+    representative_blast_results = cof.run_blasts(blast_db_nuc,
                         all_alleles,
                         all_translation_dict,
                         to_blast_paths,
                         blast_output,
                         constants,
+                        reps_kmers_sim if run_mode == 'unclassified_cds' else None,
+                        frequency_in_genomes,
                         cpu)
-    
-    # Add various results to the dict
-    cof.add_items_to_results(representative_blast_results,
-                         reps_kmers_sim if run_mode == 'unclassified_cds' else None,
-                         bsr_values,
-                         representative_blast_results_coords_all,
-                         representative_blast_results_coords_pident,
-                         frequency_in_genomes,
-                         [True, True])
 
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
