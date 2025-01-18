@@ -1,12 +1,18 @@
 import shutil
+import psutil
 import logging
+import platform
+import subprocess
+from importlib.metadata import version, PackageNotFoundError
 from datetime import datetime
 from typing import Optional
 
 try:
-    from utils import globals as gb
+    from utils import (globals as gb,
+                       constants as ct)
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import globals as gb
+    from SchemaRefinery.utils import (globals as gb,
+                                      constants as ct)
 
 def print_logo() -> None:
     """
@@ -128,3 +134,111 @@ def print_message(message: str, message_type: str = "info", end = '\n', flush: b
             logger.info(message)
     
     print(formatted_message, end = end, flush = flush)
+
+def print_system_info():
+    """
+    Print the system information.
+
+    This function prints the system information.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    terminal_width = shutil.get_terminal_size().columns
+    separator = "=" * terminal_width
+
+    print_message(separator, None)
+    print_message("System Information".center(terminal_width), None)
+    print_message(f"Operating System: {platform.system()} {platform.release()}", 'info')
+    print_message(f"OS Version: {platform.version()}", 'info')
+    print_message(f"Machine: {platform.machine()}", 'info')
+    print_message(f"Processor: {platform.processor()}", 'info')
+    print_message(f"CPU count: {psutil.cpu_count(logical=True)} (logical), {psutil.cpu_count(logical=False)} (physical)", 'info')
+    print_message(f"Total memory: {psutil.virtual_memory().total / (1024 * 1024):.2f} MB", 'info')
+    print_message(f"Available memory: {psutil.virtual_memory().available / (1024 * 1024):.2f} MB", 'info')
+    print_message(f"Disk usage: {psutil.disk_usage('/').percent}%", 'info')
+    print_message(separator, None)
+
+def print_schema_refinery_info():
+    """
+    Print the SchemaRefinery information.
+
+    This function prints the SchemaRefinery information.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    terminal_width = shutil.get_terminal_size().columns
+    separator = "=" * terminal_width
+
+    print_message(separator, None)
+    print_message("SchemaRefinery Information".center(terminal_width), None)
+    print_message(f"SchemaRefinery Version: {ct.VERSION}", 'info')
+    print_message(separator, None)
+
+def print_dependencies_info():
+    """
+    Print the dependencies information.
+
+    This function prints the dependencies information.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    dependencies = [
+        "numpy",
+        "scipy",
+        "biopython",
+        "plotly",
+        "requests",
+        "pandas",
+    ]
+    terminal_width = shutil.get_terminal_size().columns
+    separator = "=" * terminal_width
+
+    print_message(separator, None)
+    print_message("Dependencies Information".center(terminal_width), None)
+    print_message(f"Python Version: {platform.python_version()}", 'info')
+    for dep in dependencies:
+        try:
+            dep_version = version(dep)
+            print_message(f"{dep} version: {dep_version}", 'info')
+        except PackageNotFoundError:
+            print_message(f"{dep} is not installed", 'warning')
+
+    # Check if BLAST is installed
+    try:
+        result = subprocess.run(["blastn", "-version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            print_message(f"BLAST is installed: {result.stdout.splitlines()[0]}", 'info')
+        else:
+            print_message("BLAST is not installed", 'warning')
+    except FileNotFoundError:
+        print_message("BLAST is not installed", 'warning')
+
+    # Check if Datasets is installed
+    try:
+        result = subprocess.run(["datasets", "--version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            print_message(f"Datasets is installed: {result.stdout.strip()}", 'info')
+        else:
+            print_message("Datasets is not installed", 'warning')
+    except FileNotFoundError:
+        print_message("Datasets is not installed", 'warning')
+
+    print_message(separator, None)

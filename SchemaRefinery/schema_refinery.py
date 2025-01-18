@@ -1083,6 +1083,12 @@ def entry_point():
         decorated_main()
     else:
         main()
+    
+    # Print other debug information
+    if debug:
+        pf.print_system_info()
+        pf.print_schema_refinery_info()
+        pf.print_dependencies_info()
 
 if __name__ == "__main__":
 
