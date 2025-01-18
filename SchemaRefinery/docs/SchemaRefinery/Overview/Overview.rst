@@ -10,9 +10,13 @@ Dependencies
 ------------
 
 - Python 3.9 or higher
-- Biopython library (`pip install biopython`)
+- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+- Install requirements using the following command:
 
+.. code-block:: bash
+
+    pip install -r requirements.txt
 
 Modules
 -------

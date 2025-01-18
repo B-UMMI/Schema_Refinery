@@ -149,6 +149,15 @@ def print_system_info():
     -------
     None
     """
+    def get_processor_name():
+        try:
+            result = subprocess.run(["lscpu"], capture_output=True, text=True, check=True)
+            for line in result.stdout.splitlines():
+                if "Model name" in line:
+                    return line.split(":")[1].strip()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return platform.processor()
+
     terminal_width = shutil.get_terminal_size().columns
     separator = "=" * terminal_width
 
@@ -157,7 +166,7 @@ def print_system_info():
     print_message(f"Operating System: {platform.system()} {platform.release()}", 'info')
     print_message(f"OS Version: {platform.version()}", 'info')
     print_message(f"Machine: {platform.machine()}", 'info')
-    print_message(f"Processor: {platform.processor()}", 'info')
+    print_message(f"Processor: {get_processor_name()}", 'info')
     print_message(f"CPU count: {psutil.cpu_count(logical=True)} (logical), {psutil.cpu_count(logical=False)} (physical)", 'info')
     print_message(f"Total memory: {psutil.virtual_memory().total / (1024 * 1024):.2f} MB", 'info')
     print_message(f"Available memory: {psutil.virtual_memory().available / (1024 * 1024):.2f} MB", 'info')

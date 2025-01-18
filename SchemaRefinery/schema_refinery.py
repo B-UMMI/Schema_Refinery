@@ -1055,6 +1055,9 @@ def entry_point():
         elif argv[i] == '--logger' and i + 1 < len(argv):
             logger = argv[i + 1]
             i += 1
+        elif argv[i] == '--version':
+            print(f"SchemaRefinery version {ct.VERSION}")
+            sys.exit(0)
         i += 1
 
     if logger:

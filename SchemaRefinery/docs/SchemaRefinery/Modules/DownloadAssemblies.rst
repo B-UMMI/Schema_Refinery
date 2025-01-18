@@ -25,9 +25,12 @@ Dependencies
 ------------
 
 - Python 3.9 or higher
-- Requests library (`pip install requests`)
-- Biopython library (`pip install biopython`)
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+- Install requirements using the following command:
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
 
 Usage
 -----
