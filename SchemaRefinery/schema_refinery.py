@@ -1089,9 +1089,9 @@ def entry_point():
     
     # Print other debug information
     if debug:
-        pf.print_system_info()
-        pf.print_schema_refinery_info()
-        pf.print_dependencies_info()
+        pf.print_system_info() # Print system information
+        pf.print_schema_refinery_info() # Print SchemaRefinery information
+        pf.print_dependencies_info(ct.DEPENDENCIES) # Print dependencies information
 
 if __name__ == "__main__":
 

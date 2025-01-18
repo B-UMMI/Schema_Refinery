@@ -90,7 +90,7 @@ def print_module_currently_running(module: str) -> None:
 
     print(to_print)
 
-def print_message(message: str, message_type: str = "info", end = '\n', flush: bool = False) -> None:
+def print_message(message: str, message_type: Optional[str] = "info", end = '\n', flush: bool = False) -> None:
     """
     Print a formatted message with the current time and message type.
 
@@ -137,7 +137,7 @@ def print_message(message: str, message_type: str = "info", end = '\n', flush: b
     
     print(formatted_message, end = end, flush = flush)
 
-def print_system_info():
+def print_system_info() -> None:
     """
     Print the system information.
 
@@ -202,12 +202,15 @@ def print_schema_refinery_info():
     terminal_width = shutil.get_terminal_size().columns
     separator = "=" * terminal_width
 
+    schema_refinery_path = os.path.dirname(os.path.abspath(__file__))
+
     print_message(separator, None)
     print_message("SchemaRefinery Information".center(terminal_width), None)
     print_message(f"SchemaRefinery Version: {ct.VERSION}", 'info')
+    print_message(f"SchemaRefinery Path: {schema_refinery_path}", 'info')
     print_message(separator, None)
 
-def print_dependencies_info():
+def print_dependencies_info(dependencies):
     """
     Print the dependencies information.
 
@@ -221,14 +224,6 @@ def print_dependencies_info():
     -------
     None
     """
-    dependencies = [
-        "numpy",
-        "scipy",
-        "biopython",
-        "plotly",
-        "requests",
-        "pandas",
-    ]
     terminal_width = shutil.get_terminal_size().columns
     separator = "=" * terminal_width
 
