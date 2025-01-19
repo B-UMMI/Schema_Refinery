@@ -86,9 +86,10 @@ def print_module_currently_running(module: str) -> None:
     module_line = f"{module}".center(box_width)
     border_line = "=" * box_width
 
-    to_print = f"{border_line}\n{module_line}\n{border_line}\n"
+    print_message(border_line, None)
+    print_message(module_line, None)
+    print_message(border_line, None)
 
-    print(to_print)
 
 def print_message(message: str, message_type: Optional[str] = "info", end = '\n', flush: bool = False) -> None:
     """
