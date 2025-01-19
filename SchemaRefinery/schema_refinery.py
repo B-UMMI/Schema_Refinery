@@ -176,6 +176,7 @@ def download_assemblies() -> None:
     del args.logger
 
     # Call the main function of the DownloadAssemblies class with the parsed arguments
+    pf.print_message(f"Running DownloadAssemblies module...", message_type="info")
     DownloadAssemblies.main(args)
 
 
@@ -417,6 +418,7 @@ def schema_annotation() -> None:
     del args.logger
 
     # Call the main function of the SchemaAnnotation class with the parsed arguments
+    pf.print_message(f"Running SchemaAnnotation module...", message_type="info")
     SchemaAnnotation.main(args)
 
 
@@ -602,6 +604,7 @@ def identify_spurious_genes() -> None:
     del args.logger
 
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
+    pf.print_message(f"Running IdentifySpuriousGenes module...", message_type="info")
     IdentifySpuriousGenes.main(**vars(args))
 
 
@@ -694,6 +697,7 @@ def adapt_loci() -> None:
     del args.logger
 
     # Call the main function of the AdaptLoci class with the parsed arguments
+    pf.print_message(f"Running AdaptLoci module...", message_type="info")
     AdaptLoci.main(**vars(args))
 
 
@@ -806,6 +810,7 @@ def identify_paralogous_loci() -> None:
     del args.logger
 
     # Call the main function of the IdentifyParalogousLoci class with the parsed arguments
+    pf.print_message(f"Running IdentifyParalogousLoci module...", message_type="info")
     IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
 def match_schemas() -> None:
@@ -916,6 +921,7 @@ def match_schemas() -> None:
     del args.logger
 
     # Call the main function of the MatchSchemas class with the parsed arguments
+    pf.print_message(f"Running MatchSchemas module...", message_type="info")
     MatchSchemas.match_schemas(**vars(args))
 
 def create_schema_structure() -> None:
@@ -1017,6 +1023,7 @@ def create_schema_structure() -> None:
     del args.logger
 
     # Call the main function of the CreateSchemaStructure class with the parsed arguments
+    pf.print_message(f"Running CreateSchemaStructure module...", message_type="info")
     CreateSchemaStructure.create_schema_structure(**vars(args))
 
 def open_docs() -> None:
@@ -1063,7 +1070,6 @@ def main():
     sys.argv.remove(module)
     #Print the module name
     pf.print_module_currently_running(module)
-    pf.print_message(f"Running {module} module...", message_type="info")
     # Call the function of the selected module
     module_info[module][1]()
 
