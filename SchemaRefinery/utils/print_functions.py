@@ -170,14 +170,14 @@ def print_system_info() -> None:
 
     print_message(separator, None)
     print_message("System Information".center(terminal_width), None)
-    print_message(f"Operating System: {platform.system()} {platform.release()}", 'info')
-    print_message(f"OS Version: {platform.version()}", 'info')
-    print_message(f"Machine: {platform.machine()}", 'info')
-    print_message(f"Processor: {get_processor_name()}", 'info')
-    print_message(f"CPU count: {psutil.cpu_count(logical=True)} (logical), {psutil.cpu_count(logical=False)} (physical)", 'info')
-    print_message(f"Total memory: {psutil.virtual_memory().total / (1024 * 1024):.2f} MB", 'info')
-    print_message(f"Available memory: {psutil.virtual_memory().available / (1024 * 1024):.2f} MB", 'info')
-    print_message(f"Disk usage: {psutil.disk_usage('/').percent}%", 'info')
+    print_message(f"Operating System: {platform.system()} {platform.release()}", 'debug')
+    print_message(f"OS Version: {platform.version()}", 'debug')
+    print_message(f"Machine: {platform.machine()}", 'debug')
+    print_message(f"Processor: {get_processor_name()}", 'debug')
+    print_message(f"CPU count: {psutil.cpu_count(logical=True)} (logical), {psutil.cpu_count(logical=False)} (physical)", 'debug')
+    print_message(f"Total memory: {psutil.virtual_memory().total / (1024 * 1024):.2f} MB", 'debug')
+    print_message(f"Available memory: {psutil.virtual_memory().available / (1024 * 1024):.2f} MB", 'debug')
+    print_message(f"Disk usage: {psutil.disk_usage('/').percent}%", 'debug')
     # Calculate and print system uptime in days, hours, and seconds
     current_time = time.time()
     boot_time = psutil.boot_time()
@@ -187,7 +187,7 @@ def print_system_info() -> None:
     uptime_hours = int((uptime_seconds % (24 * 3600)) // 3600)
     uptime_minutes = int((uptime_seconds % 3600) // 60)
     uptime_remaining_seconds = int(uptime_seconds % 60)
-    print_message(f"System Uptime: {uptime_days} days, {uptime_hours} hours, {uptime_minutes} minutes, {uptime_remaining_seconds} seconds", 'info')
+    print_message(f"System Uptime: {uptime_days} days, {uptime_hours} hours, {uptime_minutes} minutes, {uptime_remaining_seconds} seconds", 'debug')
     print_message(separator, None)
 
 def print_schema_refinery_info():
@@ -211,8 +211,8 @@ def print_schema_refinery_info():
 
     print_message(separator, None)
     print_message("SchemaRefinery Information".center(terminal_width), None)
-    print_message(f"SchemaRefinery Version: {ct.VERSION}", 'info')
-    print_message(f"SchemaRefinery Path: {schema_refinery_path}", 'info')
+    print_message(f"SchemaRefinery Version: {ct.VERSION}", 'debug')
+    print_message(f"SchemaRefinery Path: {schema_refinery_path}", 'debug')
     print_message(separator, None)
 
 def print_dependencies_info(dependencies):
@@ -235,11 +235,11 @@ def print_dependencies_info(dependencies):
 
     print_message(separator, None)
     print_message("Dependencies Information".center(terminal_width), None)
-    print_message(f"Python Version: {platform.python_version()}", 'info')
+    print_message(f"Python Version: {platform.python_version()}", 'debug')
     for dep in dependencies:
         try:
             dep_version = version(dep)
-            print_message(f"{dep} version: {dep_version}", 'info')
+            print_message(f"{dep} version: {dep_version}", 'debug')
         except PackageNotFoundError:
             print_message(f"{dep} is not installed", 'warning')
 
@@ -247,7 +247,7 @@ def print_dependencies_info(dependencies):
     try:
         result = subprocess.run(["blastn", "-version"], capture_output=True, text=True)
         if result.returncode == 0:
-            print_message(f"BLAST is installed: {result.stdout.splitlines()[0]}", 'info')
+            print_message(f"BLAST is installed: {result.stdout.splitlines()[0]}", 'debug')
         else:
             print_message("BLAST is not installed", 'warning')
     except FileNotFoundError:
@@ -257,7 +257,7 @@ def print_dependencies_info(dependencies):
     try:
         result = subprocess.run(["datasets", "--version"], capture_output=True, text=True)
         if result.returncode == 0:
-            print_message(f"Datasets is installed: {result.stdout.strip()}", 'info')
+            print_message(f"Datasets is installed: {result.stdout.strip()}", 'debug')
         else:
             print_message("Datasets is not installed", 'warning')
     except FileNotFoundError:
@@ -305,5 +305,5 @@ def print_input_arguments(args) -> None:
     print_message(border_line, None)
     print_message("Input Arguments".center(terminal_width), None)
     for arg, value in vars(args).items():
-        print_message(f"{arg}: {value}", 'info')
+        print_message(f"{arg}: {value}", 'debug')
     print_message(border_line, None)

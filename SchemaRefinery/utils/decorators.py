@@ -173,41 +173,67 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
             separator = "=" * terminal_width
             pf.print_message(separator, None)
             pf.print_message("Running Stats".center(terminal_width), None)
-            pf.print_message(f"Execution time: {execution_time:.2f} seconds", "info")
+            pf.print_message(f"Execution time: {execution_time:.2f} seconds", "debug")
 
             if monitor_memory:
-                pf.print_message(f"Maximum memory usage: {max_memory_usage / (1024 * 1024):.2f} MB", "info")
+                pf.print_message(f"Maximum memory usage: {max_memory_usage / (1024 * 1024):.2f} MB", "debug")
             if monitor_cpu:
-                pf.print_message(f"Maximum CPU usage: {max_cpu_usage:.2f}%", "info")
-                pf.print_message(f"Maximum CPU cores used: {max_cpu_cores:.2f}", "info")
+                pf.print_message(f"Maximum CPU usage: {max_cpu_usage:.2f}%", "debug")
+                pf.print_message(f"Maximum CPU cores used: {max_cpu_cores:.2f}", "debug")
             if monitor_io and initial_io_counters and final_io_counters:
                 read_ops = final_io_counters.read_count - initial_io_counters.read_count + total_read_ops
                 write_ops = final_io_counters.write_count - initial_io_counters.write_count + total_write_ops
-                pf.print_message(f"Read operations: {read_ops}", "info")
-                pf.print_message(f"Write operations: {write_ops}", "info")
+                pf.print_message(f"Read operations: {read_ops}", "debug")
+                pf.print_message(f"Write operations: {write_ops}", "debug")
             if monitor_network and initial_net_io_counters and final_net_io_counters:
                 bytes_sent = final_net_io_counters.bytes_sent - initial_net_io_counters.bytes_sent + total_bytes_sent
                 bytes_recv = final_net_io_counters.bytes_recv - initial_net_io_counters.bytes_recv + total_bytes_recv
-                pf.print_message(f"Bytes sent: {bytes_sent}", "info")
-                pf.print_message(f"Bytes received: {bytes_recv}", "info")
+                pf.print_message(f"Bytes sent: {bytes_sent}", "debug")
+                pf.print_message(f"Bytes received: {bytes_recv}", "debug")
             if monitor_disk and initial_disk_io_counters and final_disk_io_counters:
                 read_bytes = final_disk_io_counters.read_bytes - initial_disk_io_counters.read_bytes + total_read_bytes
                 write_bytes = final_disk_io_counters.write_bytes - initial_disk_io_counters.write_bytes + total_write_bytes
-                pf.print_message(f"Disk read bytes: {read_bytes}", "info")
-                pf.print_message(f"Disk write bytes: {write_bytes}", "info")
+                pf.print_message(f"Disk read bytes: {read_bytes}", "debug")
+                pf.print_message(f"Disk write bytes: {write_bytes}", "debug")
             if monitor_threads:
-                pf.print_message(f"Maximum number of threads: {max_threads}", "info")
+                pf.print_message(f"Maximum number of threads: {max_threads}", "debug")
             if monitor_gc:
-                pf.print_message(f"GC collections: {total_gc_collections}", "info")
+                pf.print_message(f"GC collections: {total_gc_collections}", "debug")
             if monitor_context_switches:
-                pf.print_message(f"Voluntary context switches: {total_voluntary_context_switches}", "info")
-                pf.print_message(f"Involuntary context switches: {total_involuntary_context_switches}", "info")
+                pf.print_message(f"Voluntary context switches: {total_voluntary_context_switches}", "debug")
+                pf.print_message(f"Involuntary context switches: {total_involuntary_context_switches}", "debug")
             if monitor_open_files:
-                pf.print_message(f"Maximum open files: {max_open_files}", "info")
+                pf.print_message(f"Maximum open files: {max_open_files}", "debug")
             if monitor_page_faults:
-                pf.print_message(f"Maximum page faults: {max_page_faults}", "info")
+                pf.print_message(f"Maximum page faults: {max_page_faults}", "debug")
 
             pf.print_message(separator, None)
+            return result
+
+        return wrapper
+
+    return decorator
+
+def time_function():
+    """
+    Decorator to measure the execution time of a function.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    function
+        The wrapped function with added time measurement.
+    """
+    def decorator(func) -> Callable[..., Any]:
+        def wrapper(*args, **kwargs) -> Any:
+            start_time = time.time()
+            result = func(*args, **kwargs)
+            end_time = time.time()
+            execution_time = end_time - start_time
+            pf.print_message(f"Execution time: {execution_time:.2f} seconds", "info")
             return result
 
         return wrapper

@@ -1103,7 +1103,7 @@ def entry_point():
         
         gb.LOGGER = lf.setup_logger(logger) # Setup logger
 
-    # Add resource monitoring to the main function if debug
+    # Add resource monitoring to the main function if debug or just time it
     if debug:
         gb.DEBUG = True
         decorated_main = dec.time_and_resource_function(monitor_memory=True, 
@@ -1117,18 +1117,15 @@ def entry_point():
                                                         monitor_open_files=True,
                                                         monitor_page_faults=True,
                                                         interval=0.1)(main)
-                                                        
-        try:
-            decorated_main()
-        except Exception as e:
-            pf.print_module_error(e)
-    # Run the main function
     else:
-        try:
-            main()
-        except Exception as e:
-            pf.print_module_error(e)
-    
+        decorated_main = dec.time_function()(main)
+
+    # Run the main function
+    try:
+        decorated_main()
+    except Exception as e:
+        pf.print_module_error(e)
+
     # Print other debug information
     if debug:
         pf.print_system_info() # Print system information

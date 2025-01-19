@@ -14,7 +14,7 @@ def setup_logger(log_file):
     logging.Logger
         The logger object.
     """
-    logger = logging.getLogger('custom_logger')
+    logger = logging.getLogger('SchemaRefinery')
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
