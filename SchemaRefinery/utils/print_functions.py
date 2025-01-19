@@ -123,6 +123,8 @@ def print_message(message: str, message_type: Optional[str] = "info", end = '\n'
         formatted_message = f"[ERROR] {current_time} - {message}"
     elif message_type == "debug":
         formatted_message = f"[DEBUG] {current_time} - {message}"
+    elif message_type == "debug_message_in_logger_only": # This is for debug messages that don't need the timestamp in prints but should be debug in logs
+        formatted_message = f"{message}"
     elif message_type == None:
         formatted_message = f"{message}"
     else:
@@ -136,6 +138,8 @@ def print_message(message: str, message_type: Optional[str] = "info", end = '\n'
         elif message_type == "error":
             logger.error(message)
         elif message_type == "debug":
+            logger.debug(message)
+        elif message_type == "debug_message_in_logger_only": # This is for debug messages that don't need the timestamp in prints but should be debug in logs
             logger.debug(message)
         else:
             logger.info(message)
@@ -166,10 +170,10 @@ def print_system_info() -> None:
             return platform.processor()
 
     terminal_width = shutil.get_terminal_size().columns
-    separator = "=" * terminal_width
+    border_line = "=" * terminal_width
 
-    print_message(separator, None)
-    print_message("System Information".center(terminal_width), None)
+    print_message(border_line, "debug_message_in_logger_only")
+    print_message("System Information".center(terminal_width), "debug_message_in_logger_only")
     print_message(f"Operating System: {platform.system()} {platform.release()}", 'debug')
     print_message(f"OS Version: {platform.version()}", 'debug')
     print_message(f"Machine: {platform.machine()}", 'debug')
@@ -188,7 +192,7 @@ def print_system_info() -> None:
     uptime_minutes = int((uptime_seconds % 3600) // 60)
     uptime_remaining_seconds = int(uptime_seconds % 60)
     print_message(f"System Uptime: {uptime_days} days, {uptime_hours} hours, {uptime_minutes} minutes, {uptime_remaining_seconds} seconds", 'debug')
-    print_message(separator, None)
+    print_message(border_line, "debug_message_in_logger_only")
 
 def print_schema_refinery_info():
     """
@@ -205,15 +209,15 @@ def print_schema_refinery_info():
     None
     """
     terminal_width = shutil.get_terminal_size().columns
-    separator = "=" * terminal_width
+    border_line = "=" * terminal_width
 
     schema_refinery_path = os.path.dirname(os.path.abspath(__file__))
 
-    print_message(separator, None)
-    print_message("SchemaRefinery Information".center(terminal_width), None)
+    print_message(border_line, "debug_message_in_logger_only")
+    print_message("SchemaRefinery Information".center(terminal_width), "debug_message_in_logger_only")
     print_message(f"SchemaRefinery Version: {ct.VERSION}", 'debug')
     print_message(f"SchemaRefinery Path: {schema_refinery_path}", 'debug')
-    print_message(separator, None)
+    print_message(border_line, "debug_message_in_logger_only")
 
 def print_dependencies_info(dependencies):
     """
@@ -231,10 +235,10 @@ def print_dependencies_info(dependencies):
     None
     """
     terminal_width = shutil.get_terminal_size().columns
-    separator = "=" * terminal_width
+    border_line = "=" * terminal_width
 
-    print_message(separator, None)
-    print_message("Dependencies Information".center(terminal_width), None)
+    print_message(border_line, "debug_message_in_logger_only")
+    print_message("Dependencies Information".center(terminal_width), "debug_message_in_logger_only")
     print_message(f"Python Version: {platform.python_version()}", 'debug')
     for dep in dependencies:
         try:
@@ -263,7 +267,7 @@ def print_dependencies_info(dependencies):
     except FileNotFoundError:
         print_message("Datasets is not installed", 'warning')
 
-    print_message(separator, None)
+    print_message(border_line, "debug_message_in_logger_only")
 
 def print_module_error(error: str) -> None:
     """
@@ -281,10 +285,10 @@ def print_module_error(error: str) -> None:
     terminal_width = shutil.get_terminal_size().columns
     border_line = "=" * terminal_width
 
-    print_message(border_line, None)
-    print_message("Error Message".center(terminal_width), None)
+    print_message(border_line, "debug_message_in_logger_only")
+    print_message("Error Message".center(terminal_width), "debug_message_in_logger_only")
     print_message(error, 'error')
-    print_message(border_line, None)
+    print_message(border_line, "debug_message_in_logger_only")
 
 def print_input_arguments(args) -> None:
     """
@@ -302,8 +306,8 @@ def print_input_arguments(args) -> None:
     terminal_width = shutil.get_terminal_size().columns
     border_line = "=" * terminal_width
 
-    print_message(border_line, None)
-    print_message("Input Arguments".center(terminal_width), None)
+    print_message(border_line, "debug_message_in_logger_only")
+    print_message("Input Arguments".center(terminal_width), "debug_message_in_logger_only")
     for arg, value in vars(args).items():
         print_message(f"{arg}: {value}", 'debug')
-    print_message(border_line, None)
+    print_message(border_line, "debug_message_in_logger_only")
