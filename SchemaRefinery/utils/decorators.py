@@ -172,7 +172,7 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
             terminal_width = shutil.get_terminal_size().columns
             border_line = "=" * terminal_width
             pf.print_message(border_line, None)
-            pf.print_message("Running Stats".center(terminal_width), "debug_message_in_logger_only")
+            pf.print_message("Running Stats".center(terminal_width), "debug_additional_info_in_logger_only")
             pf.print_message(f"Execution time: {execution_time:.2f} seconds", "debug")
 
             if monitor_memory:
@@ -207,7 +207,7 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
             if monitor_page_faults:
                 pf.print_message(f"Maximum page faults: {max_page_faults}", "debug")
 
-            pf.print_message(border_line, "debug_message_in_logger_only")
+            pf.print_message(border_line, "debug_additional_info_in_logger_only")
             return result
 
         return wrapper
