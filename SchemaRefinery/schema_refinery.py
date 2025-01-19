@@ -159,17 +159,21 @@ def download_assemblies() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Delete --debug and --logger arguments because we set up a global variable both,
-    # here they are just for the user to see the options
-    del args.debug
-    del args.logger
-
     # Validate the arguments
     val.validate_download_assemblies_module_arguments(args)
     
     # Transfer values from criteria file to the args namespace
     args['taxon'] = args.filtering_criteria.pop('taxon', None)
     args['input_table'] = args.filtering_criteria.pop('input_table', None)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
 
     # Call the main function of the DownloadAssemblies class with the parsed arguments
     DownloadAssemblies.main(args)
@@ -400,13 +404,17 @@ def schema_annotation() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_schema_annotation_module_arguments(args)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
     # Delete --debug and --logger arguments because we set up a global variable both,
     # here they are just for the user to see the options
     del args.debug
     del args.logger
-
-    # Validate the arguments
-    val.validate_schema_annotation_module_arguments(args)
 
     # Call the main function of the SchemaAnnotation class with the parsed arguments
     SchemaAnnotation.main(args)
@@ -581,13 +589,17 @@ def identify_spurious_genes() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Delete --debug and --logger arguments because we set up a global variable both,
+    # Validate the arguments
+    val.validate_identify_spurious_genes_module_arguments(args)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+   # Delete --debug and --logger arguments because we set up a global variable both,
     # here they are just for the user to see the options
     del args.debug
     del args.logger
-
-    # Validate the arguments
-    val.validate_identify_spurious_genes_module_arguments(args)
 
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
     IdentifySpuriousGenes.main(**vars(args))
@@ -669,13 +681,17 @@ def adapt_loci() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_adapt_loci_module_arguments(args)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
     # Delete --debug and --logger arguments because we set up a global variable both,
     # here they are just for the user to see the options
     del args.debug
     del args.logger
-
-    # Validate the arguments
-    val.validate_adapt_loci_module_arguments(args)
 
     # Call the main function of the AdaptLoci class with the parsed arguments
     AdaptLoci.main(**vars(args))
@@ -779,6 +795,10 @@ def identify_paralogous_loci() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
 
     # Delete --debug and --logger arguments because we set up a global variable both,
     # here they are just for the user to see the options
@@ -886,6 +906,10 @@ def match_schemas() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
     # Delete --debug and --logger arguments because we set up a global variable both,
     # here they are just for the user to see the options
     del args.debug
@@ -982,6 +1006,10 @@ def create_schema_structure() -> None:
     
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
 
     # Delete --debug and --logger arguments because we set up a global variable both,
     # here they are just for the user to see the options
@@ -1083,9 +1111,17 @@ def entry_point():
                                                         monitor_open_files=True,
                                                         monitor_page_faults=True,
                                                         interval=0.1)(main)
-        decorated_main()
+                                                        
+        try:
+            decorated_main()
+        except Exception as e:
+            pf.print_module_error(e)
+    # Run the main function
     else:
-        main()
+        try:
+            main()
+        except Exception as e:
+            pf.print_module_error(e)
     
     # Print other debug information
     if debug:

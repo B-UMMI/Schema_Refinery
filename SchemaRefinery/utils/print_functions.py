@@ -263,3 +263,46 @@ def print_dependencies_info(dependencies):
         print_message("Datasets is not installed", 'warning')
 
     print_message(separator, None)
+
+def print_module_error(error: str) -> None:
+    """
+    Print the error message for a module.
+
+    Parameters
+    ----------
+    error : str
+        The error message.
+
+    Returns
+    -------
+    None
+    """
+    terminal_width = shutil.get_terminal_size().columns
+    border_line = "=" * terminal_width
+
+    print_message(border_line, None)
+    print_message("Error Message".center(terminal_width), None)
+    print_message(error, 'error')
+    print_message(border_line, None)
+
+def print_input_arguments(args) -> None:
+    """
+    Print the input arguments.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    None
+    """
+    terminal_width = shutil.get_terminal_size().columns
+    border_line = "=" * terminal_width
+
+    print_message(border_line, None)
+    print_message("Input Arguments".center(terminal_width), None)
+    for arg, value in vars(args).items():
+        print_message(f"{arg}: {value}", 'info')
+    print_message(border_line, None)
