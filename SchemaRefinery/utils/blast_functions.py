@@ -1,9 +1,9 @@
 import subprocess
 import os
 import sys
-import itertools
+from itertools import repeat
 import concurrent.futures
-from typing import Dict, Any, List, Tuple, Union, Optional
+from typing import Dict, Any, List, Tuple, Union, Optional, Callable
 
 try:
     from utils import (file_functions as ff,
@@ -420,9 +420,9 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 paths_dict.keys(),
-                                itertools.repeat(blast_exec),
+                                repeat(blast_exec),
                                 paths_dict.values(),
-                                itertools.repeat(self_score_folder)):
+                                repeat(self_score_folder)):
             self_score_results_files.append(res[1])
                             
             # Print progress
@@ -439,3 +439,56 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     pf.print_message("", None)
 
     return self_score_dict
+
+def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc, all_alleles, blastn_results_folder: str, total_reps: int, max_id_length: int) -> List[str]:
+    blastn_results_files: List[str] = []  # List to store the results files
+    i: int = 1
+    rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blastdb_multiprocessing,
+                                repeat(get_blastn_exec),
+                                repeat(blast_db),
+                                rep_paths_nuc_list,
+                                all_alleles,
+                                repeat(blastn_results_folder)):
+            # Append the results file to the list
+            blastn_results_files.append(res[1])
+            pf.print_message(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
+            i += 1
+    return blastn_results_files
+
+def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blastp_exec: str, blastp_results_folder: str, rep_paths_prot, rep_matches_prot, total_blasts: int, max_id_length: int) -> List[str]:
+    blastp_results_files: List[str] = []  # To store the results files
+    i = 1
+    rep_matches_prot_list = list(rep_matches_prot.values())  # Convert dict_values to list
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blast_fastas_multiprocessing,
+                                blastp_runs_to_do, 
+                                repeat(get_blastp_exec),
+                                repeat(blastp_results_folder),
+                                repeat(rep_paths_prot),
+                                rep_matches_prot_list):
+            # Append the results file to the list
+            blastp_results_files.append(res[1])
+            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
+            i += 1
+    return blastp_results_files
+
+def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths, blastp_results_folder: str, total_blasts: int, max_id_length: int) -> List[str]:
+    blastp_results_files: List[str] = []  # List to store the paths to the BLASTp results files
+    i: int = 1
+    translations_paths_values = list(translations_paths.values())  # Convert dict_values to list
+    translations_paths_keys = list(translations_paths.keys())  # Convert dict_keys to list
+    
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blastdb_multiprocessing,
+                                repeat(get_blastp_exec),
+                                repeat(blast_db_files),
+                                translations_paths_values,
+                                translations_paths_keys,
+                                repeat(blastp_results_folder)):
+            # Save the path to the BLASTp results file
+            blastp_results_files.append(res[1])
+            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
+            i += 1
+    return blastp_results_files

@@ -219,23 +219,14 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     best_bsr_values: Dict[str, List[Union[str, float]]] = {}
     best_bsr_values_per_genbank_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts: int = len(reps_ids)
-    blastp_results_files: List[str] = []
-    i = 1
-
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(
-            bf.run_blastdb_multiprocessing,
-            repeat(get_blastp_exec),
-            repeat(blast_db_files),
-            translations_paths.values(),
-            translations_paths.keys(),
-            repeat(blastp_results_folder)):
-
-            # Save the path to the BLASTp results file
-            blastp_results_files.append(res[1])
-
-            prf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
-            i += 1
+    # Run BLASTp in parallel
+    blastp_results_files = bf.run_blastp_operations(cpu,
+                                                    get_blastp_exec,
+                                                    blast_db_files,
+                                                    translations_paths,
+                                                    blastp_results_folder,
+                                                    total_blasts,
+                                                    max_id_length)
 
     for blast_result_file in blastp_results_files:
         # Get the alignments

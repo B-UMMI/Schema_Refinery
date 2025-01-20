@@ -104,21 +104,13 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_translations_paths)
-    blastp_results_files: List[str] = [] # List to store the paths to the BLASTp results files
-    i: int = 1
-    
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing,
-                                repeat(get_blastp_exec),
-                                repeat(blast_db_files),
-                                query_translations_paths.values(),
-                                query_translations_paths.keys(),
-                                repeat(blastp_results_folder)):
-            # Save the path to the BLASTp results file
-            blastp_results_files.append(res[1])
-
-            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
-            i += 1
+    blastp_results_files = bf.run_blastp_operations(cpu,
+                                                    get_blastp_exec,
+                                                    blast_db_files,
+                                                    query_translations_paths,
+                                                    blastp_results_folder,
+                                                    total_blasts,
+                                                    max_id_length)
 
     for blast_result_file in blastp_results_files:
         # Get the alignments

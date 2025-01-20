@@ -1382,19 +1382,16 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     representative_blast_results: tp.BlastDict = {}
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
-    blastn_results_files: List[str] = [] # List to store the results files
-    i: int = 1
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing,
-                                repeat(get_blastn_exec),
-                                repeat(blast_db),
-                                rep_paths_nuc.values(),
-                                all_alleles,
-                                repeat(blastn_results_folder)):
-            # Append the results file to the list
-            blastn_results_files.append(res[1])
-            prf.print_message(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
-            i += 1
+    # Run BLASTn
+    blastn_results_files = bf.run_blastn_operations(cpu,
+                                                    get_blastn_exec,
+                                                    blast_db,
+                                                    rep_paths_nuc,
+                                                    all_alleles,
+                                                    blastn_results_folder,
+                                                    total_reps,
+                                                    max_id_length)
+
     prf.print_message("", None)
     # Process the obtained BLAST results files
     for blast_result_file in blastn_results_files:
@@ -1494,25 +1491,20 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                                                 cpu)
     prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
-    blastp_results_files: List[str] = [] # To store the results files
-    i = 1
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blast_fastas_multiprocessing,
-                                blastp_runs_to_do, 
-                                repeat(get_blastp_exec),
-                                repeat(blastp_results_folder),
-                                repeat(rep_paths_prot),
-                                rep_matches_prot.values()):
-            # Append the results file to the list
-            blastp_results_files.append(res[1])
-
-            prf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
-            i += 1
+    blastp_results_files = bf.run_blastp_operations_based_on_blastn(cpu,
+                                                                    blastp_runs_to_do,
+                                                                    get_blastp_exec,
+                                                                    blastp_results_folder,
+                                                                    rep_paths_prot,
+                                                                    rep_matches_prot,
+                                                                    total_blasts,
+                                                                    max_id_length)
+    
     prf.print_message("", None)
    # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
         filtered_alignments_dict
-        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_result_file, 0, True, False, True, True, False)
 
         # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
         for query, subjects_dict in filtered_alignments_dict.items():

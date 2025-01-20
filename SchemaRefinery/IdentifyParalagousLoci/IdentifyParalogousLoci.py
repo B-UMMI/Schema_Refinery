@@ -172,21 +172,14 @@ def identify_paralogous_loci(schema_directory: str,
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_paths_dict)
-    blastp_results_files: List[str] = [] # List to store the paths of the BLASTp results files
-    i = 1
-    pf.print_message(f"Running BLASTp...", "info")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing, 
-                                itertools.repeat(blast_exec),
-                                itertools.repeat(blast_db_prot),
-                                query_paths_dict.values(),
-                                query_paths_dict.keys(),
-                                itertools.repeat(blast_output_folder)):
-            # Save the results file
-            blastp_results_files.append(res[1])
-
-            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
-            i += 1
+    # Run BLASTp in parallel
+    blastp_results_files = bf.run_blastp_operations(cpu,
+                                                    blast_exec,
+                                                    blast_db_prot,
+                                                    query_paths_dict,
+                                                    blast_output_folder,
+                                                    total_blasts,
+                                                    max_id_length)
     
     for blast_result_file in blastp_results_files:
         # Get the filtered alignments
