@@ -10,12 +10,25 @@ parameters.
 Code documentation
 ------------------
 """
-
 from typing import Tuple
 
 # GitHub repository and contacts
 REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'
 CONTACTS = 'imm-bioinfo@medicina.ulisboa.pt'
+
+# Schema Refinery's version
+VERSION = '0.3.0'
+
+# Schema Refinery's Dependencies
+DEPENDENCIES = [
+        "numpy",
+        "scipy",
+        "biopython",
+        "plotly",
+        "requests",
+        "pandas",
+        "psutil",
+    ]
 
 # minimum Python version
 MIN_PYTHON = [(3, 6, 0), '3.6.0']

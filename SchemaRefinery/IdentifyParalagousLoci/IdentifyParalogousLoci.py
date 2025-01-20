@@ -1,6 +1,4 @@
 import os
-import concurrent.futures
-import itertools
 import statistics
 from typing import Dict, List, Tuple
 
@@ -13,6 +11,10 @@ try:
                         alignments_functions as af,
                         statistics as stats,
                         clustering_functions as cf,
+                        print_functions as pf,
+                        logger_functions as logf,
+                        globals as gb,
+
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -23,6 +25,9 @@ except ModuleNotFoundError:
                                     alignments_functions as af,
                                     statistics as stats,
                                     clustering_functions as cf,
+                                    print_functions as pf,
+                                    logger_functions as logf,
+                                    globals as gb,
     )
 
 def identify_paralogous_loci(schema_directory: str, 
@@ -32,7 +37,7 @@ def identify_paralogous_loci(schema_directory: str,
                              translation_table: int, 
                              size_threshold: float, 
                              processing_mode: str,
-                             no_cleanup: bool) -> None:
+                             no_cleanup: bool,) -> None:
     """
     Identify paralogous loci by performing BLAST searches and analyzing sequence similarities.
 
@@ -107,7 +112,7 @@ def identify_paralogous_loci(schema_directory: str,
         query_fasta_translation: str = os.path.join(translation_folder, f"{loci}_translation.fasta")
         query_paths_dict[loci] = query_fasta_translation
 
-        print(f"\rTranslated loci FASTA: {i}/{len_short_folder}", end='', flush=True)
+        pf.print_message(f"Translated loci FASTA: {i}/{len_short_folder}", "info", end='\r', flush=True)
         i += 1
         # Get the sizes for each loci (all alleles)
         loci_allele_size: List[int] = []
@@ -164,21 +169,14 @@ def identify_paralogous_loci(schema_directory: str,
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_paths_dict)
-    blastp_results_files: List[str] = [] # List to store the paths of the BLASTp results files
-    i = 1
-    print(f"\nRunning BLASTp...")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing, 
-                                itertools.repeat(blast_exec),
-                                itertools.repeat(blast_db_prot),
-                                query_paths_dict.values(),
-                                query_paths_dict.keys(),
-                                itertools.repeat(blast_output_folder)):
-            # Save the results file
-            blastp_results_files.append(res[1])
-
-            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
-            i += 1
+    # Run BLASTp in parallel
+    blastp_results_files = bf.run_blastp_operations(cpu,
+                                                    blast_exec,
+                                                    blast_db_prot,
+                                                    query_paths_dict,
+                                                    blast_output_folder,
+                                                    total_blasts,
+                                                    max_id_length)
     
     for blast_result_file in blastp_results_files:
         # Get the filtered alignments
@@ -217,8 +215,7 @@ def identify_paralogous_loci(schema_directory: str,
                 elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
                     best_bsr_values[query_loci_id][subject_loci_id] = computed_score
 
-    # Print newline
-    print('\n')
+    pf.print_message(f"", None)
     
     paralogous_loci_report: str = os.path.join(output_directory, 'paralogous_loci_report.tsv')
     paralogous_list: List[Tuple[str, str]] = []
@@ -283,8 +280,9 @@ def identify_paralogous_loci(schema_directory: str,
 
     # Clean up temporary files
     if not no_cleanup:
-        print("\nCleaning up temporary files...")
+        pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_directory, [paralogous_loci_report,
                                       paralogous_loci_report_cluster_by_id,
-                                      paralogous_list_check,])
+                                      paralogous_list_check,
+                                      logf.get_log_file_path(gb.LOGGER)])

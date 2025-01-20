@@ -14,7 +14,10 @@ try:
                        linux_functions as lf,
                        classify_cds_functions as ccf,
                        constants as ct,
-                       Types as tp)
+                       Types as tp,
+                       print_functions as pf,
+                       logger_functions as logf,
+                       globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
@@ -24,7 +27,10 @@ except ModuleNotFoundError:
                                         linux_functions as lf,
                                         classify_cds_functions as ccf,
                                         constants as ct,
-                                        Types as tp)
+                                        Types as tp,
+                                        print_functions as pf,
+                                        logger_functions as logf,
+                                        globals as gb)
 
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """
@@ -132,7 +138,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         if not constants[2]:
             ccf.set_minimum_genomes_threshold(temp_folder, constants)
 
-        print("Identifying CDS not present in the schema...")
+        pf.print_message("Identifying CDS not present in the schema...", "info")
         # Get dict with CDS ids as key and sequence as values.
         all_nucleotide_sequences: Dict[str, str] = sf.fetch_fasta_dict(file_path_cds, True)
         
@@ -140,7 +146,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         for key, value in list(all_nucleotide_sequences.items()):
             all_nucleotide_sequences[itf.replace_by_regex(key, '_', '-')] = all_nucleotide_sequences.pop(key)
 
-        print("\nFiltering missing CDS in the schema...")
+        pf.print_message("Filtering missing CDS in the schema...", "info")
         cds_size: Dict[str, int]
         dropped_alleles: Dict[str, str]
         cds_size, all_nucleotide_sequences, dropped_alleles = ccf.filter_cds_by_size(all_nucleotide_sequences, constants[5])
@@ -150,13 +156,13 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         frequency_cds: Dict[str, int] = {}
         cds_presence_in_genomes: Dict[str, int] = {}
 
-        print("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...")
+        pf.print_message("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...", "info")
         cds_present: Dict[str, str]
         cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output,
                                                                                           temp_folder,
                                                                                           all_nucleotide_sequences)
 
-        print("\nTranslate and deduplicate CDS...")
+        pf.print_message("Translating and deduplicating CDS...", "info")
         all_translation_dict: Dict[str, str]
         protein_hashes: Dict[str, str]
         cds_translation_size: Dict[str, int]
@@ -168,7 +174,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                                                     constants
                                                                                                 )
 
-        print("\nExtracting minimizers for the translated sequences and clustering...")
+        pf.print_message("Extracting minimizers for the translated sequences and clustering...", "info")
         # Remove CDS that did not pass filtering criteria
         all_translation_dict = ccf.remove_dropped_cds(all_translation_dict, dropped_alleles, protein_hashes)
         # Sort proteins by size
@@ -194,17 +200,17 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         # Calculate the total number of clusters
         total_number_clusters: int = len(all_alleles)
-        print(f"{len(all_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.")
-
+        pf.print_message(f"{len(all_translation_dict)} unique proteins have been clustered into {total_number_clusters} clusters.", "info")
+        
         # Calculate the number of singleton clusters
         singleton_clusters: int = len([cluster for cluster in all_alleles.values() if len(cluster) == 1])
-        print(f"\tOut of those clusters, {singleton_clusters} are singletons")
+        pf.print_message(f"Out of those clusters, {singleton_clusters} are singletons.", "info")
 
         # Calculate the number of clusters with more than one CDS
         multi_cds_clusters: int = total_number_clusters - singleton_clusters
-        print(f"\tOut of those clusters, {multi_cds_clusters} have more than one CDS.")
+        pf.print_message(f"Out of those clusters, {multi_cds_clusters} have more than one CDS.", "info")
         
-        print("\nFiltering clusters...")
+        pf.print_message("\nFiltering clusters...", "info")
         # Calculate the frequency of each cluster in the genomes.
         frequency_in_genomes: Dict[str, int] = {
             rep: sum(frequency_cds[entry] for entry in cluster_members)
@@ -223,14 +229,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             if frequency_in_genomes[rep] >= constants[2]
         }
 
-        print(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
-            f" out of {total_number_clusters} clusters, {len(filtered_alleles)} remained.")
+        pf.print_message(f"After filtering by CDS frequency in the genomes (>= {constants[2]}),"
+                    f" out of {total_number_clusters} clusters, {len(filtered_alleles)} remained.", "info")
 
         # Update all_alleles with the filtered results
         all_alleles = filtered_alleles
         # Filter also the all_translation_dict dict
         all_translation_dict = {key: value for key, value in all_translation_dict.items() if key in itf.flatten_list(all_alleles.values())}
-        print("\nRetrieving kmers similarity and coverage between representatives...")
+        pf.print_message("Retrieving kmers similarity and coverage between representatives...", "info")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
         # Choose which translation dict to use as representative
         if processing_mode.split('_')[0] == 'alleles':
@@ -242,7 +248,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         # Remove filtered out elements from reps_kmers_sim
         reps_kmers_sim = {key: value for key, value in reps_kmers_sim.items() if key in itf.flatten_list(all_alleles.values())}
-        print("\nReplacing CDSs IDs with the cluster representative ID...")
+        pf.print_message("Replacing CDSs IDs with the cluster representative ID...", "info")
         cds_original_ids: Dict[str, str] = ccf.replace_ids_in_clusters(all_alleles,
                                                     frequency_cds,
                                                     dropped_alleles,
@@ -285,45 +291,33 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                             initial_processing_output)
 
     # Create BLAST db for the schema DNA sequences.
-    print("\nCreating BLASTn database...")
+    pf.print_message("Creating BLASTn database...", "info")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
     blast_db_nuc: str = os.path.join(blast_db, 'Blast_db_nucleotide')
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_nuc, 'nucl')
-    
-    print("\nRunning BLASTn...")
+
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
     representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords
     representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords
     bsr_values: tp.BSRValues
-    (representative_blast_results,
-     representative_blast_results_coords_all,
-     representative_blast_results_coords_pident,
-     bsr_values,
-     _) = cof.run_blasts(blast_db_nuc,
+    representative_blast_results = cof.run_blasts(blast_db_nuc,
                         all_alleles,
                         all_translation_dict,
                         to_blast_paths,
                         blast_output,
                         constants,
+                        reps_kmers_sim if run_mode == 'unclassified_cds' else None,
+                        frequency_in_genomes,
                         cpu)
-    
-    # Add various results to the dict
-    cof.add_items_to_results(representative_blast_results,
-                         reps_kmers_sim if run_mode == 'unclassified_cds' else None,
-                         bsr_values,
-                         representative_blast_results_coords_all,
-                         representative_blast_results_coords_pident,
-                         frequency_in_genomes,
-                         [True, True])
 
-    print("\nFiltering BLAST results into classes...")
+    pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
     classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
-    print("\nProcessing classes...")
+    pf.print_message("Processing classes...", "info")
     # Sort each entry based on their assigned classes
     sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
@@ -370,7 +364,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                                 group_reps_ids,
                                                                                 group_alleles_ids)
 
-        print("\nAdd remaining cluster that didn't match by BLASTn...")
+        pf.print_message("Adding remaining clusters that didn't match by BLASTn...", "info")
         # Add cluster not matched by BLASTn
         all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a.values()])
         clusters_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in all_alleles.keys() if cluster not in all_matched_clusters])
@@ -385,7 +379,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                             'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
                             processed_drop)
 
-    print("\nExtracting results...")
+    pf.print_message("Extracting results...", "info")
     related_clusters: tp.RelatedClusters
     recommendations: tp.Recomendations
     # Extract the results from the processed results
@@ -396,8 +390,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                             dropped_loci_ids,
                                                             classes_outcome)
 
-    print("\nWriting count_results_by_cluster.tsv, related_matches.tsv files"
-          " and recommendations.tsv...")
+    pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
     reverse_matches: bool = True
     (related_matches_path,
@@ -420,7 +413,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                     merged_all_classes,
                                                     sorted_blast_dict)
 
-    print("\nWriting classes and cluster results to files...")
+    pf.print_message("Writing classes and cluster results to files...", "info")
     report_file_path: str = os.path.join(blast_results, 'blast_all_matches.tsv')
     # Write all of the alignments results to a file.
     cof.alignment_dict_to_file(representative_blast_results,
@@ -436,7 +429,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                     blast_results)
 
     if run_mode == 'unclassified_cds':
-        print("\nUpdating IDs and saving changes in cds_id_changes.tsv...")
+        pf.print_message("Updating IDs and saving changes in cds_id_changes.tsv...", "info")
         # Update the IDs and save the changes in a file.
         ccf.update_ids_and_save_changes(merged_all_classes,
                                     all_alleles,
@@ -444,11 +437,11 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                     dropped_alleles,
                                     all_nucleotide_sequences,
                                     results_output)
-        print("\nWriting dropped CDSs to file...")
+        pf.print_message("Writing dropped CDSs to file...", "info")
         # Write the dropped CDS to a file.
         ccf.write_dropped_cds_to_file(dropped_alleles, results_output)
 
-    print("\nWriting dropped possible new loci to file...")
+    pf.print_message("Writing dropped possible new loci to file...", "info")
     # Write the dropped possible new loci to a file.
     drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                                         dropped_alleles,
@@ -460,10 +453,10 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                         all_alleles)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
-        print("\nWriting temp fastas to file...")
+        pf.print_message("Writing temporary fastas to file...", "info")
         temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_directory)
 
-        print("\nCreate graphs for the BLAST results...")
+        pf.print_message("Creating graphs for the BLAST results...", "info")
         cds_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
                         'Size': cds_size.values()}
         cds_translation_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
@@ -480,13 +473,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
     # Clean up temporary files
     if not no_cleanup:
-        print("\nCleaning up temporary files...")
+        pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_directory, [related_matches_path,
                                       count_results_by_cluster_path,
                                       recommendations_file_path,
                                       drop_possible_loci_output,
-                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None])
+                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                      logf.get_log_file_path(gb.LOGGER)])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
@@ -532,6 +526,8 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Mode of processing.
     cpu : int
         Number of CPU cores to use.
+    no_cleanup : bool
+        Flag to indicate whether to clean up temporary files.
 
     Returns
     -------

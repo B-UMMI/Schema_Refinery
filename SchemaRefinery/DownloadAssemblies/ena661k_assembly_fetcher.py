@@ -26,9 +26,11 @@ from itertools import repeat
 from typing import List, Tuple, Dict, Any, Union
 
 try:
-    from utils import constants as ct
+    from utils import (constants as ct,
+                       print_functions as pf)
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import constants as ct
+    from SchemaRefinery.utils import (constants as ct,
+                                      print_functions as pf)
 
 
 # Increase the field_size_limit to handle large fields in the input file
@@ -80,10 +82,11 @@ def handle_progress(block_num: int, block_size: int, total_size: int) -> None:
         downloaded_percentage = int(((total_size - remaining_size) / total_size) * 100)
 
     if downloaded_percentage == 100:
-        print(f'Downloaded: {downloaded_percentage}% ', end="\n")
+        pf.print_message(f'Downloaded: {downloaded_percentage}%', "info", end="\n")
     else:
-        print(" ", end="\r")
-        print(f'Downloaded: {downloaded_percentage}% ', end="\r")
+        pf.print_message(" ", None, end="\r")
+        pf.print_message(f'Downloaded: {downloaded_percentage}%', "info", end="\r")
+
 
 def check_download(file: str, file_hash: str, remove: bool = False) -> bool:
     """
@@ -221,18 +224,18 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
 
     # Verify if files are present in the conda dir env
     if os.path.exists(assembly_ftp_file):
-        print('\nFile with FTP links already exists...')
+        pf.print_message('File with FTP links already exists...', "info")
     else:
-        print('Downloading ENA661K ftp paths file...')
+        pf.print_message('Downloading ENA661K ftp paths file...', "info")
         download_ftp_file((ct.ASSEMBLY_FTP_PATH, assembly_ftp_file, None), retry, False, True)
 
     if os.path.exists(assembly_metadata_file):
-        print('File with ENA661K metadata already exists...')
+        pf.print_message('File with ENA661K metadata already exists...', "info")
     else:
-        print('Downloading ENA661K metadata file...')
+        pf.print_message('Downloading ENA661K metadata file...', "info")
         download_ftp_file((ct.ASSEMBLY_METADATA_PATH, assembly_metadata_file + '.gz', None), retry, False, True)
 
-        print('Unzipping metadata...')
+        pf.print_message('Unzipping metadata...', "info")
         with gzip.open(assembly_metadata_file + '.gz', 'rb') as f_in:
             with open(assembly_metadata_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -240,26 +243,27 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         os.remove(assembly_metadata_file + '.gz')
 
     if os.path.exists(local_checklist):
-        print('File with ENA661K checklist already exists...')
+        pf.print_message('File with ENA661K checklist already exists...', "info")
     else:
-        print('Downloading ENA661K checklist.chk...')
+        pf.print_message('Downloading ENA661K checklist.chk...', "info")
         download_ftp_file((ct.FTP_HASH_FILE, local_checklist, None), retry, False, True)
 
     # Read file with metadata
-    print("\nReading metadata table...")
+    pf.print_message("Reading metadata table...", "info")
+
     metadata_lines: List[List[str]] = read_table(assembly_metadata_file)
 
     metadata_header: List[str] = metadata_lines[0]
 
     # Select lines based on taxon name, e.g Brucella, Streptococcus pneumonia
-    print("\nFiltering by chosen taxon...")
+    pf.print_message("Filtering by chosen taxon...", "info")
     taxon_index: int = metadata_header.index('species')
     taxon_lines: List[List[str]] = [line for line in metadata_lines[1:] if all(t in line[taxon_index].split() for t in taxon.split())]
 
-    print('\nFound {0} samples for taxon={1}.'.format(len(taxon_lines), taxon))
+    pf.print_message('\nFound {0} samples for taxon={1}.'.format(len(taxon_lines), taxon), "info")
 
-    if len(taxon_lines) == 0:
-        print(f'Did not find matches for {taxon}.')
+    if not taxon_lines:
+        pf.print_message(f'Did not find matches for {taxon}.', "warning")
         sys.exit(0)
 
     # Get all ids
@@ -268,46 +272,47 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         # Filter based on genome size
         if criteria['genome_size'] is not None and criteria['size_threshold'] is not None:
             bot_limit: float = criteria['genome_size'] - (criteria['genome_size'] * criteria['size_threshold'])
-            top_limit: float = criteria['genome_size'] + (criteria['genome_size'] * criteria['size_threshold'])
+            top_limit: float = criteria['genome_size'] + (criteria['size_threshold'] * criteria['genome_size'])
             size_index: int = metadata_header.index('total_length')
             taxon_lines = [line for line in taxon_lines if int(line[size_index]) >= bot_limit and int(line[size_index]) <= top_limit]
 
-            print('{0} with genome size >= {1} and <= {2}.'.format(len(taxon_lines), bot_limit, top_limit))
+            pf.print_message('{0} with genome size >= {1} and <= {2}.'.format(len(taxon_lines), bot_limit, top_limit), "info")
 
         # Filter based on taxon abundance
         if criteria['abundance'] is not None:
             abundance_index: int = metadata_header.index('adjust_abundance')
             taxon_lines = [line for line in taxon_lines if float(line[abundance_index]) >= criteria['abundance']]
 
-            print('{0} with abundance >= {1}.'.format(len(taxon_lines), criteria['abundance']))
+            pf.print_message('{0} with abundance >= {1}.'.format(len(taxon_lines), criteria['abundance']), "info")
 
         # Filter based on number of contigs
         if criteria['max_contig_number'] is not None:
             contigs_index: int = metadata_header.index('total_contigs')
             taxon_lines = [line for line in taxon_lines if int(line[contigs_index]) <= criteria['max_contig_number']]
 
-            print('{0} with <= {1} contigs.'.format(len(taxon_lines), criteria['max_contig_number']))
+            pf.print_message('{0} with <= {1} contigs.'.format(len(taxon_lines), criteria['max_contig_number']), "info")
 
         # Filter based on known ST
         if criteria['known_st'] is True:
             st_index: int = metadata_header.index('mlst')
             taxon_lines = [line for line in taxon_lines if line[st_index] != '-']
 
-            print('{0} with known ST.'.format(len(taxon_lines)))
+            pf.print_message('{0} with known ST.'.format(len(taxon_lines)), "info")
 
         if criteria['ST_list_path'] is not None:
             with open(criteria['ST_list_path'], 'r', encoding='utf-8') as desired_st:
                 d_st: List[str] = desired_st.read().splitlines()
                 st_index = metadata_header.index('mlst')
                 taxon_lines = [line for line in taxon_lines if line[st_index] in d_st]
-                print('{0} with desired ST'.format(len(taxon_lines)))
+                pf.print_message('{0} with desired ST'.format(len(taxon_lines)), "info")
 
         # Filter based on quality level
         if criteria['any_quality'] is False:
             quality_index: int = metadata_header.index('high_quality')
             taxon_lines = [line for line in taxon_lines if line[quality_index] == 'TRUE']
 
-            print('{0} with high quality.'.format(len(taxon_lines)))
+            pf.print_message('{0} with high quality.'.format(len(taxon_lines)), "info")
+
 
     # Get sample identifiers
     sample_ids: List[str] = [line[0] for line in taxon_lines]
@@ -330,12 +335,12 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
         ids_to_tsv.write("\n".join(failed_list) + '\n')
 
     if len(sample_ids) == 0:
-        sys.exit('\nNo assemblies meet the desired filtering criteria.')
+        sys.exit('No assemblies meet the desired filtering criteria.')
     else:
         if criteria is not None:
-            print('\nSelected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)))
+            pf.print_message('Selected {0} samples/assemblies that meet filtering criteria.'.format(len(sample_ids)), "info")
         else:
-            print("\nNo filtering criteria were provided. All samples were selected.")
+            pf.print_message("No filtering criteria were provided. All samples were selected.", "info")
 
     selected_file_ena661k: str = os.path.join(output_directory, 'assemblies_metadata_ena661k.tsv')
     with open(selected_file_ena661k, 'w', encoding='utf-8') as outfile:
@@ -377,19 +382,20 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
                 remote_urls.append((sample_url, sample_file, hashes_dict[sample]))
 
         if len(remote_urls) < len(sample_ids):
-            print('{0} assemblies had already been downloaded.'.format(len(sample_ids) - len(remote_urls)))
+            pf.print_message('{0} assemblies had already been downloaded.'.format(len(sample_ids) - len(remote_urls)), "info")
 
-        print('\nDownloading {0} assemblies...'.format(len(remote_urls)))
+        pf.print_message('Downloading {0} assemblies...'.format(len(remote_urls)), "info")
         failed: int = 0
         downloaded: int = 0
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             for res in executor.map(download_ftp_file, remote_urls, repeat(retry)):
                 if res:
                     downloaded += 1
-                    print('\r', 'Downloaded {0}/{1}'.format(downloaded, len(remote_urls)), end='')
+                    pf.print_message('Downloaded {0}/{1}'.format(downloaded, len(remote_urls)), "info", end='\r')
                 else:
                     failed += 1
-            print(f'\nFailed download for {failed} files.')
+        # Print failed downloads
+        pf.print_message(f'Failed download for {failed} files.', "info")
         
         failed_to_download = [x for x in sample_ids if x not in [file.split('.')[0] for file in os.listdir(assemblies_directory)]]
         # Write failed downloads to file

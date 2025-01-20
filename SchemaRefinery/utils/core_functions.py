@@ -1,7 +1,5 @@
 import os
-import concurrent.futures
 import pandas as pd
-from itertools import repeat
 from typing import Dict, Any, List, Tuple, Union, Optional, Set
 
 try:
@@ -14,7 +12,8 @@ try:
                        graphical_functions as gf,
                        pandas_functions as pf,
                        sequence_functions as sf,
-                       Types as tp)
+                       Types as tp,
+                       print_functions as prf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       clustering_functions as cf,
@@ -25,7 +24,8 @@ except ModuleNotFoundError:
                                       graphical_functions as gf,
                                       pandas_functions as pf,
                                       sequence_functions as sf,
-                                      Types as tp)
+                                      Types as tp,
+                                      print_functions as prf)
 
 def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                            file_path: str, write_type: str) -> None:
@@ -97,11 +97,11 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
                     report_file.write('\t'.join(map(str, alignment_data.values())) + '\n')
 
 
-def add_items_to_results(representative_blast_results: tp.BlastDict, 
-                         reps_kmers_sim: Dict[str, Dict[str, Tuple[float, float]]], 
+def add_items_to_results(filtered_alignments_dict: tp.BlastDict, 
+                         reps_kmers_sim: Optional[Dict[str, Dict[str, Tuple[float, float]]]], 
                          bsr_values: tp.BSRValues,
-                         representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords,
-                         representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords,
+                         alignment_coords_all: tp.RepresentativeBlastResultsCoords,
+                         alignment_coords_pident: tp.RepresentativeBlastResultsCoords,
                          frequency_in_genomes: Dict[str, int], 
                          allele_ids: List[bool]) -> None:
     """
@@ -115,7 +115,7 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
 
     Parameters
     ----------
-    representative_blast_results : tp.BlastDict
+    filtered_alignments_dict : tp.BlastDict
         A dictionary containing BLAST results. Each entry is expected to represent a unique BLAST hit with
         various metrics.
     reps_kmers_sim : Dict[str, Dict[str, Tuple[float, float]]]
@@ -123,9 +123,9 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
     bsr_values : tp.BSRValues
         A dictionary mapping pairs of CDS to their Blast Score Ratio (BSR) values. Can be None if BSR values
         are not available.
-    representative_blast_results_coords_all : tp.RepresentativeBlastResultsCoords
+    alignment_coords_all : tp.RepresentativeBlastResultsCoords
         A dictionary containing the coordinates for all BLAST entries, used for calculating global alignment metrics.
-    representative_blast_results_coords_pident : tp.RepresentativeBlastResultsCoords
+    alignment_coords_pident : tp.RepresentativeBlastResultsCoords
         A dictionary containing the coordinates for BLAST entries above a certain percentage identity threshold,
         used for calculating specific global alignment metrics.
     frequency_in_genomes : Dict[str, int]
@@ -148,7 +148,7 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
     schema development projects.
     """
     
-    def get_kmer_values(reps_kmers_sim: Dict[str, Dict[str, Tuple[float, float]]], 
+    def get_kmer_values(reps_kmers_sim: Optional[Dict[str, Dict[str, Tuple[float, float]]]], 
                         query: str, subject: str) -> Tuple[Union[float, str], Union[float, str]]:
         """
         Retrieves k-mer similarity and coverage values for a specified query and subject pair.
@@ -416,15 +416,15 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
             del representative_blast_results[query]
 
     # Iterate over the representative_blast_results dictionary
-    for query, subjects_dict in list(representative_blast_results.items()):
+    for query, subjects_dict in list(filtered_alignments_dict.items()):
         for subject, blastn_results in list(subjects_dict.items()):
             sim, cov = get_kmer_values(reps_kmers_sim, query, subject)
             bsr = get_bsr_value(bsr_values, query, subject)
 
-            total_length = calculate_total_length(representative_blast_results_coords_all, query, subject)
+            total_length = calculate_total_length(alignment_coords_all, query, subject)
             global_palign_all_min, global_palign_all_max = calculate_global_palign(total_length, blastn_results[1])
 
-            total_length = calculate_total_length(representative_blast_results_coords_pident, query, subject)
+            total_length = calculate_total_length(alignment_coords_pident, query, subject)
             global_palign_pident_min, global_palign_pident_max = calculate_global_palign(total_length, blastn_results[1])
             
             # Iterate over the blastn_results dictionary
@@ -432,11 +432,11 @@ def add_items_to_results(representative_blast_results: tp.BlastDict,
                 local_palign_min = calculate_local_palign(result)
                 # Remove entries with negative local palign values meaning that they are inverse alignments.
                 if local_palign_min >= 0:
-                    update_results(representative_blast_results, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids)
+                    update_results(filtered_alignments_dict, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids)
                 else:
-                    remove_results(representative_blast_results, query, subject, entry_id)
+                    remove_results(filtered_alignments_dict, query, subject, entry_id)
 
-            clean_up_results(representative_blast_results, query, subject)
+            clean_up_results(filtered_alignments_dict, query, subject)
 
 
 def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, 
@@ -1334,12 +1334,9 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
     return is_matched, is_matched_alleles
 
 
-def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
-               output_dir: str, constants: List[Any], cpu: int) -> Tuple[tp.BlastDict, 
-                                                           tp.RepresentativeBlastResultsCoords, 
-                                                           tp.RepresentativeBlastResultsCoords, 
-                                                           tp.BSRValues, 
-                                                           Dict[str, float]]:
+def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
+               output_dir: str, constants: List[Any], reps_kmers_sim: Optional[Dict[str, Dict[str, tuple[float, float]]]],
+               frequency_in_genomes: Dict[str, int], cpu: int) -> tp.BlastDict:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
 
@@ -1357,21 +1354,19 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
         The directory path where output files will be saved.
     constants : List[Any]
         A list of constants used within the function, such as thresholds for filtering BLAST results.
+    reps_kmers_sim : Dict[str, Dict[str, tuple[float, float]]]
+        A dictionary containing k-mer similarity values for representative sequences.
+    frequency_in_genomes : Dict[str, int]
+        A dictionary mapping sequence IDs to their frequency in genomes.
     cpu : int
         The number of CPU cores to use for parallel processing.
 
     Returns
     -------
-    Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, float]], Dict[str, float]]
-        A tuple containing:
-        - representative_blast_results: Dict that contains representative BLAST results.
-        - representative_blast_results_coords_all: Dict that contains the coordinates for all of the entries.
-        - representative_blast_results_coords_pident: Dict that contains the coordinates for all of the entries above a certain pident value.
-        - bsr_values: Dict that contains BSR values between CDS.
-        - self_score_dict: Dict that contains the self-score values for all of the CDSs that are processed in this function.
+    representative_blast_results : tp.BlastDict
+        A dictionary containing the BLAST results for representative sequences.
     """
-    
-    print("\nRunning BLASTn...")
+    prf.print_message("Running BLASTn...", "info")
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '1_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1383,47 +1378,37 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
     max_id_length: int = len(max(all_alleles, key=len))
     total_reps: int = len(rep_paths_nuc)
     representative_blast_results: tp.BlastDict = {}
-    representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords = {}
-    representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
-    blastn_results_files: List[str] = [] # List to store the results files
-    i: int = 1
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing,
-                                repeat(get_blastn_exec),
-                                repeat(blast_db),
-                                rep_paths_nuc.values(),
-                                all_alleles,
-                                repeat(blastn_results_folder)):
-            # Append the results file to the list
-            blastn_results_files.append(res[1])
-            print(
-                f"\rRunning BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", 
-                end='', flush=True)
-            i += 1
+    # Run BLASTn
+    blastn_results_files = bf.run_blastn_operations(cpu,
+                                                    get_blastn_exec,
+                                                    blast_db,
+                                                    rep_paths_nuc,
+                                                    all_alleles,
+                                                    blastn_results_folder,
+                                                    total_reps,
+                                                    max_id_length)
 
+    prf.print_message("", None)
     # Process the obtained BLAST results files
     for blast_result_file in blastn_results_files:
 
         filtered_alignments_dict: Dict[str, Dict[str, Any]]
-        alignment_coords_all: Dict[str, Dict[str, Any]]
-        alignment_coords_pident: Dict[str, Dict[str, Any]]
-        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-            blast_result_file, constants[1], True, False, True, True, False)
-        
-        # Save the BLASTn results
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(
+            blast_result_file, constants[1], False, False, True, True, False)
+
+        # Save the BLASTn results to get the matches.
         representative_blast_results.update(filtered_alignments_dict)
-        representative_blast_results_coords_all.update(alignment_coords_all)
-        representative_blast_results_coords_pident.update(alignment_coords_pident)
 
-
-    print("\nRunning BLASTp based on BLASTn results matches...")
+    prf.print_message("Running BLASTp based on BLASTn results matches...", "info")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
     # Based on BLASTn results get all alleles that matches by BLASTn.
     alleles_matches: Dict[str, List[str]] = {query: itf.flatten_list([[subject[1]['subject']
                                             for subject in subjects.values()]]) 
                          for query, subjects in representative_blast_results.items()}
+
+    representative_blast_results = {} # Reset the representative_blast_results
     
     # Create directories.
     blastp_results: str = os.path.join(output_dir, '2_BLASTp_processing')
@@ -1493,8 +1478,6 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
 
     # Total number of runs
     total_blasts: int = len(blastp_runs_to_do)
-    # If there is need to calculate self-score
-    print("\nCalculate self-score for the CDSs...")
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
     i = 1
@@ -1504,30 +1487,22 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                                                                 blastp_results_ss_folder,
                                                                 max_id_length,
                                                                 cpu)
-    # Print newline
-    print('\n')  
-    
-    print("Running BLASTp...")
+    prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
-    blastp_results_files: List[str] = [] # To store the results files
-    i = 1
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blast_fastas_multiprocessing,
-                                blastp_runs_to_do, 
-                                repeat(get_blastp_exec),
-                                repeat(blastp_results_folder),
-                                repeat(rep_paths_prot),
-                                rep_matches_prot.values()):
-            # Append the results file to the list
-            blastp_results_files.append(res[1])
-
-            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
-            i += 1
-
+    blastp_results_files = bf.run_blastp_operations_based_on_blastn(cpu,
+                                                                    blastp_runs_to_do,
+                                                                    get_blastp_exec,
+                                                                    blastp_results_folder,
+                                                                    rep_paths_prot,
+                                                                    rep_matches_prot,
+                                                                    total_blasts,
+                                                                    max_id_length)
+    
+    prf.print_message("", None)
    # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
         filtered_alignments_dict
-        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(res[1], 0, True, False, True, True, False)
+        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_result_file, 0, True, False, True, True, False)
 
         # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
         for query, subjects_dict in filtered_alignments_dict.items():
@@ -1536,8 +1511,26 @@ def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dic
                 subject_score: float = next(iter(results.values()))['score']
                 bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
 
-    return (representative_blast_results, representative_blast_results_coords_all,
-            representative_blast_results_coords_pident, bsr_values, self_score_dict)
+    # Read the BLASTn results files and append the relevant information to the results.
+    for blast_result_file in blastn_results_files:
+
+        alignment_coords_all: tp.RepresentativeBlastResultsCoords
+        alignment_coords_pident: tp.RepresentativeBlastResultsCoords
+        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
+            blast_result_file, constants[1], True, False, True, True, False)
+        
+        add_items_to_results(filtered_alignments_dict,
+                        reps_kmers_sim,
+                        bsr_values,
+                        alignment_coords_all,
+                        alignment_coords_pident,
+                        frequency_in_genomes,
+                        [True, True])
+
+        # Save the BLASTn results
+        representative_blast_results.update(filtered_alignments_dict)
+
+    return representative_blast_results
 
 
 def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses, 
@@ -1927,16 +1920,16 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         """
         if count > 0:
             if class_ in ['2b', '4b']:
-                print(f"\t\tOut of those groups, {count} are classified as {class_} and were retained"
-                      " but it is recommended to verify them as they may be contained or contain partially inside"
-                      " their BLAST match.")
+                prf.print_message(f"\t\tOut of those groups, {count} are classified as {class_} and were retained"
+                            " but it is recommended to verify them as they may be contained or contain partially inside"
+                            " their BLAST match.", None)
             elif class_ == '1a':
-                print(f"\t\tOut of those groups, {count} {'CDSs groups'} are classified as {class_}"
-                      f" and are contained in {len(printout['1a'])} joined groups that were retained.")
+                prf.print_message(f"\t\tOut of those groups, {count} {'CDSs groups'} are classified as {class_}"
+                            f" and are contained in {len(printout['1a'])} joined groups that were retained.", None)
             elif class_ == 'dropped':
-                print(f"\t\tOut of those {count} have been dropped due to frequency")
+                prf.print_message(f"\t\tOut of those {count} have been dropped due to frequency", None)
             else:
-                print(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.")
+                prf.print_message(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.", None)
 
     # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
     retained_not_matched_by_blastn: Optional[Any] = merged_all_classes.pop('Retained_not_matched_by_blastn', None)
@@ -1954,13 +1947,11 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     count_cases['dropped'] = len(drop_possible_loci)
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
-
-    print(f"Out of {len(to_blast_paths)}:")
-    print(f"\t{total_loci} representatives had matches with BLASTn against the.")
+    prf.print_message(f"Out of {len(to_blast_paths)}:", None)
+    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the.", None)
     for class_, count in count_cases.items():
         print_results(class_, count, merged_all_classes)
-
-    print(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches")
+    prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches", None)
 
     if retained_not_matched_by_blastn:
         merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn

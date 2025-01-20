@@ -9,10 +9,12 @@ try:
     from utils.download_functions import download_file
     from utils.file_functions import create_directory
     from utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
+    from utils import print_functions as pf
 except ModuleNotFoundError:
     from SchemaRefinery.utils.download_functions import download_file
     from SchemaRefinery.utils.file_functions import create_directory
     from SchemaRefinery.utils.constants import SOCKET_TIMEOUT, PROTEOME_TEMPLATE_URL
+    from SchemaRefinery.utils import print_functions as pf
 
 # Set socket timeout for urllib calls
 socket.setdefaulttimeout(SOCKET_TIMEOUT)
@@ -52,16 +54,16 @@ def proteome_fetcher(proteome_table: str, output_directory: str, threads: int, r
     # Build the UniProt URLs
     urls: List[str] = [PROTEOME_TEMPLATE_URL.format(pid) for pid in proteome_ids]
     num_proteomes: int = len(urls)
-    print(f'Proteomes to download: {num_proteomes}')
+    pf.print_message(f'Proteomes to download: {num_proteomes}', 'info')
 
     if num_proteomes == 0:
-        print('Input proteome table contained no proteome ids.')
+        pf.print_message('Input proteome table contained no proteome ids.', 'warning')
         return None
 
     filenames: List[str] = ['{0}.fasta.gz'.format(pid) for pid in proteome_ids]
     filepaths: List[str] = [os.path.join(proteomes_directory, filename) for filename in filenames]
 
-    print(f'\nStarting download of {num_proteomes} proteomes...')
+    pf.print_message(f"Starting download of {num_proteomes} proteomes...", 'info')
 
     # We can use a with statement to ensure threads are cleaned up promptly
     success: int = 0
@@ -72,12 +74,12 @@ def proteome_fetcher(proteome_table: str, output_directory: str, threads: int, r
             if 'Failed' in res:
                 failures.append(res[0])
             elif os.path.getsize(res[1]) == 0:
-                print(f"Error: The downloaded archive '{res[1]}' is empty.")
+                pf.print_message(f"Error: The downloaded archive '{res[1]}' is empty.", 'error')
                 os.remove(res[1])
             else:
                 success += 1
-                print(f'\rDownloaded {success}/{num_proteomes}', end='')
+                pf.print_message(f'Downloaded {success}/{num_proteomes}', "info", end='\r', flush=True)
 
-    print(f'\nFailed download for {len(failures)} proteomes.')
+    pf.print_message(f"Failed download for {len(failures)} proteomes.", 'warning')
 
     return proteomes_directory

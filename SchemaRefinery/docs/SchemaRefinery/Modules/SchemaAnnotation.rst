@@ -16,8 +16,13 @@ Features
 Dependencies
 ------------
 
-- Python 3.6 or higher
-- Biopython library (`pip install biopython`)
+- Python 3.9 or higher
+- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
+- Install requirements using the following command:
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
 
 Usage
 -----
@@ -111,6 +116,14 @@ Command-Line Arguments
 
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
+
+    --debug
+        (Optional) Flag to indicate whether to run the module in debug mode.
+        Default: False
+
+    --logger
+        (Optional) Path to the logger file.
+        Default: None
 
 Algorithm Explanation
 ---------------------

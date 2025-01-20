@@ -1,18 +1,20 @@
 import subprocess
 import os
 import sys
-import itertools
+from itertools import repeat
 import concurrent.futures
 from typing import Dict, Any, List, Tuple, Union, Optional
 
 try:
     from utils import (file_functions as ff,
                        blast_functions as bf,
-                       alignments_functions as af)
+                       alignments_functions as af,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       blast_functions as bf,
-                                      alignments_functions as af)
+                                      alignments_functions as af,
+                                      print_functions as pf)
 
 def make_blast_db(makeblastdb_path: str, input_fasta: str, output_path: str, db_type: str) -> Tuple[bytes, Union[bytes, str]]:
     """
@@ -127,12 +129,12 @@ def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str
     stderr: bytes
     stdout, stderr = blast_process.communicate()
 
-    print(stderr)
+    pf.print_message(stderr, 'error')
 
     # Exit if it is not possible to create BLAST db
     if len(stderr) > 0:
-        sys.exit(f'Error while running BLASTp for {fasta_file}\n'
-                 f'{blast_path} returned the following error:\n{stderr.decode("utf-8")}')
+        pf.print_message(f'Error while running BLASTp for {fasta_file}, {blast_path} returned the following error: {stderr.decode("utf-8")}', 'error')
+        sys.exit()
 
     return stdout, stderr
 
@@ -156,7 +158,7 @@ def run_blast_with_args_only(blast_args: List[str]) -> None:
 
     stderr: List[bytes] = blast_proc.stderr.readlines()
     if len(stderr) > 0:
-        print(stderr)
+        pf.print_message(stderr, 'error')
 
 
 def run_blast_fastas_multiprocessing(id_: str, blast_exec: str, blast_results: str,
@@ -378,8 +380,7 @@ def run_blastdb_aliastool(blastdb_aliastool_path: str, seqid_infile: str, seqid_
 
     # Exit if it is not possible to create BLAST db
     if len(stderr) > 0:
-        sys.exit(f'Could not convert {seqid_infile} to binary format.\n'
-                 f'{blastdb_aliastool_path} returned the following error:\n{stderr}')
+        sys.exit(f'Could not convert {seqid_infile} to binary format. {blastdb_aliastool_path} returned the following error: {stderr}')
 
     return stdout, stderr
 
@@ -415,17 +416,17 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     self_score_results_files: List[str] = [] # List to store paths to BLAST results
     i: int = 1
     # Calculate self-score
-    print("\nCalculating self-score for each loci:")
+    pf.print_message("Calculating self-score for each loci:", 'info')
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
         for res in executor.map(bf.run_self_score_multiprocessing,
                                 paths_dict.keys(),
-                                itertools.repeat(blast_exec),
+                                repeat(blast_exec),
                                 paths_dict.values(),
-                                itertools.repeat(self_score_folder)):
+                                repeat(self_score_folder)):
             self_score_results_files.append(res[1])
                             
             # Print progress
-            print(f"\rRunning BLASTp to calculate self-score for {res[0]: <{max_id_length}}", end='', flush=True)
+            pf.print_message(f"Running BLASTp to calculate self-score for {res[0]: <{max_id_length}}", "info", end='\r', flush=True)
             i += 1    
 
     for blast_results_file in self_score_results_files:
@@ -434,5 +435,145 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 
         # Save self-score
         self_score_dict.update(self_score)
+    
+    pf.print_message("", None)
 
     return self_score_dict
+
+def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc: Dict[str, str],
+                          all_alleles: Dict[str, List[str]], blastn_results_folder: str,
+                          total_reps: int, max_id_length: int) -> List[str]:
+    """
+    Run BLASTn in parallel for all the cluster representatives.
+
+    Parameters
+    ----------
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+    get_blastn_exec : str
+        Path to the BLASTn executable.
+    blast_db : str
+        Path to the BLAST database files.
+    rep_paths_nuc : Dict[str, str]
+        Dictionary with the paths to the nucleotide sequences.
+    all_alleles : Dict[str, List[str]]
+        Dictionary with the alleles for each locus.
+    blastn_results_folder : str
+        Path to the folder where to store the BLASTn results.
+    total_reps : int
+        Total number of BLASTn runs to perform.
+    max_id_length : int
+        Maximum length of the cluster identifiers.
+    
+    Returns
+    -------
+    blastn_results_files : List[str]
+        List containing the paths to the BLASTn results files.
+    """
+    blastn_results_files: List[str] = []  # List to store the results files
+    i: int = 1
+    rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blastdb_multiprocessing,
+                                repeat(get_blastn_exec),
+                                repeat(blast_db),
+                                rep_paths_nuc_list,
+                                all_alleles,
+                                repeat(blastn_results_folder)):
+            # Append the results file to the list
+            blastn_results_files.append(res[1])
+            pf.print_message(f"Running BLASTn for cluster representatives: {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
+            i += 1
+    return blastn_results_files
+
+def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blastp_exec: str,
+                                          blastp_results_folder: str, rep_paths_prot, rep_matches_prot,
+                                          total_blasts: int, max_id_length: int) -> List[str]:
+    """
+    Run BLASTp in parallel based on the BLASTn results.
+
+    Parameters
+    ----------
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+    blastp_runs_to_do : list
+        List with the BLASTp runs to perform.
+    get_blastp_exec : str
+        Path to the BLASTp executable.
+    blastp_results_folder : str
+        Path to the folder where to store the BLASTp results.
+    rep_paths_prot : dict
+        Dictionary with the paths to the protein sequences.
+    rep_matches_prot : dict
+        Dictionary with the protein sequences that match the nucleotide sequences.
+    total_blasts : int
+        Total number of BLASTp runs to perform.
+    max_id_length : int
+        Maximum length of the cluster identifiers.
+    
+    Returns
+    -------
+    blastp_results_files : List[str]
+        List containing the paths to the BLASTp results files.
+    """
+    blastp_results_files: List[str] = []  # To store the results files
+    i = 1
+    rep_matches_prot_list = list(rep_matches_prot.values())  # Convert dict_values to list
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blast_fastas_multiprocessing,
+                                blastp_runs_to_do, 
+                                repeat(get_blastp_exec),
+                                repeat(blastp_results_folder),
+                                repeat(rep_paths_prot),
+                                rep_matches_prot_list):
+            # Append the results file to the list
+            blastp_results_files.append(res[1])
+            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
+            i += 1
+    return blastp_results_files
+
+def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths,
+                          blastp_results_folder: str, total_blasts: int, max_id_length: int) -> List[str]:
+    """
+    Run BLASTp in parallel for all the cluster representatives.
+
+    Parameters
+    ----------
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+    get_blastp_exec : str
+        Path to the BLASTp executable.
+    blast_db_files : str
+        Path to the BLAST database files.
+    translations_paths : dict
+        Dictionary with the paths to the translated sequences.
+    blastp_results_folder : str
+        Path to the folder where to store the BLASTp results.
+    total_blasts : int
+        Total number of BLASTp runs to perform.
+    max_id_length : int
+        Maximum length of the cluster identifiers.
+    
+    Returns
+    -------
+    blastp_results_files : List[str]
+        List containing the paths to the BLASTp results files.
+    """
+    blastp_results_files: List[str] = []  # List to store the paths to the BLASTp results files
+    i: int = 1
+    translations_paths_values = list(translations_paths.values())  # Convert dict_values to list
+    translations_paths_keys = list(translations_paths.keys())  # Convert dict_keys to list
+    
+    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
+        for res in executor.map(bf.run_blastdb_multiprocessing,
+                                repeat(get_blastp_exec),
+                                repeat(blast_db_files),
+                                translations_paths_values,
+                                translations_paths_keys,
+                                repeat(blastp_results_folder)):
+            # Save the path to the BLASTp results file
+            blastp_results_files.append(res[1])
+            pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
+            i += 1
+
+    return blastp_results_files

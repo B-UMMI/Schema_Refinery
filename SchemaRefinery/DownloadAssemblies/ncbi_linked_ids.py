@@ -1,13 +1,15 @@
-import os
 import re
 import time
-import argparse
 import concurrent.futures
 from itertools import repeat
 from typing import Any, Dict, List, Optional, Tuple
 
-from tqdm import tqdm
 from Bio import Entrez
+
+try:
+    from utils import (print_functions as pf)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (print_functions as pf)
 
 # regex expressions to identify identifier type
 database_patterns: Dict[str, str] = {
@@ -366,7 +368,7 @@ def main(input_file: str, linked_ids_file: str, email: str, threads: int, retry:
 
     database_identifiers: Dict[str, List[str]] = {}
 
-    print('\nFetching internal IDs identifiers...')
+    pf.print_message('Fetching internal IDs identifiers...', 'info')
     internal_dict_identifiers: Dict[str, List[List[str]]] = {}
     ids_matches: Dict[str, Dict[str, Dict[str, str]]] = {database: {} for database in dict_identifiers.keys()}
     for database, ids in dict_identifiers.items():
@@ -375,14 +377,14 @@ def main(input_file: str, linked_ids_file: str, email: str, threads: int, retry:
             for record in list(executor.map(get_esearch_record, split_ids, repeat(database), repeat(retry))):
                 if record:
                     internal_dict_identifiers.setdefault(database, []).append(list(record['IdList']))
-    
-    print('\nFetching linked IDs...')
+
+    pf.print_message('Fetching linked IDs...', 'info')
     for database, ids in internal_dict_identifiers.items():
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             for linked_ids in list(executor.map(fetch_linked_ids, ids, repeat(retry), repeat(database))):
                 ids_matches[database].update(linked_ids)
 
-    print("\nWriting output file...")
+    pf.print_message('Writing output file...', 'info')
     # Write output table
     output_header: str = 'InputID\tRefSeq\tGenBank\tBioSample\n'
     processed_ids: List[str] = []

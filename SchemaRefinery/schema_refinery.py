@@ -10,9 +10,8 @@ as input depending on the desired module.
 Code documentation
 ------------------
 """
-
+import os
 import sys
-import shutil
 import argparse
 import webbrowser
 
@@ -25,7 +24,11 @@ try:
     from MatchSchema import MatchSchemas
     from CreateSchemaStructure import CreateSchemaStructure
     from utils import (constants as ct,
-                       validation as val)
+                       validation as val,
+                       print_functions as pf,
+                       decorators as dec,
+                       logger_functions as lf,
+                       globals as gb)
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -36,7 +39,11 @@ except ModuleNotFoundError:
     from SchemaRefinery.MatchSchema import MatchSchemas
     from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
     from SchemaRefinery.utils import (constants as ct,
-                                      validation as val)
+                                      validation as val,
+                                      print_functions as pf,
+                                      decorators as dec,
+                                      logger_functions as lf,
+                                      globals as gb)
 
 
 def download_assemblies() -> None:
@@ -136,16 +143,40 @@ def download_assemblies() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
     val.validate_download_assemblies_module_arguments(args)
     
     # Transfer values from criteria file to the args namespace
     args['taxon'] = args.filtering_criteria.pop('taxon', None)
     args['input_table'] = args.filtering_criteria.pop('input_table', None)
 
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the DownloadAssemblies class with the parsed arguments
+    pf.print_message(f"Running DownloadAssemblies module...", message_type="info")
     DownloadAssemblies.main(args)
 
 
@@ -358,13 +389,36 @@ def schema_annotation() -> None:
                             dest='no_cleanup',
                             help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
     # Validate the arguments
     val.validate_schema_annotation_module_arguments(args)
 
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the SchemaAnnotation class with the parsed arguments
+    pf.print_message(f"Running SchemaAnnotation module...", message_type="info")
     SchemaAnnotation.main(args)
 
 
@@ -521,13 +575,36 @@ def identify_spurious_genes() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
     # Validate the arguments
     val.validate_identify_spurious_genes_module_arguments(args)
 
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+   # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the IdentifySpuriousGenes class with the parsed arguments
+    pf.print_message(f"Running IdentifySpuriousGenes module...", message_type="info")
     IdentifySpuriousGenes.main(**vars(args))
 
 
@@ -591,13 +668,36 @@ def adapt_loci() -> None:
                         default=11,
                         help='Translation table to use for the CDS translation.')
     
+    parser.add_argument('--debug',
+                    action='store_true',
+                    required=False,
+                    dest='debug',
+                    help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
     # Validate the arguments
     val.validate_adapt_loci_module_arguments(args)
 
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the AdaptLoci class with the parsed arguments
+    pf.print_message(f"Running AdaptLoci module...", message_type="info")
     AdaptLoci.main(**vars(args))
 
 
@@ -684,10 +784,36 @@ def identify_paralogous_loci() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_identify_paralogous_loci_arguments(args)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the IdentifyParalogousLoci class with the parsed arguments
+    pf.print_message(f"Running IdentifyParalogousLoci module...", message_type="info")
     IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
 def match_schemas() -> None:
@@ -772,10 +898,36 @@ def match_schemas() -> None:
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
 
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
+
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_match_schemas_arguments(args)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the MatchSchemas class with the parsed arguments
+    pf.print_message(f"Running MatchSchemas module...", message_type="info")
     MatchSchemas.match_schemas(**vars(args))
 
 def create_schema_structure() -> None:
@@ -850,62 +1002,38 @@ def create_schema_structure() -> None:
                         required=False,
                         dest='no_cleanup',
                         help='Flag to indicate whether to skip cleanup after running the module.')
+
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
+
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
     
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_create_schema_structure(args)
+
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
+
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
     # Call the main function of the CreateSchemaStructure class with the parsed arguments
+    pf.print_message(f"Running CreateSchemaStructure module...", message_type="info")
     CreateSchemaStructure.create_schema_structure(**vars(args))
-    
-def print_logo() -> None:
-    """
-    Print the SchemaRefinery logo.
-
-    This function prints the SchemaRefinery logo in the terminal.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-    """
-
-    big_logo = """
-
-
-███████╗ ██████╗██╗  ██╗███████╗███╗   ███╗ █████╗ ██████╗ ███████╗███████╗██╗███╗   ██╗███████╗██████╗ ██╗   ██╗
-██╔════╝██╔════╝██║  ██║██╔════╝████╗ ████║██╔══██╗██╔══██╗██╔════╝██╔════╝██║████╗  ██║██╔════╝██╔══██╗╚██╗ ██╔╝
-███████╗██║     ███████║█████╗  ██╔████╔██║███████║██████╔╝█████╗  █████╗  ██║██╔██╗ ██║█████╗  ██████╔╝ ╚████╔╝ 
-╚════██║██║     ██╔══██║██╔══╝  ██║╚██╔╝██║██╔══██║██╔══██╗██╔══╝  ██╔══╝  ██║██║╚██╗██║██╔══╝  ██╔══██╗  ╚██╔╝  
-███████║╚██████╗██║  ██║███████╗██║ ╚═╝ ██║██║  ██║██║  ██║███████╗██║     ██║██║ ╚████║███████╗██║  ██║   ██║   
-╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝   ╚═╝   
-                                                                                                                 
-                                                                                                                 
-
-    """
-
-    small_logo = """
-
-███████╗██████╗ 
-██╔════╝██╔══██╗
-███████╗██████╔╝
-╚════██║██╔══██╗
-███████║██║  ██║
-╚══════╝╚═╝  ╚═╝
-                
-    """
-
-    size = shutil.get_terminal_size()
-    if size.columns < 100:
-        # Center the small logo
-        for line in small_logo.splitlines():
-            print(line.center(size.columns))
-    else:
-        # Center the big logo
-        for line in big_logo.splitlines():
-            print(line.center(size.columns))
 
 def open_docs() -> None:
     """
@@ -927,7 +1055,7 @@ def open_docs() -> None:
 
 def main():
     # Print the SchemaRefinery logo
-    print_logo()
+    pf.print_logo()
 
     module_info = {
         'DownloadAssemblies': ["Downloads assemblies from the NCBI and the ENA661K database.", download_assemblies],
@@ -941,16 +1069,78 @@ def main():
     }
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
-        print('USAGE: SchemaRefinery [module] -h \n')
-        print('Select one of the following modules:\n')
+        pf.print_message("Use SchemaRefinery [module] -h to see module arguments", "info")
+        pf.print_message("Select one of the following modules:", "info")
         for f in module_info:
-            print('{0}: {1}'.format(f, module_info[f][0]))
+            pf.print_message('{0}: {1}'.format(f, module_info[f][0]), "info")
         sys.exit(0)
 
     module = sys.argv[1]
     sys.argv.remove(module)
+    #Print the module name
+    pf.print_module_currently_running(module)
+    # Call the function of the selected module
     module_info[module][1]()
+
+def entry_point():
+    # Extract arguments using sys.argv
+    argv = sys.argv[1:]
+
+    # Initialize default values
+    debug = False
+    logger = None
+
+    # Manually parse arguments
+    i = 0
+    while i < len(argv):
+        if argv[i] == '--debug':
+            debug = True
+        elif argv[i] == '--logger' and i + 1 < len(argv):
+            logger = argv[i + 1]
+            i += 1
+        elif argv[i] == '--version':
+            print(f"SchemaRefinery version {ct.VERSION}")
+            sys.exit(0)
+        i += 1
+
+    if logger:
+        # Create the logger file if it does not exist
+        if not os.path.exists(logger):
+            os.makedirs(os.path.dirname(logger), exist_ok=True)
+            with open(logger, 'w') as f:
+                pass  # Just create the file
+        
+        gb.LOGGER = lf.setup_logger(logger) # Setup logger
+
+    # Add resource monitoring to the main function if debug or just time it
+    if debug:
+        gb.DEBUG = True
+        decorated_main = dec.time_and_resource_function(monitor_memory=True, 
+                                                        monitor_cpu=True, 
+                                                        monitor_io=True, 
+                                                        monitor_network=True, 
+                                                        monitor_disk=True, 
+                                                        monitor_threads=True,
+                                                        monitor_gc=True,
+                                                        monitor_context_switches=True,
+                                                        monitor_open_files=True,
+                                                        monitor_page_faults=True,
+                                                        interval=0.1)(main)
+    else:
+        decorated_main = dec.time_function()(main)
+
+    # Run the main function
+    try:
+        decorated_main()
+    except Exception as e:
+        pf.print_module_error(e)
+
+    # Print other debug information
+    if debug:
+        pf.print_system_info() # Print system information
+        pf.print_schema_refinery_info() # Print SchemaRefinery information
+        pf.print_dependencies_info(ct.DEPENDENCIES) # Print dependencies information
 
 if __name__ == "__main__":
 
-    main()
+    entry_point()

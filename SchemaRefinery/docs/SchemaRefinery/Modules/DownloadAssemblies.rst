@@ -25,9 +25,12 @@ Dependencies
 ------------
 
 - Python 3.9 or higher
-- Requests library (`pip install requests`)
-- Biopython library (`pip install biopython`)
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+- Install requirements using the following command:
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
 
 Usage
 -----
@@ -80,6 +83,14 @@ Command-Line Arguments
 
     -i, --input-table
         (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
+
+    --debug
+        (Optional) Flag to indicate whether to run the module in debug mode.
+        Default: False
+
+    --logger
+        (Optional) Path to the logger file.
+        Default: None
 
 Algorithm Explanation
 ---------------------

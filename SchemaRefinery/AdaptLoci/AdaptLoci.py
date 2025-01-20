@@ -17,18 +17,18 @@ import multiprocessing
 from multiprocessing.pool import Pool
 from typing import List, Tuple, Dict, Callable, Any, Union
 
-from Bio import SeqIO, Seq
-
 try:
     from utils import (file_functions as ff,
                        iterable_functions as itf,
                        sequence_functions as sf,
-                       blast_functions as bf)
+                       blast_functions as bf,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
                                       iterable_functions as itf,
                                       sequence_functions as sf,
-                                      blast_functions as bf)
+                                      blast_functions as bf,
+                                      print_functions as pf)
 
 def distribute_loci(inputs: List[Tuple[str, int, int, int, int]], cores: int, method: str) -> List[List[str]]:
     """Create balanced lists of loci to efficiently parallelize function calls.
@@ -99,7 +99,7 @@ def function_helper(input_args: List[Any]) -> List[Any]:
         func_name: str = (input_args[-1]).__name__
         traceback_lines: str = traceback.format_exc()
         traceback_text: str = ''.join(traceback_lines)
-        print(f'\nError on {func_name}:\n{traceback_text}\n', flush=True)
+        pf.print_message(f'On {func_name}: {traceback_text}', 'error', flush=True)
         results = [func_name, traceback_text]
 
     return results
@@ -409,8 +409,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
                         if len(rep_results) > 0:
                             rep_self_scores[rep_results[0][0]] = float(rep_results[0][6])
                         else:
-                            print('Could not determine the self-alignment raw '
-                                  f'score for {rep_results[0][0]}')
+                            pf.print_message(f'Could not determine the self-alignment raw score for {rep_results[0][0]}', 'warning')
 
                 # Create file with seqids to BLAST against
                 ids_str: str = itf.join_list([str(i) for i in ids_to_blast if i not in representatives], '\n')
@@ -545,7 +544,7 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
 
     # Import list of loci to adapt
     loci_list: List[str] = ff.read_lines(input_file, strip=True)
-    print(f'Number of loci to adapt: {len(loci_list)}')
+    pf.print_message(f'Number of loci to adapt: {len(loci_list)}', 'info')
     # Count number of sequences and mean length per locus
     loci_info: List[Tuple[str, int, int, int, int]] = []
     loci_pools: Pool = multiprocessing.Pool(processes=cpu_cores)
@@ -565,14 +564,12 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
                          blast_score_ratio, translation_table,
                          blastp_path, makeblastdb_path, blastdb_aliastool_path,
                          adapt_loci] for i in even_loci_groups]
-
-    print(f'Adapting...')
+    pf.print_message(f"Adapting...", 'info')
     adaptation_data: List[Any] = map_async_parallelizer(even_loci_groups,
                                                        function_helper,
                                                        cpu_cores,
                                                        show_progress=True)
-
-    print('\nDone.')
+    pf.print_message('\nDone.', 'info')
 
     return True
 

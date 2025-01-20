@@ -7,9 +7,11 @@ import platform
 from typing import Tuple, Dict, Any, List, Union, Optional
 
 try:
-    from utils import constants as ct
+    from utils import (constants as ct,
+                       print_functions as pf)
 except:
-    from SchemaRefinery.utils import constants as ct
+    from SchemaRefinery.utils import (constants as ct,
+                                      print_functions as pf)
 
 def validate_python_version(minimum_version: Tuple[int, int, int] = ct.MIN_PYTHON) -> str:
     """
@@ -38,8 +40,8 @@ def validate_python_version(minimum_version: Tuple[int, int, int] = ct.MIN_PYTHO
     try:
         assert tuple(map(int, python_version.split('.'))) >= minimum_version
     except AssertionError:
-        print(f'Python version found: {python_version}')
-        print(f'Please use Python version >= {minimum_version[0]}.{minimum_version[1]}.{minimum_version[2]}')
+        pf.print_message(f'Python version found: {python_version}', 'info')
+        pf.print_message(f'Please use Python version >= {minimum_version[0]}.{minimum_version[1]}.{minimum_version[2]}', 'error')
         sys.exit(0)
 
     return python_version
@@ -61,7 +63,7 @@ def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
     max_cpus: int = os.cpu_count()
     if max_cpus < given_number_of_cpus:
         optimal_cpus: int = max_cpus - 1
-        print(f'The number of CPUs available in the system is less than the given number of CPUs: {max_cpus} < {given_number_of_cpus}, setting cpu count to {optimal_cpus}')
+        print(f'The number of CPUs available in the system is less than the given number of CPUs: {max_cpus} < {given_number_of_cpus}, setting cpu count to {optimal_cpus}', 'warning')
         return optimal_cpus
     return given_number_of_cpus
 
@@ -326,15 +328,17 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
     unexpected_keys: List[str] = [x for x in criteria if x not in expected_criteria]
 
     if unexpected_keys:
-        print("\nError: Following unexpected criteria:")
-        print('\n'.join(unexpected_keys))
+        pf.print_message("Following unexpected criteria:", "error")
+        unexpected_keys = '\n'.join(unexpected_keys)
+        pf.print_message(unexpected_keys, None)
         sys.exit()
 
     missing_keys: List[str] = [x for x in expected_criteria if x not in criteria]
 
     if missing_keys:
-        print("\nError: Missing following criteria:")
-        print('\n'.join(missing_keys))
+        pf.print_message("Missing following criteria:", "error")
+        missing_keys = '\n'.join(missing_keys)
+        pf.print_message(missing_keys, None)
         sys.exit()
 
     warnings: List[str] = []
@@ -350,7 +354,9 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
             parameter_values[k] = None
 
     if warnings:
-        sys.exit('\n'.join(warnings))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message('\n'.join(warnings), None)
+        sys.exit()
     else:
         return parameter_values
 
@@ -397,7 +403,9 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
 
     # Display all errors at once if there are any
     if errors:
-        sys.exit("\n".join(errors))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message("\n".join(errors))
+        sys.exit()
 
 def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -506,7 +514,9 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Display all errors at once if there are any
     if errors:
-        sys.exit("\n".join(errors))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message("\n".join(errors))
+        sys.exit()
 
 def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -572,7 +582,9 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
 
     # Display all errors at once if there are any
     if errors:
-        sys.exit("\n".join(errors))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message("\n".join(errors))
+        sys.exit()
 
 def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -647,7 +659,9 @@ def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> Non
 
     # Display all errors at once if there are any
     if errors:
-        sys.exit("\n".join(errors))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message("\n".join(errors))
+        sys.exit()
 
 def validate_match_schemas(args: argparse.Namespace) -> None:
     """
@@ -685,7 +699,9 @@ def validate_match_schemas(args: argparse.Namespace) -> None:
 
     # Display all errors at once if there are any
     if errors:
-        sys.exit("\n".join(errors))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message("\n".join(errors))
+        sys.exit()
 
 def validate_create_schema_structure(args: argparse.Namespace) -> None:
     """
@@ -721,4 +737,6 @@ def validate_create_schema_structure(args: argparse.Namespace) -> None:
     
     # Display all errors at once if there are any
     if errors:
-        sys.exit("\n".join(errors))
+        pf.print_message("The following errors were found:", "error")
+        pf.print_message("\n".join(errors))
+        sys.exit()

@@ -11,13 +11,19 @@ try:
     from DownloadAssemblies import ncbi_datasets
     from DownloadAssemblies import ncbi_linked_ids
     from DownloadAssemblies import fetch_metadata
-    from utils import file_functions as ff
+    from utils import (file_functions as ff,
+                       print_functions as pf,
+                       logger_functions as logf,
+                       globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import ena661k_assembly_fetcher
     from SchemaRefinery.DownloadAssemblies import ncbi_datasets
     from SchemaRefinery.DownloadAssemblies import ncbi_linked_ids
     from SchemaRefinery.DownloadAssemblies import fetch_metadata
-    from SchemaRefinery.utils import file_functions as ff
+    from SchemaRefinery.utils import (file_functions as ff,
+                                      print_functions as pf,
+                                      logger_functions as logf,
+                                      globals as gb)
 
 
 def find_local_conda_env() -> str:
@@ -98,13 +104,13 @@ def main(args: Any) -> None:
         criteria: Dict[str, Any] = args.filtering_criteria
     else:
         criteria = None
-        print("No criteria provided. Fetching all assemblies.")
+        pf.print_message("No criteria provided. Fetching all assemblies.", "info")
 
     # Create output directory if it does not exist
     if not os.path.isdir(args.output_directory):
         os.mkdir(args.output_directory)
 
-    print(f"\nFetching assemblies from {args.database} datasets.")
+    pf.print_message(f"Fetching assemblies from {args.database} datasets.", "info")
     if 'NCBI' in args.database:
         [ncbi_metadata_directory,
          ncbi_valid_ids_file,
@@ -178,7 +184,8 @@ def main(args: Any) -> None:
 
 
         ncbi_valid_ids_file
-        print("\nFetching RefSeq, Genbank and SRA IDs linked to the assembly ID...")
+        pf.print_message("Fetching RefSeq, Genbank and SRA IDs linked to the assembly ID...", "info")
+
         ncbi_linked_ids.main(ids_file,
                              linked_ids_file,
                              args.email,
@@ -195,7 +202,8 @@ def main(args: Any) -> None:
         with open(biosample_file, 'w+', encoding='utf-8') as ids:
             ids.write("\n".join(biosamples) + '\n')
 
-        print("\nFetching metadata associated to the BioSample ID...")
+        pf.print_message("Fetching metadata associated to the BioSample ID...", "info")
+
         fetch_metadata.main(biosample_file,
                             all_metadata_directory,
                             args.email,
@@ -206,9 +214,10 @@ def main(args: Any) -> None:
         all_metadata_directory = None
         
     if not args.no_cleanup:
-        print("\nCleaning up temporary files...")
+        pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(args.output_directory, [all_metadata_directory,
                                            assemblies_directory,
                                            assemblies_zip,
-                                           selected_file_ena661k])
+                                           selected_file_ena661k,
+                                           logf.get_log_file_path(gb.LOGGER)])

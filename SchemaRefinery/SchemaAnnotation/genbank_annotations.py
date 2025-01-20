@@ -1,6 +1,4 @@
 import os
-import concurrent.futures
-from itertools import repeat 
 from typing import Dict, List, Set, Tuple, Union
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
@@ -15,7 +13,8 @@ try:
         clustering_functions as cf,
         iterable_functions as itf,
         pandas_functions as pf,
-        Types as tp
+        Types as tp,
+        print_functions as prf
     )
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (
@@ -27,7 +26,8 @@ except ModuleNotFoundError:
         clustering_functions as cf,
         iterable_functions as itf,
         pandas_functions as pf,
-        Types as tp
+        Types as tp,
+        print_functions as prf
     )
 
 def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: List[str]) -> Dict[str, List[str]]:
@@ -96,12 +96,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     str
         Path to the annotations file.
     """
-    print("\nLoading GenBank files...")
+    prf.print_message("Loading GenBank files...", "info")
     # List and sort GenBank files
     gbk_files: List[str] = [os.path.join(genbank_files, f) for f in os.listdir(genbank_files)]
     gbk_files.sort()
 
-    print('\nExtracting protein annotations from GenBank files...')
+    prf.print_message("Extracting protein annotations from GenBank files...", "info")
     # Initialize variables
     i: int = 0
     all_cds_info: Dict[str, List[str]] = {}
@@ -118,7 +118,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     # Parse GenBank files and extract protein annotations
     for f in gbk_files:
         file_name: str = os.path.basename(f)
-        print(f"\rExtracting protein annotations from GenBank file: {file_name}", end='', flush=True)
+        prf.print_message(f"Extracting protein annotations from GenBank file: {file_name}", "info", end='\r', flush=True)
         recs: List[SeqRecord] = [rec for rec in SeqIO.parse(f, 'genbank')]
         for r in recs:
             cds_info: Dict[str, List[str]] = get_protein_annotation_fasta(r, genbank_table_columns)
@@ -142,9 +142,9 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
 
             all_cds_info.update(cds_info)
 
-    print(f"\nOut of {total_proteins} proteins sequences {len(all_translation_dict)} are unique proteins\n")
-    
-    print("Clustering protein sequences...")
+    prf.print_message(f"Out of {total_proteins} proteins sequences {len(all_translation_dict)} are unique proteins", "info")
+
+    prf.print_message("Clustering protein sequences...", "info")
     all_alleles: Dict[str, List[str]] = {}
     reps_sequences: Dict[str, str] = {}
     reps_groups: Dict[str, List[str]] = {}
@@ -169,7 +169,8 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                                             True,
                                             size_ratio
     )
-    print(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.\n")
+    # Print the number of clusters
+    prf.print_message(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.", "info")
 
     # Save extracted protein sequences to a file
     blast_processing_folder: str = os.path.join(output_directory, 'blast_processing')
@@ -208,7 +209,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
         cpu
     )
 
-    print("\nRunning BLASTp...")
+    prf.print_message("Running BLASTp...", "info")
     blastp_results_folder: str = os.path.join(blast_processing_folder, 'blastp_results')
     ff.create_directory(blastp_results_folder)
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
@@ -216,23 +217,14 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
     best_bsr_values: Dict[str, List[Union[str, float]]] = {}
     best_bsr_values_per_genbank_file: Dict[str, Dict[str, List[Union[str, float]]]] = {k: {} for k in all_genbank_files_ids.keys()}
     total_blasts: int = len(reps_ids)
-    blastp_results_files: List[str] = []
-    i = 1
-
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(
-            bf.run_blastdb_multiprocessing,
-            repeat(get_blastp_exec),
-            repeat(blast_db_files),
-            translations_paths.values(),
-            translations_paths.keys(),
-            repeat(blastp_results_folder)):
-
-            # Save the path to the BLASTp results file
-            blastp_results_files.append(res[1])
-
-            print(f"\rRunning BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts: <{max_id_length}}", end='', flush=True)
-            i += 1
+    # Run BLASTp in parallel
+    blastp_results_files = bf.run_blastp_operations(cpu,
+                                                    get_blastp_exec,
+                                                    blast_db_files,
+                                                    translations_paths,
+                                                    blastp_results_folder,
+                                                    total_blasts,
+                                                    max_id_length)
 
     for blast_result_file in blastp_results_files:
         # Get the alignments
@@ -281,7 +273,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                 else:
                     best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
 
-    print("\nExtracting best annotations for genbank files for proteins that were deduplicated and clustered...")
+    prf.print_message("\nExtracting best annotations for genbank files for proteins that were deduplicated and clustered...", "info")
     # Add all the other best matches that files may have but are being represented by other sequence
     for gbk_file, loci_values in list(best_bsr_values_per_genbank_file.items()):
         for loci_id, values in list(loci_values.items()):
