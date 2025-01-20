@@ -1,8 +1,6 @@
 import os
 import pickle
-import concurrent.futures
 from typing import Dict, List, Set, Tuple, Optional, Union
-from itertools import repeat
 
 try:
     from utils import (sequence_functions as sf,

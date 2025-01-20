@@ -13,12 +13,9 @@ import os
 import time
 import shutil
 import traceback
-import logging
 import multiprocessing
 from multiprocessing.pool import Pool
-from typing import List, Tuple, Dict, Callable, Any, Union, Optional
-
-from Bio import SeqIO, Seq
+from typing import List, Tuple, Dict, Callable, Any, Union
 
 try:
     from utils import (file_functions as ff,

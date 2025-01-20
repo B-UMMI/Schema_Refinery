@@ -1,6 +1,4 @@
 import os
-import concurrent.futures
-from itertools import repeat 
 from typing import Dict, List, Set, Tuple, Union
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord

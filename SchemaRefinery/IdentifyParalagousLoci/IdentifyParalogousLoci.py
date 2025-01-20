@@ -1,9 +1,6 @@
 import os
-import concurrent.futures
-import itertools
 import statistics
-import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 try:
     from utils import (

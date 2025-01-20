@@ -3,7 +3,7 @@ import os
 import sys
 from itertools import repeat
 import concurrent.futures
-from typing import Dict, Any, List, Tuple, Union, Optional, Callable
+from typing import Dict, Any, List, Tuple, Union, Optional
 
 try:
     from utils import (file_functions as ff,
