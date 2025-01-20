@@ -35,41 +35,6 @@ def create_directory(dir: str) -> bool:
         return False
 
 
-def check_and_delete_file(file: str) -> None:
-    """
-    Deletes a file based on the input file path.
-
-    Parameters
-    ----------
-    file : str
-        File path.
-
-    Returns
-    -------
-    None
-    """
-    if os.path.isfile(file):
-        os.remove(file)
-
-
-def copy_file(source_file: str, destination_file: str) -> None:
-    """
-    Copies the source file to the destination.
-
-    Parameters
-    ----------
-    source_file : str
-        Path to the source file.
-    destination_file : str
-        Path to where to copy the file.
-
-    Returns
-    -------
-    None
-    """
-    shutil.copy(source_file, destination_file)
-
-
 def import_df_from_file(file_path: str, sep: str) -> pd.DataFrame:
     """
     Using pandas, imports a file path as a dataframe.
@@ -133,52 +98,6 @@ def get_paths_in_directory(directory: str, type_: str) -> List[str]:
     return file_paths
 
 
-def get_paths_dict(directory: str, type_: str) -> Dict[str, str]:
-    """
-    Get a dictionary where keys are filenames and values are file paths within the directory,
-    filtered by the specified type: files, directories, or all items.
-
-    Parameters
-    ----------
-    directory : str
-        The path to the directory from which to retrieve file paths.
-    type_ : str
-        The type of items to include in the output dictionary. Valid options are:
-        - 'files': Include only files.
-        - 'directories': Include only directories.
-        - 'all': Include both files and directories.
-
-    Returns
-    -------
-    Dict[str, str]
-        A dictionary with filenames as keys and their full paths as values. The contents
-        are filtered based on the `type_` parameter.
-
-    Raises
-    ------
-    ValueError
-        If the `type_` parameter is not one of the valid options ('files', 'directories', 'all').
-    """
-    if type_ == 'files':
-        if_type = os.path.isfile
-    elif type_ == 'directories':
-        if_type = os.path.isdir
-    elif type_ == 'all':
-        if_type = os.path.exists
-    else:
-        raise ValueError(f"Invalid type: {type_}")
-
-    paths_dict: Dict[str, str] = {}
-    all_items: List[str] = os.listdir(directory)
-    
-    for filename in all_items:
-        file_path: str = os.path.join(directory, filename)
-        if if_type(file_path):
-            paths_dict[filename] = file_path
-    
-    return paths_dict
-
-
 def get_paths_in_directory_with_suffix(directory: str, suffix: str) -> List[str]:
     """
     Get all paths of files in the specified directory that end with a given suffix.
@@ -199,47 +118,6 @@ def get_paths_in_directory_with_suffix(directory: str, suffix: str) -> List[str]
     file_paths: List[str] = [os.path.join(directory, item) for item in all_items if os.path.isfile(os.path.join(directory, item)) and item.endswith(suffix)]
     
     return file_paths
-
-
-def write_dict_to_tsv(file_path: str, data: Dict[str, List[Any]]) -> None:
-    """
-    Write a dictionary to a TSV (Tab-Separated Values) file.
-
-    Parameters
-    ----------
-    file_path : str
-        The file path to save the TSV file.
-    data : Dict[str, List[Any]]
-        The dictionary where keys are column names and values are lists of values for each column.
-
-    Returns
-    -------
-    None
-    """
-    with open(file_path, 'w') as f:
-        f.write('\t'.join(data.keys()) + '\n')
-        for row in zip_longest(*data.values(), fillvalue=''):
-            row_str: str = '\t'.join(map(str, row))
-            f.write(row_str + '\n')
-
-
-def concat_files(source_file: str, destination_file: str) -> None:
-    """
-    Concatenates the source file to the destination file.
-
-    Parameters
-    ----------
-    source_file : str
-        The path to the source file.
-    destination_file : str
-        The path to the destination file.
-
-    Returns
-    -------
-    None
-    """
-    with open(destination_file, 'a') as outfile, open(source_file, 'r') as infile:
-        shutil.copyfileobj(infile, outfile)
 
 
 def file_basename(file_path: str, file_extension: bool = True) -> str:

@@ -230,34 +230,6 @@ def minimizer_clustering(sorted_sequences: Dict[str, str],
     return clusters, reps_sequences, reps_groups, prot_len_dict
 
 
-def cluster_based_on_ids(processed_representatives_dict: Dict[str, str]) -> List[List[str]]:
-    """
-    Employs networkx to cluster loci based on their connection through ids. e.g x matches with y
-    y matches with z, all three are put inside the same cluster x,y and z.
-
-    Parameters
-    ----------
-    processed_representatives_dict : dict
-        Dictionary that contains all the info necessary to render the graphs.
-
-    Returns
-    -------
-    connected : list
-        List containing lists of the ids of the clustered loci.
-    """
-    pairs_list: Set[Tuple[str, str]] = set()
-
-    for key in processed_representatives_dict.keys():
-        pairs_list.add(tuple([locus.split("_")[0] for locus in key.split(";")]))
-
-    G = nx.Graph()
-    G.add_edges_from(pairs_list)
-
-    connected: List[List[str]] = [list(component) for component in nx.connected_components(G)]
-
-    return connected
-
-
 def cluster_by_ids(list_of_ids: List[List[str]]) -> List[List[str]]:
     """
     Based on list of list containing pairs or more ids, merges them into larger
@@ -293,35 +265,3 @@ def cluster_by_ids(list_of_ids: List[List[str]]) -> List[List[str]]:
 
     return connected
 
-
-def cluster_by_ids_bigger_sublists(list_of_ids: List[List[str]]) -> List[List[str]]:
-    """
-    Based on list of list containing pairs or more ids, merges them into larger
-    lists if there are ids common between these sublists.
-    
-    Parameters
-    ----------
-    list_of_ids : list
-        List containing lists with ids.
-    
-    Returns
-    -------
-    connected : list
-        List that contains sublists of ids merged from the initial list.
-    """
-    G = nx.Graph()
-    
-    # Flatten the list of lists into pairs of nodes
-    for sublist in list_of_ids:
-        if len(sublist) == 2:
-            G.add_edge(sublist[0], sublist[1])
-        else:
-            for i in range(len(sublist) - 1):
-                G.add_edge(sublist[i], sublist[i + 1])
-
-    connected: List[Set[str]] = list(nx.connected_components(G))
-
-    # Convert sets to lists
-    connected: List[List[str]] = [list(component) for component in connected]
-
-    return connected
