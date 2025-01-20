@@ -1,14 +1,18 @@
 import time
 import shutil
 import psutil
+import inspect
 import threading
 import gc
+from functools import wraps
 from typing import Callable, Any
 
 try:
-    from utils import print_functions as pf
+    from utils import (print_functions as pf,
+                       globals as gb)
 except ImportError:
-    from SchemaRefinery.utils import print_functions as pf
+    from SchemaRefinery.utils import (print_functions as pf,
+                                      globals as gb)
 
 def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io=True, monitor_network=True, monitor_disk=True, monitor_threads=True, monitor_gc=True, monitor_context_switches=True, monitor_open_files=True, monitor_page_faults=True, interval=0.1):
     """
@@ -208,32 +212,6 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
                 pf.print_message(f"Maximum page faults: {max_page_faults}", "debug")
 
             pf.print_message(border_line, "debug_additional_info_in_logger_only")
-            return result
-
-        return wrapper
-
-    return decorator
-
-def time_function():
-    """
-    Decorator to measure the execution time of a function.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    function
-        The wrapped function with added time measurement.
-    """
-    def decorator(func) -> Callable[..., Any]:
-        def wrapper(*args, **kwargs) -> Any:
-            start_time = time.time()
-            result = func(*args, **kwargs)
-            end_time = time.time()
-            execution_time = end_time - start_time
-            pf.print_message(f"Execution time: {execution_time:.2f} seconds", "info")
             return result
 
         return wrapper

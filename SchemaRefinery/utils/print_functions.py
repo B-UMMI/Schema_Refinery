@@ -214,10 +214,16 @@ def print_schema_refinery_info():
 
     schema_refinery_path = os.path.dirname(os.path.abspath(__file__))
 
+    # Conda environment information
+    conda_env = os.environ.get("CONDA_DEFAULT_ENV")
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+
     print_message(border_line, "debug_additional_info_in_logger_only")
     print_message("SchemaRefinery Information".center(terminal_width), "debug_additional_info_in_logger_only")
     print_message(f"SchemaRefinery Version: {ct.VERSION}", 'debug')
     print_message(f"SchemaRefinery Path: {schema_refinery_path}", 'debug')
+    print_message(f"Conda Environment: {conda_env}", 'debug') if conda_env else None
+    print_message(f"Conda Prefix: {conda_prefix}", 'debug') if conda_prefix else None
     print_message(border_line, "debug_additional_info_in_logger_only")
 
 def print_dependencies_info(dependencies):
