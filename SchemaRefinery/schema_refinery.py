@@ -800,6 +800,9 @@ def identify_paralogous_loci() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_identify_paralogous_loci_arguments(args)
+
     # Print the validated input arguments if debug
     if gb.DEBUG:
         pf.print_input_arguments(args)
@@ -911,6 +914,9 @@ def match_schemas() -> None:
     # Parse the command-line arguments
     args = parser.parse_args()
 
+    # Validate the arguments
+    val.validate_match_schemas_arguments(args)
+
     # Print the validated input arguments if debug
     if gb.DEBUG:
         pf.print_input_arguments(args)
@@ -1012,6 +1018,9 @@ def create_schema_structure() -> None:
     
     # Parse the command-line arguments
     args = parser.parse_args()
+
+    # Validate the arguments
+    val.validate_create_schema_structure(args)
 
     # Print the validated input arguments if debug
     if gb.DEBUG:

@@ -298,26 +298,6 @@ def seq_to_hash(seq: str) -> str:
     return hashlib.sha256(seq.encode('utf-8')).hexdigest()
 
 
-def hash_sequences(file_path: str) -> Set[str]:
-    """
-    Hashes sequences in fasta file based on input file_path.
-
-    Parameters
-    ----------
-    file_path : str
-        Contains file path to the fasta files.
-
-    Returns
-    -------
-    set
-        Returns a set containing all of the sequences hashes present in the input files.
-    """
-    hash_set = set()
-    for rec in read_fasta_file_iterator(file_path):
-        hash_set.add(seq_to_hash(str(rec.seq)))
-    return hash_set
-
-
 def hash_sequence(input_string: str, hash_type: str = 'sha256') -> str:
     """
     Compute hash of an input string.
@@ -486,30 +466,6 @@ def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
             pf.print_message(f"Processed {i} CDS", "info", end='\r', flush=True)
             i += 1
         fasta_dict[rec.id] = str(rec.seq)
-    return fasta_dict
-
-
-def deduplicate_fasta_dict(fasta_dict: Dict[str, str]) -> Dict[str, str]:
-    """
-    Deduplicates a dictionary of FASTA sequences. The deduplication is based on the SHA256 hash of the sequences.
-
-    Parameters
-    ----------
-    fasta_dict : dict
-        A dictionary where the keys are sequence identifiers and the values are sequences.
-
-    Returns
-    -------
-    dict
-        A dictionary where the keys are sequence identifiers and the values are sequences. Sequences that were duplicated in the input dictionary are removed.
-    """
-    deduplicated_list = []
-    for key, sequence in fasta_dict.items():
-        sequence_hash = hashlib.sha256(sequence.encode('utf-8')).hexdigest()
-        if sequence_hash not in deduplicated_list:
-            deduplicated_list.append(sequence_hash)
-        else:
-            del fasta_dict[key]
     return fasta_dict
 
 
