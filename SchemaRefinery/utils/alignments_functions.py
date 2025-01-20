@@ -7,7 +7,6 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (iterable_functions as itf,
                                       Types as tp,)
 
-
 def get_alignments_dict(blast_results_file: str) -> Dict[str, List[Dict[str, Any]]]:
     """
     Organizes alignments with the same key "Locus_A:Locus_B" into the same dictionary.
