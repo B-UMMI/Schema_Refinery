@@ -440,7 +440,36 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 
     return self_score_dict
 
-def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc, all_alleles, blastn_results_folder: str, total_reps: int, max_id_length: int) -> List[str]:
+def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc: Dict[str, str],
+                          all_alleles: Dict[str, List[str]], blastn_results_folder: str,
+                          total_reps: int, max_id_length: int) -> List[str]:
+    """
+    Run BLASTn in parallel for all the cluster representatives.
+
+    Parameters
+    ----------
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+    get_blastn_exec : str
+        Path to the BLASTn executable.
+    blast_db : str
+        Path to the BLAST database files.
+    rep_paths_nuc : Dict[str, str]
+        Dictionary with the paths to the nucleotide sequences.
+    all_alleles : Dict[str, List[str]]
+        Dictionary with the alleles for each locus.
+    blastn_results_folder : str
+        Path to the folder where to store the BLASTn results.
+    total_reps : int
+        Total number of BLASTn runs to perform.
+    max_id_length : int
+        Maximum length of the cluster identifiers.
+    
+    Returns
+    -------
+    blastn_results_files : List[str]
+        List containing the paths to the BLASTn results files.
+    """
     blastn_results_files: List[str] = []  # List to store the results files
     i: int = 1
     rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
@@ -457,7 +486,36 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
             i += 1
     return blastn_results_files
 
-def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blastp_exec: str, blastp_results_folder: str, rep_paths_prot, rep_matches_prot, total_blasts: int, max_id_length: int) -> List[str]:
+def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blastp_exec: str,
+                                          blastp_results_folder: str, rep_paths_prot, rep_matches_prot,
+                                          total_blasts: int, max_id_length: int) -> List[str]:
+    """
+    Run BLASTp in parallel based on the BLASTn results.
+
+    Parameters
+    ----------
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+    blastp_runs_to_do : list
+        List with the BLASTp runs to perform.
+    get_blastp_exec : str
+        Path to the BLASTp executable.
+    blastp_results_folder : str
+        Path to the folder where to store the BLASTp results.
+    rep_paths_prot : dict
+        Dictionary with the paths to the protein sequences.
+    rep_matches_prot : dict
+        Dictionary with the protein sequences that match the nucleotide sequences.
+    total_blasts : int
+        Total number of BLASTp runs to perform.
+    max_id_length : int
+        Maximum length of the cluster identifiers.
+    
+    Returns
+    -------
+    blastp_results_files : List[str]
+        List containing the paths to the BLASTp results files.
+    """
     blastp_results_files: List[str] = []  # To store the results files
     i = 1
     rep_matches_prot_list = list(rep_matches_prot.values())  # Convert dict_values to list
@@ -474,7 +532,33 @@ def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blast
             i += 1
     return blastp_results_files
 
-def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths, blastp_results_folder: str, total_blasts: int, max_id_length: int) -> List[str]:
+def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths,
+                          blastp_results_folder: str, total_blasts: int, max_id_length: int) -> List[str]:
+    """
+    Run BLASTp in parallel for all the cluster representatives.
+
+    Parameters
+    ----------
+    cpu : int
+        Number of CPU cores to use for multiprocessing.
+    get_blastp_exec : str
+        Path to the BLASTp executable.
+    blast_db_files : str
+        Path to the BLAST database files.
+    translations_paths : dict
+        Dictionary with the paths to the translated sequences.
+    blastp_results_folder : str
+        Path to the folder where to store the BLASTp results.
+    total_blasts : int
+        Total number of BLASTp runs to perform.
+    max_id_length : int
+        Maximum length of the cluster identifiers.
+    
+    Returns
+    -------
+    blastp_results_files : List[str]
+        List containing the paths to the BLASTp results files.
+    """
     blastp_results_files: List[str] = []  # List to store the paths to the BLASTp results files
     i: int = 1
     translations_paths_values = list(translations_paths.values())  # Convert dict_values to list
@@ -491,4 +575,5 @@ def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, t
             blastp_results_files.append(res[1])
             pf.print_message(f"Running BLASTp for cluster representatives matches: {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
             i += 1
+
     return blastp_results_files

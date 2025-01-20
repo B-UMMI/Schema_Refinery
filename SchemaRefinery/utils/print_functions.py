@@ -4,6 +4,7 @@ import shutil
 import psutil
 import logging
 import platform
+import traceback
 import subprocess
 from importlib.metadata import version, PackageNotFoundError
 from datetime import datetime
@@ -288,6 +289,7 @@ def print_module_error(error: str) -> None:
     print_message(border_line, "debug_additional_info_in_logger_only")
     print_message("Error Message".center(terminal_width), "debug_additional_info_in_logger_only")
     print_message(error, 'error')
+    traceback.print_exc()
     print_message(border_line, "debug_additional_info_in_logger_only")
 
 def print_input_arguments(args) -> None:

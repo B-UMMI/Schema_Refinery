@@ -1336,7 +1336,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
     return is_matched, is_matched_alleles
 
 
-def run_blasts(blast_db: str, all_alleles: List[str], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
+def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
                output_dir: str, constants: List[Any], reps_kmers_sim: Optional[Dict[str, Dict[str, tuple[float, float]]]],
                frequency_in_genomes: Dict[str, int], cpu: int) -> tp.BlastDict:
     """

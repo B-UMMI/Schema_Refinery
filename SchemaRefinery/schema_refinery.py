@@ -13,7 +13,6 @@ Code documentation
 import os
 import sys
 import argparse
-import traceback
 import webbrowser
 
 try:
@@ -1126,7 +1125,6 @@ def entry_point():
         decorated_main()
     except Exception as e:
         pf.print_module_error(e)
-        traceback.print_exc()
 
     # Print other debug information
     if debug:
