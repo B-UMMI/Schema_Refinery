@@ -166,14 +166,6 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
             final_net_io_counters = psutil.net_io_counters() if monitor_network else None
             final_disk_io_counters = psutil.disk_io_counters() if monitor_disk else None
 
-            # Calculate the differences for network I/O
-            if initial_net_io_counters and final_net_io_counters:
-                bytes_sent = final_net_io_counters.bytes_sent - initial_net_io_counters.bytes_sent
-                bytes_recv = final_net_io_counters.bytes_recv - initial_net_io_counters.bytes_recv
-            else:
-                bytes_sent = total_bytes_sent
-                bytes_recv = total_bytes_recv
-
             # Print results
             terminal_width = shutil.get_terminal_size().columns
             border_line = "=" * terminal_width
@@ -192,6 +184,13 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
                 pf.print_message(f"Read operations: {read_ops}", "debug")
                 pf.print_message(f"Write operations: {write_ops}", "debug")
             if monitor_network and initial_net_io_counters and final_net_io_counters:
+                # Calculate the differences for network I/O
+                if initial_net_io_counters and final_net_io_counters:
+                    bytes_sent = final_net_io_counters.bytes_sent - initial_net_io_counters.bytes_sent
+                    bytes_recv = final_net_io_counters.bytes_recv - initial_net_io_counters.bytes_recv
+                else:
+                    bytes_sent = total_bytes_sent
+                    bytes_recv = total_bytes_recv
                 pf.print_message(f"Bytes sent: {bytes_sent}", "debug")
                 pf.print_message(f"Bytes received: {bytes_recv}", "debug")
             if monitor_disk and initial_disk_io_counters and final_disk_io_counters:
