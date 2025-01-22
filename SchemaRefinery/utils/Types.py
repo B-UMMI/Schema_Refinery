@@ -45,11 +45,7 @@ ProcessedResults = Dict[str, Tuple[ProcessedResult]]
 
 CountResultsByClass = Dict[str, Dict[str, OrderedDict[str, int]]]
 
-class ClassCount(TypedDict):
-    direct_class: int
-    inverse_class: int
-
-CountResultsByClassWithInverse = Dict[str, Dict[str, Dict[str, List[ClassCount]]]]
+CountResultsByClassWithInverse = Dict[str, Dict[str, Dict[str, List[Dict[str, int]]]]]
 
 RepsAndAllelesIds = Dict[str, Tuple[Set[str], Set[str]]]
 
