@@ -299,9 +299,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
-    representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords
-    representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords
-    bsr_values: tp.BSRValues
     representative_blast_results = cof.run_blasts(blast_db_nuc,
                         all_alleles,
                         all_translation_dict,

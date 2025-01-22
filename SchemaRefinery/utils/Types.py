@@ -1,19 +1,7 @@
-from typing import Dict, List, TypedDict, Tuple, Set, Any
+from typing import Dict, List, TypedDict, Tuple, Set, Any, Union
 from collections import OrderedDict
 
-class MergedAllClasses(TypedDict, total=False):
-    a1: Dict[int, List[str]]
-    b1: List[str]
-    a2: List[str]
-    a3: List[str]
-    b2: List[str]
-    c1: List[str]
-    b3: List[str]
-    a4: List[str]
-    b4: List[str]
-    c4: List[str]
-    five: List[str]
-    retained_not_matched_by_blastn: Set[str]
+MergedAllClasses = Dict[str, Union[List[str], Dict[str, List[str]], Set[str]]]
 
 class BlastResult(TypedDict):
     query: str
