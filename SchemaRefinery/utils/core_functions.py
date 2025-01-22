@@ -428,7 +428,8 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
 
 
 def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, 
-                                         constants: Tuple[Any, ...], classes_outcome: List[str]) -> List[str]:
+                                         constants: List[Any], classes_outcome: Tuple[str, ...] 
+                                         ) -> Tuple[str]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
 
@@ -531,8 +532,9 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     return classes_outcome
 
 
-def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[str, List[Dict[str, Any]]]], 
-                                  classes_outcome: Tuple[str, ...]) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
+def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict, 
+                                  classes_outcome: Tuple[str, ...]
+                                  ) -> tp.BlastDict:
     """
     Sorts BLAST results by classes based on the alignment score.
     
@@ -553,7 +555,7 @@ def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[s
 
     Returns
     -------
-    Dict[str, Dict[str, List[Dict[str, Any]]]]
+    tp.BlastDict
         A dictionary structured similarly to `representative_blast_results`, but sorted such that
         all results for a given query are grouped by their class as determined by the highest
         scoring alignment.
