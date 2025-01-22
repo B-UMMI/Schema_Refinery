@@ -237,7 +237,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         # Remove filtered out elements from reps_kmers_sim
         reps_kmers_sim = {key: value for key, value in reps_kmers_sim.items() if key in itf.flatten_list(all_alleles.values())}
         pf.print_message("Replacing CDSs IDs with the cluster representative ID...", "info")
-        cds_original_ids: Dict[str, str] = ccf.replace_ids_in_clusters(all_alleles,
+        cds_original_ids: Dict[str, List[str]] = ccf.replace_ids_in_clusters(all_alleles,
                                                     frequency_cds,
                                                     dropped_alleles,
                                                     all_nucleotide_sequences,
