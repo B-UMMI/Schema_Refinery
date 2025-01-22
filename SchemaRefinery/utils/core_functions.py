@@ -1705,8 +1705,8 @@ def extract_clusters_to_keep(classes_outcome: Tuple[str], count_results_by_class
 
 def count_number_of_reps_and_alleles(merged_all_classes: tp.MergedAllClasses, 
                                     processing_mode: str, clusters: Dict[str, List[str]], 
-                                    drop_possible_loci: Set[str], group_reps_ids: Dict[str, Set[str]], 
-                                    group_alleles_ids: Dict[str, Set[str]]) -> Tuple[Dict[str, Set[str]], Dict[str, Set[str]]]:
+                                    drop_possible_loci: Set[str], group_reps_ids: Dict[str, List[str]], 
+                                    group_alleles_ids: Dict[str, List[str]]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
     """
     Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in
     the drop set.
