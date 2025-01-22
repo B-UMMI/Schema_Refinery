@@ -758,7 +758,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
-                    dropped_loci_ids: List[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
+                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
 
@@ -1945,7 +1945,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
 
 
-def add_cds_to_dropped_cds(drop_possible_loci: List[str], dropped_cds: Dict[str, str], clusters_to_keep: Dict[str, Any],
+def add_cds_to_dropped_cds(drop_possible_loci: Set[str], dropped_cds: Dict[str, str], clusters_to_keep: Dict[str, Any],
                            clusters_to_keep_1a: Dict[str, List[str]],
                             clusters: Dict[str, List[str]], reason: str, processed_drop: List[str]) -> None:
     """

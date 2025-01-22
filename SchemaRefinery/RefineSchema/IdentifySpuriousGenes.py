@@ -351,7 +351,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         pf.print_message("Adding remaining clusters that didn't match by BLASTn...", "info")
         # Add cluster not matched by BLASTn
-        all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a.values()])
+        all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a_renamed.values()])
         clusters_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in all_alleles.keys() if cluster not in all_matched_clusters])
 
     processed_drop: List[str] = []
@@ -359,7 +359,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     cof.add_cds_to_dropped_cds(dropped_loci_ids,
                             dropped_alleles,
                             clusters_to_keep,
-                            clusters_to_keep_1a,
+                            clusters_to_keep_1a_renamed,
                             all_alleles,
                             'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
                             processed_drop)
