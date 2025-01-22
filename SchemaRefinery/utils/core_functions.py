@@ -1323,7 +1323,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
 
 
 def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
-               output_dir: str, constants: List[Any], reps_kmers_sim: Optional[Dict[str, Dict[str, tuple[float, float]]]],
+               output_dir: str, constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
                frequency_in_genomes: Dict[str, int], cpu: int) -> tp.BlastDict:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
@@ -2056,7 +2056,20 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     
     return drop_possible_loci_output
 
-def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode, results_output):
+def prepare_loci(schema_folder: str, 
+                 allelecall_directory: str, 
+                 constants: List[Any], 
+                 processing_mode: str, 
+                 results_output: str) -> Tuple[
+                     Dict[str, str], 
+                     str, 
+                     Dict[str, str], 
+                     Dict[str, int], 
+                     Dict[str, str], 
+                     Dict[str, List[str]], 
+                     str, 
+                     Dict[str, List[str]], 
+                     Dict[str, List[str]]]:
     """
     Process new loci by translating sequences, counting frequencies, and preparing files for BLAST.
 
@@ -2078,27 +2091,15 @@ def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode
     -------
     tuple
         A tuple containing:
-        - alleles (dict): Dictionary of alleles with loci IDs as keys.
+        - all_nucleotide_sequences (Dict[str, str]): Dictionary of nucleotide sequences.
         - master_file_path (str): Path to the master FASTA file.
-        - translation_dict (dict): Dictionary of translated sequences.
-        - frequency_in_genomes (dict): Dictionary of loci frequencies in genomes.
-        - to_blast_paths (dict): Dictionary of paths to sequences to be used for BLAST.
-        - all_alleles (dict): Dictionary of all alleles with loci IDs as keys.
-
-    Notes
-    -----
-    - The function creates a master FASTA file containing all sequences to be used for BLAST.
-    - It also translates sequences and counts their frequencies in genomes.
-    - The function handles different processing modes to determine which sequences to use for BLAST.
-
-    Examples
-    --------
-    >>> schema_folder = '/path/to/schema'
-    >>> allelecall_directory = '/path/to/allelecall'
-    >>> constants = [0, 1, 2, 3, 4, 5, 6]
-    >>> processing_mode = 'alleles_rep'
-    >>> results_output = '/path/to/results'
-    >>> process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, results_output)
+        - translation_dict (Dict[str, str]): Dictionary of translated sequences.
+        - frequency_in_genomes (Dict[str, int]): Dictionary of loci frequencies in genomes.
+        - to_blast_paths (Dict[str, str]): Dictionary of paths to sequences to be used for BLAST.
+        - all_alleles (Dict[str, List[str]]): Dictionary of all alleles with loci IDs as keys.
+        - cds_present (str): Path to the CDS presence file.
+        - group_reps_ids (Dict[str, List[str]]): Dictionary of group representative IDs.
+        - group_alleles_ids (Dict[str, List[str]]): Dictionary of group allele IDs.
     """
     # Create a dictionary of schema FASTA files
     schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
@@ -2119,13 +2120,13 @@ def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode
     to_run_against = schema_short if processing_mode.split('_')[-1] == 'rep' else schema
 
     # Initialize dictionaries for alleles, translations, and frequencies
-    all_alleles = {}
-    all_nucleotide_sequences = {}
-    translation_dict = {}
-    frequency_in_genomes = {}
-    temp_frequency_in_genomes = {}
-    group_reps_ids = {}
-    group_alleles_ids = {}
+    all_alleles: Dict[str, List[str]] = {}
+    all_nucleotide_sequences: Dict[str, str] = {}
+    translation_dict: Dict[str, str] = {}
+    frequency_in_genomes: Dict[str, int] = {}
+    temp_frequency_in_genomes: Dict[str, List[str]] = {}
+    group_reps_ids: Dict[str, List[str]] = {}
+    group_alleles_ids: Dict[str, List[str]] = {}
     
     # Path to the CDS presence file
     cds_present = os.path.join(allelecall_directory, "temp", "2_cds_preprocess/cds_deduplication/distinct.hashtable")

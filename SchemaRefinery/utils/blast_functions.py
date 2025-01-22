@@ -5,16 +5,11 @@ from itertools import repeat
 import concurrent.futures
 from typing import Dict, Any, List, Tuple, Union, Optional
 
-try:
-    from utils import (file_functions as ff,
-                       blast_functions as bf,
-                       alignments_functions as af,
-                       print_functions as pf)
-except ModuleNotFoundError:
-    from SchemaRefinery.utils import (file_functions as ff,
-                                      blast_functions as bf,
-                                      alignments_functions as af,
-                                      print_functions as pf)
+
+from SchemaRefinery.utils import (file_functions as ff,
+                                    blast_functions as bf,
+                                    alignments_functions as af,
+                                    print_functions as pf)
 
 def make_blast_db(makeblastdb_path: str, input_fasta: str, output_path: str, db_type: str) -> Tuple[bytes, Union[bytes, str]]:
     """
