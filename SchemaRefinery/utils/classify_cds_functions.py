@@ -1,22 +1,14 @@
 import os
 from typing import Dict, List, Set, Union, Tuple
 
-try:
-    from utils import (file_functions as ff,
-                       sequence_functions as sf,
-                       clustering_functions as cf,
-                       iterable_functions as itf,
-                       kmers_functions as kf,
-                       Types as tp,
-                       print_functions as pf)
-except ModuleNotFoundError:
-    from SchemaRefinery.utils import (file_functions as ff,
-                                        sequence_functions as sf,
-                                        clustering_functions as cf,
-                                        iterable_functions as itf,
-                                        kmers_functions as kf,
-                                        Types as tp,
-                                        print_functions as pf)
+
+from SchemaRefinery.utils import (file_functions as ff,
+                                    sequence_functions as sf,
+                                    clustering_functions as cf,
+                                    iterable_functions as itf,
+                                    kmers_functions as kf,
+                                    Types as tp,
+                                    print_functions as pf)
 
 def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) -> None:
     """
@@ -314,7 +306,8 @@ def set_minimum_genomes_threshold(temp_folder: str, constants: List[Union[int, f
         constants[2] = 5  # Default value in case of error
 
 
-def filter_cds_by_size(all_nucleotide_sequences: Dict[str, str], size_threshold: int) -> Tuple[Dict[str, int], Dict[str, str], Dict[str, str]]:
+def filter_cds_by_size(all_nucleotide_sequences: Dict[str, str], size_threshold: int
+                       ) -> Tuple[Dict[str, int], Dict[str, str], Dict[str, str]]:
     """
     Filters CDS by their size and updates the dropped CDS dictionary.
 
@@ -370,7 +363,7 @@ def write_cds_to_fasta(all_nucleotide_sequences: Dict[str, str], output_path: st
             cds_not_found.write(f">{id_}\n{str(sequence)}\n")
 
 
-def count_cds_frequency(all_nucleotide_sequences: Dict[str, str], decoded_sequences_ids: Dict[str, List[str]]) -> Tuple[Dict[str, int], Dict[str, List[str]]]:
+def count_cds_frequency(all_nucleotide_sequences: Dict[str, str], decoded_sequences_ids: Dict[str, List[float]]) -> Tuple[Dict[str, int], Dict[str, List[str]]]:
     """
     Counts the frequency of CDS in the genomes and identifies their presence.
 
@@ -400,7 +393,9 @@ def count_cds_frequency(all_nucleotide_sequences: Dict[str, str], decoded_sequen
     return frequency_cds, cds_presence_in_genomes
 
 
-def process_cds_not_present(initial_processing_output: str, temp_folder: str, all_nucleotide_sequences: Dict[str, str]) -> Tuple[str, Dict[str, int], Dict[str, List[str]]]:
+def process_cds_not_present(initial_processing_output: str, temp_folder: str,
+                            all_nucleotide_sequences: Dict[str, str]
+                            ) -> Tuple[str, Dict[str, int], Dict[str, List[str]]]:
     """
     Processes CDS not present in the schema and writes them to a FASTA file.
 
@@ -424,7 +419,7 @@ def process_cds_not_present(initial_processing_output: str, temp_folder: str, al
     write_cds_to_fasta(all_nucleotide_sequences, cds_not_present_file_path)
 
     cds_present: str = os.path.join(temp_folder, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
-    decoded_sequences_ids: Dict[str, List[str]] = itf.decode_CDS_sequences_ids(cds_present)
+    decoded_sequences_ids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_present)
 
     frequency_cds, cds_presence_in_genomes = count_cds_frequency(all_nucleotide_sequences, decoded_sequences_ids)
 
@@ -433,7 +428,8 @@ def process_cds_not_present(initial_processing_output: str, temp_folder: str, al
 
 def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str], 
                                   initial_processing_output: str, 
-                                  constants: List[Union[int, float]]) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, int]]:
+                                  constants: List[Union[int, float]]
+                                  ) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, int]]:
     """
     Translates and deduplicates CDS sequences, and counts translation sizes.
 
@@ -448,7 +444,7 @@ def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str],
 
     Returns
     -------
-    Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, int]]
+    Tuple[Dict[str, str], Dict[str, str], Dict[str, int]]
         A tuple containing the translation dictionary, protein hashes, and CDS translation sizes.
     """
     # Define file paths for translated and untranslated CDS
@@ -478,7 +474,7 @@ def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str],
 
 
 def remove_dropped_cds(all_translation_dict: Dict[str, str], 
-                       dropped_cds: Set[str], 
+                       dropped_cds: Dict[str, str], 
                        protein_hashes: Dict[str, List[str]]) -> Dict[str, str]:
     """
     Removes dropped CDS from the translation dictionary and updates protein hashes.
@@ -487,7 +483,7 @@ def remove_dropped_cds(all_translation_dict: Dict[str, str],
     ----------
     all_translation_dict : Dict[str, str]
         Dictionary with CDS IDs as keys and sequences as values.
-    dropped_cds : Set[str]
+    dropped_cds : Dict[str, str]
         Set of CDS IDs that are dropped.
     protein_hashes : Dict[str, List[str]]
         Dictionary with protein hashes as keys and CDS IDs as values.

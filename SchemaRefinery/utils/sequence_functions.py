@@ -5,14 +5,10 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
-try:
-    from utils import (file_functions as ff,
-                       constants as ct,
-                       print_functions as pf)
-except ModuleNotFoundError:
-    from SchemaRefinery.utils import (file_functions as ff,
-                                      constants as ct,
-                                      print_functions as pf)
+
+from SchemaRefinery.utils import (file_functions as ff,
+                                    constants as ct,
+                                    print_functions as pf)
 
 def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) -> bool:
     """
@@ -381,7 +377,10 @@ def import_sequences(input_file: str) -> Dict[str, str]:
     return {rec.id: str(rec.seq.upper()) for rec in records}
 
 
-def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, untras_path: Optional[str], min_len: int, count_seq: bool, translation_table: int, deduplicate: bool = True) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, str]]:
+def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, 
+                              untras_path: Optional[str], min_len: Union[int, float], count_seq: bool,
+                              translation_table: Union[int, float], deduplicate: bool = True
+                              ) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, str]]:
     """
     Translates the DNA sequence to protein and verifies if that protein is already present in the dict, thus ensuring that the dict contains deduplicated sequences, it writes the sequences to a FASTA files and return the dict.
 
@@ -409,7 +408,7 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str, untr
     """
     translation_dict = {}
     protein_hashes = {}
-    untras_seq = {}
+    untras_seq: Dict[str, str] = {}
     if count_seq:
         total = len(seq_dict)
     with open(path_to_write, 'w+') as translation:

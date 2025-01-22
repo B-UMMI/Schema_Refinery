@@ -158,7 +158,7 @@ def identify_string_in_dict_get_key(input_str: str, dictionary: Dict[Union[str, 
     ----------
     input_str : str
         The string to find.
-    dictionary : dict
+    dictionary : Dict[Union[str, int], Any]
         The dictionary where to find the string.
 
     Returns

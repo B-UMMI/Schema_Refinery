@@ -5,32 +5,19 @@ import os
 import sys
 from typing import Any, List, Dict, Optional, Set, Tuple
 
-try:
-    from utils import (core_functions as cof,
-                       file_functions as ff,
-                       sequence_functions as sf,
-                       iterable_functions as itf,
-                       blast_functions as bf,
-                       linux_functions as lf,
-                       classify_cds_functions as ccf,
-                       constants as ct,
-                       Types as tp,
-                       print_functions as pf,
-                       logger_functions as logf,
-                       globals as gb)
-except ModuleNotFoundError:
-    from SchemaRefinery.utils import (core_functions as cof,
-                                        file_functions as ff,
-                                        sequence_functions as sf,
-                                        iterable_functions as itf,
-                                        blast_functions as bf,
-                                        linux_functions as lf,
-                                        classify_cds_functions as ccf,
-                                        constants as ct,
-                                        Types as tp,
-                                        print_functions as pf,
-                                        logger_functions as logf,
-                                        globals as gb)
+
+from SchemaRefinery.utils import (core_functions as cof,
+                                    file_functions as ff,
+                                    sequence_functions as sf,
+                                    iterable_functions as itf,
+                                    blast_functions as bf,
+                                    linux_functions as lf,
+                                    classify_cds_functions as ccf,
+                                    constants as ct,
+                                    Types as tp,
+                                    print_functions as pf,
+                                    logger_functions as logf,
+                                    globals as gb)
 
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """
@@ -70,8 +57,9 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     ff.create_directory(blast_db)
 
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
+    representatives_blastn_folder: Optional[str]
     if run_mode == 'unclassified_cds':
-        representatives_blastn_folder: Optional[str] = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
+        representatives_blastn_folder = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
         ff.create_directory(representatives_blastn_folder)
     else:
         representatives_blastn_folder = None
@@ -148,23 +136,23 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         pf.print_message("Filtering missing CDS in the schema...", "info")
         cds_size: Dict[str, int]
-        dropped_alleles: Dict[str, str]
+        dropped_alleles: Dict[str, str] 
         cds_size, all_nucleotide_sequences, dropped_alleles = ccf.filter_cds_by_size(all_nucleotide_sequences, constants[5])
 
         # Count the number of CDS not present in the schema and write CDS sequence
         # into a FASTA file.
         frequency_cds: Dict[str, int] = {}
-        cds_presence_in_genomes: Dict[str, int] = {}
+        cds_presence_in_genomes: Dict[str, List[str]] = {}
 
         pf.print_message("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...", "info")
-        cds_present: Dict[str, str]
+        cds_present: str
         cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output,
                                                                                           temp_folder,
                                                                                           all_nucleotide_sequences)
 
         pf.print_message("Translating and deduplicating CDS...", "info")
         all_translation_dict: Dict[str, str]
-        protein_hashes: Dict[str, str]
+        protein_hashes: Dict[str, List[str]]
         cds_translation_size: Dict[str, int]
         # Deduplicate protein sequences to cluster sequences without problems of similar
         # having same proteins and make it quicker
@@ -259,7 +247,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                     cds_presence_in_genomes,
                                                     reps_kmers_sim)
 
-        to_blast_paths: List[str]
+        to_blast_paths: Dict[str, str]
         master_file_path: str
         to_blast_paths, master_file_path = ccf.prepare_files_to_blast(representatives_blastn_folder,
                                                                   all_alleles,
