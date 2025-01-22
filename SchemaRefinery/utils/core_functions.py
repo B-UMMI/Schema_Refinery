@@ -1615,8 +1615,9 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
         alignment_dict_to_file(write_dict, report_file_path, 'w')
 
 
-def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: tp.CountResultsByClass, 
-                            drop_mark: Set[int]) -> Tuple[Dict[int, List[str]], Dict[str, List[str]], Set[str]]:
+def extract_clusters_to_keep(classes_outcome: Tuple[str], count_results_by_class: tp.CountResultsByClass, 
+                            drop_mark: List[str]
+                            ) -> Tuple[Dict[int, List[str]], tp.MergedAllClasses, Set[str]]:
     """
     Extracts and organizes CDS (Coding Sequences) to keep based on classification outcomes.
 
@@ -1637,11 +1638,11 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
 
     Returns
     -------
-    clusters_to_keep : Dict[str, Union[List[Union[str, List[str]]]
-        A dictionary with class identifiers as keys and lists of CDS identifiers or pairs of identifiers
-        to be kept in each class.
     clusters_to_keep_1a: Dict[int, List[str]]
         A dictionary with class 1a cases.
+    clusters_to_keep : tp.MergedAllClasses
+        A dictionary with class identifiers as keys and lists of CDS identifiers or pairs of identifiers
+        to be kept in each class.
     drop_possible_loci : Set[str]
         A set of CDS identifiers that are determined to be dropped based on their classification and
         presence in `drop_mark`.
@@ -1660,7 +1661,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     temp_keep: Dict[str, str] = {}
     
     # Initialize clusters_to_keep with empty lists for each class in classes_outcome
-    clusters_to_keep: Dict[str, List[str]] = {class_: [] for class_ in classes_outcome if class_ != '1a'}
+    clusters_to_keep: tp.MergedAllClasses = {class_: [] for class_ in classes_outcome if class_ != '1a'}
     temp_clusters_1a: List[List[str]] = []
     # Initialize a set to keep track of CDS to be dropped
     drop_possible_loci: Set[str] = set()
