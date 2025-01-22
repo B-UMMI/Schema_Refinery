@@ -26,7 +26,7 @@ class BlastResult(TypedDict):
     global_palign_pident_min: float
     global_palign_pident_max: float
     local_palign_min: float
-    class_: str 
+    classification: str 
 
 BlastDict = Dict[str, Dict[str, List[BlastResult]]]
 

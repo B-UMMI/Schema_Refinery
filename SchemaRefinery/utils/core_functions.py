@@ -482,7 +482,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
         class_name : str
             The class identifier to be added to the BLASTN result.
         """
-        representative_blast_results[query][id_subject][id_]['class'] = class_name
+        representative_blast_results[query][id_subject][id_]['classification'] = class_name
 
     pident_threshold: float = constants[1]
     bsr_threshold: float = constants[7]
@@ -577,7 +577,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             # Get the class of the alignment with the highest score
-            class_ = matches[1]['class']
+            class_ = matches[1]['classification']
             if query not in temp_dict[class_]:
                 temp_dict[class_][query] = {}
             temp_dict[class_][query][id_subject] = matches
@@ -595,7 +595,7 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
 
 def process_classes(representative_blast_results: tp.BlastDict, 
                     classes_outcome: Tuple[str, ...],
-                    all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
+                    all_alleles: Dict[str, List[str]]) -> Tuple[
                     tp.ProcessedResults,
                     tp.CountResultsByClass,
                     tp.CountResultsByClassWithInverse,
@@ -619,7 +619,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     classes_outcome : Tuple[str, ...]
         A list of class identifiers ordered by priority. This order determines which classes are
         considered more significant when multiple matches for the same pair of sequences are found.
-    all_alleles : Optional[Dict[str, str]], optional
+    all_alleles : Dict[str, List[str]]
         A dictionary mapping sequence IDs to their corresponding allele names. If provided, it is
         used to replace allele IDs with loci/CDS names in the processing.
 
@@ -661,35 +661,32 @@ def process_classes(representative_blast_results: tp.BlastDict,
     # Process the CDS to find what CDS to retain while also adding the relationships between different CDS
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
-            class_: str = matches[1]['class']
+            class_: str = matches[1]['classification']
             all_relationships[class_].append([query, id_subject])
             ids_for_relationship: List[str] = [query, id_subject]
             new_query: str = query
             new_id_subject: str = id_subject
 
             strings: List[str] = [str(query), str(id_subject), class_]
-            if all_alleles:
-                replaced_query: Optional[str] = itf.identify_string_in_dict_get_key(query, all_alleles)
-                if replaced_query is not None:
-                    new_query = replaced_query
-                    strings[0] = new_query
-                replaced_id_subject: Optional[str] = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
-                if replaced_id_subject is not None:
-                    new_id_subject = replaced_id_subject
-                    strings[1] = new_id_subject
+            replaced_query: Optional[str] = itf.identify_string_in_dict_get_key(query, all_alleles)
+            if replaced_query is not None:
+                new_query = replaced_query
+                strings[0] = new_query
+            replaced_id_subject: Optional[str] = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
+            if replaced_id_subject is not None:
+                new_id_subject = replaced_id_subject
+                strings[1] = new_id_subject
 
-                current_allele_class_index: int = classes_outcome.index(class_)
-                # Check if the current loci were already processed
-                if not processed_results.get(f"{new_query}|{new_id_subject}"):
-                    run_next_step: bool = True
-                # If those loci/CDS were already processed, check if the current class is better than the previous one
-                elif current_allele_class_index < classes_outcome.index(processed_results[f"{new_query}|{new_id_subject}"][0]):
-                    run_next_step = True
-                # If not then skip the current alleles
-                else:
-                    run_next_step = False
-            else:
+            current_allele_class_index: int = classes_outcome.index(class_)
+            # Check if the current loci were already processed
+            if not processed_results.get(f"{new_query}|{new_id_subject}"):
+                run_next_step: bool = True
+            # If those loci/CDS were already processed, check if the current class is better than the previous one
+            elif current_allele_class_index < classes_outcome.index(processed_results[f"{new_query}|{new_id_subject}"][0]):
                 run_next_step = True
+            # If not then skip the current alleles
+            else:
+                run_next_step = False
 
             count_results_by_class.setdefault(f"{new_query}|{new_id_subject}", {})
             if not count_results_by_class[f"{new_query}|{new_id_subject}"].get(class_):
@@ -1609,7 +1606,7 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
     for class_ in classes_outcome:
         write_dict = {
             query: {
-                subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
+                subject: {id_: entry for id_, entry in entries.items() if entry['classification'] == class_}
                 for subject, entries in subjects.items()
             }
             for query, subjects in representative_blast_results.items()
