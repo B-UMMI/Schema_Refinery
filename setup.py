@@ -9,7 +9,7 @@ option to call schema_rifinery in the command line by typing SR or schema_refine
 Code documentation
 ------------------
 """
-
+from SchemaRefinery.utils import constants as ct
 from setuptools import setup, find_namespace_packages
 
 packages = find_namespace_packages(
@@ -39,7 +39,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Set of scripts and instructions to refine wg/cgMLST schemas. ",
+    description="Tool to refine cg/wgMLST Schemas",
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
@@ -48,7 +48,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/B-UMMI/schema_refinery',
-    version='0.2.0',
+    version=ct.VERSION,
     zip_safe=False,
 
     packages = packages,
