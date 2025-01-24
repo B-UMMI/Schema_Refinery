@@ -28,9 +28,9 @@ setup(
     author="UMMI",
     author_email='imm-bioinfo@medicina.ulisboa.pt',
     python_requires='>=3.6',
-    install_requires = [],
+    install_requires = ct.DEPENDENCIES_VERSION,
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 2 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Natural Language :: English',

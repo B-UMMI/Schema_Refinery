@@ -30,6 +30,18 @@ DEPENDENCIES = [
         "psutil",
     ]
 
+# Dependencies version
+
+DEPENDENCIES_VERSION = [
+     'numpy~=1.24.3',
+     'scipy~=1.10.1',
+     'biopython>=1.79',
+     'plotly>=5.8.0',
+     'requests>=2.27.1',
+     'pandas>=1.5.1,<2.1',
+     'psutil>=5.1.1',
+]
+
 # minimum Python version
 MIN_PYTHON = [(3, 6, 0), '3.6.0']
 
