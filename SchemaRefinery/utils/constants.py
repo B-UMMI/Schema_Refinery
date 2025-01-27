@@ -17,7 +17,7 @@ REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'
 CONTACTS = 'imm-bioinfo@medicina.ulisboa.pt'
 
 # Schema Refinery's version
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 
 # Schema Refinery's Dependencies
 DEPENDENCIES = [
