@@ -30,7 +30,7 @@ setup(
     python_requires='>=3.9',
     install_requires = ct.DEPENDENCIES_VERSION,
     classifiers=[
-        'Development Status :: 2 - Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Natural Language :: English',

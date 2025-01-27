@@ -39,7 +39,7 @@ keywords = [
     "bacterial genome analysis"
 ]
 classifiers = [
-    'Development Status :: 2 - Alpha',
+    'Development Status :: 3 - Alpha',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     'Natural Language :: English',
@@ -55,11 +55,7 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Bio-Informatics',
 ]
 
-[project.scripts]
-"SchemaRefinery" = "SchemaRefinery.schema_refinery:entry_point"
-"SR" = "SchemaRefinery.schema_refinery:entry_point"
-
 [project.urls]
 Repository = "https://github.com/MForofontov/Schema_Refinery"
 Documentation = "https://schema-refinery.readthedocs.io/en/latest/index.html#"
-Changelog = ""
+Changelog = "https://github.com/MForofontov/Schema_Refinery/blob/main/CHANGELOG.md"
