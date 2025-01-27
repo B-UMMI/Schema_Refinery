@@ -1099,7 +1099,7 @@ def entry_point():
             logger = argv[i + 1]
             i += 1
         elif argv[i] == '--version':
-            print(f"SchemaRefinery version {ct.VERSION}")
+            pf.print_message(f"SchemaRefinery version: {ct.VERSION}", "info")
             sys.exit(0)
         i += 1
 

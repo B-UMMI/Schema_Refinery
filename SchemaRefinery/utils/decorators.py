@@ -115,10 +115,6 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
                                     total_write_ops += child_io_counters.write_count
                                     total_read_bytes += child_io_counters.read_bytes
                                     total_write_bytes += child_io_counters.write_bytes
-                                if monitor_network:
-                                    child_net_io_counters = child.net_io_counters()
-                                    total_bytes_sent += child_net_io_counters.bytes_sent
-                                    total_bytes_recv += child_net_io_counters.bytes_recv
                                 if monitor_open_files:
                                     open_files += len(child.open_files())
                                 if monitor_page_faults:
@@ -188,8 +184,13 @@ def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io
                 pf.print_message(f"Read operations: {read_ops}", "debug")
                 pf.print_message(f"Write operations: {write_ops}", "debug")
             if monitor_network and initial_net_io_counters and final_net_io_counters:
-                bytes_sent = final_net_io_counters.bytes_sent - initial_net_io_counters.bytes_sent + total_bytes_sent
-                bytes_recv = final_net_io_counters.bytes_recv - initial_net_io_counters.bytes_recv + total_bytes_recv
+                # Calculate the differences for network I/O
+                if initial_net_io_counters and final_net_io_counters:
+                    bytes_sent = final_net_io_counters.bytes_sent - initial_net_io_counters.bytes_sent
+                    bytes_recv = final_net_io_counters.bytes_recv - initial_net_io_counters.bytes_recv
+                else:
+                    bytes_sent = total_bytes_sent
+                    bytes_recv = total_bytes_recv
                 pf.print_message(f"Bytes sent: {bytes_sent}", "debug")
                 pf.print_message(f"Bytes received: {bytes_recv}", "debug")
             if monitor_disk and initial_disk_io_counters and final_disk_io_counters:

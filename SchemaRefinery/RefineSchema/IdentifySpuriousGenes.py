@@ -5,32 +5,19 @@ import os
 import sys
 from typing import Any, List, Dict, Optional, Set, Tuple
 
-try:
-    from utils import (core_functions as cof,
-                       file_functions as ff,
-                       sequence_functions as sf,
-                       iterable_functions as itf,
-                       blast_functions as bf,
-                       linux_functions as lf,
-                       classify_cds_functions as ccf,
-                       constants as ct,
-                       Types as tp,
-                       print_functions as pf,
-                       logger_functions as logf,
-                       globals as gb)
-except ModuleNotFoundError:
-    from SchemaRefinery.utils import (core_functions as cof,
-                                        file_functions as ff,
-                                        sequence_functions as sf,
-                                        iterable_functions as itf,
-                                        blast_functions as bf,
-                                        linux_functions as lf,
-                                        classify_cds_functions as ccf,
-                                        constants as ct,
-                                        Types as tp,
-                                        print_functions as pf,
-                                        logger_functions as logf,
-                                        globals as gb)
+
+from SchemaRefinery.utils import (core_functions as cof,
+                                    file_functions as ff,
+                                    sequence_functions as sf,
+                                    iterable_functions as itf,
+                                    blast_functions as bf,
+                                    linux_functions as lf,
+                                    classify_cds_functions as ccf,
+                                    constants as ct,
+                                    Types as tp,
+                                    print_functions as pf,
+                                    logger_functions as logf,
+                                    globals as gb)
 
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """
@@ -70,8 +57,9 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     ff.create_directory(blast_db)
 
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
+    representatives_blastn_folder: Optional[str]
     if run_mode == 'unclassified_cds':
-        representatives_blastn_folder: Optional[str] = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
+        representatives_blastn_folder = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
         ff.create_directory(representatives_blastn_folder)
     else:
         representatives_blastn_folder = None
@@ -148,23 +136,23 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         pf.print_message("Filtering missing CDS in the schema...", "info")
         cds_size: Dict[str, int]
-        dropped_alleles: Dict[str, str]
+        dropped_alleles: Dict[str, str] 
         cds_size, all_nucleotide_sequences, dropped_alleles = ccf.filter_cds_by_size(all_nucleotide_sequences, constants[5])
 
         # Count the number of CDS not present in the schema and write CDS sequence
         # into a FASTA file.
         frequency_cds: Dict[str, int] = {}
-        cds_presence_in_genomes: Dict[str, int] = {}
+        cds_presence_in_genomes: Dict[str, List[str]] = {}
 
         pf.print_message("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...", "info")
-        cds_present: Dict[str, str]
+        cds_present: str
         cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output,
                                                                                           temp_folder,
                                                                                           all_nucleotide_sequences)
 
         pf.print_message("Translating and deduplicating CDS...", "info")
         all_translation_dict: Dict[str, str]
-        protein_hashes: Dict[str, str]
+        protein_hashes: Dict[str, List[str]]
         cds_translation_size: Dict[str, int]
         # Deduplicate protein sequences to cluster sequences without problems of similar
         # having same proteins and make it quicker
@@ -249,7 +237,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         # Remove filtered out elements from reps_kmers_sim
         reps_kmers_sim = {key: value for key, value in reps_kmers_sim.items() if key in itf.flatten_list(all_alleles.values())}
         pf.print_message("Replacing CDSs IDs with the cluster representative ID...", "info")
-        cds_original_ids: Dict[str, str] = ccf.replace_ids_in_clusters(all_alleles,
+        cds_original_ids: Dict[str, List[str]] = ccf.replace_ids_in_clusters(all_alleles,
                                                     frequency_cds,
                                                     dropped_alleles,
                                                     all_nucleotide_sequences,
@@ -259,7 +247,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                     cds_presence_in_genomes,
                                                     reps_kmers_sim)
 
-        to_blast_paths: List[str]
+        to_blast_paths: Dict[str, str]
         master_file_path: str
         to_blast_paths, master_file_path = ccf.prepare_files_to_blast(representatives_blastn_folder,
                                                                   all_alleles,
@@ -299,9 +287,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
-    representative_blast_results_coords_all: tp.RepresentativeBlastResultsCoords
-    representative_blast_results_coords_pident: tp.RepresentativeBlastResultsCoords
-    bsr_values: tp.BSRValues
     representative_blast_results = cof.run_blasts(blast_db_nuc,
                         all_alleles,
                         all_translation_dict,
@@ -326,7 +311,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     count_results_by_class: tp.CountResultsByClass
     count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse
     reps_and_alleles_ids: tp.RepsAndAllelesIds
-    drop_mark: Set[int]
+    drop_mark: List[str]
     all_relationships: tp.AllRelationships
     # Process and extract relevant information from the blast results
     (processed_results,
@@ -341,17 +326,17 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to maintain and to display to user.
     clusters_to_keep: tp.MergedAllClasses
-    dropped_loci_ids: List[str]
+    dropped_loci_ids: Set[str]
     clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
     
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
-    clusters_to_keep_1a = {values[0]: values for key, values in clusters_to_keep_1a.items()}
+    clusters_to_keep_1a_renamed: Dict[str, List[str]] = {values[0]: values for key, values in clusters_to_keep_1a.items()}
 
     # Merge classes
-    merged_all_classes: tp.MergedAllClasses = {'1a': clusters_to_keep_1a.copy()}
+    merged_all_classes: tp.MergedAllClasses = {'1a': clusters_to_keep_1a_renamed.copy()}
     merged_all_classes.update(clusters_to_keep)
     if run_mode == 'unclassified_cds':
-        updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a,  frequency_in_genomes)
+        updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a_renamed,  frequency_in_genomes)
     
         # Open dict to store IDs of the reps and alleles
         group_reps_ids = {}
@@ -366,7 +351,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         pf.print_message("Adding remaining clusters that didn't match by BLASTn...", "info")
         # Add cluster not matched by BLASTn
-        all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a.values()])
+        all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a_renamed.values()])
         clusters_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in all_alleles.keys() if cluster not in all_matched_clusters])
 
     processed_drop: List[str] = []
@@ -374,7 +359,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     cof.add_cds_to_dropped_cds(dropped_loci_ids,
                             dropped_alleles,
                             clusters_to_keep,
-                            clusters_to_keep_1a,
+                            clusters_to_keep_1a_renamed,
                             all_alleles,
                             'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
                             processed_drop)

@@ -2,30 +2,18 @@ import os
 import pandas as pd
 from typing import Dict, Any, List, Tuple, Union, Optional, Set
 
-try:
-    from utils import (file_functions as ff,
-                       clustering_functions as cf,
-                       blast_functions as bf,
-                       alignments_functions as af,
-                       iterable_functions as itf,
-                       linux_functions as lf,
-                       graphical_functions as gf,
-                       pandas_functions as pf,
-                       sequence_functions as sf,
-                       Types as tp,
-                       print_functions as prf)
-except ModuleNotFoundError:
-    from SchemaRefinery.utils import (file_functions as ff,
-                                      clustering_functions as cf,
-                                      blast_functions as bf,
-                                      alignments_functions as af,
-                                      iterable_functions as itf,
-                                      linux_functions as lf,
-                                      graphical_functions as gf,
-                                      pandas_functions as pf,
-                                      sequence_functions as sf,
-                                      Types as tp,
-                                      print_functions as prf)
+
+from SchemaRefinery.utils import (file_functions as ff,
+                                    clustering_functions as cf,
+                                    blast_functions as bf,
+                                    alignments_functions as af,
+                                    iterable_functions as itf,
+                                    linux_functions as lf,
+                                    graphical_functions as gf,
+                                    pandas_functions as pf,
+                                    sequence_functions as sf,
+                                    Types as tp,
+                                    print_functions as prf)
 
 def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                            file_path: str, write_type: str) -> None:
@@ -440,7 +428,8 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
 
 
 def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, 
-                                         constants: Tuple[Any, ...], classes_outcome: List[str]) -> List[str]:
+                                         constants: List[Any], classes_outcome: Tuple[str, ...] 
+                                         ) -> Tuple[str]:
     """
     Separates BLAST results into predefined classes based on specific criteria.
 
@@ -493,7 +482,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
         class_name : str
             The class identifier to be added to the BLASTN result.
         """
-        representative_blast_results[query][id_subject][id_]['class'] = class_name
+        representative_blast_results[query][id_subject][id_]['classification'] = class_name
 
     pident_threshold: float = constants[1]
     bsr_threshold: float = constants[7]
@@ -543,8 +532,9 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     return classes_outcome
 
 
-def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[str, List[Dict[str, Any]]]], 
-                                  classes_outcome: Tuple[str, ...]) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
+def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict, 
+                                  classes_outcome: Tuple[str, ...]
+                                  ) -> tp.BlastDict:
     """
     Sorts BLAST results by classes based on the alignment score.
     
@@ -565,7 +555,7 @@ def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[s
 
     Returns
     -------
-    Dict[str, Dict[str, List[Dict[str, Any]]]]
+    tp.BlastDict
         A dictionary structured similarly to `representative_blast_results`, but sorted such that
         all results for a given query are grouped by their class as determined by the highest
         scoring alignment.
@@ -587,7 +577,7 @@ def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[s
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             # Get the class of the alignment with the highest score
-            class_ = matches[1]['class']
+            class_ = matches[1]['classification']
             if query not in temp_dict[class_]:
                 temp_dict[class_][query] = {}
             temp_dict[class_][query][id_subject] = matches
@@ -605,7 +595,7 @@ def sort_blast_results_by_classes(representative_blast_results: Dict[str, Dict[s
 
 def process_classes(representative_blast_results: tp.BlastDict, 
                     classes_outcome: Tuple[str, ...],
-                    all_alleles: Optional[Dict[str, str]] = None) -> Tuple[
+                    all_alleles: Dict[str, List[str]]) -> Tuple[
                     tp.ProcessedResults,
                     tp.CountResultsByClass,
                     tp.CountResultsByClassWithInverse,
@@ -629,7 +619,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
     classes_outcome : Tuple[str, ...]
         A list of class identifiers ordered by priority. This order determines which classes are
         considered more significant when multiple matches for the same pair of sequences are found.
-    all_alleles : Optional[Dict[str, str]], optional
+    all_alleles : Dict[str, List[str]]
         A dictionary mapping sequence IDs to their corresponding allele names. If provided, it is
         used to replace allele IDs with loci/CDS names in the processing.
 
@@ -671,35 +661,32 @@ def process_classes(representative_blast_results: tp.BlastDict,
     # Process the CDS to find what CDS to retain while also adding the relationships between different CDS
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
-            class_: str = matches[1]['class']
+            class_: str = matches[1]['classification']
             all_relationships[class_].append([query, id_subject])
             ids_for_relationship: List[str] = [query, id_subject]
             new_query: str = query
             new_id_subject: str = id_subject
 
             strings: List[str] = [str(query), str(id_subject), class_]
-            if all_alleles:
-                replaced_query: Optional[str] = itf.identify_string_in_dict_get_key(query, all_alleles)
-                if replaced_query is not None:
-                    new_query = replaced_query
-                    strings[0] = new_query
-                replaced_id_subject: Optional[str] = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
-                if replaced_id_subject is not None:
-                    new_id_subject = replaced_id_subject
-                    strings[1] = new_id_subject
+            replaced_query: Optional[str] = itf.identify_string_in_dict_get_key(query, all_alleles)
+            if replaced_query is not None:
+                new_query = replaced_query
+                strings[0] = new_query
+            replaced_id_subject: Optional[str] = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
+            if replaced_id_subject is not None:
+                new_id_subject = replaced_id_subject
+                strings[1] = new_id_subject
 
-                current_allele_class_index: int = classes_outcome.index(class_)
-                # Check if the current loci were already processed
-                if not processed_results.get(f"{new_query}|{new_id_subject}"):
-                    run_next_step: bool = True
-                # If those loci/CDS were already processed, check if the current class is better than the previous one
-                elif current_allele_class_index < classes_outcome.index(processed_results[f"{new_query}|{new_id_subject}"][0]):
-                    run_next_step = True
-                # If not then skip the current alleles
-                else:
-                    run_next_step = False
-            else:
+            current_allele_class_index: int = classes_outcome.index(class_)
+            # Check if the current loci were already processed
+            if not processed_results.get(f"{new_query}|{new_id_subject}"):
+                run_next_step: bool = True
+            # If those loci/CDS were already processed, check if the current class is better than the previous one
+            elif current_allele_class_index < classes_outcome.index(processed_results[f"{new_query}|{new_id_subject}"][0]):
                 run_next_step = True
+            # If not then skip the current alleles
+            else:
+                run_next_step = False
 
             count_results_by_class.setdefault(f"{new_query}|{new_id_subject}", {})
             if not count_results_by_class[f"{new_query}|{new_id_subject}"].get(class_):
@@ -771,7 +758,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
-                    dropped_loci_ids: List[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
+                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
 
@@ -1335,7 +1322,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
 
 
 def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
-               output_dir: str, constants: List[Any], reps_kmers_sim: Optional[Dict[str, Dict[str, tuple[float, float]]]],
+               output_dir: str, constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
                frequency_in_genomes: Dict[str, int], cpu: int) -> tp.BlastDict:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
@@ -1619,7 +1606,7 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
     for class_ in classes_outcome:
         write_dict = {
             query: {
-                subject: {id_: entry for id_, entry in entries.items() if entry['class'] == class_}
+                subject: {id_: entry for id_, entry in entries.items() if entry['classification'] == class_}
                 for subject, entries in subjects.items()
             }
             for query, subjects in representative_blast_results.items()
@@ -1628,8 +1615,9 @@ def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses,
         alignment_dict_to_file(write_dict, report_file_path, 'w')
 
 
-def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class: tp.CountResultsByClass, 
-                            drop_mark: Set[int]) -> Tuple[Dict[int, List[str]], Dict[str, List[str]], Set[str]]:
+def extract_clusters_to_keep(classes_outcome: Tuple[str], count_results_by_class: tp.CountResultsByClass, 
+                            drop_mark: List[str]
+                            ) -> Tuple[Dict[int, List[str]], tp.MergedAllClasses, Set[str]]:
     """
     Extracts and organizes CDS (Coding Sequences) to keep based on classification outcomes.
 
@@ -1650,11 +1638,11 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
 
     Returns
     -------
-    clusters_to_keep : Dict[str, Union[List[Union[str, List[str]]]
-        A dictionary with class identifiers as keys and lists of CDS identifiers or pairs of identifiers
-        to be kept in each class.
     clusters_to_keep_1a: Dict[int, List[str]]
         A dictionary with class 1a cases.
+    clusters_to_keep : tp.MergedAllClasses
+        A dictionary with class identifiers as keys and lists of CDS identifiers or pairs of identifiers
+        to be kept in each class.
     drop_possible_loci : Set[str]
         A set of CDS identifiers that are determined to be dropped based on their classification and
         presence in `drop_mark`.
@@ -1673,7 +1661,7 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
     temp_keep: Dict[str, str] = {}
     
     # Initialize clusters_to_keep with empty lists for each class in classes_outcome
-    clusters_to_keep: Dict[str, List[str]] = {class_: [] for class_ in classes_outcome if class_ != '1a'}
+    clusters_to_keep: tp.MergedAllClasses = {class_: [] for class_ in classes_outcome if class_ != '1a'}
     temp_clusters_1a: List[List[str]] = []
     # Initialize a set to keep track of CDS to be dropped
     drop_possible_loci: Set[str] = set()
@@ -1717,8 +1705,8 @@ def extract_clusters_to_keep(classes_outcome: List[str], count_results_by_class:
 
 def count_number_of_reps_and_alleles(merged_all_classes: tp.MergedAllClasses, 
                                     processing_mode: str, clusters: Dict[str, List[str]], 
-                                    drop_possible_loci: Set[str], group_reps_ids: Dict[str, Set[str]], 
-                                    group_alleles_ids: Dict[str, Set[str]]) -> Tuple[Dict[str, Set[str]], Dict[str, Set[str]]]:
+                                    drop_possible_loci: Set[str], group_reps_ids: Dict[str, List[str]], 
+                                    group_alleles_ids: Dict[str, List[str]]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
     """
     Counts the number of representatives and alleles for each group in the given CDS clusters, excluding those in
     the drop set.
@@ -1957,7 +1945,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
 
 
-def add_cds_to_dropped_cds(drop_possible_loci: List[str], dropped_cds: Dict[str, str], clusters_to_keep: Dict[str, Any],
+def add_cds_to_dropped_cds(drop_possible_loci: Set[str], dropped_cds: Dict[str, str], clusters_to_keep: Dict[str, Any],
                            clusters_to_keep_1a: Dict[str, List[str]],
                             clusters: Dict[str, List[str]], reason: str, processed_drop: List[str]) -> None:
     """
@@ -2068,7 +2056,20 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     
     return drop_possible_loci_output
 
-def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode, results_output):
+def prepare_loci(schema_folder: str, 
+                 allelecall_directory: str, 
+                 constants: List[Any], 
+                 processing_mode: str, 
+                 results_output: str) -> Tuple[
+                     Dict[str, str], 
+                     str, 
+                     Dict[str, str], 
+                     Dict[str, int], 
+                     Dict[str, str], 
+                     Dict[str, List[str]], 
+                     str, 
+                     Dict[str, List[str]], 
+                     Dict[str, List[str]]]:
     """
     Process new loci by translating sequences, counting frequencies, and preparing files for BLAST.
 
@@ -2090,27 +2091,15 @@ def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode
     -------
     tuple
         A tuple containing:
-        - alleles (dict): Dictionary of alleles with loci IDs as keys.
+        - all_nucleotide_sequences (Dict[str, str]): Dictionary of nucleotide sequences.
         - master_file_path (str): Path to the master FASTA file.
-        - translation_dict (dict): Dictionary of translated sequences.
-        - frequency_in_genomes (dict): Dictionary of loci frequencies in genomes.
-        - to_blast_paths (dict): Dictionary of paths to sequences to be used for BLAST.
-        - all_alleles (dict): Dictionary of all alleles with loci IDs as keys.
-
-    Notes
-    -----
-    - The function creates a master FASTA file containing all sequences to be used for BLAST.
-    - It also translates sequences and counts their frequencies in genomes.
-    - The function handles different processing modes to determine which sequences to use for BLAST.
-
-    Examples
-    --------
-    >>> schema_folder = '/path/to/schema'
-    >>> allelecall_directory = '/path/to/allelecall'
-    >>> constants = [0, 1, 2, 3, 4, 5, 6]
-    >>> processing_mode = 'alleles_rep'
-    >>> results_output = '/path/to/results'
-    >>> process_new_loci(schema_folder, allelecall_directory, constants, processing_mode, results_output)
+        - translation_dict (Dict[str, str]): Dictionary of translated sequences.
+        - frequency_in_genomes (Dict[str, int]): Dictionary of loci frequencies in genomes.
+        - to_blast_paths (Dict[str, str]): Dictionary of paths to sequences to be used for BLAST.
+        - all_alleles (Dict[str, List[str]]): Dictionary of all alleles with loci IDs as keys.
+        - cds_present (str): Path to the CDS presence file.
+        - group_reps_ids (Dict[str, List[str]]): Dictionary of group representative IDs.
+        - group_alleles_ids (Dict[str, List[str]]): Dictionary of group allele IDs.
     """
     # Create a dictionary of schema FASTA files
     schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
@@ -2131,13 +2120,13 @@ def prepare_loci(schema_folder, allelecall_directory, constants, processing_mode
     to_run_against = schema_short if processing_mode.split('_')[-1] == 'rep' else schema
 
     # Initialize dictionaries for alleles, translations, and frequencies
-    all_alleles = {}
-    all_nucleotide_sequences = {}
-    translation_dict = {}
-    frequency_in_genomes = {}
-    temp_frequency_in_genomes = {}
-    group_reps_ids = {}
-    group_alleles_ids = {}
+    all_alleles: Dict[str, List[str]] = {}
+    all_nucleotide_sequences: Dict[str, str] = {}
+    translation_dict: Dict[str, str] = {}
+    frequency_in_genomes: Dict[str, int] = {}
+    temp_frequency_in_genomes: Dict[str, List[str]] = {}
+    group_reps_ids: Dict[str, List[str]] = {}
+    group_alleles_ids: Dict[str, List[str]] = {}
     
     # Path to the CDS presence file
     cds_present = os.path.join(allelecall_directory, "temp", "2_cds_preprocess/cds_deduplication/distinct.hashtable")

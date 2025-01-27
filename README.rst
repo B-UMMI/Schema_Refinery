@@ -1,37 +1,62 @@
-===============
-Schema Refinery
-===============
+SchemaRefinery
+==============
 
+Tool to refine cg/wgMLST Schemas.
 
-.. image:: https://img.shields.io/pypi/v/schema_refinery.svg
-        :target: https://pypi.python.org/pypi/schema_refinery
+Description
+-----------
 
-.. image:: https://img.shields.io/travis/B-UMMI/schema_refinery.svg
-        :target: https://travis-ci.com/B-UMMI/schema_refinery
+SchemaRefinery is a bioinformatics tool designed to refine cgMLST and wgMLST schemas for bacterial genomics. It provides functionalities to process, analyze, and visualize genomic data, making it easier for researchers to work with large-scale genomic datasets.
 
-.. image:: https://readthedocs.org/projects/schema-refinery/badge/?version=latest
-        :target: https://schema-refinery.readthedocs.io/en/latest/?version=latest
-        :alt: Documentation Status
+Installation
+------------
 
+To install SchemaRefinery, you can use `pip`:
 
+.. code-block:: bash
 
+    pip install .
 
-Set of scripts and instructions to refine wg/cgMLST schemas. 
+Usage
+-----
 
+After installation, you can use the `SchemaRefinery` command-line tool. For example:
 
-* Free software: GNU General Public License v3
-* Documentation: https://schema-refinery.readthedocs.io.
+.. code-block:: bash
 
+    SchemaRefinery --help
 
-Features
---------
+This will display the help message with available commands and options.
 
-* TODO
+Development
+-----------
 
-Credits
+To contribute to the development of SchemaRefinery, you can clone the repository and install the development dependencies:
+
+.. code-block:: bash
+
+    git clone https://github.com/MForofontov/Schema_Refinery.git
+    cd Schema_Refinery
+    pip install -r requirements.txt
+
+Authors
 -------
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+- Mykyta Forofontov
+- Rafael Mamede
+- Mário Ramirez
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+Maintainers
+-----------
+
+- UMMI (imm-bioinfo@medicina.ulisboa.pt)
+
+License
+-------
+
+SchemaRefinery is licensed under the GNU General Public License v3 (GPLv3). See the LICENSE file for more details.
+
+Links
+-----
+
+- Repository: https://github.com/MForofontov/Schema_Refinery
