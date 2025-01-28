@@ -8,7 +8,7 @@ The `SchemaRefinery` repository contains tools and modules for refining genomic 
 
 ## News
 
-## Version - 0.3.1 2025-01-28
+## Version 0.3.1 - 2025-01-28
 ### feat: 
     Added to PYPI
 ### fix:
