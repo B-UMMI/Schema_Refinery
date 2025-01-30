@@ -132,7 +132,7 @@ def progress_bar(remaining: int, total: int, previous: Union[int, None], tickval
     if progress != previous:
         progress_tick: int = progress // tickval
         progress_bar: str = f'[{("=" * progress_tick)}{" " * (ticknum - progress_tick)}] {progress}%'
-        print('\r', progress_bar, end='')
+        pf.print_message(progress_bar, 'info', flush=True)
 
     time.sleep(0.1)
 
