@@ -648,7 +648,7 @@ def adapt_loci() -> None:
                         '--cpu',
                         type=int,
                         required=False,
-                        dest='cpu_cores',
+                        dest='cpu',
                         default=1, 
                         help='Number of CPUs to run BLAST instances.')
     

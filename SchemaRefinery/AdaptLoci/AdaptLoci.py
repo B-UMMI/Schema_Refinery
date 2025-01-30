@@ -253,9 +253,9 @@ def bsr_categorizer(blast_results: List[List[Any]], representatives: List[str],
         if min_bsr <= bsr_values[ind] < max_bsr:
             hot_reps.setdefault(res[0], []).append(res[4])
 
-    low_reps = list(set(low_reps) - set(high_reps))
+    low_reps_final = list(set(low_reps) - set(high_reps))
 
-    return [high_bsr, low_bsr, hotspot_bsr, high_reps, low_reps, hot_reps]
+    return [high_bsr, low_bsr, hotspot_bsr, high_reps, low_reps_final, hot_reps]
 
 
 def select_candidate(candidates: List[str], proteins: Dict[str, str], seqids: List[str],
@@ -508,7 +508,7 @@ def adapt_loci(loci: List[str], schema_path: str, schema_short_path: str, bsr: f
     return True
 
 
-def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_ratio: float,
+def main(input_file: str, output_directory: str, cpu: int, blast_score_ratio: float,
          translation_table: int) -> bool:
     """
     Adapt a schema to be used with chewBBACA.
@@ -521,7 +521,7 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
         Path to the output directory to create (the main schema
         directory and the 'short' directory to store representative
         alleles).
-    cpu_cores : int
+    cpu : int
         Number of CPU cores that will be used to run the process.
     blast_score_ratio : float
         The BLAST Score Ratio value that will be used to evaluate
@@ -547,7 +547,7 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
     pf.print_message(f'Number of loci to adapt: {len(loci_list)}', 'info')
     # Count number of sequences and mean length per locus
     loci_info: List[Tuple[str, int, int, int, int]] = []
-    loci_pools: Pool = multiprocessing.Pool(processes=cpu_cores)
+    loci_pools: Pool = multiprocessing.Pool(processes=cpu)
     gp: Any = loci_pools.map_async(sf.fasta_stats, loci_list, callback=loci_info.extend)
     gp.wait()
 
@@ -567,7 +567,7 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
     pf.print_message(f"Adapting...", 'info')
     adaptation_data: List[Any] = map_async_parallelizer(even_loci_groups_extra,
                                                        function_helper,
-                                                       cpu_cores,
+                                                       cpu,
                                                        show_progress=True)
     pf.print_message('\nDone.', 'info')
 
