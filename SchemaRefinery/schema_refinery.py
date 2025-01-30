@@ -656,7 +656,7 @@ def adapt_loci() -> None:
                         '--bsr',
                         type=float,
                         required=False,
-                        dest='blast_score_ratio',
+                        dest='bsr',
                         default=0.6,
                         help='BSR value to consider alleles as the same locus.')
     
