@@ -560,12 +560,12 @@ def main(input_file: str, output_directory: str, cpu_cores: int, blast_score_rat
     blastp_path: str = 'blastp'
     makeblastdb_path: str = 'makeblastdb'
     blastdb_aliastool_path: str = 'blastdb_aliastool'
-    even_loci_groups = [[i, schema_path, schema_short_path,
-                         blast_score_ratio, translation_table,
-                         blastp_path, makeblastdb_path, blastdb_aliastool_path,
-                         adapt_loci] for i in even_loci_groups]
+    even_loci_groups_extra = [[i, schema_path, schema_short_path,
+                                blast_score_ratio, translation_table,
+                                blastp_path, makeblastdb_path, blastdb_aliastool_path,
+                                adapt_loci] for i in even_loci_groups]
     pf.print_message(f"Adapting...", 'info')
-    adaptation_data: List[Any] = map_async_parallelizer(even_loci_groups,
+    adaptation_data: List[Any] = map_async_parallelizer(even_loci_groups_extra,
                                                        function_helper,
                                                        cpu_cores,
                                                        show_progress=True)
