@@ -60,8 +60,8 @@ def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
     int
         The number of CPUs to use.
     """
-    max_cpus: int = os.cpu_count()
-    if max_cpus < given_number_of_cpus:
+    max_cpus: Optional[int] = os.cpu_count()
+    if max_cpus and max_cpus < given_number_of_cpus:
         optimal_cpus: int = max_cpus - 1
         print(f'The number of CPUs available in the system is less than the given number of CPUs: {max_cpus} < {given_number_of_cpus}, setting cpu count to {optimal_cpus}', 'warning')
         return optimal_cpus
