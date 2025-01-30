@@ -329,16 +329,16 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
 
     if unexpected_keys:
         pf.print_message("Following unexpected criteria:", "error")
-        unexpected_keys = '\n'.join(unexpected_keys)
-        pf.print_message(unexpected_keys, None)
+        unexpected_keys_string: str = '\n'.join(unexpected_keys)
+        pf.print_message(unexpected_keys_string, None)
         sys.exit()
 
     missing_keys: List[str] = [x for x in expected_criteria if x not in criteria]
 
     if missing_keys:
         pf.print_message("Missing following criteria:", "error")
-        missing_keys = '\n'.join(missing_keys)
-        pf.print_message(missing_keys, None)
+        missing_keys_string: str = '\n'.join(missing_keys)
+        pf.print_message(missing_keys_string, None)
         sys.exit()
 
     warnings: List[str] = []
