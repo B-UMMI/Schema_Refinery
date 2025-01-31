@@ -66,7 +66,7 @@ def download_assemblies() -> None:
     
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Common arguments between databases
     parser.add_argument('-db',
@@ -199,7 +199,7 @@ def schema_annotation() -> None:
     
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Add arguments to the parser
     parser.add_argument('-s',
@@ -441,7 +441,7 @@ def identify_spurious_genes() -> None:
     
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Add arguments to the parser
     parser.add_argument('-s',
@@ -627,7 +627,7 @@ def adapt_loci() -> None:
     
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Add arguments to the parser
     parser.add_argument('-i',
@@ -720,7 +720,7 @@ def identify_paralogous_loci() -> None:
     
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     # Add arguments to the parser
     parser.add_argument('-s',
@@ -835,7 +835,7 @@ def match_schemas() -> None:
     
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
      
     # Add arguments to the parser
     parser.add_argument('-qs',
@@ -949,7 +949,7 @@ def create_schema_structure() -> None:
 
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     # Add arguments to the parser
     parser.add_argument('-rf',
