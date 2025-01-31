@@ -1137,7 +1137,7 @@ def entry_point():
             # Setup logger
             gb.LOGGER = lf.setup_logger(logger_file)
             # Add --logger for better debug print
-            argv.extend(['--logger', logger_file])
+            sys.argv.extend(['--logger', logger_file])
     # Add resource monitoring to the main function if debug or just time it
     if debug:
         gb.DEBUG = True
