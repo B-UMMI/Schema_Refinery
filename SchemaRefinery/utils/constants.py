@@ -17,7 +17,7 @@ REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'
 CONTACTS = 'imm-bioinfo@medicina.ulisboa.pt'
 
 # Schema Refinery's version
-VERSION = '0.3.1'
+VERSION = '0.3.2.4'
 
 # Schema Refinery's Dependencies
 DEPENDENCIES = [
@@ -33,13 +33,15 @@ DEPENDENCIES = [
 # Dependencies version
 
 DEPENDENCIES_VERSION = [
-     'numpy~=1.24.3',
-     'scipy~=1.10.1',
-     'biopython>=1.79',
-     'plotly>=5.8.0',
-     'requests>=2.27.1',
-     'pandas>=1.5.1,<2.1',
-     'psutil>=5.1.1',
+    "numpy >= 1.24.3, <2.0.0",
+    "scipy >= 1.10.1",
+    "biopython >= 1.79",
+    "plotly >= 5.8.0",
+    "requests >= 2.27.1",
+    "pandas >= 1.5.1",
+    "psutil >= 5.1.1",
+    "tqdm >= 4.62.0",
+    "networkx >= 2.6.0, <3.0.0"
 ]
 
 # minimum Python version

@@ -60,8 +60,8 @@ def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
     int
         The number of CPUs to use.
     """
-    max_cpus: int = os.cpu_count()
-    if max_cpus < given_number_of_cpus:
+    max_cpus: Optional[int] = os.cpu_count()
+    if max_cpus and max_cpus < given_number_of_cpus:
         optimal_cpus: int = max_cpus - 1
         print(f'The number of CPUs available in the system is less than the given number of CPUs: {max_cpus} < {given_number_of_cpus}, setting cpu count to {optimal_cpus}', 'warning')
         return optimal_cpus
@@ -329,16 +329,16 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
 
     if unexpected_keys:
         pf.print_message("Following unexpected criteria:", "error")
-        unexpected_keys = '\n'.join(unexpected_keys)
-        pf.print_message(unexpected_keys, None)
+        unexpected_keys_string: str = '\n'.join(unexpected_keys)
+        pf.print_message(unexpected_keys_string, None)
         sys.exit()
 
     missing_keys: List[str] = [x for x in expected_criteria if x not in criteria]
 
     if missing_keys:
         pf.print_message("Missing following criteria:", "error")
-        missing_keys = '\n'.join(missing_keys)
-        pf.print_message(missing_keys, None)
+        missing_keys_string: str = '\n'.join(missing_keys)
+        pf.print_message(missing_keys_string, None)
         sys.exit()
 
     warnings: List[str] = []

@@ -648,7 +648,7 @@ def adapt_loci() -> None:
                         '--cpu',
                         type=int,
                         required=False,
-                        dest='cpu_cores',
+                        dest='cpu',
                         default=1, 
                         help='Number of CPUs to run BLAST instances.')
     
@@ -656,7 +656,7 @@ def adapt_loci() -> None:
                         '--bsr',
                         type=float,
                         required=False,
-                        dest='blast_score_ratio',
+                        dest='bsr',
                         default=0.6,
                         help='BSR value to consider alleles as the same locus.')
     

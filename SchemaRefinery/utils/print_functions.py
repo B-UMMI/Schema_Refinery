@@ -173,7 +173,6 @@ def print_system_info() -> None:
     terminal_width = shutil.get_terminal_size().columns
     border_line = "=" * terminal_width
 
-    print_message(border_line, "debug_additional_info_in_logger_only")
     print_message("System Information".center(terminal_width), "debug_additional_info_in_logger_only")
     print_message(f"Operating System: {platform.system()} {platform.release()}", 'debug')
     print_message(f"OS Version: {platform.version()}", 'debug')
@@ -218,7 +217,6 @@ def print_schema_refinery_info():
     conda_env = os.environ.get("CONDA_DEFAULT_ENV")
     conda_prefix = os.environ.get("CONDA_PREFIX")
 
-    print_message(border_line, "debug_additional_info_in_logger_only")
     print_message("SchemaRefinery Information".center(terminal_width), "debug_additional_info_in_logger_only")
     print_message(f"SchemaRefinery Version: {ct.VERSION}", 'debug')
     print_message(f"SchemaRefinery Path: {schema_refinery_path}", 'debug')
@@ -244,7 +242,6 @@ def print_dependencies_info(dependencies):
     terminal_width = shutil.get_terminal_size().columns
     border_line = "=" * terminal_width
 
-    print_message(border_line, "debug_additional_info_in_logger_only")
     print_message("Dependencies Information".center(terminal_width), "debug_additional_info_in_logger_only")
     print_message(f"Python Version: {platform.python_version()}", 'debug')
     for dep in dependencies:
@@ -314,7 +311,6 @@ def print_input_arguments(args) -> None:
     terminal_width = shutil.get_terminal_size().columns
     border_line = "=" * terminal_width
 
-    print_message(border_line, "debug_additional_info_in_logger_only")
     print_message("Input Arguments".center(terminal_width), "debug_additional_info_in_logger_only")
     for arg, value in vars(args).items():
         print_message(f"{arg}: {value}", 'debug')
