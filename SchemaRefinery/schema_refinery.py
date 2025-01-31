@@ -28,7 +28,9 @@ try:
                        print_functions as pf,
                        decorators as dec,
                        logger_functions as lf,
-                       globals as gb)
+                       globals as gb,
+                       time_functions as tf,
+                       file_functions as ff)
      
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
@@ -43,7 +45,9 @@ except ModuleNotFoundError:
                                       print_functions as pf,
                                       decorators as dec,
                                       logger_functions as lf,
-                                      globals as gb)
+                                      globals as gb,
+                                      time_functions as tf,
+                                      file_functions as ff)
 
 
 def download_assemblies() -> None:
@@ -1053,11 +1057,7 @@ def open_docs() -> None:
     webbrowser.open(url)
     sys.exit(f"Opening documentation at {url}")
 
-def main():
-    # Print the SchemaRefinery logo
-    pf.print_logo()
-
-    module_info = {
+module_info = {
         'DownloadAssemblies': ["Downloads assemblies from the NCBI and the ENA661K database.", download_assemblies],
         'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based on alignment against Genbank files and other schemas.', schema_annotation],
         'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against unclassified CDS to infer new loci and identify problematic genes.", identify_spurious_genes],
@@ -1067,6 +1067,10 @@ def main():
         'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
         'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
     }
+
+def main():
+    # Print the SchemaRefinery logo
+    pf.print_logo()
 
     if len(sys.argv) == 1 or sys.argv[1] not in module_info:
         pf.print_message("Use SchemaRefinery [module] -h to see module arguments", "info")
@@ -1085,6 +1089,12 @@ def main():
 def entry_point():
     # Extract arguments using sys.argv
     argv = sys.argv[1:]
+    # Get the module name
+    if len(argv) > 0:
+        if argv[0] in module_info and argv[0] != "Docs":
+            module_name = argv[0]
+        else:
+            module_name = None
 
     # Initialize default values
     debug = False
@@ -1092,16 +1102,25 @@ def entry_point():
 
     # Manually parse arguments
     i = 0
+    output_folder = None
     while i < len(argv):
         if argv[i] == '--debug':
             debug = True
         elif argv[i] == '--logger' and i + 1 < len(argv):
             logger = argv[i + 1]
             i += 1
+        elif argv[i] == '--output' or argv[i] == '-o' and i + 1 < len(argv):
+            output_folder = argv[i + 1]
+            i += 1
         elif argv[i] == '--version':
             pf.print_message(f"SchemaRefinery version: {ct.VERSION}", "info")
             sys.exit(0)
         i += 1
+
+
+    # Create Output directory
+    if output_folder:
+        ff.create_directory(output_folder)
 
     if logger:
         # Create the logger file if it does not exist
@@ -1111,6 +1130,10 @@ def entry_point():
                 pass  # Just create the file
         
         gb.LOGGER = lf.setup_logger(logger) # Setup logger
+    else:
+        if output_folder and module_name:
+            logger_file = os.path.join(output_folder, f"{module_name}_{tf.current_date_time_for_filename()}.log")
+            gb.LOGGER = lf.setup_logger(logger_file)
 
     # Add resource monitoring to the main function if debug or just time it
     if debug:
@@ -1142,5 +1165,4 @@ def entry_point():
         pf.print_dependencies_info(ct.DEPENDENCIES) # Print dependencies information
 
 if __name__ == "__main__":
-
     entry_point()
