@@ -1132,9 +1132,12 @@ def entry_point():
         gb.LOGGER = lf.setup_logger(logger) # Setup logger
     else:
         if output_folder and module_name:
+            # Create the logger file
             logger_file = os.path.join(output_folder, f"{module_name}_{tf.current_date_time_for_filename()}.log")
+            # Setup logger
             gb.LOGGER = lf.setup_logger(logger_file)
-
+            # Add --logger for better debug print
+            argv.extend(['--logger', logger_file])
     # Add resource monitoring to the main function if debug or just time it
     if debug:
         gb.DEBUG = True
