@@ -1135,7 +1135,7 @@ def entry_point():
             # Create the logger file
             logger_file = os.path.join(output_folder, f"{module_name}_{tf.current_date_time_for_filename()}.log")
             # Setup logger
-            gb.LOGGER = lf.setup_logger(logger_file)
+            gb.LOGGER = lf.setup_logger(logger_file) # Since name is not fixed, saving it to global variable is better to find during run time
             # Add --logger for better debug print
             sys.argv.extend(['--logger', logger_file])
     # Add resource monitoring to the main function if debug or just time it
