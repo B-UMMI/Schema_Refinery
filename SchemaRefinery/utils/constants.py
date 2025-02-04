@@ -28,6 +28,8 @@ DEPENDENCIES = [
         "requests",
         "pandas",
         "psutil",
+        "tqdm",
+        "networkx"
     ]
 
 # Dependencies version
