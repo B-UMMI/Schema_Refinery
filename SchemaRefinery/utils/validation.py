@@ -307,7 +307,7 @@ def check_parameter(value: Any, validate_type: Optional[type], validate_minimum:
     return value if valid else False
 
 
-def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = ct.FILTERING_CRITERIA) -> Dict[str, Any]:
+def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = ct.CRITERIA_ERRORS) -> Dict[str, Any]:
     """Validates initial input criteria arguments file to be according to the desired format.
 
     Parameters
@@ -383,17 +383,17 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
     if args.input_table is not None and 'ENA661K' in args.database:
         errors.append("\nError: Only assemblies from NCBI can be fetched from an input file. ENA661K was parsed.")
     
-    if args.filtering_criteria.taxon and args.filtering_criteria.input_table:
+    if args.taxon and args.input_table:
         errors.append("\nError: Taxon and input table are mutually exclusive.")
 
-    if not args.filtering_criteria.taxon and not args.filtering_criteria.input_table:
+    if not args.taxon and not args.input_table:
         errors.append("\nError: Must provide either taxon or input table.")
     
-    if args.filtering_criteria.input_table and 'NCBI' not in args.database: 
+    if args.input_table and 'NCBI' not in args.database: 
         errors.append("\nError: Input table can only be used with NCBI database.")
 
-    elif args.filtering_criteria.input_table:
-        verify_path_exists(args.filtering_criteria.input_table, 'file', errors)
+    elif args.input_table:
+        verify_path_exists(args.input_table, 'file', errors)
     
     if args.threads <= 0:
         errors.append("\nError: 'threads' must be a value greater than 0.")

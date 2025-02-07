@@ -162,13 +162,15 @@ def download_assemblies() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
+    
+    # Transfer values from criteria file to the args namespace
+    args.taxon = args.filtering_criteria.pop('taxon', None)
+    args.input_table = args.filtering_criteria.pop('input_table', None)
 
     # Validate the arguments
     val.validate_download_assemblies_module_arguments(args)
+    print(args)
     
-    # Transfer values from criteria file to the args namespace
-    args['taxon'] = args.filtering_criteria.pop('taxon', None)
-    args['input_table'] = args.filtering_criteria.pop('input_table', None)
 
     # Print the validated input arguments if debug
     if gb.DEBUG:
@@ -919,7 +921,7 @@ def match_schemas() -> None:
     args = parser.parse_args()
 
     # Validate the arguments
-    val.validate_match_schemas_arguments(args)
+    val.validate_match_schemas(args)
 
     # Print the validated input arguments if debug
     if gb.DEBUG:

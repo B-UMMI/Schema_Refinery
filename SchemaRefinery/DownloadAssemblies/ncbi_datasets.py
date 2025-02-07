@@ -122,6 +122,7 @@ def fetch_metadata(id_list_path: Optional[str], taxon: Optional[str], criteria: 
 
     # Parse the JSON output
     metadata: tp.Metadata = json.loads(metadata_process.stdout)
+    
 
     return metadata
 

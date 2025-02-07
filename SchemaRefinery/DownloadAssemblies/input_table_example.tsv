@@ -1,5 +1,7 @@
+taxon	Mycoplasmoides pneumoniae
+input_table	None
 abundance	0.8
-genome_size	2000000
+genome_size	800000
 size_threshold	0.2
 max_contig_number	150
 known_st	False

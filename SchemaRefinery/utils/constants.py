@@ -71,7 +71,7 @@ DATABASE_CHOICES = ['NCBI', 'ENA661K']
 SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'match-schemas']
 
 # Default values for Schema Refinery's DownloadAssemblies module
-FILTERING_CRITERIA = ['abundance', 'genome_size', 'size_threshold',
+FILTERING_CRITERIA = ['taxon', 'input_table', 'abundance', 'genome_size', 'size_threshold',
                       'max_contig_number', 'known_st', 'any_quality',
                       'ST_list_path', 'assembly_level', 'reference',
                       'assembly_source', 'file_to_include', 'verify_status',
@@ -91,7 +91,7 @@ CRITERIA_ERRORS = {'taxon':
                     'input_table': 
                         ['input_table: must be a valid path to a file.',
                         [str, None, None, True, None]],
-                    'abundance':
+                   'abundance':
                         ['abundance: must be float between 0.0 and 1.0.',
                         [float, 0.0, 1.0, None, None]],
                    'genome_size':
