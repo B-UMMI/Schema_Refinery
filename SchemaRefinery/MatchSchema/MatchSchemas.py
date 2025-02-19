@@ -233,6 +233,11 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
     ff.create_directory(query_translation_folder)
     subject_translation_folder: str = os.path.join(blast_folder, 'Subject_Translation')
     ff.create_directory(subject_translation_folder)
+
+    query_untranslation_folder: str = os.path.join(blast_folder, 'Query_Not_Translation')
+    ff.create_directory(query_untranslation_folder)
+    subject_untranslation_folder: str = os.path.join(blast_folder, 'Subject_Not_Translation')
+    ff.create_directory(subject_untranslation_folder)
     
     len_query_fastas: int = len(query_fastas)
     len_subject_fasta: int = len(subject_fastas)
@@ -251,18 +256,35 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         query_ids.setdefault(query_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
         # Create translation file path
         query_fasta_translation = os.path.join(query_translation_folder, f"{query_loci}_translation.fasta")
+        query_untranslated_seq = os.path.join(query_untranslation_folder, f"{query_loci}_not_translation.fasta")
         # Translate sequences and update translation dictionary
         query_translations_paths[query_loci] = query_fasta_translation
-        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+        trans_dict, _, untras_seq = sf.translate_seq_deduplicate(fasta_dict,
                                                         query_fasta_translation,
-                                                        None,
+                                                        query_untranslated_seq,
                                                         0,
                                                         False,
                                                         translation_table,
                                                         False)
         # Update the query translation dictionary
         query_translation_dict.update(trans_dict)
-    
+
+        #delete the files that are empty --> the translation has failed
+        deleted_files = 0 
+
+        for file_name in os.listdir(query_translation_folder):
+            file_path = os.path.join(query_translation_folder, file_name)
+
+            if os.path.isfile(file_path) and os.path.getsize(file_path) == 0:
+                os.remove(file_path)
+                seq_id = file_name.replace("_translation.fasta", "")
+                query_translations_paths.pop(seq_id, None)
+                
+                deleted_files += 1
+                print(f"Deleted empty file: {file_path}")
+
+        print(f"Cleanup complete: Removed {deleted_files} empty translation files.")
+
     # Process subject FASTA files
     subject_translation_dict: Dict[str, str] = {}
     subject_ids: Dict[str, List[List[str]]] = {}
@@ -279,11 +301,12 @@ def match_schemas(query_schema_directory: str, subject_schema_directory: str, ou
         subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
         # Create translation file path
         subject_fasta_translation = os.path.join(subject_translation_folder, f"{subject_loci}_translation.fasta")
+        subject_untranslated_seq = os.path.join(subject_untranslation_folder, f"{subject_loci}_not_translation.fasta")
         # Translate sequences and update translation dictionary
         subject_translations_paths[subject_loci] = subject_fasta_translation
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
                                                         subject_fasta_translation,
-                                                        None,
+                                                        subject_untranslated_seq,
                                                         0,
                                                         False,
                                                         translation_table,

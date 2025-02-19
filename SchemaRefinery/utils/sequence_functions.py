@@ -420,7 +420,7 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str,
                     pf.print_message(f"Translated {i}/{total} CDS", "info", end='\r')
             else:
                 if count_seq:
-                    pf.print_message(f"Failed to translate {id_s}" "error", end='\r', flush=True)
+                    pf.print_message(f"Failed to translate {id_s}", "error", end='\r', flush=True)
                 untras_seq.setdefault(id_s, protein_translation)
                 continue
             if deduplicate:
@@ -437,8 +437,11 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str], path_to_write: str,
     if untras_seq and untras_path:
         with open(untras_path, 'w+') as untras_file:
             for id_s, exceptions in untras_seq.items():
-                exceptions_str = '\n'.join(exceptions)
-                untras_file.write(f">{id_s}\n{exceptions_str}\n")
+                if isinstance(exceptions, list):
+                    exceptions_str = ''.join(exceptions)
+                else:
+                    exceptions_str = str(exceptions)
+                    untras_file.write(f">{id_s}\n{exceptions_str}\n")
     return translation_dict, protein_hashes, untras_seq
 
 
