@@ -95,6 +95,13 @@ def download_assemblies() -> None:
                         required=True,
                         dest='email',
                         help='Email provided to Entrez.')
+                        
+    parser.add_argument('-f',
+                        '--input-file',
+                        type=val.validate_criteria_file,
+                        required=True,
+                        dest='input_file',
+                        help='TSV file containing filtering parameters and either a path to a list of accession numbers (only fo NCBI) or the taxon applied before assembly download.')
 
     parser.add_argument('-th',
                         '--threads',
@@ -128,13 +135,6 @@ def download_assemblies() -> None:
                         default=False,
                         help='If provided, the process downloads metadata for the assemblies.')
 
-    parser.add_argument('-f',
-                        '--filtering-criteria',
-                        type=val.validate_criteria_file,
-                        required=False,
-                        dest='filtering_criteria',
-                        help='TSV file containing filtering parameters applied before assembly download.')
-
     parser.add_argument('--download',
                         action='store_true',
                         required=False,
@@ -164,14 +164,12 @@ def download_assemblies() -> None:
     args = parser.parse_args()
     
     # Transfer values from criteria file to the args namespace
-    args.taxon = args.filtering_criteria.pop('taxon', None)
-    args.input_table = args.filtering_criteria.pop('input_table', None)
+    args.taxon = args.input_file.pop('taxon', None)
+    args.input_table = args.input_file.pop('input_table', None)
 
     # Validate the arguments
-    val.validate_download_assemblies_module_arguments(args)
-    print(args)
+    val.validate_download_assemblies_module_arguments(args) 
     
-
     # Print the validated input arguments if debug
     if gb.DEBUG:
         pf.print_input_arguments(args)

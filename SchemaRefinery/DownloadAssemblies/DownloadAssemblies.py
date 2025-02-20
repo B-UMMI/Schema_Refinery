@@ -100,8 +100,8 @@ def main(args: Any) -> None:
         Command-line arguments passed to the script.
     """
     # Create criteria dictionary
-    if args.filtering_criteria:
-        criteria: Dict[str, Any] = args.filtering_criteria
+    if args.input_file:
+        criteria: Dict[str, Any] = args.input_file
     else:
         criteria = None
         pf.print_message("No criteria provided. Fetching all assemblies.", "info")

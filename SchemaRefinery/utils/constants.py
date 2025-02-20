@@ -47,7 +47,7 @@ DEPENDENCIES_VERSION = [
 ]
 
 # minimum Python version
-MIN_PYTHON = [(3, 6, 0), '3.6.0']
+MIN_PYTHON = [(3, 9, 0), '3.9.0']
 
 # socket timeout for urllib calls
 SOCKET_TIMEOUT = 30
@@ -69,13 +69,6 @@ SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 DATABASE_CHOICES = ['NCBI', 'ENA661K']
 
 SCHEMA_ANNOTATION_RUNS_CHOICES = ['uniprot-proteomes', 'genbank', 'match-schemas']
-
-# Default values for Schema Refinery's DownloadAssemblies module
-FILTERING_CRITERIA = ['taxon', 'input_table', 'abundance', 'genome_size', 'size_threshold',
-                      'max_contig_number', 'known_st', 'any_quality',
-                      'ST_list_path', 'assembly_level', 'reference',
-                      'assembly_source', 'file_to_include', 'verify_status',
-                      'exclude_atypical']
 
 ASSEMBLY_LEVELS = ['chromosome', 'complete', 'contig', 'scaffold']
 

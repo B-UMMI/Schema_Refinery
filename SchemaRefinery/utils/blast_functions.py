@@ -418,15 +418,11 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
                                 repeat(blast_exec),
                                 paths_dict.values(),
                                 repeat(self_score_folder)):
-            if res is None or res[1] is None:
-                print(f" BLASTp failed for {res[0]}. No results were generated.")
-            else:
                 self_score_results_files.append(res[1])
-                print(f" BLASTp ran successfully for {res[0]}. Output: {res[1]}")
-              
-            # Print progress
-            pf.print_message(f"Running BLASTp to calculate self-score for {res[0]: <{max_id_length}}", "info", end='\r', flush=True)
-            i += 1    
+
+                # Print progress
+                pf.print_message(f"Running BLASTp to calculate self-score for {res[0]: <{max_id_length}}", "info", end='\r', flush=True)
+                i += 1    
 
     for blast_results_file in self_score_results_files:
         # Extract self-score from BLAST results

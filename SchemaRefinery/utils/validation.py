@@ -313,7 +313,7 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
     Parameters
     ----------
     file_path : str
-        File path to the criteria file.
+        File path to the criteria input file.
     expected_criteria : Dict[str, Any]
         Contains the type and format that criteria file is supposed to have.
 

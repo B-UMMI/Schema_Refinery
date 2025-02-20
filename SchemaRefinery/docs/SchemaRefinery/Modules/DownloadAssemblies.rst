@@ -39,7 +39,7 @@ The `DownloadAssemblies` module can be used as follows:
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -t "Streptococcus pyogenes" -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
+    SR DownloadAssemblies -f /path/to/input_file_with_taxon -db NCBI ENA661K -o /path/to/output -e email@example -th 4 -fm --download
 
 Command-Line Arguments
 ----------------------
@@ -56,9 +56,8 @@ Command-Line Arguments
     -e, --email
         (Required) Email provided to Entrez.
 
-    -t, --taxon
-        (Optional) Scientific name of the taxon. Note: This option works only for genus and species for ENA661K while for NCBI can be any taxon.
-        Type: str
+    -f, --input-file
+        (Required) TSV file containing filtering parameters and either a path to a list of accession numbers (only fo NCBI) or the taxon applied before assembly download.
 
     -th, --threads
         (Optional) Number of threads used for download. You should provide an API key to perform more requests through Entrez.
@@ -75,14 +74,8 @@ Command-Line Arguments
         (Optional) If provided, the process downloads metadata for the assemblies.
         Default: False
 
-    -f, --filtering-criteria
-        (Optional) TSV file containing filtering parameters applied before assembly download.
-
     --download
         (Optional) If the assemblies that passed the filtering criteria should be downloaded.
-
-    -i, --input-table
-        (Optional, specific for NCBI) Text file with a list of accession numbers for the NCBI Assembly database.
 
     --debug
         (Optional) Flag to indicate whether to run the module in debug mode.
@@ -121,26 +114,26 @@ Workflow for downloading metadata:
 Filtering criteria example
 --------------------------
 Filtering criteria file should be a TSV file with the following columns:
-
-.. code-block:: tsv
-    taxon: Scientific name of the taxon (NCBI, ENA661K)
-    input_table: Text file with a list of accession numbers for the NCBI Assembly database (NCBI)
-    abundance: Abundance of the taxon in the environment (ENA661K) (0-1)
-    genome_size: Genome size in Mbp (NCBI, ENA661K) (>1)
-    size_threshold: Threshold for genome size in Mbp (NCBI, ENA661K) (0-1)
-    max_contig_number: Maximum number of contigs in the assembly (NCBI, ENA661K) (>1)
-    known_st: Known sequence type (ENA661K) (True, False, None)
-    any_quality: Any quality (ENA661K) (True, False, None)
-    ST_list_path: Path to the sequence type list (ENA661K) (path, None)
-    assembly_level: Assembly level (NCBI, ENA661K) (chromosome,complete,contig,scaffold)
-    reference: If reference genome (NCBI) (True, False, None)
-    assembly_source: Assembly source (NCBI) (all, refseq, genbank)
-    file_to_include: files to include (NCBI) (genome, rna, protein, cds, gff3, gtf, gbff, seq-report, none)
-    verify_status: Verify status (NCBI) (True, False, None)
-    exclude_atypical: Exclude atypical (NCBI) (True, False, None)
+ 
+* taxon: Scientific name of the taxon (NCBI, ENA661K)
+* input_table: Text file with a list of accession numbers for the NCBI Assembly database (NCBI)
+* abundance: Abundance of the taxon in the environment (ENA661K) (0-1)
+* genome_size: Genome size in Mbp (NCBI, ENA661K) (>1)
+* size_threshold: Threshold for genome size in Mbp (NCBI, ENA661K) (0-1)
+* max_contig_number: Maximum number of contigs in the assembly (NCBI, ENA661K) (>1)
+* known_st: Known sequence type (ENA661K) (True, False, None)
+* any_quality: Any quality (ENA661K) (True, False, None)
+* ST_list_path: Path to the sequence type list (ENA661K) (path, None)
+* assembly_level: Assembly level (NCBI, ENA661K) (chromosome,complete,contig,scaffold)
+* reference: If reference genome (NCBI) (True, False, None)
+* assembly_source: Assembly source (NCBI) (all, refseq, genbank)
+* file_to_include: files to include (NCBI) (genome, rna, protein, cds, gff3, gtf, gbff, seq-report, none)
+* verify_status: Verify status (NCBI) (True, False, None)
+* exclude_atypical: Exclude atypical (NCBI) (True, False, None)
 
 Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
 Note: When None or empty value is provided, the filtering criteria will not be applied.
+Note: The file can only contain either the taxon or input_table row, not both.
 
 Outputs
 -------
@@ -183,10 +176,10 @@ Here are some example commands to use the `DownloadAssemblies` module:
 .. code-block:: bash
 
     # Download assemblies from NCBI for a specific taxon
-    SR DownloadAssemblies -t "Escherichia coli" -db NCBI -o /path/to/output -e email@example.com -th 4 --download
+    SR DownloadAssemblies -f /path/to/input_file_with_taxon -db NCBI -o /path/to/output -e email@example.com -th 4 --download
 
-    # Download assemblies from ENA661K using an IDs table
-    SR DownloadAssemblies -db ENA661K -o /path/to/output -e email@example.com -th 4 --download -i ids_table.tsv
+    # Download assemblies from NCBI using an IDs table
+    SR DownloadAssemblies -f /path/to/input_file_with_id_table -db NCBI -o /path/to/output -e email@example.com -th 4 --download 
 
     # Download assemblies from both NCBI and ENA661K with filtering criteria
     SR DownloadAssemblies -t "Streptococcus pyogenes" -db NCBI ENA661K -o /path/to/output -e email@example.com -th 4 -fm --download
