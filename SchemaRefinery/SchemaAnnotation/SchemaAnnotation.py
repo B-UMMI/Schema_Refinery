@@ -65,6 +65,8 @@ def main(args: Namespace) -> None:
             proteome_file_ids: Dict[str, List[str]]
             tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
+            #prf.print_message(f'{proteome_file_ids}', 'info')
+
             # Align loci against proteome records
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
                                                          proteome_file_ids,
@@ -79,6 +81,8 @@ def main(args: Namespace) -> None:
                                                          args.run_mode,
                                                          args.proteome_ids_to_add)
             results_files.extend(annotations)
+
+    
 
     # Check if 'genbank' is in the annotation options
     if 'genbank' in args.annotation_options:

@@ -346,9 +346,9 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
         merge_files[i].append(annotations_file)
 
     for i, (proteome_file_id, loci_values) in enumerate(list(best_bsr_values_per_proteome_file.items())):
-        (same_protein_other_annotations, all_alleles) = proteomes_data[i]
-        if same_protein_other_annotations is None or all_alleles is None:
-            continue
+        #(same_protein_other_annotations, all_alleles) = proteomes_data[i]
+        #if same_protein_other_annotations is None or all_alleles is None:
+            #continue
         for loci_id, values in list(loci_values.items()):
             # Find all of the proteins that reps representes
             proteinid: str = values[0]
