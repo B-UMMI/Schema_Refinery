@@ -8,8 +8,9 @@ from typing import Callable, Any
 
 try:
     from utils import print_functions as pf
-except ImportError:
+except ModuleNotFoundError:
     from SchemaRefinery.utils import print_functions as pf
+
 
 def time_and_resource_function(monitor_memory=True, monitor_cpu=True, monitor_io=True, monitor_network=True, monitor_disk=True, monitor_threads=True, monitor_gc=True, monitor_context_switches=True, monitor_open_files=True, monitor_page_faults=True, interval=0.1):
     """

@@ -11,7 +11,7 @@ try:
                                   genbank_annotations as ga)
     from utils import (file_functions as ff,
                        pandas_functions as upf,
-                       print_functions as pf,
+                       print_functions as prf,
                        logger_functions as logf,
                        globals as gb)
     from MatchSchema import (MatchSchemas as ms)

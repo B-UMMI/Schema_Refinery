@@ -9,7 +9,7 @@ from typing import Tuple, Dict, Any, List, Union, Optional
 try:
     from utils import (constants as ct,
                        print_functions as pf)
-except:
+except ModuleNotFoundError:
     from SchemaRefinery.utils import (constants as ct,
                                       print_functions as pf)
 

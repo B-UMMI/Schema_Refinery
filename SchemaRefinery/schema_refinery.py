@@ -15,6 +15,7 @@ import sys
 import argparse
 import webbrowser
 
+
 try:
     from DownloadAssemblies import DownloadAssemblies
     from SchemaAnnotation import SchemaAnnotation
@@ -31,7 +32,6 @@ try:
                        globals as gb,
                        time_functions as tf,
                        file_functions as ff)
-     
 except ModuleNotFoundError:
     from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
     from SchemaRefinery.SchemaAnnotation import SchemaAnnotation

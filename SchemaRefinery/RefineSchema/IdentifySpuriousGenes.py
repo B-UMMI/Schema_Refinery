@@ -6,18 +6,32 @@ import sys
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 
-from SchemaRefinery.utils import (core_functions as cof,
-                                    file_functions as ff,
-                                    sequence_functions as sf,
-                                    iterable_functions as itf,
-                                    blast_functions as bf,
-                                    linux_functions as lf,
-                                    classify_cds_functions as ccf,
-                                    constants as ct,
-                                    Types as tp,
-                                    print_functions as pf,
-                                    logger_functions as logf,
-                                    globals as gb)
+try:
+    from utils import (core_functions as cof,
+                                        file_functions as ff,
+                                        sequence_functions as sf,
+                                        iterable_functions as itf,
+                                        blast_functions as bf,
+                                        linux_functions as lf,
+                                        classify_cds_functions as ccf,
+                                        constants as ct,
+                                        Types as tp,
+                                        print_functions as pf,
+                                        logger_functions as logf,
+                                        globals as gb)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (core_functions as cof,
+                                        file_functions as ff,
+                                        sequence_functions as sf,
+                                        iterable_functions as itf,
+                                        blast_functions as bf,
+                                        linux_functions as lf,
+                                        classify_cds_functions as ccf,
+                                        constants as ct,
+                                        Types as tp,
+                                        print_functions as pf,
+                                        logger_functions as logf,
+                                        globals as gb)
 
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
     """

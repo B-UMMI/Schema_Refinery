@@ -1,7 +1,10 @@
 import shutil
 from typing import Optional
 
-from SchemaRefinery.utils import print_functions as pf
+try:
+    from utils import print_functions as pf
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import print_functions as pf
 
 def get_tool_path(name: str) -> str:
     """
