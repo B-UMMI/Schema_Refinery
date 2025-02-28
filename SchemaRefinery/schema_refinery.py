@@ -256,7 +256,6 @@ def schema_annotation() -> None:
                         '--chewie-annotations',
                         type=str,
                         required=False,
-                        nargs='+',
                         dest='chewie_annotations',
                         help='File with the results from chewBBACA UniprotFinder module.')
 
