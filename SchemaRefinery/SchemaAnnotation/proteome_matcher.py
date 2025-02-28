@@ -58,13 +58,13 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
 
     prf.print_message(f"Extracting protein from proteome file: {os.path.basename(proteome_file)}...", "info")
     
+    if os.path.getsize(proteome_file) == 0:
+        prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
+        return ("", {}, {})
+
     # Fetch protein sequences from the proteome file
     fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(proteome_file, False)
     total_proteins: int = len(fasta_dict)
-    
-    if total_proteins == 0:
-        prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
-        return (None, None, None)
 
     # Process each protein sequence
     for id_, sequence in fasta_dict.items():
@@ -275,9 +275,16 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                             clustering_cov,
                                             size_ratio,
                                             blast_processing_folder)
+
+        if not blast_db_files:
+            proteome_files.remove(proteome_file)
+            continue
+        
         # Save paths to proteome file paths
         proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
         proteomes_data.append((same_protein_other_annotations, all_alleles))
+
+    prf.print_message(f"{proteome_files}", "info")
 
     [translation_dict,
      reps_ids,
