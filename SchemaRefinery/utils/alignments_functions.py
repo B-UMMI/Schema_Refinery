@@ -77,7 +77,7 @@ def get_alignments_dict_from_blast_results(
 ) -> Tuple[tp.BlastDict, Union[int, Dict[str, int]], tp.RepresentativeBlastResultsCoords, tp.RepresentativeBlastResultsCoords]:
     """
     Reads BLAST results file and extracts the necessary items. Based on input, also fetches the coordinates 
-    based on query sequences and self-score contained inside the BLAST results file.
+    based on query sequences and self-score contained inside the BLAST results file. As long as the subject and query ids are the same the score is considered a self-score, it does not have to be 100.
 
     Parameters
     ----------
@@ -161,7 +161,7 @@ def get_alignments_dict_from_blast_results(
                         self_scores.setdefault(query, 0)
                         self_score = self_scores[query]
                     # Largest self-score is chosen
-                    if pident == 100 and get_self_score and score > self_score:
+                    if get_self_score and score > self_score:
                         if multiple_reps:
                             self_scores[query] = score
                         else:
@@ -175,7 +175,7 @@ def get_alignments_dict_from_blast_results(
                     self_scores.setdefault(query, 0)
                     self_score = self_scores[query]
                 # Largest self-score is chosen
-                if pident == 100 and get_self_score and score > self_score:
+                if get_self_score and score > self_score:
                     if multiple_reps:
                         self_scores[query] = score
                     else:
