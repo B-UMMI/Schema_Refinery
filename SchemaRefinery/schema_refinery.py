@@ -820,118 +820,110 @@ def identify_paralogous_loci() -> None:
 	IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
 def match_schemas() -> None:
-	"""
-	Parse command-line arguments and initiate the process to match schemas.
 
-	This function sets up an argument parser to handle various command-line
-	options for matching schemas. It then calls the main function of the
-	MatchSchemas class with the parsed arguments.
+    """
+    Parse command-line arguments and initiate the process to match schemas.
 
-	Parameters
-	----------
-	None
+    This function sets up an argument parser to handle various command-line
+    options for matching schemas. It then calls the main function of the
+    MatchSchemas class with the parsed arguments.
 
-	Returns
-	-------
-	None
-	"""
-	
-	# Initialize the argument parser
-	parser = argparse.ArgumentParser(description=__doc__,
-									 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	 
-	# Add arguments to the parser
-	parser.add_argument('-qs',
-						'--query-schema-directory',
-						type=str,
-						required=True,
-						dest='query_schema_directory',
-						help='Folder that contains the schema to identify paralogous loci.')
+    Parameters
+    ----------
+    None
 
-	parser.add_argument('-ss',
-						'--subject-chema-directory',
-						type=str,
-						required=True,
-						dest='subject_schema_directory',
-						help='Folder that contains the schema to identify paralogous loci.')
-	
-	parser.add_argument('-o',
-						'--output-directory',
-						type=str,
-						required=True,
-						dest='output_directory',
-						help='Path to the directory to which files will be stored.')
-	
-	parser.add_argument('-c',
-						'--cpu',
-						type=int,
-						required=False,
-						dest='cpu',
-						default=1, 
-						help='Number of CPUs to run BLAST instances.')
-	
-	parser.add_argument('-b',
-						'--bsr',
-						type=float,
-						required=False,
-						dest='bsr',
-						default=0.6,
-						help='BSR value to consider alleles as the same locus.')
-	
-	parser.add_argument('-tt',
-						'--translation-table',
-						type=int,
-						required=False,
-						dest='translation_table',
-						default=11,
-						help='Translation table to use for the CDS translation.')
+    Returns
+    -------
+    None
+    """
+    
+    # Initialize the argument parser
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+     
+    # Add arguments to the parser
+    parser.add_argument('-fs',
+                        '--first-schema-directory',
+                        type=str,
+                        required=True,
+                        dest='first_schema_directory',
+                        help='Folder that contains the first schema to identify paralogous loci.')
 
-	parser.add_argument('-pm',
-						'--processing-mode',
-						type=str,
-						required=False,
-						dest='processing_mode',
-						choices=ct.PROCESSING_MODE_CHOICES,
-						default='alleles_vs_alleles',
-						help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-	
-	parser.add_argument('--nocleanup',
-						action='store_true',
-						required=False,
-						dest='no_cleanup',
-						help='Flag to indicate whether to skip cleanup after running the module.')
+    parser.add_argument('-ss',
+                        '--second-chema-directory',
+                        type=str,
+                        required=True,
+                        dest='second_schema_directory',
+                        help='Folder that contains the second schema to identify paralogous loci.')
+    
+    parser.add_argument('-o',
+                        '--output-directory',
+                        type=str,
+                        required=True,
+                        dest='output_directory',
+                        help='Path to the directory to which files will be stored.')
+    
+    parser.add_argument('-c',
+                        '--cpu',
+                        type=int,
+                        required=False,
+                        dest='cpu',
+                        default=1, 
+                        help='Number of CPUs to run BLAST instances.')
+    
+    parser.add_argument('-b',
+                        '--bsr',
+                        type=float,
+                        required=False,
+                        dest='bsr',
+                        default=0.6,
+                        help='BSR value to consider alleles as the same locus.')
+    
+    parser.add_argument('-tt',
+                        '--translation-table',
+                        type=int,
+                        required=False,
+                        dest='translation_table',
+                        default=11,
+                        help='Translation table to use for the CDS translation.')
 
-	parser.add_argument('--debug',
-						action='store_true',
-						required=False,
-						dest='debug',
-						help='Flag to indicate whether to run the module in debug mode.')
+    parser.add_argument('--nocleanup',
+                        action='store_true',
+                        required=False,
+                        dest='no_cleanup',
+                        help='Flag to indicate whether to skip cleanup after running the module.')
 
-	parser.add_argument('--logger',
-						type=str,
-						required=False,
-						default=None,
-						dest='logger',
-						help='Path to the logger file.')
+    parser.add_argument('--debug',
+                        action='store_true',
+                        required=False,
+                        dest='debug',
+                        help='Flag to indicate whether to run the module in debug mode.')
 
-	# Parse the command-line arguments
-	args = parser.parse_args()
+    parser.add_argument('--logger',
+                        type=str,
+                        required=False,
+                        default=None,
+                        dest='logger',
+                        help='Path to the logger file.')
 
-	# Validate the arguments
-	val.validate_match_schemas(args)
+    # Parse the command-line arguments
+    args = parser.parse_args()
 
-	# Print the validated input arguments if debug
-	if gb.DEBUG:
-		pf.print_input_arguments(args)
+    # Validate the arguments
+    val.validate_match_schemas(args)
 
-	# Delete --debug and --logger arguments because we set up a global variable both,
-	# here they are just for the user to see the options
-	del args.debug
-	del args.logger
+    # Print the validated input arguments if debug
+    if gb.DEBUG:
+        pf.print_input_arguments(args)
 
-	# Call the main function of the MatchSchemas class with the parsed arguments
-	pf.print_message(f"Running MatchSchemas module...", message_type="info")
-	MatchSchemas.match_schemas(**vars(args))
+    # Delete --debug and --logger arguments because we set up a global variable both,
+    # here they are just for the user to see the options
+    del args.debug
+    del args.logger
+
+    # Call the main function of the MatchSchemas class with the parsed arguments
+    pf.print_message(f"Running MatchSchemas module...", message_type="info")
+    MatchSchemas.match_schemas(**vars(args))
 
 def create_schema_structure() -> None:
 	"""

@@ -489,16 +489,14 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match schemas
     if 'match-schemas' in args.annotation_options:
-        if any([args.subject_schema, args.subject_annotations, args.processing_mode]) and not all([args.subject_schema, args.subject_annotations, args.processing_mode]):
+        if any([args.subject_schema, args.subject_annotations]) and not all([args.subject_schema, args.subject_annotations]):
             missing_args = []
             if not args.subject_schema:
                 missing_args.append('subject_schema')
             if not args.subject_annotations:
                 missing_args.append('subject_annotations')
-            if not args.processing_mode:
-                missing_args.append('processing_mode')
 
-            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema', 'subject-annotations', and 'processing-mode' must be provided together.")
+            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema' and 'subject-annotations' must be provided together.")
         
         if args.subject_schema:
             verify_path_exists(args.subject_schema, 'directory', errors)
@@ -680,9 +678,9 @@ def validate_match_schemas(args: argparse.Namespace) -> None:
     errors: List[str] = []
 
     # Verify if files or directories exist
-    verify_schema_structure(args.query_schema_directory, errors)
+    verify_schema_structure(args.first_schema_directory, errors)
 
-    verify_schema_structure(args.subject_schema_directory, errors)
+    verify_schema_structure(args.second_schema_directory, errors)
 
     verify_path_exists(args.output_directory, 'directory', errors)
 

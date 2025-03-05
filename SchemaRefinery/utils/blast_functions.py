@@ -282,8 +282,11 @@ def run_self_score_multiprocessing(id_: str, blast_exec: str, file_path: str, ou
     blast_args: List[str] = [blast_exec, '-query', file_path,
                              '-subject', file_path,
                              '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
-                             '-out', blast_results_file,
-                             '-comp_based_stats', '0']
+
+                             '-out', blast_results_file]
+    
+    # '-comp_based_stats', 0
+
 
     run_blast_with_args_only(blast_args)
 
