@@ -296,13 +296,13 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
         subject_fastas_hash: Dict[str, str] = b_files
         query_fastas_rep: Dict[str, str] = a_files_short
         subject_fastas_rep: Dict[str, str] = b_files_short
-        pf.print_message("A files set as query, B files set as subject.", "info")
+        pf.print_message("First files set as query, second files set as subject.", "info")
     else:
         query_fastas_hash: Dict[str, str] = b_files
         subject_fastas_hash: Dict[str, str] = a_files
         query_fastas_rep: Dict[str, str] = b_files_short
         subject_fastas_rep: Dict[str, str] = a_files_short
-        pf.print_message("B files set as query, A files set as subject.", "info")
+        pf.print_message("Second files set as query, First files set as subject.", "info")
 
 
     # Create the output directories
@@ -335,7 +335,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     query_ids: Dict[str, List[List[str]]] = {}
     query_translations_rep_paths: Dict[str, str] = {}
     i = 0
-    pf.print_message("Translating sequences for query short schema...", "info")
+    pf.print_message("Translating sequences for query rep schema...", "info")
     for query_loci, path in query_fastas_rep.items():
         i += 1
         pf.print_message(f"Translated query loci FASTA: {i}/{len_query_rep_fastas}", "info", end='\r', flush=True)
@@ -380,6 +380,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     subject_translations_rep_paths: Dict[str, str] = {}
     master_file_rep_path: str = os.path.join(blast_folder, 'subject_master_rep_file.fasta') #file with the translation of the representatives
     i = 0
+    pf.print_message("", "info")
     pf.print_message("Translating sequences for subject rep schema...", "info")
     for subject_loci, path in subject_fastas_rep.items():
         i += 1
@@ -410,6 +411,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     query_translations_paths: Dict[str, str] = {}
     query_prot_hash: Dict[str, str] = {}
     i = 0
+    pf.print_message("", "info")
     pf.print_message("Translating sequences for query schema...", "info")
     for query_loci, path in query_fastas_hash.items():
         i += 1
@@ -458,6 +460,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     subject_prot_hash: Dict[str, str] = {}
     master_file_path: str = os.path.join(blast_folder, 'subject_master_file.fasta') #file with all the translated sequences of the subject schema
     i = 0
+    pf.print_message("", "info")
     pf.print_message("Translating sequences for subject schema...", "info")
     for subject_loci, path in subject_fastas_hash.items():
         i += 1
@@ -488,6 +491,8 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     # Comparision of the Query and Subject hashes (the BSR = 1.0)
     # -------------------------------------------------------------------
     # Prepare best BSR values and query translations
+    pf.print_message("", "info")
+    pf.print_message("Matching hashes between query and subject schema", "info")
     best_bsr_values = {}
 
     # Find common keys (matching protein hashes)
