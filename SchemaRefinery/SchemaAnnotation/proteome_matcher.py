@@ -294,7 +294,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
                                                     run_mode)
 
     # Import Swiss-Prot and TrEMBL records descriptions
-    with open(proteome_files[2], 'rb') as dinfile:
+    with open(proteome_files[-1], 'rb') as dinfile:
         descriptions: Dict[str, str] = pickle.load(dinfile)
 
     # For better prints get max length of string
