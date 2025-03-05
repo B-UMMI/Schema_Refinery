@@ -6,9 +6,14 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
 
-from SchemaRefinery.utils import (file_functions as ff,
-                                    constants as ct,
-                                    print_functions as pf)
+try:
+    from utils import (file_functions as ff,
+                                        constants as ct,
+                                        print_functions as pf)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (file_functions as ff,
+                                        constants as ct,
+                                        print_functions as pf)
 
 def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) -> bool:
     """

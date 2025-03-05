@@ -5,29 +5,31 @@ from typing import List, Optional, Tuple, Dict
 
 
 try:
-    from SchemaAnnotation import (proteome_fetcher as pf,
-                                  proteome_splitter as ps,
-                                  proteome_matcher as pm,
-                                  genbank_annotations as ga)
-    from utils import (file_functions as ff,
-                       pandas_functions as upf,
-                       print_functions as prf,
-                       logger_functions as logf,
-                       globals as gb)
-    from MatchSchema import (MatchSchemas as ms)
+	from SchemaAnnotation import (proteome_fetcher as pf,
+								  proteome_splitter as ps,
+								  proteome_matcher as pm,
+								  genbank_annotations as ga)
+	from utils import (file_functions as ff,
+					   pandas_functions as upf,
+					   print_functions as prf,
+					   logger_functions as logf,
+					   globals as gb)
+	from MatchSchema import (MatchSchemas as ms)
+
 except ModuleNotFoundError:
-    from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
-                                                proteome_splitter as ps,
-                                                proteome_matcher as pm,
-                                                genbank_annotations as ga)
-    from SchemaRefinery.utils import (file_functions as ff,
-                                      pandas_functions as upf,
-                                      print_functions as prf,
-                                      logger_functions as logf,
-                                      globals as gb)
-    from SchemaRefinery.MatchSchema import (MatchSchemas as ms)
+	from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
+												proteome_splitter as ps,
+												proteome_matcher as pm,
+												genbank_annotations as ga)
+	from SchemaRefinery.utils import (file_functions as ff,
+									  pandas_functions as upf,
+									  print_functions as prf,
+									  logger_functions as logf,
+									  globals as gb)
+	from SchemaRefinery.MatchSchema import (MatchSchemas as ms)
 
 def main(args: Namespace) -> None:
+
     """
     Main function to process proteome annotations based on provided arguments.
 

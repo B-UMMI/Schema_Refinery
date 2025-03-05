@@ -5,8 +5,8 @@ from typing import Dict, List, Set, Tuple, Union
 try:
     from utils import (kmers_functions as kf,
                        iterable_functions as itf)
-except:
-    from SchemaRefinery. utils import (kmers_functions as kf,
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (kmers_functions as kf,
                                        iterable_functions as itf)
 
 def select_representatives(kmers: Union[List[Tuple[str, int]], Set[Tuple[str, int]]], 

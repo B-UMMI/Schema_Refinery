@@ -2,18 +2,30 @@ import os
 import pandas as pd
 from typing import Dict, Any, List, Tuple, Union, Optional, Set
 
-
-from SchemaRefinery.utils import (file_functions as ff,
-                                    clustering_functions as cf,
-                                    blast_functions as bf,
-                                    alignments_functions as af,
-                                    iterable_functions as itf,
-                                    linux_functions as lf,
-                                    graphical_functions as gf,
-                                    pandas_functions as pf,
-                                    sequence_functions as sf,
-                                    Types as tp,
-                                    print_functions as prf)
+try:
+    from utils import (file_functions as ff,
+                                        clustering_functions as cf,
+                                        blast_functions as bf,
+                                        alignments_functions as af,
+                                        iterable_functions as itf,
+                                        linux_functions as lf,
+                                        graphical_functions as gf,
+                                        pandas_functions as pf,
+                                        sequence_functions as sf,
+                                        Types as tp,
+                                        print_functions as prf)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (file_functions as ff,
+                                        clustering_functions as cf,
+                                        blast_functions as bf,
+                                        alignments_functions as af,
+                                        iterable_functions as itf,
+                                        linux_functions as lf,
+                                        graphical_functions as gf,
+                                        pandas_functions as pf,
+                                        sequence_functions as sf,
+                                        Types as tp,
+                                        print_functions as prf)
 
 def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]], 
                            file_path: str, write_type: str) -> None:

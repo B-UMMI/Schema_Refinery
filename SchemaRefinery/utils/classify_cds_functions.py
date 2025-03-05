@@ -2,13 +2,22 @@ import os
 from typing import Dict, List, Set, Union, Tuple
 
 
-from SchemaRefinery.utils import (file_functions as ff,
-                                    sequence_functions as sf,
-                                    clustering_functions as cf,
-                                    iterable_functions as itf,
-                                    kmers_functions as kf,
-                                    Types as tp,
-                                    print_functions as pf)
+try:
+    from utils import (file_functions as ff,
+                                        sequence_functions as sf,
+                                        clustering_functions as cf,
+                                        iterable_functions as itf,
+                                        kmers_functions as kf,
+                                        Types as tp,
+                                        print_functions as pf)
+except ModuleNotFoundError:
+    from SchemaRefinery.utils import (file_functions as ff,
+                                        sequence_functions as sf,
+                                        clustering_functions as cf,
+                                        iterable_functions as itf,
+                                        kmers_functions as kf,
+                                        Types as tp,
+                                        print_functions as pf)
 
 def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) -> None:
     """
