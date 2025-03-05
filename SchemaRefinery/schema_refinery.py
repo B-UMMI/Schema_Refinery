@@ -842,19 +842,19 @@ def match_schemas() -> None:
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
      
     # Add arguments to the parser
-    parser.add_argument('-qs',
-                        '--query-schema-directory',
+    parser.add_argument('-fs',
+                        '--first-schema-directory',
                         type=str,
                         required=True,
-                        dest='query_schema_directory',
-                        help='Folder that contains the schema to identify paralogous loci.')
+                        dest='first_schema_directory',
+                        help='Folder that contains the first schema to identify paralogous loci.')
 
     parser.add_argument('-ss',
-                        '--subject-chema-directory',
+                        '--second-chema-directory',
                         type=str,
                         required=True,
-                        dest='subject_schema_directory',
-                        help='Folder that contains the schema to identify paralogous loci.')
+                        dest='second_schema_directory',
+                        help='Folder that contains the second schema to identify paralogous loci.')
     
     parser.add_argument('-o',
                         '--output-directory',
@@ -887,15 +887,6 @@ def match_schemas() -> None:
                         default=11,
                         help='Translation table to use for the CDS translation.')
 
-    parser.add_argument('-pm',
-                        '--processing-mode',
-                        type=str,
-                        required=False,
-                        dest='processing_mode',
-                        choices=ct.PROCESSING_MODE_CHOICES,
-                        default='alleles_vs_alleles',
-                        help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-    
     parser.add_argument('--nocleanup',
                         action='store_true',
                         required=False,
