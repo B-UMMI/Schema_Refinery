@@ -850,7 +850,7 @@ def match_schemas() -> None:
                         help='Folder that contains the first schema to identify paralogous loci.')
 
     parser.add_argument('-ss',
-                        '--second-chema-directory',
+                        '--second-schema-directory',
                         type=str,
                         required=True,
                         dest='second_schema_directory',

@@ -300,7 +300,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     else:
         query_fastas_hash: Dict[str, str] = b_files
         subject_fastas_hash: Dict[str, str] = a_files
-        query_fastas: Dict[str, str] = b_files_short
+        query_fastas_rep: Dict[str, str] = b_files_short
         subject_fastas_rep: Dict[str, str] = a_files_short
         pf.print_message("B files set as query, A files set as subject.", "info")
 
