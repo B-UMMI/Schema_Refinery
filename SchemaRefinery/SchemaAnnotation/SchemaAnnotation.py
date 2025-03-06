@@ -137,10 +137,9 @@ def main(args: Namespace) -> None:
             })
         if 'uniprot-proteomes' in args.annotation_options:
             priority_dict.update({
-                'Uniprot_BSR' : ['Locus', 'Proteome_ID', 'Proteome_product', 'Proteome_gene_name', 'Proteome_BSR']
+                'Proteome_BSR' : ['Locus', 'Proteome_ID', 'Proteome_product', 'Proteome_gene_name', 'Proteome_BSR']
             })
         # Process the merged file based on the priority dictionary
-        prf.print_message(f"{priority_dict}", "info")
         output_file = os.path.join(args.output_directory, 'best_annotations_user_input.tsv')
         # Define the columns to include in the output file
         output_columns = ['Locus', 'Protein_ID', 'Protein_gene_name', 'Protein_product', 'Protein_BSR', 'Source']

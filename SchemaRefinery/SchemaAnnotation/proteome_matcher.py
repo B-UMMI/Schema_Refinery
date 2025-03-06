@@ -56,15 +56,15 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
 	# Create dictionaries to store the representatives ID and what it representes
 	same_protein_other_annotations: Dict[str, List[str]] = {}
 
-    prf.print_message(f"Extracting protein from proteome file: {os.path.basename(proteome_file)}...", "info")
+	prf.print_message(f"Extracting protein from proteome file: {os.path.basename(proteome_file)}...", "info")
     
-    if os.path.getsize(proteome_file) == 0:
-        prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
-        return ("", {}, {})
+	if os.path.getsize(proteome_file) == 0:
+		prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
+		return ("", {}, {})
 
-    # Fetch protein sequences from the proteome file
-    fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(proteome_file, False)
-    total_proteins: int = len(fasta_dict)
+	# Fetch protein sequences from the proteome file
+	fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(proteome_file, False)
+	total_proteins: int = len(fasta_dict)
 
 	# Process each protein sequence
 	for id_, sequence in fasta_dict.items():
@@ -255,48 +255,46 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
     -------
     None
     """
-    proteome_matcher_output = os.path.join(output_directory, 'proteome_matcher_output')
-    # Create BLAST database files for each proteome
-    proteomes_data_paths: Dict[str, List[Optional[str]]] = {}
-    proteomes_data: List[Tuple[Optional[Dict[str, List[str]]], Optional[Dict[str, str]]]] = []
-    for proteome_file in proteome_files[:2]:
-        # Get proteome file name
-        proteome_file_base: str = os.path.basename(proteome_file)
-        # Create folder for proteome processing
-        proteome_folder: str = os.path.join(proteome_matcher_output, f"{proteome_file_base.split('.')[0]}_processing")
-        # Create directory for proteome BLAST processing
-        blast_processing_folder: str = os.path.join(proteome_folder, 'blast_processing')
-        ff.create_directory(blast_processing_folder)
-        # Create BLAST database files
-        [blast_db_files,
-        same_protein_other_annotations,
-        all_alleles] = create_database_files(proteome_file,
-                                            clustering_sim,
-                                            clustering_cov,
-                                            size_ratio,
-                                            blast_processing_folder)
+	proteome_matcher_output = os.path.join(output_directory, 'proteome_matcher_output')
+	# Create BLAST database files for each proteome
+	proteomes_data_paths: Dict[str, List[Optional[str]]] = {}
+	proteomes_data: List[Tuple[Optional[Dict[str, List[str]]], Optional[Dict[str, str]]]] = []
+	for proteome_file in proteome_files[:2]:
+		# Get proteome file name
+		proteome_file_base: str = os.path.basename(proteome_file)
+		# Create folder for proteome processing
+		proteome_folder: str = os.path.join(proteome_matcher_output, f"{proteome_file_base.split('.')[0]}_processing")
+		# Create directory for proteome BLAST processing
+		blast_processing_folder: str = os.path.join(proteome_folder, 'blast_processing')
+		ff.create_directory(blast_processing_folder)
+		# Create BLAST database files
+		[blast_db_files,
+		same_protein_other_annotations,
+		all_alleles] = create_database_files(proteome_file,
+											clustering_sim,
+											clustering_cov,
+											size_ratio,
+											blast_processing_folder)
 
-        if not blast_db_files:
-            proteome_files.remove(proteome_file)
-            continue
-        
-        # Save paths to proteome file paths
-        proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
-        proteomes_data.append((same_protein_other_annotations, all_alleles))
+		if not blast_db_files:
+			proteome_files.remove(proteome_file)
+			continue
+		
+		# Save paths to proteome file paths
+		proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
+		proteomes_data.append((same_protein_other_annotations, all_alleles))
 
-    prf.print_message(f"{proteome_files}", "info")
-
-    [translation_dict,
-     reps_ids,
-     translations_paths] = sf.translate_schema_loci(schema_directory,
-                                                    proteome_matcher_output,
-                                                    translation_table,
-                                                    run_mode)
+	[translation_dict,
+		reps_ids,
+		translations_paths] = sf.translate_schema_loci(schema_directory,
+													proteome_matcher_output,
+													translation_table,
+													run_mode)
 
 
-    # Import Swiss-Prot and TrEMBL records descriptions
-    with open(proteome_files[-1], 'rb') as dinfile:
-        descriptions: Dict[str, str] = pickle.load(dinfile)
+	# Import Swiss-Prot and TrEMBL records descriptions
+	with open(proteome_files[-1], 'rb') as dinfile:
+		descriptions: Dict[str, str] = pickle.load(dinfile)
 
 	# For better prints get max length of string
 	max_id_length: int = len(max(reps_ids, key=len))
