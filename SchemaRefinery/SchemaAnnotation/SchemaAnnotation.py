@@ -107,21 +107,12 @@ def main(args: Namespace) -> None:
     matched_schemas: Optional[str] = None
     # Check if 'match-schemas' is in the annotation options
     if 'match-schemas' in args.annotation_options:
-        matched_schemas_folder: str = os.path.join(args.output_directory, 'matched_schemas')
-        # Match schemas
-        matched_schemas = ms.match_schemas(args.schema_directory,
-                                           args.subject_schema,
-                                           matched_schemas_folder,
-                                           args.bsr,
-                                           args.translation_table,
-                                           args.cpu,
-                                           False,)
         # Merge matched loci with their annotation
-        upf.merge_files_by_column_values(matched_schemas,
+        upf.merge_files_by_column_values(args.matched_schemas,
                                         args.subject_annotations,
                                         1,
                                         0,
-                                        matched_schemas)
+                                        args.matched_schemas)
         
         results_files.append(matched_schemas)
 
@@ -142,16 +133,16 @@ def main(args: Namespace) -> None:
         priority_dict = {}
         if 'genbank' in args.annotation_options:
             priority_dict.update({
-                'Genbank_BSR' : ['Locus', 'Genbank_ID', 'Genbank_product', 'Genbank_name', 'Genbank_BSR']
+                'Genbank_BSR' : ['Locus', 'Genbank_ID', 'Genbank_gene_name', 'Genbank_product', 'Genbank_BSR']
             })
         if 'uniprot-proteomes' in args.annotation_options:
             priority_dict.update({
-                'Uniprot_BSR' : ['Locus', 'Uniprot_protein_ID', 'Uniprot_protein_product', 'Uniprot_protein_short_name', 'Uniprot_BSR']
+                'Proteome_BSR' : ['Locus', 'Proteome_ID', 'Proteome_product', 'Proteome_gene_name', 'Proteome_BSR']
             })
         # Process the merged file based on the priority dictionary
         output_file = os.path.join(args.output_directory, 'best_annotations_user_input.tsv')
         # Define the columns to include in the output file
-        output_columns = ['Locus', 'Protein_ID', 'Protein_product', 'Protein_short_name', 'Protein_BSR', 'Database']
+        output_columns = ['Locus', 'Protein_ID', 'Protein_gene_name', 'Protein_product', 'Protein_BSR', 'Source']
         upf.process_tsv_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
     # Clean up temporary files
     if not args.no_cleanup:

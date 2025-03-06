@@ -169,7 +169,7 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
 			# Get the selected columns from the row as a dictionary
 			selected_columns_dict = row[selected_columns].to_dict()
 			# Add the database name to the dictionary
-			selected_columns_dict['Database'] = db_name
+			selected_columns_dict['Source'] = db_name
 
 			# Rename the dictionary keys using new_column_names
 			selected_columns_dict = {output_columns[i]: v for i, v in enumerate(selected_columns_dict.values())}

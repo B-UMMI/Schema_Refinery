@@ -211,7 +211,7 @@ def schema_annotation() -> None:
 						type=str,
 						required=True,
 						dest='schema_directory',
-						help='Path to the schema\'s directory.')
+						help='Path to the schema\'s to be annotated directory.')
 
 	parser.add_argument('-o',
 						'--output-directory',
@@ -259,14 +259,16 @@ def schema_annotation() -> None:
 						dest='chewie_annotations',
 						help='File with the results from chewBBACA UniprotFinder module.')
 
-	parser.add_argument('-ss',
-						'--subject-schema',
+	parser.add_argument('-ms',
+						'--matched-schemas',
 						type=str,
 						required=False,
 						default=None,
-						dest='subject_schema',
-						help='Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.')
+						dest='matched_schemas',
+						help='Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).')
 
+#### Explicar que são as annotações do schema que foi utilizado para fazer de subject
+#### O novo problema é que o subject foi escolhido pelo programa. Por isso agora dou a hipotese de sq escolher se foi o subject ou o query dependendo do MS?
 	parser.add_argument('-sa',
 						'--subject-annotations',
 						type=str,
@@ -347,16 +349,6 @@ def schema_annotation() -> None:
 						default='reps',
 						choices=ct.SCHEMA_ANNOTATION_RUN_MODE_CHOICES,
 						help='Mode to run the module: reps or alleles.')
-
-	parser.add_argument('-pm',
-						'--processing-mode',
-						type=str,
-						required=False,
-						dest='processing_mode',
-						default=None,
-						choices=ct.PROCESSING_MODE_CHOICES,
-						help='Mode to run the module for Schema match: reps_vs_reps,'
-						'reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
 	
 	parser.add_argument('-egtc',
 						'--extra-genbank-table-columns',
