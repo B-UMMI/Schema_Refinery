@@ -495,9 +495,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
                 missing_args.append('subject_annotations')
 
             errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. 'subject-annotations' must be provided.")
-        
-        if args.subject_schema:
-            verify_path_exists(args.subject_schema, 'directory', errors)
 
         if args.subject_annotations:
             verify_path_exists(args.subject_annotations, 'file', errors)
