@@ -277,6 +277,13 @@ def schema_annotation() -> None:
 						dest='subject_annotations',
 						help='Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.'
 						'Should be used with --annotation-options match_schema and --subject-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.')
+
+	parser.add_argument('--bsr',
+						type=float,
+						required=False,
+						default=0.6,
+						dest='bsr',
+						help='Minimum BSR value to consider aligned alleles as alleles for the same locus. This argument is optional for the Match Schemas sub-module.')
 	
 	parser.add_argument('-t',
 						'--threads',
