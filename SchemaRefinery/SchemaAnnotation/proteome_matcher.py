@@ -278,12 +278,13 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 
 		if not blast_db_files:
 			proteome_files.remove(proteome_file)
-			continue
-		
-		# Save paths to proteome file paths
-		proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
-		proteomes_data.append((same_protein_other_annotations, all_alleles))
+		else:
+			proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
+			proteomes_data.append((same_protein_other_annotations, all_alleles))
 
+		# Save paths to proteome file paths
+		
+		
 	[translation_dict,
 		reps_ids,
 		translations_paths] = sf.translate_schema_loci(schema_directory,
