@@ -489,14 +489,12 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match schemas
     if 'match-schemas' in args.annotation_options:
-        if any([args.subject_schema, args.subject_annotations]) and not all([args.subject_schema, args.subject_annotations]):
+        if any([args.subject_annotations]) and not all([args.subject_annotations]):
             missing_args = []
-            if not args.subject_schema:
-                missing_args.append('subject_schema')
             if not args.subject_annotations:
                 missing_args.append('subject_annotations')
 
-            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. All of 'subject-schema' and 'subject-annotations' must be provided together.")
+            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. 'subject-annotations' must be provided.")
         
         if args.subject_schema:
             verify_path_exists(args.subject_schema, 'directory', errors)
@@ -506,10 +504,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
         # Verify if best-annotations-bsr is a value between 0 and 1
         if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
             errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
-    else:
-        if any([args.subject_schema, args.subject_annotations, args.processing_mode]):
-            errors.append("\nError: 'subject-schema', 'subject-annotations', and 'processing-mode' can only be used with '--annotation-options match-schemas'.")
-
+    
     # Display all errors at once if there are any
     if errors:
         pf.print_message("The following errors were found:", "error")
