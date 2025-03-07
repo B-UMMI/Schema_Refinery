@@ -112,7 +112,7 @@ def main(args: Namespace) -> None:
                                         0,
                                         args.matched_schemas)
         
-        results_files.append(matched_schemas)
+        results_files.append(args.matched_schemas)
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
