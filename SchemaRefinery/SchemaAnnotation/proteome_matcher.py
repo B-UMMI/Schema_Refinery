@@ -260,6 +260,11 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 	proteomes_data_paths: Dict[str, List[Optional[str]]] = {}
 	proteomes_data: List[Tuple[Optional[Dict[str, List[str]]], Optional[Dict[str, str]]]] = []
 	for proteome_file in proteome_files[:2]:
+
+		if os.path.getsize(proteome_file) == 0:
+			prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
+			continue
+
 		# Get proteome file name
 		proteome_file_base: str = os.path.basename(proteome_file)
 		# Create folder for proteome processing
@@ -279,10 +284,10 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 		if not blast_db_files:
 			proteome_files.remove(proteome_file)
 		else:
+			# Save paths to proteome file paths
 			proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
 			proteomes_data.append((same_protein_other_annotations, all_alleles))
 
-		# Save paths to proteome file paths
 		
 		
 	[translation_dict,
