@@ -67,8 +67,6 @@ def main(args: Namespace) -> None:
             proteome_file_ids: Dict[str, List[str]]
             tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
-            #prf.print_message(f'{proteome_file_ids}', 'info')
-
             # Align loci against proteome records
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
                                                          proteome_file_ids,
