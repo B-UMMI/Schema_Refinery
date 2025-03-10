@@ -75,9 +75,6 @@ def main(args: Namespace) -> None:
                                                          args.cpu,
                                                          args.bsr,
                                                          args.translation_table,
-                                                         args.clustering_sim,
-                                                         args.clustering_cov,
-                                                         args.size_ratio,
                                                          args.run_mode,
                                                          args.proteome_ids_to_add)
             results_files.extend(annotations)
@@ -94,9 +91,6 @@ def main(args: Namespace) -> None:
                                                    args.cpu,
                                                    args.bsr,
                                                    args.translation_table,
-                                                   args.clustering_sim,
-                                                   args.clustering_cov,
-                                                   args.size_ratio,
                                                    args.run_mode,
                                                    args.extra_genbank_table_columns,
                                                    args.genbank_ids_to_add)
