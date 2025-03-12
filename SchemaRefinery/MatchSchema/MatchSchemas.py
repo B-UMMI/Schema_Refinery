@@ -1,5 +1,6 @@
 import os
 import re
+from Bio import SeqIO
 from typing import Dict, List, Tuple
 
 try:
@@ -156,7 +157,7 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
 def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]],
                                      query_translations_paths: Dict[str, str], 
-                                     subject_translations_paths: Dict[str, str], output_folder: str) -> str:
+                                     subject_translations_paths: Dict[str, str], output_folder: str, process_name: str) -> str:
     """
     Write the best BLAST matches to a file.
 
@@ -175,69 +176,87 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
     -------
     None
     """
-    
-    # Identify loci that were not matched
-    not_matched_loci: List[str] = [query for query in query_translations_paths.keys() if query not in best_bsr_values.keys()]
-    not_matched_subject: List[str] = [subject for subject in subject_translations_paths.keys() if subject not in {s for d in best_bsr_values.values() for s in d.keys()}]
 
     # Path to output files
+    best_blast_matches_file = os.path.join(output_folder, "Match_Schemas_Results.tsv")
+    existing_matches_file = os.path.join(output_folder, "existing_matches.txt")
 
-    best_blast_matches_file: str = os.path.join(output_folder, 'Match_Schemas_Results.tsv')
-
+    # Load existing matches from existing ,atches file to avoid repetition across runs
     existing_matches = set()
-    written_loci = set()
+    written_queries = set()
+
+    if os.path.exists(existing_matches_file):
+        with open(existing_matches_file, "r") as f:
+            for line in f:
+                parts = line.strip().split("\t")
+                if parts:  
+                    existing_matches.add(line.strip())
+                    written_queries.add(parts[0])
+
+    # Initialize lists
     matched_entries = []
     non_matched_query = []
     non_matched_subject = []
 
+    # Identify loci that were not matched
+    not_matched_loci = [query for query in query_translations_paths.keys() if query not in best_bsr_values.keys()]
+    not_matched_subject = [subject for subject in subject_translations_paths.keys() if subject not in {s for d in best_bsr_values.values() for s in d.keys()}]
+
     # Check if the best matches file exists
     file_exists = os.path.exists(best_blast_matches_file)
 
-    # Read existing matches
+    # Read existing file to avoid duplicates in this run
     if file_exists:
-        with open(best_blast_matches_file, 'r') as f:
-            next(f)  # Skip header
+        with open(best_blast_matches_file, "r") as f:
+            next(f)
             for line in f:
-                existing_matches.add(line.strip())
+                parts = line.strip().split("\t")
+                if parts:
+                    existing_matches.add(line.strip())
+                    written_queries.add(parts[0])
 
     # Write best matches
-    with open(best_blast_matches_file, 'a' if file_exists else 'w') as out:
+    with open(best_blast_matches_file, "a" if file_exists else "w") as out:
         if not file_exists:
-            out.write('Query\tSubject\tBSR\n')
+            out.write("Query\tSubject\tBSR\tProcess\n")
 
         for query, match in best_bsr_values.items():
+            if query in written_queries:
+                continue  # Skip if query was already written
             for subject, computed_score in match.items():
                 entry = f"{query}\t{subject}\t{computed_score}"
                 if entry not in existing_matches:
-                    existing_matches.add(entry)
-                    matched_entries.append((query, entry))
-                written_loci.add(subject)
-            written_loci.add(query)
+                    existing_matches.add(f"{entry}")
+                    matched_entries.append((query, f"{entry}\t{process_name}"))
+            written_queries.add(query)
 
         # Process unmatched queries
         for query in not_matched_loci:
-            if query not in written_loci:
-                entry = f"{query}\tNot matched\tNA"
-                if entry not in existing_matches:
-                    existing_matches.add(entry)
-                    non_matched_query.append((query, entry))
-                written_loci.add(query)
+            if query in written_queries:
+                continue  # Skip if query was already written
+            entry = f"{query}\tNot matched\tNA"
+            non_matched_query.append((query, f"{entry}\t{process_name}"))
+            written_queries.add(query) 
 
         # Process unmatched subjects
         for subject in not_matched_subject:
-            if subject not in written_loci:
-                entry = f"Not matched\t{subject}\tNA"
-                if entry not in existing_matches:
-                    existing_matches.add(entry)
-                    non_matched_subject.append((subject, entry))
-                written_loci.add(subject)
-        
+            entry = f"Not matched\t{subject}\tNA"
+            non_matched_subject.append((subject, f"{entry}\t{process_name}"))
+
+        # Sort and write all entries
         for _, entry in sorted(matched_entries, key=lambda x: x[0]):
             out.write(entry + "\n")
         for _, entry in sorted(non_matched_query, key=lambda x: x[0]):
-            out.write(entry + "\n")
+            if process_name == "rep_vs_alleles":
+                out.write(entry + "\n")
         for _, entry in sorted(non_matched_subject, key=lambda x: x[0]):
-            out.write(entry + "\n")
+            if process_name == "rep_vs_alleles":
+                out.write(entry + "\n")
+
+    # Save `existing_matches` to a file for persistence
+    with open(existing_matches_file, "w") as f:
+        for entry in existing_matches:
+            f.write(entry + "\n")
 
     return best_blast_matches_file
 
@@ -320,7 +339,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     # Create the output directories
     blast_folder: str = os.path.join(output_directory, 'blast_processing')
     ff.create_directory(blast_folder)
-    # Directories for all alleles
+    # Directories for complete schemas
     query_translation_folder: str = os.path.join(blast_folder, 'Query_Translation')
     ff.create_directory(query_translation_folder)
     subject_translation_folder: str = os.path.join(blast_folder, 'Subject_Translation')
@@ -347,10 +366,11 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     query_ids: Dict[str, List[List[str]]] = {}
     query_translations_rep_paths: Dict[str, str] = {}
     i = 0
-    pf.print_message("Translating sequences for query rep schema...", "info")
+    pf.print_message("", 'info')
+    pf.print_message("Translating sequences for representative query schema...", "info")
     for query_loci, path in query_fastas_rep.items():
         i += 1
-        pf.print_message(f"Translated query loci FASTA: {i}/{len_query_rep_fastas}", "info", end='\r', flush=True)
+        pf.print_message(f"Translated representative query loci FASTA: {i}/{len_query_rep_fastas}", "info", end='\r', flush=True)
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -382,7 +402,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     # If all the sequences are translated the folders are deleted
     if os.path.isdir(query_untranslation_rep_folder) and not os.listdir(query_untranslation_folder):
         os.rmdir(query_untranslation_folder)
-
     pf.print_message(f"Cleanup complete: Removed {deleted_files} empty translation files.", "info")
 
 
@@ -392,11 +411,10 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     subject_translations_rep_paths: Dict[str, str] = {}
     master_file_rep_path: str = os.path.join(blast_folder, 'subject_master_rep_file.fasta') #file with the translation of the representatives
     i = 0
-    pf.print_message("", "info")
-    pf.print_message("Translating sequences for subject rep schema...", "info")
+    pf.print_message("Translating sequences for representative subject schema...", "info")
     for subject_loci, path in subject_fastas_rep.items():
         i += 1
-        pf.print_message(f"Translated subject loci FASTA: {i}/{len_subject_rep_fasta}", "info", end='\r', flush=True)
+        pf.print_message(f"Translated representative subject loci FASTA: {i}/{len_subject_rep_fasta}", "info", end='\r', flush=True)
         # Get the fasta sequences for the subject
         fasta_dict = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -424,10 +442,10 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     query_prot_hash: Dict[str, str] = {}
     i = 0
     pf.print_message("", "info")
-    pf.print_message("Translating sequences for query schema...", "info")
+    pf.print_message("Translating sequences for complete query schema...", "info")
     for query_loci, path in query_fastas_hash.items():
         i += 1
-        pf.print_message(f"Translated query loci FASTA: {i}/{len_query_fastas}", "info", end='\r', flush=True)
+        pf.print_message(f"Translated complete query loci FASTA: {i}/{len_query_fastas}", "info", end='\r', flush=True)
         # Get the fasta sequences for the query
         fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -472,11 +490,10 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     subject_prot_hash: Dict[str, str] = {}
     master_file_path: str = os.path.join(blast_folder, 'subject_master_file.fasta') #file with all the translated sequences of the subject schema
     i = 0
-    pf.print_message("", "info")
-    pf.print_message("Translating sequences for subject schema...", "info")
+    pf.print_message("Translating sequences for complete subject schema...", "info")
     for subject_loci, path in subject_fastas_hash.items():
         i += 1
-        pf.print_message(f"Translated subject loci FASTA: {i}/{len_subject_fasta}", "info", end='\r', flush=True)
+        pf.print_message(f"Translated complete subject loci FASTA: {i}/{len_subject_fasta}", "info", end='\r', flush=True)
         # Get the fasta sequences for the subject
         fasta_dict = sf.fetch_fasta_dict(path, False)
         # Save the IDs of the alleles
@@ -498,8 +515,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
         subject_prot_hash.update(prot_hash)
 
 
-
-
     # -------------------------------------------------------------------
     # Comparision of the Query and Subject hashes (the BSR = 1.0)
     # -------------------------------------------------------------------
@@ -515,7 +530,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     common_keys = set(query_prot_hash.keys()) & set(subject_prot_hash.keys())
     seen_pairs = set()
     subject_base_dict = {}
-    allele_removal = 0
+    locus_removal = 0
 
     for prot_hash in common_keys:
         query_ids = query_prot_hash[prot_hash]
@@ -524,49 +539,39 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
         for query_id in query_ids:
             # Go from allele to loci
             query_base = re.sub(r'_\d+$', '', query_id)
-            
             for subject_id in subject_ids:
                 subject_base = re.sub(r'_\d+$', '', subject_id)
-                if subject_base not in subject_base_dict:
-                    subject_base_dict[subject_base] = []
-                subject_base_dict[subject_base].append(subject_id)
-                
                 # Only add unique pairs
                 if (query_base, subject_base) not in seen_pairs:
                     best_bsr_values.setdefault(query_base, {})[subject_base] = 1.0
                     seen_pairs.add((query_base, subject_base))
-
-    # Now, remove all entries from the original dictionary that match the subject_base
-    for subject_base, subject_ids_list in subject_base_dict.items():
-        # For each subject_base, remove all corresponding subject_ids from the original dictionary
-        for subject_id in subject_ids_list:
-            subject_translation_rep_dict.pop(subject_id, None)
-            subject_translation_dict.pop(subject_id, None)
-            allele_removal += 1
-
+                    subject_translations_paths.pop(subject_base, None)
+                    subject_translations_rep_paths.pop(subject_base, None)
+                    locus_removal += 1
 
     # Write results to the best matches file
     pf.print_message("Writting results to the output file...", "info")
-    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_paths, output_directory)
+    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_paths, output_directory,'hashes_vs_hashes')
 
     # Print out stats
-    pf.print_message(f"From the hash comparition {len(seen_pairs)} matches were found.", "info")
-    pf.print_message(f"{len(subject_base_dict)} loci ({allele_removal} alleles) were removed.", "info")
-    pf.print_message(f"{len(subject_translation_dict)} subject alleles will pass for the next match analysis.", "info")
+    pf.print_message(f"From the hash comparision {len(seen_pairs)} matches were found.", "info")
+    pf.print_message(f"{locus_removal} loci were removed.", "info")
+    pf.print_message(f"{len(subject_translations_rep_paths)} representative subject loci will pass for the next match analysis.", "info")
 
     # Write the master file without the subject sequences that have already be matched
     pf.print_message("Writting rep master file...", "info")
     with open(master_file_rep_path, 'w') as master:
-        for id_, sequence in subject_translation_rep_dict.items():
-            master.write(f">{id_}\n{sequence}\n")
-
-
+        for locus_id, fasta_path in subject_translations_rep_paths.items():
+            with open(fasta_path, 'r') as fasta_file:
+                for record in SeqIO.parse(fasta_file, 'fasta'):
+                    master.write(f">{record.id}\n{record.seq}\n")
 
 
     # -------------------------------------------------------------------
     # Blast with rep vs rep
     # -------------------------------------------------------------------
     # Get Path to the blastp executable
+    pf.print_message("", 'info')
     get_blastp_exec: str = lf.get_tool_path('blastp')
     
     # Get the maximum length of the IDs for better prints
@@ -580,7 +585,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
                                                               cpu)
 
     # Create BLAST database
-    pf.print_message("Creating Blast database with represenatives from subject schema...", "info")
+    pf.print_message("Creating Blast database with representatives from subject schema...", "info")
     blastdb_path: str = os.path.join(blast_folder, 'blastdb')
     ff.create_directory(blastdb_path)
     blast_db_files: str = os.path.join(blastdb_path, 'genbank_protein_db')
@@ -602,37 +607,38 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
     # Write the best BLAST matches to a file
     pf.print_message("Writting results to the output file...", "info")
-    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_rep_paths, output_directory)
+    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_rep_paths, output_directory, 'rep_vs_rep')
 
     # Remove matched id from the full subject schema file
-    allele_removal = 0
+    locus_removal = 0
     subject_base_list = set()
     for query, match in best_bsr_values.items():
         for subject, score in match.items():
             subject_base = re.sub(r'_\d+$', '', subject)
             subject_base_list.add(subject_base)
-    # Remove all matching subject_ids based on the subject_base
-    for existing_subject in list(subject_translation_dict.keys()):
-        if re.sub(r'_\d+$', '', existing_subject) == subject_base:
-            subject_translation_dict.pop(existing_subject, None)
-            allele_removal += 1
+    
+    for subject in subject_base_list:
+        subject_translations_paths.pop(subject, None)
+        locus_removal += 1
        
     # Write the sequences to the full master file
     pf.print_message("Writting master file...", "info")
     with open(master_file_path, 'w') as master:
-        for id_, sequence in subject_translation_dict.items():
-            master.write(f">{id_}\n{sequence}\n")
+        for locus_id, fasta_path in subject_translations_paths.items():
+            with open(fasta_path, 'r') as fasta_file:
+                for record in SeqIO.parse(fasta_file, 'fasta'):
+                    master.write(f">{record.id}\n{record.seq}\n")
 
     pf.print_message(f"From the rep vs rep Blast {len(best_bsr_values)} matches were found.", "info")
-    pf.print_message(f"{len(subject_base_list)} loci ({allele_removal} alleles) were removed.", "info")
-    pf.print_message(f"{len(subject_translation_dict)} subject alleles will move to the next analysis.", "info")
+    pf.print_message(f"{locus_removal} loci were removed.", "info")
+    pf.print_message(f"{len(subject_translations_paths)} subject loci will move to the next analysis.", "info")
 
     # -------------------------------------------------------------------
     # Blast with rep vs alleles
     # -------------------------------------------------------------------
     # Create BLAST database
     pf.print_message("", "info")
-    pf.print_message("Creating Blast database with from subject schema...", "info")
+    pf.print_message("Creating Blast database with complete subject schema...", "info")
     blastdb_path: str = os.path.join(blast_folder, 'blastdb')
     ff.create_directory(blastdb_path)
     blast_db_files: str = os.path.join(blastdb_path, 'genbank_protein_db')
@@ -652,25 +658,24 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     pf.print_message("", None)
 
     # Remove matched id from the full subject schema file
-    allele_removal = 0
+    locus_removal = 0
     subject_base_list = set()
     for query, match in best_bsr_values.items():
         for subject, score in match.items():
             subject_base = re.sub(r'_\d+$', '', subject)
             subject_base_list.add(subject_base)
-    # Remove all matching subject_ids based on the subject_base
-    for existing_subject in list(subject_translation_dict.keys()):
-        if re.sub(r'_\d+$', '', existing_subject) == subject_base:
-            subject_translation_dict.pop(existing_subject, None)
-            allele_removal += 1
+    
+    for subject in subject_base_list:
+        subject_translations_paths.pop(subject, None)
+        locus_removal += 1
 
     # Write the best BLAST matches to a file
     pf.print_message("Writting results to the output file...", "info")
-    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_paths, output_directory)
+    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_paths, output_directory, 'rep_vs_alleles')
 
     pf.print_message(f"From the rep vs alleles Blast {len(best_bsr_values)} matches were found.", "info")
-    pf.print_message(f"{len(subject_base_list)} loci ({allele_removal} alleles) were removed.", "info")
-    pf.print_message(f"{len(subject_translation_dict)} subject alleles had no matches.", "info")
+    pf.print_message(f"{locus_removal} loci were removed.", "info")
+    pf.print_message(f"{len(subject_translations_paths)} subject loci had no matches.", "info")
 
     # Clean up temporary files
     if not no_cleanup:

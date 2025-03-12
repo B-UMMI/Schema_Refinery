@@ -58,17 +58,19 @@ def proteome_splitter(proteomes_directory: str, output_directory: str) -> Tuple[
     tr_filename: str = 'trembl_prots.fasta'
     tr_file_path: str = os.path.join(split_directory, tr_filename)
     with open(tr_file_path, 'w') as tout:
-        records: List[str] = ['>{0}\n{1}'.format(k, v) for k, v in trembl_records.items()]
-        rectext: str = '\n'.join(records)
-        tout.write(rectext + '\n')
+        if trembl_records:
+            records: List[str] = ['>{0}\n{1}'.format(k, v) for k, v in trembl_records.items()]
+            rectext: str = '\n'.join(records)
+            tout.write(rectext + '\n')
 
     # Save Swiss-Prot records to FASTA file
     sp_filename: str = 'swiss_prots.fasta'
     sp_file_path: str = os.path.join(split_directory, sp_filename)
     with open(sp_file_path, 'w') as tout:
-        records = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
-        rectext = '\n'.join(records)
-        tout.write(rectext + '\n')
+        if swiss_records:
+            records = ['>{0}\n{1}'.format(k, v) for k, v in swiss_records.items()]
+            rectext = '\n'.join(records)
+            tout.write(rectext + '\n')
 
     # Save descriptions with Pickle
     descriptions_filename: str = 'prots_descriptions'

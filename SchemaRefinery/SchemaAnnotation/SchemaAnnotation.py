@@ -67,8 +67,6 @@ def main(args: Namespace) -> None:
             proteome_file_ids: Dict[str, List[str]]
             tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
-            #prf.print_message(f'{proteome_file_ids}', 'info')
-
             # Align loci against proteome records
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
                                                          proteome_file_ids,
@@ -77,9 +75,6 @@ def main(args: Namespace) -> None:
                                                          args.cpu,
                                                          args.bsr,
                                                          args.translation_table,
-                                                         args.clustering_sim,
-                                                         args.clustering_cov,
-                                                         args.size_ratio,
                                                          args.run_mode,
                                                          args.proteome_ids_to_add)
             results_files.extend(annotations)
@@ -96,9 +91,6 @@ def main(args: Namespace) -> None:
                                                    args.cpu,
                                                    args.bsr,
                                                    args.translation_table,
-                                                   args.clustering_sim,
-                                                   args.clustering_cov,
-                                                   args.size_ratio,
                                                    args.run_mode,
                                                    args.extra_genbank_table_columns,
                                                    args.genbank_ids_to_add)
@@ -108,13 +100,16 @@ def main(args: Namespace) -> None:
     # Check if 'match-schemas' is in the annotation options
     if 'match-schemas' in args.annotation_options:
         # Merge matched loci with their annotation
+        prf.print_message("Creating output file", "info")
+        matched_annotations = os.path.join(args.output_directory, "matched_annotations.tsv")
+        prf.print_message("Matching annotations with schemas", "info")
         upf.merge_files_by_column_values(args.matched_schemas,
                                         args.subject_annotations,
                                         1,
                                         0,
-                                        args.matched_schemas)
+                                        matched_annotations)
         
-        results_files.append(matched_schemas)
+        results_files.append(matched_annotations)
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:

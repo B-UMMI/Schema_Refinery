@@ -23,8 +23,8 @@ except ModuleNotFoundError:
 									  pandas_functions as pf,
 									  print_functions as prf)
 
-def create_database_files(proteome_file: str, clustering_sim: float, clustering_cov: float, size_ratio: float,
-						  blast_processing_folder: str) -> Union[tuple[str, Dict[str, List[str]], Dict[str, str]], Tuple[None, None, None]]:
+def create_database_files(proteome_file: str,
+							blast_processing_folder: str) -> Union[tuple[str, Dict[str, List[str]], Dict[str, str]], Tuple[None, None, None]]:
 	"""
 	Create database files from a proteome file by extracting protein sequences, clustering them, and creating a BLAST database.
 
@@ -32,12 +32,6 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
 	----------
 	proteome_file : str
 		Path to the proteome file.
-	clustering_sim : float
-		Clustering similarity threshold.
-	clustering_cov : float
-		Clustering coverage threshold.
-	size_ratio : float
-		Size ratio for clustering.
 	blast_processing_folder : str
 		Path to the output directory.
 
@@ -79,36 +73,10 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
 			hash_to_rep_id[protein_hash] = id_
 
 	prf.print_message(f"Out of {total_proteins} protein sequences, {len(all_translation_dict)} are unique proteins", "info")
-	
-	prf.print_message(f"Clustering protein sequences...", "info")
-	all_alleles: Dict[str, str] = {}
-	reps_sequences: Dict[str, str] = {}
-	reps_groups: Dict[str, List[str]] = {}
-	prot_len_dict: Dict[str, int] = {}
-	
-	# Cluster protein sequences
-	all_alleles, reps_sequences, reps_groups, prot_len_dict = cf.minimizer_clustering(
-		all_translation_dict,
-		5,
-		5,
-		True,
-		1,
-		all_alleles,
-		reps_sequences,
-		reps_groups,
-		1,
-		clustering_sim,
-		clustering_cov,
-		True,
-		size_ratio
-	)
 
-	prf.print_message(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters", "info")
-	
-	# Save clustered protein sequences to a file
 	clustered_protein_master_file: str = os.path.join(blast_processing_folder, f"{file_name}")
 	with open(clustered_protein_master_file, 'w') as outfile:
-		for protein_id, values in reps_sequences.items():
+		for protein_id, values in all_translation_dict.items():
 			outfile.write(f">{protein_id}\n{values}\n")
 	
 	# Create BLAST database
@@ -118,7 +86,7 @@ def create_database_files(proteome_file: str, clustering_sim: float, clustering_
 	makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
 	bf.make_blast_db(makeblastdb_exec, clustered_protein_master_file, blast_db_files, 'prot')
 		
-	return blast_db_files, same_protein_other_annotations, all_alleles
+	return blast_db_files, same_protein_other_annotations
 
 def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, List[str]],
 							best_bsr_values_per_proteome_file: Dict[str, Dict[str, Tuple[str, float]]],
@@ -222,8 +190,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
 
 def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, List[str]],
 					schema_directory: str, output_directory: str, cpu: int, bsr: float, 
-					translation_table: int, clustering_sim: float, 
-					clustering_cov: float, size_ratio: float, run_mode: str,
+					translation_table: int, run_mode: str,
 					proteome_ids_to_add: List[str]) -> Tuple[str, str]:
 	"""
 	Match proteomes by creating BLAST database files, translating sequences, and running BLAST.
@@ -242,12 +209,6 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 		BSR threshold value.
 	translation_table : int
 		Translation table number.
-	clustering_sim : float
-		Clustering similarity threshold.
-	clustering_cov : float
-		Clustering coverage threshold.
-	size_ratio : float
-		Size ratio for clustering.
 	run_mode : str
 		Mode to run ('alleles' or 'reps').
 
@@ -260,6 +221,11 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 	proteomes_data_paths: Dict[str, List[Optional[str]]] = {}
 	proteomes_data: List[Tuple[Optional[Dict[str, List[str]]], Optional[Dict[str, str]]]] = []
 	for proteome_file in proteome_files[:2]:
+
+		if os.path.getsize(proteome_file) == 0:
+			prf.print_message(f"No proteins found in {os.path.basename(proteome_file)}", "warning")
+			continue
+
 		# Get proteome file name
 		proteome_file_base: str = os.path.basename(proteome_file)
 		# Create folder for proteome processing
@@ -269,28 +235,17 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 		ff.create_directory(blast_processing_folder)
 		# Create BLAST database files
 		[blast_db_files,
-		same_protein_other_annotations,
-		all_alleles] = create_database_files(proteome_file,
-											clustering_sim,
-											clustering_cov,
-											size_ratio,
+		same_protein_other_annotations] = create_database_files(proteome_file,
 											blast_processing_folder)
-
-		if not blast_db_files:
-			proteome_files.remove(proteome_file)
-			continue
-		
 		# Save paths to proteome file paths
 		proteomes_data_paths.setdefault(proteome_file_base, [proteome_folder, blast_processing_folder, blast_db_files])
-		proteomes_data.append((same_protein_other_annotations, all_alleles))
-
+        
 	[translation_dict,
 		reps_ids,
 		translations_paths] = sf.translate_schema_loci(schema_directory,
 													proteome_matcher_output,
 													translation_table,
 													run_mode)
-
 
 	# Import Swiss-Prot and TrEMBL records descriptions
 	with open(proteome_files[-1], 'rb') as dinfile:
@@ -352,9 +307,6 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 		merge_files[i].append(annotations_file)
 
 	for i, (proteome_file_id, loci_values) in enumerate(list(best_bsr_values_per_proteome_file.items())):
-		#(same_protein_other_annotations, all_alleles) = proteomes_data[i]
-		#if same_protein_other_annotations is None or all_alleles is None:
-			#continue
 		for loci_id, values in list(loci_values.items()):
 			# Find all of the proteins that reps representes
 			proteinid: str = values[0]
@@ -371,19 +323,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 						continue
 					# Verify if genbank file is in the dict
 					best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, (id_, bsr_value))
-			# For clustered elements
-			rep_cluster = all_alleles.get(proteinid)
-			if rep_cluster:
-				for values in rep_cluster:
-					id_ = values[0]
-					# Get genbank file for that ID
-					proteome_file_id_current = itf.identify_string_in_dict_get_key(id_, proteome_file_ids)
-					# If the genbank file is the same as the one that the representative is in, skip (may be paralogous protein)
-					if proteome_file_id == proteome_file_id_current:
-						continue
-					# Verify if genbank file is in the dict
-					best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, (id_, bsr_value))
-		
+
 	# Save best annotations per proteome file
 	best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
 	ff.create_directory(best_annotations_per_proteome_file)
