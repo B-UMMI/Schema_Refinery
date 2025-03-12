@@ -100,13 +100,16 @@ def main(args: Namespace) -> None:
     # Check if 'match-schemas' is in the annotation options
     if 'match-schemas' in args.annotation_options:
         # Merge matched loci with their annotation
+        prf.print_message("Creating output file", "info")
+        matched_annotations = os.path.join(args.output_directory, "matched_annotations.tsv")
+        prf.print_message("Matching annotations with schemas", "info")
         upf.merge_files_by_column_values(args.matched_schemas,
                                         args.subject_annotations,
                                         1,
                                         0,
-                                        args.matched_schemas)
+                                        matched_annotations)
         
-        results_files.append(args.matched_schemas)
+        results_files.append(matched_annotations)
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
