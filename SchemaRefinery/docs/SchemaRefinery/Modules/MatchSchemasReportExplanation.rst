@@ -6,8 +6,14 @@ Output files and folders description for the MatchSchemas module
     **OutputFolderName**
         The folder where the output files are stored.
 
-    Blast
+    blast_processing
         Folder containing BLASTp database, BLASTp output files, master file, self-score folder, and translation files.
+
+        subject_master_file.fasta
+            FASTA file containing all of the protein sequences that have not found a match yet used in the analysis (used to create BLAST DB).
+
+        subject_master_rep_file.fasta
+            FASTA file containing all of the representative protein sequences that have not found a match yet used in the analysis (used to create BLAST DB).
 
         Blast_db_prot
             Folder containing the BLASTp database.
@@ -54,11 +60,53 @@ Output files and folders description for the MatchSchemas module
             ...
                 All of the other TSV BLASTp results files.
 
-        subject_master_file.fasta
-            FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
-
         Query_Translation
-            Folder containing the translation files.
+            Folder containing the query translation files.
+            
+            query_translations_x.fasta
+                FASTA file containing the translation for the locus x.
+            
+            query_translations_y.fasta
+                FASTA file containing the translation for the locus y.
+            
+            query_translations_z.fasta
+                FASTA file containing the translation for the locus z.
+            
+            ...
+                All of the other translation files.
+        
+        Query_Translation_Rep
+            Folder containing the representative query translation files.
+            
+            query_translations_x.fasta
+                FASTA file containing the translation for the locus x.
+            
+            query_translations_y.fasta
+                FASTA file containing the translation for the locus y.
+            
+            query_translations_z.fasta
+                FASTA file containing the translation for the locus z.
+            
+            ...
+                All of the other translation files.
+
+        Query_Not_Translated
+            Folder containing the query translation files that were not translated due to any error. If this folder is empty (all translations were sucessful) the folder is deleted. 
+            
+            query_translations_x.fasta
+                FASTA file containing the translation for the locus x.
+            
+            query_translations_y.fasta
+                FASTA file containing the translation for the locus y.
+            
+            query_translations_z.fasta
+                FASTA file containing the translation for the locus z.
+            
+            ...
+                All of the other translation files.
+        
+        Query_Not_Translated_Rep
+            Folder containing the representative query translation files. that were not translated due to any error. If this folder is empty (all translations were sucessful) the folder is deleted. 
             
             query_translations_x.fasta
                 FASTA file containing the translation for the locus x.
@@ -73,7 +121,22 @@ Output files and folders description for the MatchSchemas module
                 All of the other translation files.
 
         Subject_Translation
-            Folder containing the translation files.
+            Folder containing the subject translation files.
+            
+            subject_translations_x.fasta
+                FASTA file containing the translation for the locus x.
+            
+            subject_translations_y.fasta
+                FASTA file containing the translation for the locus y.
+            
+            subject_translations_z.fasta
+                FASTA file containing the translation for the locus z.
+            
+            ...
+                All of the other translation files.
+
+        Subject_Translation_Rep
+            Folder containing the representative subject translation files.
             
             subject_translations_x.fasta
                 FASTA file containing the translation for the locus x.
@@ -102,5 +165,8 @@ Output files and folders description for the MatchSchemas module
             ...
                 All of the other TSV BLASTp for self-score results files.
 
-    **best_blast_matches.tsv**
-        TSV file containing the best BLAST matches for the query and subject schemas.
+    **existing_matches.txt
+        TXT file containing the blast matches from all processes.
+
+    **Match_Schemas_Results.tsv**
+        TSV file containing the best BLAST matches for the query and subject schemas sorted by locus name. Also contains the final non matched locus from both QUery and Subject.

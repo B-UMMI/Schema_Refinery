@@ -12,7 +12,7 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
-- Download the zenodo file from the link: https://zenodo.org/record/5560007/files/genbank_files.zip
+- Download the schema file from the ChewBACCA tutorial: https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip
 
 Procedure
 ---------
@@ -23,15 +23,17 @@ Procedure
 
 .. code-block:: bash
 
-    SR MatchSchema -qs 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -ss 'path/to/files/zenodo/Data/mpneumoniae_schema/mpneumoniae_schema' -o 'path/to/files/output_folder/MatchSchemas_Results' -tt 4 -pm alleles_vs_alleles -c 6
+    SR MatchSchema -fs /path/to/tutorial_schema -ss /path/to/tutorial_schema -o path/to/output_folder -c 6 --nocleanup
 
 - Replace `path/to/files/` with the actual path to the files.
+- This will run the tutorial schema against itself.
+- No clean up will leave all the intermediary files in the output folder.
 
 3. Press Enter to execute the command.
 
 4. Wait for the matching process to complete.
 
-5. Check the output folder for the matched schemas (The results are also available in the zenodo files).
+5. Check the output folder for the matched schemas (The output file should have all matches).
 
 Example Output Structure
 ------------------------
