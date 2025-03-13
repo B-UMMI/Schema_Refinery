@@ -879,6 +879,14 @@ def match_schemas() -> None:
                         default=11,
                         help='Translation table to use for the CDS translation.')
 
+    parser.add_argument('-ra',
+						'--rep-vs-alleles',
+						type=bool,
+						required=False,
+						dest='rep_vs_alleles',
+						default=False,
+						help='If True then after the rep vs rep Blast the program will run a second Blast with rep vs alleles.')
+
     parser.add_argument('--nocleanup',
                         action='store_true',
                         required=False,
