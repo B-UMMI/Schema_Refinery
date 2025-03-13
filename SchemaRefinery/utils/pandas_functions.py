@@ -99,17 +99,20 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
 	merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='outer')
 	
 	# Drop the 'Locus_y' which is original subject id column and rename 'Locus_x' to 'Locus'
+	# Drop all the locus columns
 	if 'Locus_y' in merged_table.columns:
 		merged_table.drop(columns=['Locus_y'], inplace=True)
 	if 'Locus_x' in merged_table.columns:
-		merged_table.rename(columns={'Locus_x': 'Locus'}, inplace=True)
+		merged_table.drop(columns=['Locus_x'], inplace=True)
+	if 'Locus' in merged_table.columns:
+		merged_table.drop(columns=['Locus'], inplace=True)
 
 	# Rename specified columns by adding 'matched_' prefix
 	columns_to_rename = {
-		'Protein_ID': 'matched_Protein_ID',
-		'Protein_product': 'matched_Protein_product',
-		'Protein_short_name': 'matched_Protein_short_name',
-		'Protein_BSR': 'matched_Protein_BSR'
+		'Proteome_ID': 'matched_Proteome_ID',
+		'Proteome_product': 'matched_Proteome_product',
+		'Proteome_gene_name': 'matched_Proteome_gene_name',
+		'Proteome_BSR': 'matched_Proteome_BSR'
 	}
 	merged_table.rename(columns=columns_to_rename, inplace=True)
 
@@ -175,8 +178,12 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
 			selected_columns_dict = {output_columns[i]: v for i, v in enumerate(selected_columns_dict.values())}
 			result_row = selected_columns_dict
 		else:
-			# If the value is smaller than the best_annotations_bsr, get the 'Locus' column
-			result_row = row[['Locus']].to_dict()
+			if 'Query' in row and 'Subject' in row:
+				# If 'query' and 'subject' exist, use them
+				result_row = row[['Query', 'Subject']].to_dict()
+			else:
+				# Otherwise, fall back to 'Locus'
+				result_row = row[['Locus']].to_dict()
 			# Add a placeholder for the missing columns
 			for col in output_columns:
 				if col not in result_row:
