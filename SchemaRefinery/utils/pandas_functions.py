@@ -55,7 +55,7 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
 	merged_table: pd.DataFrame = dfs[0]
 	for i in range(1, len(dfs)):
 		suffix = f"_{os.path.basename(files[i]).split('.')[0]}"
-		merged_table = pd.merge(merged_table, dfs[i], on=key_to_merge, how='outer', suffixes=('', suffix)).fillna('NA')
+		merged_table = pd.merge(merged_table, dfs[i], on=key_to_merge, how='left', suffixes=('', suffix)).fillna('NA')
 	
 	# Save the merged table to a TSV file
 	merged_table.to_csv(output_file, sep='\t', index=False)
