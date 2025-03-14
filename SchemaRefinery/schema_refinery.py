@@ -227,7 +227,7 @@ def schema_annotation() -> None:
 						dest='annotation_options',
 						nargs='+',
 						choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
-						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
+						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches. "consolidate" to join more than one annotation files together.')
 
 	parser.add_argument('-ba',
 						'--best-annotations-bsr',
@@ -377,6 +377,38 @@ def schema_annotation() -> None:
 						default=[],
 						help='List of Proteome IDs to add to final results.'
 						'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
+
+	parser.add_argument('-cs',
+							'--consolidate-cleanup'
+							type=bool,
+							required=False,
+							default=False,
+							dest='consolidate_cleanup',
+							help='For option conolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
+
+	parser.add_argument('-pa',
+							'--proteome-annotations'
+							type=str,
+							required=False,
+							default=None,
+							dest='proteome_annotations',
+							help='Path to the file with the annotations made using Uniprot.')
+
+	parser.add_argument('-ga',
+							'--genbank-annotations'
+							type=str,
+							required=False,
+							default=None,
+							dest='genbank_annotations',
+							help='Path to the file with the annotations made using Genbank.')
+
+	parser.add_argument('-ma',
+							'--matched-annotations'
+							type=str,
+							required=False,
+							default=None,
+							dest='matched_annotations',
+							help='Path to the file with the annotations made using Matched Schemas.')
 
 	parser.add_argument('--nocleanup',
 							action='store_true',

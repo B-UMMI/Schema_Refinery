@@ -8,7 +8,8 @@ try:
 	from SchemaAnnotation import (proteome_fetcher as pf,
 								  proteome_splitter as ps,
 								  proteome_matcher as pm,
-								  genbank_annotations as ga)
+								  genbank_annotations as ga,
+                                  consolidate as cs)
 	from utils import (file_functions as ff,
 					   pandas_functions as upf,
 					   print_functions as prf,
@@ -20,7 +21,8 @@ except ModuleNotFoundError:
 	from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
 												proteome_splitter as ps,
 												proteome_matcher as pm,
-												genbank_annotations as ga)
+												genbank_annotations as ga,
+                                                consolidate as cs)
 	from SchemaRefinery.utils import (file_functions as ff,
 									  pandas_functions as upf,
 									  print_functions as prf,
@@ -110,6 +112,17 @@ def main(args: Namespace) -> None:
                                         matched_annotations)
         
         results_files.append(matched_annotations)
+
+    if 'consolidate' in args.annotation_options:
+        consolidated_annotations = os.path.join(args.output_directory, "consolidated_annotations.tsv")
+        cs.consolidate_annotations(args.proteome_annotations,
+                                    args.genbank_annotations,
+                                    args.matched_annotations,
+                                    args.consolidate_cleanup,
+                                    consolidated_annotations)
+        results_files.append(consolidated_annotations)
+
+
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
