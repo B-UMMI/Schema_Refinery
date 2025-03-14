@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from typing import Dict, Tuple, List
 
@@ -29,6 +30,13 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
         Path to the annotations file.
     """
 
+    # Create dataframes out of the first 2 files in the list
+    prf.print_message('Format tsv files for merging...', 'info')
+    # Check if all files exist
+    for i in range(len(consolidate_annotation_files)):
+        if os.path.getsize(consolidate_annotation_files[i]) == 0:
+            prf.print_message(f'The file number {i+1} is empty.', 'error')
+            sys.exit()
     
     first_df = pd.read_csv(consolidate_annotation_files[0], delimiter='\t', dtype=str, index_col=False)
     second_df = pd.read_csv(consolidate_annotation_files[1], delimiter='\t', dtype=str, index_col=False)
@@ -36,31 +44,29 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     first_filtered = first_df[(first_df.iloc[:, 0] != 'Not Matched') & (first_df.iloc[:, 1] != 'Not Matched')]
     second_filtered = second_df[(second_df.iloc[:, 0] != 'Not Matched') & (second_df.iloc[:, 1] != 'Not Matched')]
 
-    # f0=s0
+    prf.print_message('Merging first 2 files...', 'info')
+    # Compare the first columns of both files
     if first_filtered.iloc[:, 0].equals(second_filtered.iloc[:, 0]):
         upf.merge_files_by_column_values(consolidate_annotation_files[0],
                                             consolidate_annotation_files[1],
                                             0,
                                             0,
                                             output_file)
-
-    # f0=s1
+    # Compare the first column of the first file and the second one of the second file
     elif first_filtered.iloc[:, 0].equals(second_filtered.iloc[:, 1]):
         upf.merge_files_by_column_values(consolidate_annotation_files[0],
                                             consolidate_annotation_files[1],
                                             0,
                                             1,
                                             output_file)
-
-    # f1=s0
+    # Compare the second column of the first file and the first one of the second file
     elif first_filtered.iloc[:, 1].equals(second_filtered.iloc[:, 0]):
         upf.merge_files_by_column_values(consolidate_annotation_files[0],
                                             consolidate_annotation_files[1],
                                             1,
                                             0,
                                             output_file)
-
-    # f1=s1
+    # Compare the second columns of both files
     elif first_filtered.iloc[:, 1].equals(second_filtered.iloc[:, 1]):
         upf.merge_files_by_column_values(consolidate_annotation_files[0],
                                             consolidate_annotation_files[1],
@@ -68,53 +74,49 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                             1,
                                             output_file)
 
+    # Merge the remaining files
+    if len(consolidate_annotation_files) > 2:
+        prf.print_message('Merging the remaining files...', 'info')
+        for i in range(2, len(consolidate_annotation_files)):
+            pf.print_message(f"Merging file: {i}/{len(consolidate_annotation_files)}", "info", end='\r', flush=True)
+            old_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+            new_df = pd.read_csv(consolidate_annotation_files[i], delimiter='\t', dtype=str, index_col=False)
+            
+            old_filtered = old_df[(old_df.iloc[:, 0] != 'Not Matched') & (old_df.iloc[:, 1] != 'Not Matched')]
+            new_filtered = new_df[(new_df.iloc[:, 0] != 'Not Matched') & (new_df.iloc[:, 1] != 'Not Matched')]
 
+            # Compare the first columns of both files
+            if old_filtered.iloc[:, 0].equals(new_filtered.iloc[:, 0]):
+                upf.merge_files_by_column_values(output_file,
+                                                    consolidate_annotation_files[i],
+                                                    0,
+                                                    0,
+                                                    output_file)
+            # Compare the first column of the first file and the second one of the second file
+            elif old_filtered.iloc[:, 0].equals(new_filtered.iloc[:, 1]):
+                upf.merge_files_by_column_values(output_file,
+                                                    consolidate_annotation_files[i],
+                                                    0,
+                                                    1,
+                                                    output_file)
+            # Compare the second column of the first file and the first one of the second file
+            elif old_filtered.iloc[:, 1].equals(new_filtered.iloc[:, 0]):
+                upf.merge_files_by_column_values(output_file,
+                                                    consolidate_annotation_files[i],
+                                                    1,
+                                                    0,
+                                                    output_file)
+            # Compare the second columns of both files
+            elif old_filtered.iloc[:, 1].equals(new_filtered.iloc[:, 1]):
+                upf.merge_files_by_column_values(output_file,
+                                                    consolidate_annotation_files[i],
+                                                    1,
+                                                    1,
+                                                    output_file)
 
-    ## depois com o ficheiro 2 começa o loop atá ao fim i < len(list) e i > 1
-    ## loop com output_file como input e list[i] como segundo input
-    for i in range(2, len(consolidate_annotation_files)):
-        old_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
-        new_df = pd.read_csv(consolidate_annotation_files[i], delimiter='\t', dtype=str, index_col=False)
-        
-        old_filtered = old_df[(old_df.iloc[:, 0] != 'Not Matched') & (old_df.iloc[:, 1] != 'Not Matched')]
-        new_filtered = new_df[(new_df.iloc[:, 0] != 'Not Matched') & (new_df.iloc[:, 1] != 'Not Matched')]
-
-        # f0=s0
-        if old_filtered.iloc[:, 0].equals(new_filtered.iloc[:, 0]):
-            upf.merge_files_by_column_values(output_file,
-                                                consolidate_annotation_files[i],
-                                                0,
-                                                0,
-                                                output_file)
-
-        # f0=s1
-        elif old_filtered.iloc[:, 0].equals(new_filtered.iloc[:, 1]):
-            upf.merge_files_by_column_values(output_file,
-                                                consolidate_annotation_files[i],
-                                                0,
-                                                1,
-                                                output_file)
-
-        # f1=s0
-        elif old_filtered.iloc[:, 1].equals(new_filtered.iloc[:, 0]):
-            upf.merge_files_by_column_values(output_file,
-                                                consolidate_annotation_files[i],
-                                                1,
-                                                0,
-                                                output_file)
-
-        # f1=s1
-        elif old_filtered.iloc[:, 1].equals(new_filtered.iloc[:, 1]):
-            upf.merge_files_by_column_values(output_file,
-                                                consolidate_annotation_files[i],
-                                                1,
-                                                1,
-                                                output_file)
-
-    # REVER
     # If cleanup TRUE dedeup the final file
-    # Right now only works for ms
     if cleanup:
+        prf.print_message('Deduplicating the final file...', 'info')
         ann_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
         ann_df.sort_values(by=ann_df.columns[0], ascending=False, inplace=True)
         ann_df.drop_duplicates(subset=ann_df.columns[0], inplace=True)

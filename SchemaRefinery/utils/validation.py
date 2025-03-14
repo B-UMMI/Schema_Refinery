@@ -506,8 +506,13 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
         if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
             errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
 
-    # Arguments to match schemas
-    if 'match-schemas' in args.annotation_options:
+    # Arguments to consolidate
+    if 'consolidate' in args.annotation_options:
+        if not args.consolidate_annotations:
+            errors.append(f"\nError: 'consolidate-annotations' must be provided.")
+        if len(args.consolidate_annotations)<2:
+            errors.append(f"\nError: You must give at least the path to 2 files.")
+
     
     # Display all errors at once if there are any
     if errors:
