@@ -115,9 +115,7 @@ def main(args: Namespace) -> None:
 
     if 'consolidate' in args.annotation_options:
         consolidated_annotations = os.path.join(args.output_directory, "consolidated_annotations.tsv")
-        cs.consolidate_annotations(args.proteome_annotations,
-                                    args.genbank_annotations,
-                                    args.matched_annotations,
+        cs.consolidate_annotations(args.consolidate_annotations,
                                     args.consolidate_cleanup,
                                     consolidated_annotations)
         results_files.append(consolidated_annotations)

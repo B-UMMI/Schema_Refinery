@@ -378,43 +378,28 @@ def schema_annotation() -> None:
 						help='List of Proteome IDs to add to final results.'
 						'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
 
-	parser.add_argument('-cs',
-							'--consolidate-cleanup'
-							type=bool,
-							required=False,
-							default=False,
-							dest='consolidate_cleanup',
-							help='For option conolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
+	parser.add_argument('-co',
+						'--consolidate-cleanup',
+						type=bool,
+						required=False,
+						default=False,
+						dest='consolidate_cleanup',
+						help='For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
 
-	parser.add_argument('-pa',
-							'--proteome-annotations'
-							type=str,
-							required=False,
-							default=None,
-							dest='proteome_annotations',
-							help='Path to the file with the annotations made using Uniprot.')
-
-	parser.add_argument('-ga',
-							'--genbank-annotations'
-							type=str,
-							required=False,
-							default=None,
-							dest='genbank_annotations',
-							help='Path to the file with the annotations made using Genbank.')
-
-	parser.add_argument('-ma',
-							'--matched-annotations'
-							type=str,
-							required=False,
-							default=None,
-							dest='matched_annotations',
-							help='Path to the file with the annotations made using Matched Schemas.')
+	parser.add_argument('-ca',
+						'--consolidate-annotations',
+						type=str,
+						nargs='+',
+						required=False,
+						default=None,
+						dest='consolidate_annotations',
+						help='2 or more paths to the files with the annotations that are to be consolidated.')
 
 	parser.add_argument('--nocleanup',
-							action='store_true',
-							required=False,
-							dest='no_cleanup',
-							help='Flag to indicate whether to skip cleanup after running the module.')
+						action='store_true',
+						required=False,
+						dest='no_cleanup',
+						help='Flag to indicate whether to skip cleanup after running the module.')
 
 	parser.add_argument('--debug',
 						action='store_true',

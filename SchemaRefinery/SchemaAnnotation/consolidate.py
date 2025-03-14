@@ -8,9 +8,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (pandas_functions as upf,
 									  print_functions as prf)
 
-def consolidate_annotations(uniprot_annotations_file: str,
-                            genbank_annotations_file: str,
-                            ms_annotations_file: str,
+def consolidate_annotations(consolidate_annotation_files: List[str],
                             cleanup: bool,
                             output_file: str) -> str:
     """
@@ -18,12 +16,8 @@ def consolidate_annotations(uniprot_annotations_file: str,
     
     Parameters
     ----------
-    uniprot_annotations_file: str
-        Path to the uniprot annotations file.
-    genbank_annotations_file: str
-        Path to the genbank annotations file.
-    ms_annotations_file: str
-        Path to the match schemas annotations file.
+    consolidate_annotation_files: List[str]:
+        List of files of annotations to consolidate.
     cleanup: bool
         If the final file will or not have duplicates. Advised for the use of match schemas annotations.
     output_file: str
@@ -35,95 +29,95 @@ def consolidate_annotations(uniprot_annotations_file: str,
         Path to the annotations file.
     """
 
-    # Based on which files are not none?? --> Yup
-    # Merge uniprot and genebank
-    if uniprot_annotations_file and genbank_annotations_file:
-        if ms_annotations_file is None:
-            ## use merge file based on column
-            upf.merge_files_by_column_values(uniprot_annotations_file, 
-                                                genbank_annotations_file, 
-                                                0, 
-                                                0, 
-                                                output_file)
-        continue
     
-    # Merge genbank and ms  
-    if ms_annotations_file and genbank_annotations_file:
-        if uniprot_annotations_file is None:
-            ## compare locus column with subject and query (no Not Matched)
-            ms_df = pd.read_csv(ms_annotations_file, delimiter='\t', dtype=str, index_col=False)
-	        genbank_df = pd.read_csv(genbank_annotations_file, delimiter='\t', dtype=str, index_col=False)
-            ms_query_filtered = ms_df[ms_df['Query'] != 'Not Matched']
-            ms_subject_filtered = ms_df[ms_df['Subject'] != 'Not Matched']
-            if ms_query_filtered['Query'].equals(genbank_df['Locus']):
-                upf.merge_files_by_column_values(ms_annotations_file,
-                                                    genbank_annotations_file,
-                                                    0,
-                                                    0,
-                                                    output_file)
-            if ms_subject_filtered['Subject'].equals(genbank_df['Locus']):
-                upf.merge_files_by_column_values(ms_annotations_file,
-                                                    genbank_annotations_file,
-                                                    0,
-                                                    0,
-                                                    output_file)
-        continue
+    first_df = pd.read_csv(consolidate_annotation_files[0], delimiter='\t', dtype=str, index_col=False)
+    second_df = pd.read_csv(consolidate_annotation_files[1], delimiter='\t', dtype=str, index_col=False)
     
-    # Merge uniprot and ms
-    if ms_annotations_file and uniprot_annotations_file:
-        if genbank_annotations_file is None:
-            ## compare locus column with subject and query (no Not Matched)
-            ms_df = pd.read_csv(ms_annotations_file, delimiter='\t', dtype=str, index_col=False)
-	        uniprot_df = pd.read_csv(uniprot_annotations_file, delimiter='\t', dtype=str, index_col=False)
-            ms_query_filtered = ms_df[ms_df['Query'] != 'Not Matched']
-            ms_subject_filtered = ms_df[ms_df['Subject'] != 'Not Matched']
-            if ms_query_filtered['Query'].equals(uniprot_df['Locus']):
-                upf.merge_files_by_column_values(ms_annotations_file,
-                                                    uniprot_annotations_file,
-                                                    0,
-                                                    0,
-                                                    output_file)
-            if ms_subject_filtered['Subject'].equals(uniprot_df['Locus']):
-                upf.merge_files_by_column_values(ms_annotations_file,
-                                                    uniprot_annotations_file,
-                                                    1,
-                                                    0,
-                                                    output_file)
-        continue
+    first_filtered = first_df[(first_df.iloc[:, 0] != 'Not Matched') & (first_df.iloc[:, 1] != 'Not Matched')]
+    second_filtered = second_df[(second_df.iloc[:, 0] != 'Not Matched') & (second_df.iloc[:, 1] != 'Not Matched')]
 
-    # Merge uniprot and genbank and then MS
-    if ms_annotations_file and uniprot_annotations_file and genbank_annotations_file:
-        upf.merge_files_by_column_values(uniprot_annotations_file, 
-                                                genbank_annotations_file, 
-                                                0, 
-                                                0, 
-                                                unigen_annotations_file)
-        ## compare locus column with subject and query (no Not Matched)
-        ms_df = pd.read_csv(ms_annotations_file, delimiter='\t', dtype=str, index_col=False)
-        unigen_df = pd.read_csv(unigen_annotations_file, delimiter='\t', dtype=str, index_col=False)
-        ms_query_filtered = ms_df[ms_df['Query'] != 'Not Matched']
-        ms_subject_filtered = ms_df[ms_df['Subject'] != 'Not Matched']
-        if ms_query_filtered['Query'].equals(unigen_df['Locus']):
-            upf.merge_files_by_column_values(ms_annotations_file,
-                                                unigen_annotations_file,
+    # f0=s0
+    if first_filtered.iloc[:, 0].equals(second_filtered.iloc[:, 0]):
+        upf.merge_files_by_column_values(consolidate_annotation_files[0],
+                                            consolidate_annotation_files[1],
+                                            0,
+                                            0,
+                                            output_file)
+
+    # f0=s1
+    elif first_filtered.iloc[:, 0].equals(second_filtered.iloc[:, 1]):
+        upf.merge_files_by_column_values(consolidate_annotation_files[0],
+                                            consolidate_annotation_files[1],
+                                            0,
+                                            1,
+                                            output_file)
+
+    # f1=s0
+    elif first_filtered.iloc[:, 1].equals(second_filtered.iloc[:, 0]):
+        upf.merge_files_by_column_values(consolidate_annotation_files[0],
+                                            consolidate_annotation_files[1],
+                                            1,
+                                            0,
+                                            output_file)
+
+    # f1=s1
+    elif first_filtered.iloc[:, 1].equals(second_filtered.iloc[:, 1]):
+        upf.merge_files_by_column_values(consolidate_annotation_files[0],
+                                            consolidate_annotation_files[1],
+                                            1,
+                                            1,
+                                            output_file)
+
+
+
+    ## depois com o ficheiro 2 começa o loop atá ao fim i < len(list) e i > 1
+    ## loop com output_file como input e list[i] como segundo input
+    for i in range(2, len(consolidate_annotation_files)):
+        old_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+        new_df = pd.read_csv(consolidate_annotation_files[i], delimiter='\t', dtype=str, index_col=False)
+        
+        old_filtered = old_df[(old_df.iloc[:, 0] != 'Not Matched') & (old_df.iloc[:, 1] != 'Not Matched')]
+        new_filtered = new_df[(new_df.iloc[:, 0] != 'Not Matched') & (new_df.iloc[:, 1] != 'Not Matched')]
+
+        # f0=s0
+        if old_filtered.iloc[:, 0].equals(new_filtered.iloc[:, 0]):
+            upf.merge_files_by_column_values(output_file,
+                                                consolidate_annotation_files[i],
                                                 0,
                                                 0,
-                                                consolidated_annotation_file)
-        if ms_subject_filtered['Subject'].equals(unigen_df['Locus']):
-            upf.merge_files_by_column_values(ms_annotations_file,
-                                                unigen_annotations_file,
+                                                output_file)
+
+        # f0=s1
+        elif old_filtered.iloc[:, 0].equals(new_filtered.iloc[:, 1]):
+            upf.merge_files_by_column_values(output_file,
+                                                consolidate_annotation_files[i],
+                                                0,
+                                                1,
+                                                output_file)
+
+        # f1=s0
+        elif old_filtered.iloc[:, 1].equals(new_filtered.iloc[:, 0]):
+            upf.merge_files_by_column_values(output_file,
+                                                consolidate_annotation_files[i],
                                                 1,
                                                 0,
                                                 output_file)
-    continue
 
+        # f1=s1
+        elif old_filtered.iloc[:, 1].equals(new_filtered.iloc[:, 1]):
+            upf.merge_files_by_column_values(output_file,
+                                                consolidate_annotation_files[i],
+                                                1,
+                                                1,
+                                                output_file)
 
+    # REVER
     # If cleanup TRUE dedeup the final file
     # Right now only works for ms
     if cleanup:
         ann_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
-        ann_df.sort_values(by='Query', ascending=False)
-        ann_df.drop_duplicates(subset=['Query'], inplace=TRUE)
-        ann_df.to_csv(output_file, sep="\t")
+        ann_df.sort_values(by=ann_df.columns[0], ascending=False, inplace=True)
+        ann_df.drop_duplicates(subset=ann_df.columns[0], inplace=True)
+        ann_df.to_csv(output_file, sep="\t", index=False)
 
     return output_file
