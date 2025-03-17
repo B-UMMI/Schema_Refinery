@@ -114,13 +114,15 @@ def main(args: Namespace) -> None:
         results_files.append(matched_annotations)
 
     if 'consolidate' in args.annotation_options:
+        prf.print_message("Creating output file", "info")
         consolidated_annotations = os.path.join(args.output_directory, "consolidated_annotations.tsv")
-        cs.consolidate_annotations(args.consolidate_annotations,
-                                    args.consolidate_cleanup,
-                                    consolidated_annotations)
-        results_files.append(consolidated_annotations)
+        prf.print_message(f'{consolidated_annotations}')
+        prf.print_message("Matching annotations...", "info")
+        consolidated_annotations_final: str = cs.consolidate_annotations(args.consolidate_annotations,
+                                                                            args.consolidate_cleanup,
+                                                                            consolidated_annotations)
 
-
+        results_files.append(consolidated_annotations_final)
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
