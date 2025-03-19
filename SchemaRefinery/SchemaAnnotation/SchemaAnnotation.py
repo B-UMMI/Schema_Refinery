@@ -113,15 +113,19 @@ def main(args: Namespace) -> None:
         matched_df = pd.read_csv(args.matched_schemas, delimiter='\t', dtype=str, index_col=False)
         annotations_df = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str, index_col=False)
 
-        matched_0_filtered = matched_df[matched_df.iloc[:, 0] != 'Not matched'].sort_values(by=matched_df.columns[0]).reset_index(drop=True)
-        matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).reset_index(drop=True)
+        matched_0_filtered = matched_df[matched_df.iloc[:, 0] != 'Not matched'].sort_values(by=matched_df.columns[0]).drop_duplicates(subset=['Query']).reset_index(drop=True)
+        matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).drop_duplicates(subset=['Subject']).reset_index(drop=True)
+        annotations_sorted = annotations_df.sort_values(by=annotations_df.columns[0]).reset_index(drop=True)
 
-        if matched_0_filtered.iloc[:, 0].equals(annotations_df.iloc[:, 0]):
+        prf.print_message(f'{matched_0_filtered.iloc[:, 0]}', 'info')
+        prf.print_message(f'{annotations_sorted.iloc[:, 0]}', 'info')
+
+        if matched_0_filtered.iloc[:, 0].equals(annotations_sorted.iloc[:, 0]):
             prf.print_message("Annotating from the Query", "info")
             upf.merge_files_by_column_values(args.matched_schemas,
                                             args.subject_annotations,
-                                            0,
-                                            0,
+                                            'Query',
+                                            'Locus',
                                             matched_annotations)
         if matched_1_filtered.iloc[:, 1].equals(annotations_df.iloc[:, 0]):
             prf.print_message('Annotating from the Subject', 'info')                                    
@@ -130,6 +134,8 @@ def main(args: Namespace) -> None:
                                             1,
                                             0,
                                             matched_annotations)
+        else:
+            prf.print_message('No matches found in columns', 'info')
             
         results_files.append(matched_annotations)
 
