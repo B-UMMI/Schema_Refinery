@@ -227,7 +227,7 @@ def schema_annotation() -> None:
 						dest='annotation_options',
 						nargs='+',
 						choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
-						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches.')
+						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "match-schemas" to align against provided target schema and report best matches. "consolidate" to join more than one annotation files together.')
 
 	parser.add_argument('-ba',
 						'--best-annotations-bsr',
@@ -267,8 +267,6 @@ def schema_annotation() -> None:
 						dest='matched_schemas',
 						help='Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).')
 
-#### Explicar que são as annotações do schema que foi utilizado para fazer de subject
-#### O novo problema é que o subject foi escolhido pelo programa. Por isso agora dou a hipotese de sq escolher se foi o subject ou o query dependendo do MS?
 	parser.add_argument('-sa',
 						'--subject-annotations',
 						type=str,
@@ -378,11 +376,28 @@ def schema_annotation() -> None:
 						help='List of Proteome IDs to add to final results.'
 						'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
 
+	parser.add_argument('-co',
+						'--consolidate-cleanup',
+						type=bool,
+						required=False,
+						default=False,
+						dest='consolidate_cleanup',
+						help='For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
+
+	parser.add_argument('-cn',
+						'--consolidate-annotations',
+						type=str,
+						nargs='+',
+						required=False,
+						default=None,
+						dest='consolidate_annotations',
+						help='2 or more paths to the files with the annotations that are to be consolidated.')
+
 	parser.add_argument('--nocleanup',
-							action='store_true',
-							required=False,
-							dest='no_cleanup',
-							help='Flag to indicate whether to skip cleanup after running the module.')
+						action='store_true',
+						required=False,
+						dest='no_cleanup',
+						help='Flag to indicate whether to skip cleanup after running the module.')
 
 	parser.add_argument('--debug',
 						action='store_true',
@@ -878,6 +893,14 @@ def match_schemas() -> None:
                         dest='translation_table',
                         default=11,
                         help='Translation table to use for the CDS translation.')
+
+    parser.add_argument('-ra',
+						'--rep-vs-alleles',
+						type=bool,
+						required=False,
+						dest='rep_vs_alleles',
+						default=False,
+						help='If True then after the rep vs rep Blast the program will run a second Blast with rep vs alleles.')
 
     parser.add_argument('--nocleanup',
                         action='store_true',

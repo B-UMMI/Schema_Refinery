@@ -1,5 +1,6 @@
 import os
 import shutil
+import pandas as pd
 from argparse import Namespace
 from typing import List, Optional, Tuple, Dict
 
@@ -8,7 +9,8 @@ try:
 	from SchemaAnnotation import (proteome_fetcher as pf,
 								  proteome_splitter as ps,
 								  proteome_matcher as pm,
-								  genbank_annotations as ga)
+								  genbank_annotations as ga,
+                                  consolidate as cs)
 	from utils import (file_functions as ff,
 					   pandas_functions as upf,
 					   print_functions as prf,
@@ -20,7 +22,8 @@ except ModuleNotFoundError:
 	from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
 												proteome_splitter as ps,
 												proteome_matcher as pm,
-												genbank_annotations as ga)
+												genbank_annotations as ga,
+                                                consolidate as cs)
 	from SchemaRefinery.utils import (file_functions as ff,
 									  pandas_functions as upf,
 									  print_functions as prf,
@@ -50,6 +53,7 @@ def main(args: Namespace) -> None:
 
     # Check if 'uniprot-proteomes' is in the annotation options
     if 'uniprot-proteomes' in args.annotation_options:
+        prf.print_message('Running Annotation with proteomes.', 'info')
         uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
         # Fetch proteome data and store the directory path
         proteomes_directory: Optional[str] = pf.proteome_fetcher(args.proteome_table,
@@ -59,6 +63,7 @@ def main(args: Namespace) -> None:
 
         if proteomes_directory is not None:
             # Split proteome records into TrEMBL and Swiss-Prot records
+            prf.print_message('Spliting the annotations into Swiss and TrEMBL.', 'info')
             split_data: Tuple[str, str, str, Dict[str, List[str]]] = ps.proteome_splitter(proteomes_directory,
                                                                     uniprot_annotations_folder)
             tr_file: str
@@ -68,6 +73,7 @@ def main(args: Namespace) -> None:
             tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
             # Align loci against proteome records
+            prf.print_message('Matching the annotations.', 'info')
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
                                                          proteome_file_ids,
                                                          args.schema_directory,
@@ -78,11 +84,13 @@ def main(args: Namespace) -> None:
                                                          args.run_mode,
                                                          args.proteome_ids_to_add)
             results_files.extend(annotations)
+            prf.print_message('Matching successfully completed.', 'info')
 
     
 
     # Check if 'genbank' is in the annotation options
     if 'genbank' in args.annotation_options:
+        prf.print_message('Running Annotation with GenBank.', 'info')
         genbank_annotation_folder: str = os.path.join(args.output_directory, 'genbank_annotations')
         # Process GenBank annotations
         genbank_file: str = ga.genbank_annotations(args.genbank_files,
@@ -91,25 +99,61 @@ def main(args: Namespace) -> None:
                                                    args.cpu,
                                                    args.bsr,
                                                    args.translation_table,
+                                                   args.clustering_sim,
+                                                   args.clustering_cov,
+                                                   args.size_ratio, 
                                                    args.run_mode,
                                                    args.extra_genbank_table_columns,
                                                    args.genbank_ids_to_add)
         results_files.append(genbank_file)
+        prf.print_message('Matching successfully completed.', 'info')
 
     matched_schemas: Optional[str] = None
     # Check if 'match-schemas' is in the annotation options
     if 'match-schemas' in args.annotation_options:
         # Merge matched loci with their annotation
-        prf.print_message("Creating output file", "info")
+        prf.print_message('Running Annotation with MatchSchemas.', 'info')
         matched_annotations = os.path.join(args.output_directory, "matched_annotations.tsv")
-        prf.print_message("Matching annotations with schemas", "info")
-        upf.merge_files_by_column_values(args.matched_schemas,
-                                        args.subject_annotations,
-                                        1,
-                                        0,
-                                        matched_annotations)
-        
+
+        matched_df = pd.read_csv(args.matched_schemas, delimiter='\t', dtype=str, index_col=False)
+        annotations_df = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str, index_col=False)
+
+        matched_0_filtered = matched_df[matched_df.iloc[:, 0] != 'Not matched'].sort_values(by=matched_df.columns[0]).drop_duplicates(subset=['Query']).reset_index(drop=True)
+        matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).drop_duplicates(subset=['Subject']).reset_index(drop=True)
+        annotations_sorted = annotations_df.sort_values(by=annotations_df.columns[0]).reset_index(drop=True)
+
+        prf.print_message(f'{matched_0_filtered.iloc[:, 0]}', 'info')
+        prf.print_message(f'{annotations_sorted.iloc[:, 0]}', 'info')
+
+        if matched_0_filtered.iloc[:, 0].equals(annotations_sorted.iloc[:, 0]):
+            prf.print_message("Annotating from the Query", "info")
+            upf.merge_files_by_column_values(args.matched_schemas,
+                                            args.subject_annotations,
+                                            0,
+                                            0,
+                                            matched_annotations)
+        if matched_1_filtered.iloc[:, 1].equals(annotations_df.iloc[:, 0]):
+            prf.print_message('Annotating from the Subject', 'info')                                    
+            upf.merge_files_by_column_values(args.matched_schemas,
+                                            args.subject_annotations,
+                                            1,
+                                            0,
+                                            matched_annotations)
+        else:
+            prf.print_message('No matches found in columns', 'info')
+            
         results_files.append(matched_annotations)
+        prf.print_message('Matching successfully completed.', 'info')
+
+    if 'consolidate' in args.annotation_options:
+        prf.print_message("Consolidating annoations...", "info")
+        consolidated_annotations = os.path.join(args.output_directory, "consolidated_annotations.tsv")
+        consolidated_annotations_final: str = cs.consolidate_annotations(args.consolidate_annotations,
+                                                                            args.consolidate_cleanup,
+                                                                            consolidated_annotations)
+
+        results_files.append(consolidated_annotations_final)
+        prf.print_message('Annotation consolidation successfully completed.', 'info')
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:

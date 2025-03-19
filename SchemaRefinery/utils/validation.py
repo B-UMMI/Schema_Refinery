@@ -489,18 +489,31 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match schemas
     if 'match-schemas' in args.annotation_options:
-        if any([args.subject_annotations]) and not all([args.subject_annotations]):
+        if not all([args.matched_schemas, args.subject_annotations]):
             missing_args = []
             if not args.subject_annotations:
                 missing_args.append('subject_annotations')
+            if not args.matched_schemas:
+                missing_args.append('matched_schemas')
 
             errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. 'subject-annotations' must be provided.")
 
         if args.subject_annotations:
             verify_path_exists(args.subject_annotations, 'file', errors)
+        if args.matched_schemas:
+            verify_path_exists(args.matched_schemas, 'file', errors)
         # Verify if best-annotations-bsr is a value between 0 and 1
         if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
             errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
+
+    # Arguments to consolidate
+    if 'consolidate' in args.annotation_options:
+        if not args.consolidate_annotations:
+            errors.append(f"\nError: 'consolidate-annotations' must be provided.")
+        if args.consolidate_annotations:
+            if len(args.consolidate_annotations)<2:
+                errors.append(f"\nError: You must give at least the paths of 2 files.")
+
     
     # Display all errors at once if there are any
     if errors:

@@ -59,6 +59,10 @@ Command-Line Arguments
         (Optional) Translation table to use for the CDS translation.
         Default: 11
 
+    -ra, --rep-vs-alleles
+        (Optional) If True then after the rep vs rep Blast the program will run a second Blast with rep vs alleles.
+        Default: False
+
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
