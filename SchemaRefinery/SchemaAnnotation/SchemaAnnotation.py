@@ -1,5 +1,6 @@
 import os
 import shutil
+import pandas as pd
 from argparse import Namespace
 from typing import List, Optional, Tuple, Dict
 
@@ -93,6 +94,9 @@ def main(args: Namespace) -> None:
                                                    args.cpu,
                                                    args.bsr,
                                                    args.translation_table,
+                                                   args.clustering_sim,
+                                                   args.clustering_cov,
+                                                   args.size_ratio, 
                                                    args.run_mode,
                                                    args.extra_genbank_table_columns,
                                                    args.genbank_ids_to_add)
@@ -105,12 +109,28 @@ def main(args: Namespace) -> None:
         prf.print_message("Creating output file", "info")
         matched_annotations = os.path.join(args.output_directory, "matched_annotations.tsv")
         prf.print_message("Matching annotations with schemas", "info")
-        upf.merge_files_by_column_values(args.matched_schemas,
-                                        args.subject_annotations,
-                                        1,
-                                        0,
-                                        matched_annotations)
-        
+
+        matched_df = pd.read_csv(args.matched_schemas, delimiter='\t', dtype=str, index_col=False)
+        annotations_df = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str, index_col=False)
+
+        matched_0_filtered = matched_df[matched_df.iloc[:, 0] != 'Not matched'].sort_values(by=matched_df.columns[0]).reset_index(drop=True)
+        matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).reset_index(drop=True)
+
+        if matched_0_filtered.iloc[:, 0].equals(annotations_df.iloc[:, 0]):
+            prf.print_message("Annotating from the Query", "info")
+            upf.merge_files_by_column_values(args.matched_schemas,
+                                            args.subject_annotations,
+                                            0,
+                                            0,
+                                            matched_annotations)
+        if matched_1_filtered.iloc[:, 1].equals(annotations_df.iloc[:, 0]):
+            prf.print_message('Annotating from the Subject', 'info')                                    
+            upf.merge_files_by_column_values(args.matched_schemas,
+                                            args.subject_annotations,
+                                            1,
+                                            0,
+                                            matched_annotations)
+            
         results_files.append(matched_annotations)
 
     if 'consolidate' in args.annotation_options:

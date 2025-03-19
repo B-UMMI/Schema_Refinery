@@ -267,8 +267,6 @@ def schema_annotation() -> None:
 						dest='matched_schemas',
 						help='Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).')
 
-#### Explicar que são as annotações do schema que foi utilizado para fazer de subject
-#### O novo problema é que o subject foi escolhido pelo programa. Por isso agora dou a hipotese de sq escolher se foi o subject ou o query dependendo do MS?
 	parser.add_argument('-sa',
 						'--subject-annotations',
 						type=str,
