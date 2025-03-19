@@ -96,7 +96,7 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
 		column_value2 = df2.columns[column_value2]
 
 	# Merge the dataframes based on the specified column values
-	merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='outer')
+	merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='left')
 	
 	# Drop the 'Locus_y' which is original subject id column and rename 'Locus_x' to 'Locus'
 	# Drop all the locus columns
@@ -178,9 +178,15 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
 			selected_columns_dict = {output_columns[i]: v for i, v in enumerate(selected_columns_dict.values())}
 			result_row = selected_columns_dict
 		else:
-			if 'Query' in row and 'Subject' in row:
+			if 'Query' in row:
 				# If 'query' and 'subject' exist, use them
-				result_row = row[['Query', 'Subject']].to_dict()
+				result_row = row[['Query']].to_dict()
+			elif 'Subject' in row:
+				# If 'query' and 'subject' exist, use them
+				result_row = row[['Subject']].to_dict()
+			elif 'matched_Proteome_ID' in row:
+				# If 'query' and 'subject' exist, use them
+				result_row = row[['matched_Proteome_ID']].to_dict()
 			else:
 				# Otherwise, fall back to 'Locus'
 				result_row = row[['Locus']].to_dict()
@@ -197,3 +203,62 @@ def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str
 
 	# Write the processed DataFrame to a TSV file with specific columns
 	result_df.to_csv(output_file, sep='\t', index=False, columns=output_columns)
+
+
+def merge_files_by_column_values_df(df1: str, df2: str, column_value1: Union[str, int], column_value2: Union[str, int], output_file: str, left: str, right: str) -> pd.DataFrame:
+	"""
+	Merge two TSV files into a single file based on specified column values or indices.
+
+	This function reads two TSV files, merges them into a single DataFrame based on specified column values or indices,
+	and writes the merged DataFrame to an output TSV file.
+
+	Parameters
+	----------
+	file1 : str
+		File path to the first TSV file.
+	file2 : str
+		File path to the second TSV file.
+	column_value1 : Union[str, int]
+		The column value or index to merge the first file on.
+	column_value2 : Union[str, int]
+		The column value or index to merge the second file on.
+	output_file : str
+		The path to the output TSV file where the merged DataFrame will be saved.
+
+	Returns
+	-------
+	pd.DataFrame
+		The merged DataFrame.
+	"""
+	# Convert column indices to column names if necessary
+	if isinstance(column_value1, int):
+		column_value1 = df1.columns[column_value1]
+	if isinstance(column_value2, int):
+		column_value2 = df2.columns[column_value2]
+
+	# Merge the dataframes based on the specified column values
+	merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='left', suffixes=(left, right))
+	
+	# Drop the 'Locus_y' which is original subject id column and rename 'Locus_x' to 'Locus'
+	# Drop all the locus columns
+	if 'Locus_y' in merged_table.columns:
+		merged_table.drop(columns=['Locus_y'], inplace=True)
+	if 'Locus_x' in merged_table.columns:
+		merged_table.drop(columns=['Locus_x'], inplace=True)
+	if 'Query' in merged_table.columns:
+		if 'Locus' in merged_table.columns:
+			merged_table.drop(columns=['Locus'], inplace=True)
+
+	# Rename specified columns by adding 'matched_' prefix
+	#columns_to_rename = {
+	#	'Proteome_ID': 'matched_Proteome_ID',
+	#	'Proteome_product': 'matched_Proteome_product',
+	#	'Proteome_gene_name': 'matched_Proteome_gene_name',
+	#	'Proteome_BSR': 'matched_Proteome_BSR'
+	#}
+	#merged_table.rename(columns=columns_to_rename, inplace=True)
+
+	# Save the merged table to a TSV file
+	merged_table.to_csv(output_file, sep='\t', index=False)
+
+	return merged_table
