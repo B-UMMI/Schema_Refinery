@@ -227,7 +227,7 @@ def schema_annotation() -> None:
 						dest='annotation_options',
 						nargs='+',
 						choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
-						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "uniprot-sparql" to search for exact matches through UniProt\'s SPARQL endpoint. "match-schemas" to align against provided target schema and report best matches. "consolidate" to join more than one annotation files together.')
+						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "match-schemas" to align against provided target schema and report best matches. "consolidate" to join more than one annotation files together.')
 
 	parser.add_argument('-ba',
 						'--best-annotations-bsr',

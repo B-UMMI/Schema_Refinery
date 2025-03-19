@@ -54,7 +54,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     # Compare the first columns of both files
     if first_0_filtered.iloc[:, 0].equals(second_0_filtered.iloc[:, 0]):
         prf.print_message('First columns are a match', 'info')
-        upf.merge_files_by_column_values_df(first_0_filtered,
+        upf.merge_files_by_column_values_df(first_df,
                                             second_0_filtered,
                                             0,
                                             0,
@@ -64,7 +64,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     # Compare the first column of the first file and the second one of the second file
     elif first_0_filtered.iloc[:, 0].equals(second_1_filtered.iloc[:, 1]):
         prf.print_message('First and second columns are a match', 'info')
-        upf.merge_files_by_column_values_df(second_1_filtered,
+        upf.merge_files_by_column_values_df(second_df,
                                             first_0_filtered,
                                             1,
                                             0,
@@ -74,7 +74,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     # Compare the second column of the first file and the first one of the second file
     elif first_1_filtered.iloc[:, 1].equals(second_0_filtered.iloc[:, 0]):
         prf.print_message('Second and first columns are a match', 'info')
-        upf.merge_files_by_column_values_df(first_1_filtered,
+        upf.merge_files_by_column_values_df(first_df,
                                             second_0_filtered,
                                             1,
                                             0,
@@ -84,7 +84,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     # Compare the second columns of both files
     elif first_1_filtered.iloc[:, 1].equals(second_1_filtered.iloc[:, 1]):
         prf.print_message('Second columns are a match', 'info')
-        upf.merge_files_by_column_values_df(first_1_filtered,
+        upf.merge_files_by_column_values_df(first_df,
                                             second_1_filtered,
                                             1,
                                             1,
@@ -113,7 +113,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             # Compare the first columns of both files
             if old_0_filtered.iloc[:, 0].equals(new_0_filtered.iloc[:, 0]):
                 prf.print_message('First columns are a match', 'info')
-                upf.merge_files_by_column_values_df(old_0_filtered,
+                upf.merge_files_by_column_values_df(old_df,
                                                     new_0_filtered,
                                                     0,
                                                     0,
@@ -123,7 +123,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             # Compare the first column of the first file and the second one of the second file
             elif old_0_filtered.iloc[:, 0].equals(new_1_filtered.iloc[:, 1]):
                 prf.print_message('First and second columns are a match', 'info')
-                upf.merge_files_by_column_values_df(new_1_filtered,
+                upf.merge_files_by_column_values_df(new_df,
                                                     old_0_filtered,
                                                     1,
                                                     0,
@@ -133,7 +133,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             # Compare the second column of the first file and the first one of the second file
             elif old_1_filtered.iloc[:, 1].equals(new_0_filtered.iloc[:, 0]):
                 prf.print_message('Second and first columns are a match', 'info')
-                upf.merge_files_by_column_values_df(old_1_filtered,
+                upf.merge_files_by_column_values_df(old_df,
                                                     new_0_filtered,
                                                     1,
                                                     0,
@@ -143,7 +143,7 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             # Compare the second columns of both files
             elif old_1_filtered.iloc[:, 1].equals(new_1_filtered.iloc[:, 1]):
                 prf.print_message('Second columns are a match', 'info')
-                upf.merge_files_by_column_values_df(old_1_filtered,
+                upf.merge_files_by_column_values_df(old_df,
                                                     new_1_filtered,
                                                     1,
                                                     1,

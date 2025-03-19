@@ -510,8 +510,9 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     if 'consolidate' in args.annotation_options:
         if not args.consolidate_annotations:
             errors.append(f"\nError: 'consolidate-annotations' must be provided.")
-        if len(args.consolidate_annotations)<2:
-            errors.append(f"\nError: You must give at least the path to 2 files.")
+        if args.consolidate_annotations:
+            if len(args.consolidate_annotations)<2:
+                errors.append(f"\nError: You must give at least the paths of 2 files.")
 
     
     # Display all errors at once if there are any

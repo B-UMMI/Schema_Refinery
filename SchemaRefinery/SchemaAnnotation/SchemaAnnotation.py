@@ -53,6 +53,7 @@ def main(args: Namespace) -> None:
 
     # Check if 'uniprot-proteomes' is in the annotation options
     if 'uniprot-proteomes' in args.annotation_options:
+        prf.print_message('Running Annotation with proteomes.', 'info')
         uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
         # Fetch proteome data and store the directory path
         proteomes_directory: Optional[str] = pf.proteome_fetcher(args.proteome_table,
@@ -62,6 +63,7 @@ def main(args: Namespace) -> None:
 
         if proteomes_directory is not None:
             # Split proteome records into TrEMBL and Swiss-Prot records
+            prf.print_message('Spliting the annotations into Swiss and TrEMBL.', 'info')
             split_data: Tuple[str, str, str, Dict[str, List[str]]] = ps.proteome_splitter(proteomes_directory,
                                                                     uniprot_annotations_folder)
             tr_file: str
@@ -71,6 +73,7 @@ def main(args: Namespace) -> None:
             tr_file, sp_file, descriptions_file, proteome_file_ids = split_data
 
             # Align loci against proteome records
+            prf.print_message('Matching the annotations.', 'info')
             annotations: List[str] = pm.proteome_matcher([tr_file, sp_file, descriptions_file],
                                                          proteome_file_ids,
                                                          args.schema_directory,
@@ -81,11 +84,13 @@ def main(args: Namespace) -> None:
                                                          args.run_mode,
                                                          args.proteome_ids_to_add)
             results_files.extend(annotations)
+            prf.print_message('Matching successfully completed.', 'info')
 
     
 
     # Check if 'genbank' is in the annotation options
     if 'genbank' in args.annotation_options:
+        prf.print_message('Running Annotation with GenBank.', 'info')
         genbank_annotation_folder: str = os.path.join(args.output_directory, 'genbank_annotations')
         # Process GenBank annotations
         genbank_file: str = ga.genbank_annotations(args.genbank_files,
@@ -101,14 +106,14 @@ def main(args: Namespace) -> None:
                                                    args.extra_genbank_table_columns,
                                                    args.genbank_ids_to_add)
         results_files.append(genbank_file)
+        prf.print_message('Matching successfully completed.', 'info')
 
     matched_schemas: Optional[str] = None
     # Check if 'match-schemas' is in the annotation options
     if 'match-schemas' in args.annotation_options:
         # Merge matched loci with their annotation
-        prf.print_message("Creating output file", "info")
+        prf.print_message('Running Annotation with MatchSchemas.', 'info')
         matched_annotations = os.path.join(args.output_directory, "matched_annotations.tsv")
-        prf.print_message("Matching annotations with schemas", "info")
 
         matched_df = pd.read_csv(args.matched_schemas, delimiter='\t', dtype=str, index_col=False)
         annotations_df = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str, index_col=False)
@@ -124,8 +129,8 @@ def main(args: Namespace) -> None:
             prf.print_message("Annotating from the Query", "info")
             upf.merge_files_by_column_values(args.matched_schemas,
                                             args.subject_annotations,
-                                            'Query',
-                                            'Locus',
+                                            0,
+                                            0,
                                             matched_annotations)
         if matched_1_filtered.iloc[:, 1].equals(annotations_df.iloc[:, 0]):
             prf.print_message('Annotating from the Subject', 'info')                                    
@@ -138,17 +143,17 @@ def main(args: Namespace) -> None:
             prf.print_message('No matches found in columns', 'info')
             
         results_files.append(matched_annotations)
+        prf.print_message('Matching successfully completed.', 'info')
 
     if 'consolidate' in args.annotation_options:
-        prf.print_message("Creating output file", "info")
+        prf.print_message("Consolidating annoations...", "info")
         consolidated_annotations = os.path.join(args.output_directory, "consolidated_annotations.tsv")
-        prf.print_message(f'{consolidated_annotations}')
-        prf.print_message("Matching annotations...", "info")
         consolidated_annotations_final: str = cs.consolidate_annotations(args.consolidate_annotations,
                                                                             args.consolidate_cleanup,
                                                                             consolidated_annotations)
 
         results_files.append(consolidated_annotations_final)
+        prf.print_message('Annotation consolidation successfully completed.', 'info')
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
