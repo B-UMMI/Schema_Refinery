@@ -321,9 +321,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
         total_alleles_a += num_alleles
         avg_a = total_alleles_a/(len(a_files))
 
-    pf.print_message(f"Total alleles in First Schema: {total_alleles_a}. Total Loci: {len(a_files)}. And an average of {round(avg_a)} alleles per loci.", "info")
-
-
     total_alleles_b = 0
     avg_b = 0
     for query_loci, fasta_path in b_files.items():
@@ -331,9 +328,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
         num_alleles = len(allele_dict)
         total_alleles_b += num_alleles
         avg_b = total_alleles_b/(len(b_files))
-
-    pf.print_message(f"Total alleles in Second Schema: {total_alleles_b}. Total Loci: {len(b_files)}. And an average of {round(avg_b)} alleles per loci.", "info")
-
 
     # Set first or second schema as the query or subject
     if avg_a >= avg_b:
@@ -376,11 +370,170 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
     deleted_files = 0 
 
+    # Process query FASTA files for the complete query schema
+    pf.print_message('', 'info')
+    pf.print_message('Processing the complete Query FASTA files...', 'info')
+    query_ids: Dict[str, List[List[str]]] = {}
+    query_fastas: Dict[str, str] = {}
+    for query_loci, path in query_fastas_hash.items():
+        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
+        # Save the IDs of the alleles
+        query_ids.setdefault(query_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+        query_fastas.update(fasta_dict)
+
+
+    # Process subject FASTA files for the complete subject schema
+    pf.print_message('Processing the complete Subject FASTA files...', 'info')
+    subject_ids: Dict[str, List[List[str]]] = {}
+    subject_fastas: Dict[str, str] = {}
+    for subject_loci, path in subject_fastas_hash.items():
+        fasta_dict = sf.fetch_fasta_dict(path, False)
+        # Save the IDs of the alleles
+        subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+        subject_fastas.update(fasta_dict)
+
+    # -------------------------------------------------------------------
+    # Comparision of the Query and Subject DNA hashes (the BSR = 1.0)
+    # -------------------------------------------------------------------
+    # Prepare best BSR values and query translations
+
+    pf.print_message("", "info")
+    pf.print_message("Matching DNA hashes between query and subject schema", "info")
+    pf.print_message(f"The query schema has {len(query_fastas)} dna hashes.", "info")
+    pf.print_message(f"The subject schema has {len(subject_fastas)} dna hashes.", "info")
+    best_bsr_values = {}
+
+    # Find common keys (matching protein hashes)
+    common_keys = set(query_fastas.values()) & set(subject_fastas.values())
+    seen_pairs = set()
+    subject_base_dict = {}
+    locus_removal = 0
+
+    for dna_hash in common_keys:
+        query_ids = [key for key, val in query_fastas.items() if val == dna_hash]
+        subject_ids = [key for key, val in subject_fastas.items() if val == dna_hash]
+        
+        for query_id in query_ids:
+            # Go from allele to loci
+            query_base = re.sub(r'_\*?\d+$', '', query_id)
+            for subject_id in subject_ids:
+                subject_base = re.sub(r'_\*?\d+$', '', subject_id)
+                subject_fastas_hash.pop(subject_base, None)
+                subject_fastas_rep.pop(subject_base, None)
+                # Only add unique pairs
+                if (query_base, subject_base) not in seen_pairs:
+                    best_bsr_values.setdefault(query_base, {})[subject_base] = 1.0
+                    seen_pairs.add((query_base, subject_base))
+                    locus_removal += 1
+
+    # Write results to the best matches file
+    pf.print_message("Writting results to the output file...", "info")
+    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_fastas_hash, subject_fastas_hash, output_directory, rep_vs_alleles,'hashes_dna')
+
+    # Print out stats
+    pf.print_message(f"From the DNA hash comparision {len(seen_pairs)} matches were found.", "info")
+    pf.print_message(f"{locus_removal} loci were removed.", "info")
+    pf.print_message(f"{len(subject_fastas_hash)} representative subject loci will pass for the next match analysis.", "info")
+
+    # Write the master file without the subject sequences that have already be matched
+    pf.print_message("Writting rep master file...", "info")
+    #file with the translation of the representatives
+    master_file_rep_path: str = os.path.join(blast_folder, 'subject_master_rep_file.fasta')
+    with open(master_file_rep_path, 'w') as master:
+        for locus_id, fasta_path in subject_fastas_hash.items():
+            with open(fasta_path, 'r') as fasta_file:
+                for record in SeqIO.parse(fasta_file, 'fasta'):
+                    master.write(f">{record.id}\n{record.seq}\n")
+
+
+
     len_query_fastas: int = len(query_fastas_hash)
     len_subject_fasta: int = len(subject_fastas_hash)
     len_query_rep_fastas: int = len(query_fastas_rep)
     len_subject_rep_fasta: int = len(subject_fastas_rep)
 
+    # Translate the complete query fastas
+    query_translation_dict: Dict[str, str] = {}
+    query_translations_paths: Dict[str, str] = {}
+    query_prot_hash: Dict[str, str] = {}
+    query_ids: Dict[str, List[List[str]]] = {}
+    i = 0
+    pf.print_message("", "info")
+    pf.print_message("Translating sequences for complete query schema...", "info")
+    for query_loci, path in query_fastas_hash.items():
+        i += 1
+        pf.print_message(f"Translated complete query loci FASTA: {i}/{len_query_fastas}", "info", end='\r', flush=True)
+        # Get the fasta sequences for the query
+        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
+        # Save the IDs of the alleles
+        query_ids.setdefault(query_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+        # Create translation file path
+        query_fasta_translation = os.path.join(query_translation_folder, f"{query_loci}_translation.fasta")
+        query_untranslated_seq = os.path.join(query_untranslation_folder, f"{query_loci}_not_translated.fasta")
+        # Translate sequences, save untranslated sequences, get the protein hashes and update translation dictionary
+        query_translations_paths[query_loci] = query_fasta_translation
+        trans_dict, prot_hashes, untras_seq= sf.translate_seq_deduplicate(fasta_dict,
+                                                        query_fasta_translation,
+                                                        query_untranslated_seq,
+                                                        0,
+                                                        False,
+                                                        translation_table,
+                                                        True)
+        # Update the query translation and protein dictionaries
+        query_translation_dict.update(trans_dict)
+        query_prot_hash.update(prot_hashes)
+       
+
+        # Delete the files that are empty --> the translation has failed
+        for file_name in os.listdir(query_translation_folder):
+            file_path = os.path.join(query_translation_folder, file_name)
+            if os.path.isfile(file_path) and os.path.getsize(file_path) == 0:
+                os.remove(file_path)
+                seq_id = file_name.replace("_translation.fasta", "")
+                query_translations_paths.pop(seq_id, None)
+                
+                deleted_files += 1
+                pf.print_message(f"Deleted empty file: {file_path}", "info", end='\r', flush=True)
+    # Delete the folder if all proteins are translated    
+    if os.path.isdir(query_untranslation_folder) and not os.listdir(query_untranslation_folder):
+        os.rmdir(query_untranslation_folder)
+        
+    pf.print_message(f"Cleanup complete: Removed {deleted_files} empty translation files.", "info")
+
+
+    # Translate the complete subject fastas
+    subject_translation_dict: Dict[str, str] = {}
+    subject_ids: Dict[str, List[List[str]]] = {}
+    subject_translations_paths: Dict[str, str] = {}
+    subject_prot_hash: Dict[str, str] = {}
+    #file with all the translated sequences of the subject schema
+    master_file_path: str = os.path.join(blast_folder, 'subject_master_file.fasta') 
+    i = 0
+    pf.print_message("Translating sequences for complete subject schema...", "info")
+    for subject_loci, path in subject_fastas_hash.items():
+        i += 1
+        pf.print_message(f"Translated complete subject loci FASTA: {i}/{len_subject_fasta}", "info", end='\r', flush=True)
+        # Get the fasta sequences for the subject
+        fasta_dict = sf.fetch_fasta_dict(path, False)
+        # Save the IDs of the alleles
+        subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+        # Create translation file path
+        subject_fasta_translation = os.path.join(subject_translation_folder, f"{subject_loci}_translation.fasta")
+        # Translate sequences, get protein hashes and update translation dictionary
+        subject_translations_paths[subject_loci] = subject_fasta_translation
+        # Process subject FASTA files for the complete subject schema
+        trans_dict, prot_hash, _= sf.translate_seq_deduplicate(fasta_dict,
+                                                        subject_fasta_translation,
+                                                        None,
+                                                        0,
+                                                        False,
+                                                        translation_table,
+                                                        True)
+
+        # Update the subject translation and proteins dictionaries
+        subject_translation_dict.update(trans_dict)
+        subject_prot_hash.update(prot_hash)
+        
     # Process query FASTA files for representatives
     query_translation_rep_dict: Dict[str, str] = {}
     query_ids: Dict[str, List[List[str]]] = {}
@@ -429,7 +582,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     subject_translation_rep_dict: Dict[str, str] = {}
     subject_ids: Dict[str, List[List[str]]] = {}
     subject_translations_rep_paths: Dict[str, str] = {}
-    master_file_rep_path: str = os.path.join(blast_folder, 'subject_master_rep_file.fasta') #file with the translation of the representatives
     i = 0
     pf.print_message("Translating sequences for representative subject schema...", "info")
     for subject_loci, path in subject_fastas_rep.items():
@@ -455,95 +607,15 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
         subject_translation_rep_dict.update(trans_dict)
 
 
-    # Process query FASTA files for the complete query schema
-    query_translation_dict: Dict[str, str] = {}
-    query_ids: Dict[str, List[List[str]]] = {}
-    query_translations_paths: Dict[str, str] = {}
-    query_prot_hash: Dict[str, str] = {}
-    i = 0
-    pf.print_message("", "info")
-    pf.print_message("Translating sequences for complete query schema...", "info")
-    for query_loci, path in query_fastas_hash.items():
-        i += 1
-        pf.print_message(f"Translated complete query loci FASTA: {i}/{len_query_fastas}", "info", end='\r', flush=True)
-        # Get the fasta sequences for the query
-        fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(path, False)
-        # Save the IDs of the alleles
-        query_ids.setdefault(query_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
-        # Create translation file path
-        query_fasta_translation = os.path.join(query_translation_folder, f"{query_loci}_translation.fasta")
-        query_untranslated_seq = os.path.join(query_untranslation_folder, f"{query_loci}_not_translated.fasta")
-        # Translate sequences, save untranslated sequences, get the protein hashes and update translation dictionary
-        query_translations_paths[query_loci] = query_fasta_translation
-        trans_dict, prot_hashes, untras_seq= sf.translate_seq_deduplicate(fasta_dict,
-                                                        query_fasta_translation,
-                                                        query_untranslated_seq,
-                                                        0,
-                                                        False,
-                                                        translation_table,
-                                                        True)
-        # Update the query translation and protein dictionaries
-        query_translation_dict.update(trans_dict)
-        query_prot_hash.update(prot_hashes)
-
-        # Delete the files that are empty --> the translation has failed
-        for file_name in os.listdir(query_translation_folder):
-            file_path = os.path.join(query_translation_folder, file_name)
-            if os.path.isfile(file_path) and os.path.getsize(file_path) == 0:
-                os.remove(file_path)
-                seq_id = file_name.replace("_translation.fasta", "")
-                query_translations_paths.pop(seq_id, None)
-                
-                deleted_files += 1
-                pf.print_message(f"Deleted empty file: {file_path}", "info", end='\r', flush=True)
-    # Delete the folder if all proteins are translated    
-    if os.path.isdir(query_untranslation_folder) and not os.listdir(query_untranslation_folder):
-        os.rmdir(query_untranslation_folder)
-        
-    pf.print_message(f"Cleanup complete: Removed {deleted_files} empty translation files.", "info")
-
-
-    # Process subject FASTA files for the complete subject schema
-    subject_translation_dict: Dict[str, str] = {}
-    subject_ids: Dict[str, List[List[str]]] = {}
-    subject_translations_paths: Dict[str, str] = {}
-    subject_prot_hash: Dict[str, str] = {}
-    master_file_path: str = os.path.join(blast_folder, 'subject_master_file.fasta') #file with all the translated sequences of the subject schema
-    i = 0
-    pf.print_message("Translating sequences for complete subject schema...", "info")
-    for subject_loci, path in subject_fastas_hash.items():
-        i += 1
-        pf.print_message(f"Translated complete subject loci FASTA: {i}/{len_subject_fasta}", "info", end='\r', flush=True)
-        # Get the fasta sequences for the subject
-        fasta_dict = sf.fetch_fasta_dict(path, False)
-        # Save the IDs of the alleles
-        subject_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
-        # Create translation file path
-        subject_fasta_translation = os.path.join(subject_translation_folder, f"{subject_loci}_translation.fasta")
-        # Translate sequences, get protein hashes and update translation dictionary
-        subject_translations_paths[subject_loci] = subject_fasta_translation
-        trans_dict, prot_hash, _= sf.translate_seq_deduplicate(fasta_dict,
-                                                        subject_fasta_translation,
-                                                        None,
-                                                        0,
-                                                        False,
-                                                        translation_table,
-                                                        True)
-
-        # Update the subject translation and proteins dictionaries
-        subject_translation_dict.update(trans_dict)
-        subject_prot_hash.update(prot_hash)
-
-
     # -------------------------------------------------------------------
-    # Comparision of the Query and Subject hashes (the BSR = 1.0)
+    # Comparision of the Query and Subject protein hashes (the BSR = 1.0)
     # -------------------------------------------------------------------
     # Prepare best BSR values and query translations
 
     pf.print_message("", "info")
-    pf.print_message("Matching hashes between query and subject schema", "info")
-    pf.print_message(f"The query schema has {len(query_prot_hash)} hashes.", "info")
-    pf.print_message(f"The subject schema has {len(subject_prot_hash)} hashes.", "info")
+    pf.print_message("Matching protein hashes between query and subject schema", "info")
+    pf.print_message(f"The query schema has {len(query_prot_hash)} protein hashes.", "info")
+    pf.print_message(f"The subject schema has {len(subject_prot_hash)} protein hashes.", "info")
     best_bsr_values = {}
 
     # Find common keys (matching protein hashes)
@@ -571,10 +643,10 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
     # Write results to the best matches file
     pf.print_message("Writting results to the output file...", "info")
-    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_paths, output_directory, rep_vs_alleles,'hashes_vs_hashes')
+    best_blast_matches_file = write_best_blast_matches_to_file(best_bsr_values, query_translations_rep_paths, subject_translations_paths, output_directory, rep_vs_alleles,'hashes_prot')
 
     # Print out stats
-    pf.print_message(f"From the hash comparision {len(seen_pairs)} matches were found.", "info")
+    pf.print_message(f"From the protein hash comparision {len(seen_pairs)} matches were found.", "info")
     pf.print_message(f"{locus_removal} loci were removed.", "info")
     pf.print_message(f"{len(subject_translations_rep_paths)} representative subject loci will pass for the next match analysis.", "info")
 
@@ -585,6 +657,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
             with open(fasta_path, 'r') as fasta_file:
                 for record in SeqIO.parse(fasta_file, 'fasta'):
                     master.write(f">{record.id}\n{record.seq}\n")
+
 
 
     # -------------------------------------------------------------------
