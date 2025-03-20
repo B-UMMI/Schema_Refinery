@@ -71,8 +71,7 @@ def get_protein_annotation_fasta(seqRecord: SeqRecord, genbank_table_columns: Li
 def genbank_annotations(genbank_files: str, schema_directory: str,
                         output_directory: str, cpu: int,
                         bsr: float, translation_table: int,
-                        clustering_sim: float, clustering_cov: float,
-                        size_ratio: float, run_mode: str,
+                        run_mode: str,
                         extra_genbank_table_columns: List[str],
                         genbank_ids_to_add: List[str]) -> str:
     """
@@ -144,40 +143,12 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
 
     prf.print_message(f"Out of {total_proteins} proteins sequences {len(all_translation_dict)} are unique proteins", "info")
 
-    prf.print_message("Clustering protein sequences...", "info")
-    all_alleles: Dict[str, List[str]] = {}
-    reps_sequences: Dict[str, str] = {}
-    reps_groups: Dict[str, List[str]] = {}
-    prot_len_dict: Dict[str, int]
-
-    # Cluster protein sequences
-    [all_alleles,
-     reps_sequences,
-     reps_groups,
-     prot_len_dict] = cf.minimizer_clustering(
-                                            all_translation_dict,
-                                            5,
-                                            5,
-                                            True,
-                                            1,
-                                            all_alleles,
-                                            reps_sequences,
-                                            reps_groups,
-                                            1,
-                                            clustering_sim,
-                                            clustering_cov,
-                                            True,
-                                            size_ratio
-    )
-    # Print the number of clusters
-    prf.print_message(f"Clustered {len(all_translation_dict)} into {len(reps_sequences)} clusters.", "info")
-
     # Save extracted protein sequences to a file
     blast_processing_folder: str = os.path.join(output_directory, 'blast_processing')
     ff.create_directory(blast_processing_folder)
     genbank_protein_file: str = os.path.join(blast_processing_folder, 'selected_genbank_proteins.fasta')
     with open(genbank_protein_file, 'w') as outfile:
-        for protein_id, values in reps_sequences.items():
+        for protein_id, values in all_translation_dict.items():
             outfile.write(f">{protein_id}\n{values}\n")
 
     translation_dict: Dict[str, str]
@@ -273,7 +244,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                 else:
                     best_bsr_values_per_genbank_file[genbank_file][loci] = [subject_id, bsr_value, *extra_info]
 
-    prf.print_message("\nExtracting best annotations for genbank files for proteins that were deduplicated and clustered...", "info")
+    prf.print_message("\nExtracting best annotations for genbank files for proteins that were deduplicated...", "info")
     # Add all the other best matches that files may have but are being represented by other sequence
     for gbk_file, loci_values in list(best_bsr_values_per_genbank_file.items()):
         for loci_id, values in list(loci_values.items()):
@@ -294,21 +265,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     extra_info = ['NA' if element == '' else element for element in all_cds_info[id_]]
                     # Verify if genbank file is in the dict
                     best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, bsr_value, extra_info])
-            # For clustered elements
-            rep_cluster = all_alleles.get(proteinid)
-            if rep_cluster:
-                for values in rep_cluster:
-                    id_ = values[0]
-                    # Get genbank file for that ID
-                    genbank_file = itf.identify_string_in_dict_get_key(id_, all_genbank_files_ids)
-                    # If the genbank file is the same as the one that the representative is in, skip (may be paralogous protein)
-                    if gbk_file == genbank_file:
-                        continue
-                    # Add 'NA' if element is empty
-                    extra_info = ['NA' if element == '' else element for element in all_cds_info[id_]]
-                    # Verify if genbank file is in the dict
-                    best_bsr_values_per_genbank_file[genbank_file].setdefault(loci_id, [id_, bsr_value, extra_info])
-
+           
     merge_files: List[str] = []
     # Save annotations
     tab = '\t'
@@ -359,7 +316,7 @@ def genbank_annotations(genbank_files: str, schema_directory: str,
                     at.write(f"{loci}\t{subject_id}\t{tab.join(update_cds_info[:2])}\t{bsr_value}\t{tab.join(update_cds_info[2:])}\n")
     
     # Merge all annotations files that user wants
-    annotations_file: str = os.path.join(output_directory, 'best_genbank_annotations.tsv')
+    annotations_file: str = os.path.join(output_directory, 'genbank_annotations.tsv')
     pf.merge_files_into_same_file_by_key(merge_files, 'Locus', annotations_file)
 
     return annotations_file

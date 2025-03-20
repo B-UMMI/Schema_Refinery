@@ -60,7 +60,7 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
 	# Save the merged table to a TSV file
 	merged_table.to_csv(output_file, sep='\t', index=False)
 
-def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[str, int], column_value2: Union[str, int], output_file: str) -> pd.DataFrame:
+def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[str, int], column_value2: Union[str, int], output_file: str) -> str:
 	"""
 	Merge two TSV files into a single file based on specified column values or indices.
 
@@ -120,7 +120,7 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
 	# Save the merged table to a TSV file
 	merged_table.to_csv(output_file, sep='\t', index=False)
 
-	return merged_table
+	return output_file
 
 def process_tsv_with_priority(input_file: str, priority_dict: Dict[str, List[str]],
 							  output_file: str, best_annotations_bsr: float, 

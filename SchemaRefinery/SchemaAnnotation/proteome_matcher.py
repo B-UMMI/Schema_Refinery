@@ -324,57 +324,57 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 					# Verify if genbank file is in the dict
 					best_bsr_values_per_proteome_file[proteome_file_id_current].setdefault(loci_id, (id_, bsr_value))
 
-	# Save best annotations per proteome file
-	best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
-	ff.create_directory(best_annotations_per_proteome_file)
-	# Create Swiss-Prot and TrEMBL folders
-	swiss_prot_folder: str = os.path.join(best_annotations_per_proteome_file, 'Swiss-Prot')
-	ff.create_directory(swiss_prot_folder)
-	trembl_folder: str = os.path.join(best_annotations_per_proteome_file, 'TrEMBL')
-	ff.create_directory(trembl_folder)
+		# Save best annotations per proteome file
+		best_annotations_per_proteome_file: str = os.path.join(proteome_matcher_output, "best_annotations_per_proteome_file")
+		ff.create_directory(best_annotations_per_proteome_file)
+		# Create Swiss-Prot and TrEMBL folders
+		swiss_prot_folder: str = os.path.join(best_annotations_per_proteome_file, 'Swiss-Prot')
+		ff.create_directory(swiss_prot_folder)
+		trembl_folder: str = os.path.join(best_annotations_per_proteome_file, 'TrEMBL')
+		ff.create_directory(trembl_folder)
 
-	for file, loci_results in best_bsr_values_per_proteome_file.items():
-		# Save what loci each proteome file matched
-		matched_loci: Dict[str, List[str]] = {'swiss-prot': [], 'trembl': []}
-		# Create Swiss-Prot and TrEMBL annotations files
-		swiss_prot_annotations: str = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
-		trembl_annotations: str = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
-		if file in proteome_ids_to_add:
-			merge_files[0].append(swiss_prot_annotations)
-			merge_files[1].append(trembl_annotations)
-		with open(swiss_prot_annotations, 'w') as sp, open(trembl_annotations, 'w') as tr:
-			sp.write(header + '\n')
-			tr.write(header + '\n')
-			for loci, subject_info in loci_results.items():
-				subject_id = subject_info[0]
-				bsr_value = subject_info[1]
-				desc = descriptions[subject_id]
-				lname= desc.split(subject_id + ' ')[1].split(' OS=')[0]
-				sname = desc.split('GN=')[1].split(' PE=')[0]
-				if sname == '':
-					sname = 'NA'
-				# Write to the appropriate file based on the start of subject_id
-				if subject_id.startswith('sp|'):
-					matched_loci['swiss-prot'].append(loci)
-					sp.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
-				elif subject_id.startswith('tr|'):
-					matched_loci['trembl'].append(loci)
-					tr.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
-			for proteome_file, loci in matched_loci.items():
-				not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(loci)   
-				for loci in not_matched_or_bsr_failed_loci:
-					if proteome_file == 'swiss-prot':
-						sp.write(f"{loci}\tNA\tNA\tNA\tNA\n")
-					else:
-						tr.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+		for file, loci_results in best_bsr_values_per_proteome_file.items():
+			# Save what loci each proteome file matched
+			matched_loci: Dict[str, List[str]] = {'swiss-prot': [], 'trembl': []}
+			# Create Swiss-Prot and TrEMBL annotations files
+			swiss_prot_annotations: str = os.path.join(swiss_prot_folder, f"{file}_Swiss-Prot_annotations.tsv")
+			trembl_annotations: str = os.path.join(trembl_folder, f"{file}_TrEMBL_annotations.tsv")
+			if file in proteome_ids_to_add:
+				merge_files[0].append(swiss_prot_annotations)
+				merge_files[1].append(trembl_annotations)
+			with open(swiss_prot_annotations, 'w') as sp, open(trembl_annotations, 'w') as tr:
+				sp.write(header + '\n')
+				tr.write(header + '\n')
+				for loci, subject_info in loci_results.items():
+					subject_id = subject_info[0]
+					bsr_value = subject_info[1]
+					desc = descriptions[subject_id]
+					lname= desc.split(subject_id + ' ')[1].split(' OS=')[0]
+					sname = desc.split('GN=')[1].split(' PE=')[0]
+					if sname == '':
+						sname = 'NA'
+					# Write to the appropriate file based on the start of subject_id
+					if subject_id.startswith('sp|'):
+						matched_loci['swiss-prot'].append(loci)
+						sp.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+					elif subject_id.startswith('tr|'):
+						matched_loci['trembl'].append(loci)
+						tr.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
+				for proteome_file, loci in matched_loci.items():
+					not_matched_or_bsr_failed_loci = set(translations_paths.keys()) - set(loci)   
+					for loci in not_matched_or_bsr_failed_loci:
+						if proteome_file == 'swiss-prot':
+							sp.write(f"{loci}\tNA\tNA\tNA\tNA\n")
+						else:
+							tr.write(f"{loci}\tNA\tNA\tNA\tNA\n")
 
-	# Merge all annotations files that user wants
-	merged_annotations_file_list = []
-	for merge_annotations in merge_files:
-		if len(merge_annotations) == 0:
-			continue
-		merged_annotations_file: str = os.path.join(output_directory, f"best_proteomes_annotations_{'swiss_prot' if i == 0 else 'trEMBL'}.tsv")
-		merged_annotations_file_list.append(merged_annotations_file)
-		pf.merge_files_into_same_file_by_key(merge_annotations, 'Locus', merged_annotations_file)
+		# Merge all annotations files that user wants
+		merged_annotations_file_list = []
+		for merge_annotations in merge_files:
+			if len(merge_annotations) == 0:
+				continue
+			merged_annotations_file: str = os.path.join(output_directory, f"best_proteomes_annotations_{'swiss_prot' if i == 0 else 'trEMBL'}.tsv")
+			merged_annotations_file_list.append(merged_annotations_file)
+			pf.merge_files_into_same_file_by_key(merge_annotations, 'Locus', merged_annotations_file)
 
 	return merged_annotations_file_list

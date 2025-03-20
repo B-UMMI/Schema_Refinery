@@ -227,15 +227,7 @@ def schema_annotation() -> None:
 						dest='annotation_options',
 						nargs='+',
 						choices=ct.SCHEMA_ANNOTATION_RUNS_CHOICES,
-						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank-files" to align against the CDSs in a set of Genbank files. "match-schemas" to align against provided target schema and report best matches. "consolidate" to join more than one annotation files together.')
-
-	parser.add_argument('-ba',
-						'--best-annotations-bsr',
-						type=float,
-						required=False,
-						default=0.6,
-						dest='best_annotations_bsr',
-						help='In the output file chooses best annotation based on BSR')
+						help='Annotation options to run. "uniprot-proteomes" to download UniProt reference proteomes for the taxa and align with BLASTp. "genbank" to align against the CDSs in a set of Genbank files. "match-schemas" to align against provided target schema and report best matches. "consolidate" to join more than one annotation files together.')
 
 	parser.add_argument('-pt',
 						'--proteome-table',
@@ -267,12 +259,12 @@ def schema_annotation() -> None:
 						dest='matched_schemas',
 						help='Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).')
 
-	parser.add_argument('-sa',
-						'--subject-annotations',
+	parser.add_argument('-ma',
+						'--match-annotations',
 						type=str,
 						required=False,
 						default=None,
-						dest='subject_annotations',
+						dest='match_annotations',
 						help='Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.'
 						'Should be used with --annotation-options match_schema and --subject-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.')
 
@@ -315,30 +307,6 @@ def schema_annotation() -> None:
 						default=11,
 						help='Translation table to use for the CDS translation.')
 
-	parser.add_argument('-cs',
-						'--clustering-sim',
-						type=float,
-						required=False,
-						dest='clustering_sim',
-						default=0.9,
-						help='Similarity value for kmers representatives (float: 0-1).')
-
-	parser.add_argument('-cc',
-						'--clustering-cov',
-						type=float,
-						required=False,
-						dest='clustering_cov',
-						default=0.9,
-						help='Coverage value for kmers representatives (float: 0-1).')
-	
-	parser.add_argument('-sr',
-						'--size-ratio',
-						type=float,
-						required=False,
-						dest='size_ratio',
-						default=0.8,
-						help='Size ratio to consider alleles as the same locus.')
-	
 	parser.add_argument('-rm',
 						'--run-mode',
 						type=str,
@@ -376,7 +344,7 @@ def schema_annotation() -> None:
 						help='List of Proteome IDs to add to final results.'
 						'Should be used with --annotation-options uniprot-proteomes and --proteome-table.')
 
-	parser.add_argument('-co',
+	parser.add_argument('-cc',
 						'--consolidate-cleanup',
 						type=bool,
 						required=False,
