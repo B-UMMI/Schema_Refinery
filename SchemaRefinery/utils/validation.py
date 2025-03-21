@@ -448,15 +448,6 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     if args.translation_table < 0 or args.translation_table >= 25:
         errors.append("\nError: 'translation-table' must be a value between 0 and 25.")
 
-    if args.clustering_sim <= 0 or args.clustering_sim >= 1:
-        errors.append("\nError: 'clustering-sim' must be a value between 0 and 1.")
-    
-    if args.clustering_cov <= 0 or args.clustering_cov >= 1:
-        errors.append("\nError: 'clustering-cov' must be a value between 0 and 1.")
-    
-    if args.size_ratio <= 0 or args.size_ratio >= 1:
-        errors.append("\nError: 'size-ratio' must be a value between 0 and 1.")
-
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
         if args.proteome_ids_to_add and not args.proteome_table:
