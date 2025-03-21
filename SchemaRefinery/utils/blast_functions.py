@@ -241,8 +241,7 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
     blast_args: List[str] = [blast_exec, '-db', blast_db, '-query', fasta_file,
                              '-out', blast_results_file, '-outfmt', 
                              '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
-                             '-num_threads', str(threads), '-evalue', '0.001',
-                             '-comp_based_stats', '0']
+                             '-num_threads', str(threads), '-evalue', '0.001']
     if max_hsps is not None:
         blast_args.extend(['-max_hsps', str(max_hsps)])
     if ids_file is not None:
@@ -251,6 +250,8 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
         blast_args.extend(['-task', blast_task])
     if max_targets is not None:
         blast_args.extend(['-max_target_seqs', str(max_targets)])
+
+    ###'-comp_based_stats', '0'
 
     run_blast_with_args_only(blast_args)
 
@@ -282,10 +283,7 @@ def run_self_score_multiprocessing(id_: str, blast_exec: str, file_path: str, ou
     blast_args: List[str] = [blast_exec, '-query', file_path,
                              '-subject', file_path,
                              '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
-
                              '-out', blast_results_file]
-    
-    # '-comp_based_stats', 0
 
 
     run_blast_with_args_only(blast_args)

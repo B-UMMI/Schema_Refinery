@@ -494,8 +494,8 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
         if args.matched_schemas:
             verify_path_exists(args.matched_schemas, 'file', errors)
         # Verify if best-annotations-bsr is a value between 0 and 1
-        if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
-            errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
+        #if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
+         #   errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
 
     # Arguments to consolidate
     if 'consolidate' in args.annotation_options:
