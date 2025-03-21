@@ -174,10 +174,15 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
         Dictionary with keys as subject identifiers and values as paths to the subject translation files.
     output_folder : str
         Path to the folder where the output file will be stored.
+    rep_vs_alleles : bool
+        Bool confirming if the Blast with rep_vs_alleles was conducted or not.
+    process_name : str
+        String with the name of the matching process from where the data comes from.
 
     Returns
     -------
-    None
+    str
+        Returns the path to the Match_Schemas_Results.tsv with the best matches.
     """
 
     # Path to output files
@@ -249,6 +254,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
         # Sort and write all entries
         for _, entry in sorted(matched_entries, key=lambda x: x[0]):
             out.write(entry + "\n")
+        # If the rep_vs_alleles mode is ran write the non matched loci only after the rep_vs_alleles has been ran
         if rep_vs_alleles:
             for _, entry in sorted(non_matched_query, key=lambda x: x[0]):
                 if process_name == "rep_vs_alleles":
@@ -256,6 +262,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
             for _, entry in sorted(non_matched_subject, key=lambda x: x[0]):
                 if process_name == "rep_vs_alleles":
                     out.write(entry + "\n")
+        # if rep_vs_alleles has not been ran then write non macthes only after rep_vs_rep is ran
         else:
             for _, entry in sorted(non_matched_query, key=lambda x: x[0]):
                 if process_name == "rep_vs_rep":
@@ -300,7 +307,8 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
     Returns
     -------
-    None
+    str
+        Returns the path to the Match_Schemas_Results.tsv with the best matches.
     """
     # A schema files
     a_files: Dict[str, str]
@@ -396,7 +404,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     # Comparision of the Query and Subject DNA hashes (the BSR = 1.0)
     # -------------------------------------------------------------------
     # Prepare best BSR values and query translations
-
     pf.print_message("", "info")
     pf.print_message("Matching DNA hashes between query and subject schema", "info")
     pf.print_message(f"The query schema has {len(query_fastas)} dna hashes.", "info")
@@ -445,6 +452,14 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
                 for record in SeqIO.parse(fasta_file, 'fasta'):
                     master.write(f">{record.id}\n{record.seq}\n")
 
+
+    if len(subject_fastas_hash) == 0:
+        # Clean up temporary files
+        if not no_cleanup:
+            pf.print_message("Cleaning up temporary files...", "info")
+            # Remove temporary files
+            ff.cleanup(output_directory, [best_blast_matches_file, logf.get_log_file_path(gb.LOGGER)])
+        return best_blast_matches_file
 
 
     len_query_fastas: int = len(query_fastas_hash)
@@ -611,7 +626,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     # Comparision of the Query and Subject protein hashes (the BSR = 1.0)
     # -------------------------------------------------------------------
     # Prepare best BSR values and query translations
-
     pf.print_message("", "info")
     pf.print_message("Matching protein hashes between query and subject schema", "info")
     pf.print_message(f"The query schema has {len(query_prot_hash)} protein hashes.", "info")
@@ -657,6 +671,15 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
             with open(fasta_path, 'r') as fasta_file:
                 for record in SeqIO.parse(fasta_file, 'fasta'):
                     master.write(f">{record.id}\n{record.seq}\n")
+
+
+    if len(subject_translations_rep_paths) == 0:
+        # Clean up temporary files
+        if not no_cleanup:
+            pf.print_message("Cleaning up temporary files...", "info")
+            # Remove temporary files
+            ff.cleanup(output_directory, [best_blast_matches_file, logf.get_log_file_path(gb.LOGGER)])
+        return best_blast_matches_file
 
 
 
@@ -725,6 +748,14 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     pf.print_message(f"From the rep vs rep Blast {len(best_bsr_values)} matches were found.", "info")
     pf.print_message(f"{locus_removal} loci were removed.", "info")
     pf.print_message(f"{len(subject_translations_paths)} subject loci have not found a match.", "info")
+
+    if len(subject_translations_paths) == 0:
+        # Clean up temporary files
+        if not no_cleanup:
+            pf.print_message("Cleaning up temporary files...", "info")
+            # Remove temporary files
+            ff.cleanup(output_directory, [best_blast_matches_file, logf.get_log_file_path(gb.LOGGER)])
+        return best_blast_matches_file
 
     # -------------------------------------------------------------------
     # Blast with rep vs alleles
