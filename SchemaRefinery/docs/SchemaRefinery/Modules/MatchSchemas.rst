@@ -84,6 +84,12 @@ MatchSchemas Algorithm Flowchart:
    :width: 80%
    :align: center
 
+The algorithm goes throught three matching process and a fourth optional one.
+    - DNA hashes comparision
+    - Protein hashes comparision
+    - Blast with reps vs reps
+    - (optional) Blast with rep vs alleles
+
 Outputs
 -------
 Folder and file structure for the output directory of the `MatchSchemas` module is shown below. The output directory contains the following files and folders:
@@ -175,6 +181,8 @@ columns description:
     BSR: The BSR value for the best match.
     Process: From which type of comparision is this match from.
 
+For the hashes comparisions the BSR value will always be set to 1.0 as this will be considered the same locus.
+
 Examples
 --------
 
@@ -186,7 +194,7 @@ Here are some example commands to use the `MatchSchemas` module:
     SR MatchSchemas -fs /path/to/first_schema -ss /path/to/second_schema -o /path/to/output_folder
 
     # Match schemas with custom parameters
-    SR MatchSchemas -fs /path/to/first_schema -ss /path/to/second_schema -o /path/to/output_folder -c 4 -b 0.7 -tt 4 --nocleanup
+    SR MatchSchemas -fs /path/to/first_schema -ss /path/to/second_schema -o /path/to/output_folder -ra True -c 4 -b 0.7 -tt 4 --nocleanup
 
 Troubleshooting
 ---------------

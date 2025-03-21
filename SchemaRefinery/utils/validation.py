@@ -480,17 +480,17 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match schemas
     if 'match-schemas' in args.annotation_options:
-        if not all([args.matched_schemas, args.subject_annotations]):
+        if not all([args.matched_schemas, args.match_annotations]):
             missing_args = []
-            if not args.subject_annotations:
-                missing_args.append('subject_annotations')
+            if not args.match_annotations:
+                missing_args.append('match_annotations')
             if not args.matched_schemas:
                 missing_args.append('matched_schemas')
 
-            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. 'subject-annotations' must be provided.")
+            errors.append(f"\nError: Missing required arguments: {', '.join(missing_args)}. 'match-annotations' must be provided.")
 
-        if args.subject_annotations:
-            verify_path_exists(args.subject_annotations, 'file', errors)
+        if args.match_annotations:
+            verify_path_exists(args.match_annotations, 'file', errors)
         if args.matched_schemas:
             verify_path_exists(args.matched_schemas, 'file', errors)
         # Verify if best-annotations-bsr is a value between 0 and 1
