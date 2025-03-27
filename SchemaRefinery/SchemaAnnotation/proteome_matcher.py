@@ -373,7 +373,7 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 		for merge_annotations in merge_files:
 			if len(merge_annotations) == 0:
 				continue
-			merged_annotations_file: str = os.path.join(output_directory, f"best_proteomes_annotations_{'swiss_prot' if i == 0 else 'trEMBL'}.tsv")
+			merged_annotations_file: str = os.path.join(output_directory, f"best_proteomes_annotations_{'swiss_prot' if merge_annotations == merge_files[1] else 'trEMBL'}.tsv")
 			merged_annotations_file_list.append(merged_annotations_file)
 			pf.merge_files_into_same_file_by_key(merge_annotations, 'Locus', merged_annotations_file)
 

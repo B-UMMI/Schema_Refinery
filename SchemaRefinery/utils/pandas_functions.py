@@ -112,7 +112,12 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
 		'Proteome_ID': 'matched_Proteome_ID',
 		'Proteome_product': 'matched_Proteome_product',
 		'Proteome_gene_name': 'matched_Proteome_gene_name',
-		'Proteome_BSR': 'matched_Proteome_BSR'
+		'Proteome_BSR': 'matched_Proteome_BSR',
+		'Proteome_ID_best_proteomes_annotations_swiss_prot': 'matched_Proteome_ID_best_proteomes_annotations_swiss_prot',
+		'Proteome_product_best_proteomes_annotations_swiss_prot': 'matched_Proteome_product_best_proteomes_annotations_swiss_prot',
+		'Proteome_gene_name_best_proteomes_annotations_swiss_prot': 'matched_Proteome_gene_name_best_proteomes_annotations_swiss_prot',
+		'Proteome_BSR_best_proteomes_annotations_swiss_prot': 'matched_Proteome_BSR_best_proteomes_annotations_swiss_prot'
+
 	}
 	merged_table.rename(columns=columns_to_rename, inplace=True)
 
