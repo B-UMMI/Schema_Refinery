@@ -41,14 +41,19 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
         if os.path.getsize(consolidate_annotation_files[i]) == 0:
             prf.print_message(f'The file number {i+1} is empty.', 'error')
             sys.exit()
+        else:
+            prf.print_message(f'File {i+1}: {consolidate_annotation_files[i]}', 'info')
+    
+    prf.print_message('')
     
     first_df = pd.read_csv(consolidate_annotation_files[0], delimiter='\t', dtype=str, index_col=False)
     second_df = pd.read_csv(consolidate_annotation_files[1], delimiter='\t', dtype=str, index_col=False)
     
-    first_0_filtered = first_df[first_df.iloc[:, 0] != 'Not matched'].sort_values(by=first_df.columns[0]).reset_index(drop=True)
-    second_0_filtered = second_df[(second_df.iloc[:, 0] != 'Not matched')].sort_values(by=second_df.columns[0]).reset_index(drop=True)
-    first_1_filtered = first_df[(first_df.iloc[:, 1] != 'Not matched')].sort_values(by=first_df.columns[1]).reset_index(drop=True)
-    second_1_filtered = second_df[(second_df.iloc[:, 1] != 'Not matched')].sort_values(by=second_df.columns[1]).reset_index(drop=True)
+    # Filter and sort the first and second column of both files
+    first_0_filtered = first_df[first_df.iloc[:, 0] != 'Not matched'].sort_values(by=first_df.columns[0]).drop_duplicates(subset=first_df.columns[0]).reset_index(drop=True)
+    second_0_filtered = second_df[(second_df.iloc[:, 0] != 'Not matched')].sort_values(by=second_df.columns[0]).drop_duplicates(subset=second_df.columns[0]).reset_index(drop=True)
+    first_1_filtered = first_df[(first_df.iloc[:, 1] != 'Not matched')].sort_values(by=first_df.columns[1]).drop_duplicates(subset=first_df.columns[1]).reset_index(drop=True)
+    second_1_filtered = second_df[(second_df.iloc[:, 1] != 'Not matched')].sort_values(by=second_df.columns[1]).drop_duplicates(subset=second_df.columns[1]).reset_index(drop=True)
 
     prf.print_message('Merging first 2 files...', 'info')
     # Compare the first columns of both files
@@ -71,6 +76,11 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                             output_file,
                                             '_file_2',
                                             '_file_1')
+        # Make the first column the one that is common among all 
+        out_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+        cols = list(out_df.columns)
+        out_df = out_df[[cols[1], cols[0]] + cols[2:]]
+        out_df.to_csv(output_file, sep='\t', index=False)
     # Compare the second column of the first file and the first one of the second file
     elif first_1_filtered.iloc[:, 1].equals(second_0_filtered.iloc[:, 0]):
         prf.print_message('Second and first columns are a match', 'info')
@@ -81,6 +91,11 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                             output_file,
                                             '_file_1',
                                             '_file_2')
+        # Make the first column the one that is common among all 
+        out_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+        cols = list(out_df.columns)
+        out_df = out_df[[cols[1], cols[0]] + cols[2:]]
+        out_df.to_csv(output_file, sep='\t', index=False)
     # Compare the second columns of both files
     elif first_1_filtered.iloc[:, 1].equals(second_1_filtered.iloc[:, 1]):
         prf.print_message('Second columns are a match', 'info')
@@ -91,10 +106,13 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                             output_file,
                                             '_file_1',
                                             '_file_2')
+        # Make the first column the one that is common among all 
+        out_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+        cols = list(out_df.columns)
+        out_df = out_df[[cols[1], cols[0]] + cols[2:]]
+        out_df.to_csv(output_file, sep='\t', index=False)
     else:
         prf.print_message('No columns are a match', 'info')
-
-    prf.print_message('')
 
     # Merge the remaining files
     if len(consolidate_annotation_files) > 2:
@@ -104,10 +122,11 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             old_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
             new_df = pd.read_csv(consolidate_annotation_files[i], delimiter='\t', dtype=str, index_col=False)
             
-            old_0_filtered = old_df[(old_df.iloc[:, 0] != 'Not matched')].sort_values(by=old_df.columns[0]).reset_index(drop=True)
-            new_0_filtered = new_df[(new_df.iloc[:, 0] != 'Not matched')].sort_values(by=new_df.columns[0]).reset_index(drop=True)
-            old_1_filtered = old_df[(old_df.iloc[:, 1] != 'Not matched')].sort_values(by=old_df.columns[1]).reset_index(drop=True)
-            new_1_filtered = new_df[(new_df.iloc[:, 1] != 'Not matched')].sort_values(by=new_df.columns[1]).reset_index(drop=True)
+            # Filter and sort the first and second column of both files
+            old_0_filtered = old_df[(old_df.iloc[:, 0] != 'Not matched')].sort_values(by=old_df.columns[0]).drop_duplicates(subset=old_df.columns[0]).reset_index(drop=True)
+            new_0_filtered = new_df[(new_df.iloc[:, 0] != 'Not matched')].sort_values(by=new_df.columns[0]).drop_duplicates(subset=new_df.columns[0]).reset_index(drop=True)
+            old_1_filtered = old_df[(old_df.iloc[:, 1] != 'Not matched')].sort_values(by=old_df.columns[1]).drop_duplicates(subset=old_df.columns[1]).reset_index(drop=True)
+            new_1_filtered = new_df[(new_df.iloc[:, 1] != 'Not matched')].sort_values(by=new_df.columns[1]).drop_duplicates(subset=new_df.columns[1]).reset_index(drop=True)
 
 
             # Compare the first columns of both files
@@ -130,6 +149,10 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                                     output_file,
                                                     f'_file_{i+1}',
                                                     '_conslidated')
+                out_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+                cols = list(out_df.columns)
+                out_df = out_df[[cols[1], cols[0]] + cols[2:]]
+                out_df.to_csv(output_file, sep='\t', index=False)
             # Compare the second column of the first file and the first one of the second file
             elif old_1_filtered.iloc[:, 1].equals(new_0_filtered.iloc[:, 0]):
                 prf.print_message('Second and first columns are a match', 'info')
@@ -140,6 +163,10 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                                     output_file,
                                                     '_conslidated',
                                                     f'_file_{i+1}')
+                out_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+                cols = list(out_df.columns)
+                out_df = out_df[[cols[1], cols[0]] + cols[2:]]
+                out_df.to_csv(output_file, sep='\t', index=False)
             # Compare the second columns of both files
             elif old_1_filtered.iloc[:, 1].equals(new_1_filtered.iloc[:, 1]):
                 prf.print_message('Second columns are a match', 'info')
@@ -150,6 +177,10 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
                                                     output_file,
                                                     '_conslidated',
                                                     f'_file_{i+1}')
+                out_df = pd.read_csv(output_file, delimiter='\t', dtype=str, index_col=False)
+                cols = list(out_df.columns)
+                out_df = out_df[[cols[1], cols[0]] + cols[2:]]
+                out_df.to_csv(output_file, sep='\t', index=False)
             else:
                 prf.print_message('No columns are a match', 'info')
 

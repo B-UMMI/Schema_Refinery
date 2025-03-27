@@ -209,9 +209,9 @@ def schema_annotation() -> None:
 	parser.add_argument('-s',
 						'--schema-directory',
 						type=str,
-						required=True,
+						required=False,
 						dest='schema_directory',
-						help='Path to the schema\'s to be annotated directory.')
+						help='Path to the schema\'s to be annotated directory. Needed for option \'uniprot-proteomes\' and \'genbank\'.')
 
 	parser.add_argument('-o',
 						'--output-directory',

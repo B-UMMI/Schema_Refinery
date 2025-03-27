@@ -114,6 +114,7 @@ def main(args: Namespace) -> None:
         merged_file_path = os.path.join(args.output_directory, "matched_annotations.tsv")
         matched_annotations = None
 
+        # Create df from the tsv files given and compare the sorted and filtered columns
         matched_df = pd.read_csv(args.matched_schemas, delimiter='\t', dtype=str, index_col=False)
         annotations_df = pd.read_csv(args.match_annotations, delimiter='\t', dtype=str, index_col=False)
 
@@ -121,7 +122,7 @@ def main(args: Namespace) -> None:
         matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).drop_duplicates(subset=['Subject']).reset_index(drop=True)
         annotations_sorted = annotations_df.sort_values(by=annotations_df.columns[0]).reset_index(drop=True)
 
-
+        # Depending on which columns are a match run different versions of the merging
         if matched_0_filtered.iloc[:, 0].equals(annotations_sorted.iloc[:, 0]):
             prf.print_message("Annotating from the Query", "info")
             matched_annotations: str = upf.merge_files_by_column_values(args.matched_schemas,
@@ -142,6 +143,7 @@ def main(args: Namespace) -> None:
         results_files.append(matched_annotations)
         prf.print_message('Matching successfully completed.', 'info')
 
+    # Check if 'consolidate' is in the annotation options
     if 'consolidate' in args.annotation_options:
         prf.print_message("Consolidating annoations...", "info")
         merged_file_path = os.path.join(args.output_directory, "consolidated_annotations.tsv")
@@ -152,6 +154,7 @@ def main(args: Namespace) -> None:
 
         results_files.append(consolidated_annotations)
         prf.print_message('Annotation consolidation successfully completed.', 'info')
+        prf.print_message('')
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:

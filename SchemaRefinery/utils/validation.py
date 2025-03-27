@@ -424,9 +424,10 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
     errors: List[str] = []
 
     # Verify if files or directories exist
-    verify_schema_structure(args.schema_directory, errors)
     verify_path_exists(args.output_directory, 'directory', errors)
 
+    if args.schema_directory:
+        verify_schema_structure(args.schema_directory, errors)
     # Chewie annotations
     if args.chewie_annotations:
         verify_path_exists(args.chewie_annotations, 'file', errors)
@@ -450,6 +451,8 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match uniprot-proteomes
     if 'uniprot-proteomes' in args.annotation_options:
+        if not args.schema_directory:
+             errors.append("\nError: 'schema-directory' is required with 'uniprot-proteomes' annotation option.")
         if args.proteome_ids_to_add and not args.proteome_table:
             errors.append("\nError: 'proteome-ids' can only be used with '--proteome-table' and 'uniprot-proteomes' annotation option.")
         if not args.proteome_table:
@@ -463,6 +466,8 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
 
     # Arguments to match genbank
     if 'genbank' in args.annotation_options:
+        if not args.schema_directory:
+             errors.append("\nError: 'schema-directory' is required with 'genbank' annotation option.")
         if args.genbank_ids_to_add and not args.genbank_files:
             errors.append("\nError: 'genbank-ids-to-add' can only be used with '--genbank-files' and 'genbank' annotation option.")
         if not args.genbank_files:
@@ -493,10 +498,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
             verify_path_exists(args.match_annotations, 'file', errors)
         if args.matched_schemas:
             verify_path_exists(args.matched_schemas, 'file', errors)
-        # Verify if best-annotations-bsr is a value between 0 and 1
-        #if args.best_annotations_bsr <= 0 or args.best_annotations_bsr > 1:
-         #   errors.append("\nError: 'best-annotations-bsr' must be a value between 0 and 1.")
-
+        
     # Arguments to consolidate
     if 'consolidate' in args.annotation_options:
         if not args.consolidate_annotations:
