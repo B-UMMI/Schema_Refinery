@@ -192,6 +192,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
     # Load existing matches from existing ,atches file to avoid repetition across runs
     existing_matches = set()
     written_queries = set()
+    written_subjects = set()
 
     if os.path.exists(existing_matches_file):
         with open(existing_matches_file, "r") as f:
@@ -200,6 +201,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
                 if parts:  
                     existing_matches.add(line.strip())
                     written_queries.add(parts[0])
+                    written_subjects.add(parts[1])
 
     # Initialize lists
     matched_entries = []
@@ -222,6 +224,7 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
                 if parts:
                     existing_matches.add(line.strip())
                     written_queries.add(parts[0])
+                    written_subjects.add(parts[1])
 
     # Write best matches
     with open(best_blast_matches_file, "a" if file_exists else "w") as out:
@@ -229,10 +232,9 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
             out.write("Query\tSubject\tBSR\tProcess\n")
 
         for query, match in best_bsr_values.items():
-            if query in written_queries:
-                continue  # Skip if query was already written
             for subject, computed_score in match.items():
                 entry = f"{query}\t{subject}\t{computed_score}"
+                written_subjects.add(subject)
                 if entry not in existing_matches:
                     existing_matches.add(f"{entry}")
                     matched_entries.append((query, f"{entry}\t{process_name}"))
@@ -248,8 +250,11 @@ def write_best_blast_matches_to_file(best_bsr_values: Dict[str, Dict[str, float]
 
         # Process unmatched subjects
         for subject in not_matched_subject:
+            if subject in written_subjects:
+                continue
             entry = f"Not matched\t{subject}\tNA"
             non_matched_subject.append((subject, f"{entry}\t{process_name}"))
+            written_subjects.add(subject)
 
         # Sort and write all entries
         for _, entry in sorted(matched_entries, key=lambda x: x[0]):
@@ -736,6 +741,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
     for subject in subject_base_list:
         subject_translations_paths.pop(subject, None)
         locus_removal += 1
+    
        
     # Write the sequences to the full master file
     pf.print_message("Writting master file...", "info")
