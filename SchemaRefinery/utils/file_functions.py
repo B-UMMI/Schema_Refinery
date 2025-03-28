@@ -521,3 +521,33 @@ def cleanup(directory: str, exclude: List[str]) -> None:
                 os.remove(item_path)
             elif os.path.isdir(item_path):
                 shutil.rmtree(item_path)
+
+
+def concatenate_files(files, output_file, header=None):
+	"""Concatenate files.
+
+	Parameters
+	----------
+	files : list
+		List with the paths to the files to concatenate.
+	output_file : str
+		Path to the output file that will store the concatenation
+		of input files.
+	header : str or NoneType
+		Specify a header that should be written as the first line
+		in the output file.
+
+	Returns
+	-------
+	output_file : str
+		Path to the output file that was created with
+		the concatenation of input files.
+	"""
+	with open(output_file, 'w') as outfile:
+		if header is not None:
+			outfile.write(header)
+		for file in files:
+			with open(file, 'r') as infile:
+				shutil.copyfileobj(infile, outfile)
+
+	return output_file

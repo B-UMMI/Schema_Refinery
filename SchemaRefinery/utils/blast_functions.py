@@ -7,12 +7,10 @@ from typing import Dict, Any, List, Tuple, Union, Optional
 
 try:
     from utils import (file_functions as ff,
-                       blast_functions as bf,
                        alignments_functions as af,
                        print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
-                                        blast_functions as bf,
                                         alignments_functions as af,
                                         print_functions as pf)
 
@@ -282,11 +280,8 @@ def run_self_score_multiprocessing(id_: str, blast_exec: str, file_path: str, ou
     blast_args: List[str] = [blast_exec, '-query', file_path,
                              '-subject', file_path,
                              '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
-
+							 '-task', 'blastp-fast',
                              '-out', blast_results_file]
-    
-    # '-comp_based_stats', 0
-
 
     run_blast_with_args_only(blast_args)
 
@@ -424,7 +419,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
     # Calculate self-score
     pf.print_message("Calculating self-score for each loci:", 'info')
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_self_score_multiprocessing,
+        for res in executor.map(run_self_score_multiprocessing,
                                 paths_dict.keys(),
                                 repeat(blast_exec),
                                 paths_dict.values(),
@@ -480,7 +475,7 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
     i: int = 1
     rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing,
+        for res in executor.map(run_blastdb_multiprocessing,
                                 repeat(get_blastn_exec),
                                 repeat(blast_db),
                                 rep_paths_nuc_list,
@@ -526,7 +521,7 @@ def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blast
     i = 1
     rep_matches_prot_list = list(rep_matches_prot.values())  # Convert dict_values to list
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blast_fastas_multiprocessing,
+        for res in executor.map(run_blast_fastas_multiprocessing,
                                 blastp_runs_to_do, 
                                 repeat(get_blastp_exec),
                                 repeat(blastp_results_folder),
@@ -571,7 +566,7 @@ def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, t
     translations_paths_keys = list(translations_paths.keys())  # Convert dict_keys to list
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-        for res in executor.map(bf.run_blastdb_multiprocessing,
+        for res in executor.map(run_blastdb_multiprocessing,
                                 repeat(get_blastp_exec),
                                 repeat(blast_db_files),
                                 translations_paths_values,

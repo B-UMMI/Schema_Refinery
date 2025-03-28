@@ -468,7 +468,6 @@ def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str],
         cds_not_present_trans_file_path,
         cds_not_present_untrans_file_path,
         constants[5],
-        True,
         constants[6],
         True
     )
