@@ -854,14 +854,14 @@ def match_schemas() -> None:
                         type=str,
                         required=True,
                         dest='first_schema_directory',
-                        help='Folder that contains the first schema to identify paralogous loci.')
+                        help='Folder that contains the first schema.')
 
     parser.add_argument('-ss',
                         '--second-schema-directory',
                         type=str,
                         required=True,
                         dest='second_schema_directory',
-                        help='Folder that contains the second schema to identify paralogous loci.')
+                        help='Folder that contains the second schema.')
     
     parser.add_argument('-o',
                         '--output-directory',
@@ -884,7 +884,7 @@ def match_schemas() -> None:
                         required=False,
                         dest='bsr',
                         default=0.6,
-                        help='BSR value to consider alleles as the same locus.')
+                        help='BSR value to consider alleles as belonging to the same locus.')
     
     parser.add_argument('-tt',
                         '--translation-table',
@@ -892,7 +892,7 @@ def match_schemas() -> None:
                         required=False,
                         dest='translation_table',
                         default=11,
-                        help='Translation table to use for the CDS translation.')
+                        help='Translation table used for CDS translation.')
 
     parser.add_argument('-ra',
 						'--rep-vs-alleles',
@@ -900,7 +900,10 @@ def match_schemas() -> None:
 						required=False,
 						dest='rep_vs_alleles',
 						default=False,
-						help='If True then after the rep vs rep Blast the program will run a second Blast with rep vs alleles.')
+						help='If True, the process will run an additional '
+						     'step to compare the representative alleles '
+							 'of the schema selected as query against all '
+							 'alleles of the subject schema.')
 
     parser.add_argument('--nocleanup',
                         action='store_true',
@@ -937,7 +940,7 @@ def match_schemas() -> None:
     del args.logger
 
     # Call the main function of the MatchSchemas class with the parsed arguments
-    pf.print_message(f"Running MatchSchemas module...", message_type="info")
+    pf.print_message("Running MatchSchemas module...", message_type="info")
     MatchSchemas.match_schemas(**vars(args))
 
 def create_schema_structure() -> None:
