@@ -11,8 +11,7 @@ try:
 						Types as tp,
 						print_functions as pf,
 						logger_functions as logf,
-						globals as gb
-	)
+						globals as gb)
 except ModuleNotFoundError:
 	from SchemaRefinery.utils import (
 									sequence_functions as sf,
@@ -23,43 +22,7 @@ except ModuleNotFoundError:
 									Types as tp,
 									print_functions as pf,
 									logger_functions as logf,
-									globals as gb
-									
-	)
-
-
-def get_schema_files(schema_directory: str) -> Tuple[Dict[str, str], Dict[str, str]]:
-	"""
-	Identify all of the FASTA files in the schema directory and its 'short' subdirectory.
-
-	Parameters
-	----------
-	schema_directory : str
-		Path to the directory containing schema FASTA files.
-
-	Returns
-	-------
-	Tuple[Dict[str, str], Dict[str, str]]
-		A tuple containing two dictionaries:
-		- The first dictionary maps loci names to their file paths in the schema directory.
-		- The second dictionary maps loci names to their file paths in the 'short' subdirectory.
-	"""
-	# Identify all of the FASTA files in the schema directory
-	fasta_files_dict: Dict[str, str] = {
-		loci.split('.')[0]: os.path.join(schema_directory, loci)
-		for loci in os.listdir(schema_directory)
-		if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
-	}
-	
-	# Identify all of the FASTA files in the 'short' subdirectory
-	short_folder: str = os.path.join(schema_directory, 'short')
-	fasta_files_short_dict: Dict[str, str] = {
-		loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
-		for loci in os.listdir(short_folder)
-		if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
-	}
-	
-	return fasta_files_dict, fasta_files_short_dict
+									globals as gb)
 
 
 def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_files: str,
@@ -238,17 +201,14 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	# List to store files with results
 	results_files = []
 	# A schema files
-	a_files: Dict[str, str]
-	a_files_short: Dict[str, str]
-	a_files, a_files_short = get_schema_files(first_schema_directory)
+	a_files: Dict[str, str] = ff.map_basename_to_path(ff.get_paths_in_directory_with_suffix(first_schema_directory, '.fasta'))
+	a_files_short: Dict[str, str] = ff.map_basename_to_path(ff.get_paths_in_directory_with_suffix(first_schema_directory+'/short', '.fasta'), remove_suffix='_short')
 	# B schema files
-	b_files: Dict[str, str]
-	b_files_short: Dict[str, str]
-	b_files, b_files_short = get_schema_files(second_schema_directory)
-
+	b_files: Dict[str, str] = ff.map_basename_to_path(ff.get_paths_in_directory_with_suffix(second_schema_directory, '.fasta'))
+	b_files_short: Dict[str, str] = ff.map_basename_to_path(ff.get_paths_in_directory_with_suffix(second_schema_directory+'/short', '.fasta'), remove_suffix='_short')
 	# Choose which schema will be the query (the one with the higher average of alleles per loci)
 	total_alleles_a = 0
-	for query_loci, fasta_path in a_files.items():
+	for qlocus, fasta_path in a_files.items():
 		allele_dict: Dict[str, str] = sf.fetch_fasta_dict(fasta_path, False)
 		num_alleles = len(allele_dict)
 		total_alleles_a += num_alleles
@@ -256,7 +216,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	avg_a = total_alleles_a/(len(a_files))
 
 	total_alleles_b = 0
-	for query_loci, fasta_path in b_files.items():
+	for qlocus, fasta_path in b_files.items():
 		allele_dict: Dict[str, str] = sf.fetch_fasta_dict(fasta_path, False)
 		num_alleles = len(allele_dict)
 		total_alleles_b += num_alleles
@@ -269,7 +229,9 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
 	# Select query and subject
 	query_schema_data = schema_a_data if avg_a >= avg_b else schema_b_data
+	unmatched_queries = set(query_schema_data[1].keys())
 	subject_schema_data = schema_a_data if schema_a_data != query_schema_data else schema_b_data
+	unmatched_subjects = set(subject_schema_data[1].keys())
 
 	pf.print_message(f"{query_schema_data[0]} set as Query.", "info")
 	pf.print_message(f"{subject_schema_data[0]} set as Subject.", "info")
@@ -306,11 +268,11 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	pf.print_message('Processing the complete Subject FASTA files...', 'info')
 	subject_allele_ids: Dict[str, List[List[str]]] = {}
 	subject_hashes: Dict[str, str] = {}
-	for subject_loci, path in subject_schema_data[1].items():
+	for slocus, path in subject_schema_data[1].items():
 		fasta_dict = sf.import_sequences(path)
 		hash_dict: Dict[str, str] = {sf.seq_to_hash(v): k for k, v in fasta_dict.items()}
 		# Save the IDs of the alleles
-		subject_allele_ids.setdefault(subject_loci, []).append([allele_id for allele_id in fasta_dict.keys()])
+		subject_allele_ids.setdefault(slocus, []).append([allele_id for allele_id in fasta_dict.keys()])
 		# WIP: Need to consider that same sequence/hash can be represented more than once
 		subject_hashes.update(hash_dict)
 
@@ -322,10 +284,11 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	pf.print_message(f"The subject schema has {len(subject_hashes)} DNA hashes.", "info")
 	pf.print_message("Matching DNA hashes between query and subject schema...", "info")
 
+	# Store query and subject loci that matched and were excluded
+	matched_queries = set()
+	matched_subjects = set()
 	# Find common keys (matching DNA hashes)
 	common_keys = set(query_hashes) & set(subject_hashes)
-	# Store subject loci that matched and were excluded
-	excluded = set()
 	match_data = {}
 	for dna_hash in common_keys:
 		# WIP: Need to consider that same sequence/hash can be represented more than once
@@ -334,17 +297,22 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		# Get subject locus ID
 		subject_locus = '_'.join(subject_hashes[dna_hash].split('_')[:-1])
 		# Do not proceed if subject locus was already excluded
-		if subject_locus in excluded:
+		if subject_locus in matched_subjects:
 			continue
 		# Exclude subject loci that matched
 		# Exclude main FASTA file
 		subject_schema_data[1].pop(subject_locus, None)
 		# Exclude FASTA file with representative alleles
 		subject_schema_data[2].pop(subject_locus, None)
-		excluded.add(subject_locus)
 		match_data.setdefault(query_locus, {})
 		if not match_data[query_locus].get(subject_locus):
 			match_data[query_locus][subject_locus] = 1.0
+		matched_queries.add(query_locus)
+		matched_subjects.add(subject_locus)
+
+	# Keep track of queries and subjects that do not have matches
+	unmatched_queries = unmatched_queries - matched_queries
+	unmatched_subjects = unmatched_subjects - matched_subjects
 
 	# Write results to the best matches file
 	if len(match_data) > 0:
@@ -356,7 +324,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
 	# Print out stats
 	pf.print_message(f"The DNA hash comparison found {len(common_keys)} matches.", "info")
-	pf.print_message(f"{len(excluded)} subject loci had matches and were excluded.", "info")
+	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
 	pf.print_message(f"{len(subject_schema_data[1])} subject loci will continue to the next step.", "info")
 
 	# Translate query schema
@@ -379,6 +347,9 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	pf.print_message(f"The subject schema has {len(subject_protein_hashes)} protein hashes.", "info")
 	best_bsr_values = {}
 
+	# Store query and subject loci that matched and were excluded
+	matched_queries = set()
+	matched_subjects = set()
 	# Find common keys (matching protein hashes)
 	common_keys = set(query_protein_hashes) & set(subject_protein_hashes)
 	# Store subject loci that matched and were excluded
@@ -404,6 +375,12 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		match_data.setdefault(query_locus, {})
 		if not match_data[query_locus].get(subject_locus):
 			match_data[query_locus][subject_locus] = 1.0
+		matched_queries.add(query_locus)
+		matched_subjects.add(subject_locus)
+
+	# Keep track of queries and subjects that do not have matches
+	unmatched_queries = unmatched_queries - matched_queries
+	unmatched_subjects = unmatched_subjects - matched_subjects
 
 	# Write results to the best matches file
 	if len(match_data) > 0:
@@ -412,10 +389,10 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		results_files.append(best_blast_matches_file)
 	else:
 		pf.print_message("No matches found based on protein hashes.", "info")
-	
+
 	# Print out stats
 	pf.print_message(f"The protein hash comparison found {len(common_keys)} matches.", "info")
-	pf.print_message(f"{len(excluded)} subject loci had matches and were excluded.", "info")
+	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
 	pf.print_message(f"{len(subject_schema_data)} subject loci will continue to the next step.", "info")
 
 	# -------------------------------------------------------------------
@@ -458,6 +435,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 																			bsr,
 																			cpu)
 
+
 	# Write the best BLAST matches to a file
 	if len(best_bsr_values) > 0:
 		pf.print_message("Writting results to the output file...", "info")
@@ -470,6 +448,11 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	for subject_locus in matched_subjects:
 		subject_translated_paths.pop(subject_locus, None)
 		subject_reps_translated_paths.pop(subject_locus, None)
+
+	matched_queries = set(best_bsr_values.keys())
+	# Keep track of queries and subjects that do not have matches
+	unmatched_queries = unmatched_queries - matched_queries
+	unmatched_subjects = unmatched_subjects - matched_subjects
 
 	pf.print_message(f"The BLASTp rep vs rep comparison found {len(best_bsr_values)} matches.", "info")
 	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
@@ -510,8 +493,26 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		else:
 			pf.print_message("No matches found based on reps vs alleles BLASTp.", "info")
 
+		matched_queries = set(best_bsr_values.keys())
+		# Keep track of queries and subjects that do not have matches
+		unmatched_queries = unmatched_queries - matched_queries
+		unmatched_subjects = unmatched_subjects - matched_subjects
+
 		pf.print_message(f"The BLASTp reps vs alleles comparison found {len(best_bsr_values)} matches.", "info")
 		pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
+
+	pf.print_message(f"{len(unmatched_queries)} query loci had no matches.", "info")
+	pf.print_message(f"{len(unmatched_subjects)} subject loci had no matches.", "info")
+
+	pf.print_message(f"Writing file with list of unmatched queries and subjects...", "info")
+	# Create file with list of queries and subjects that had no matches
+	unmatched_queries_lines = [f'{query}\tNA\tNA\tNA' for query in unmatched_queries]
+	unmatched_subjects_lines = [f'NA\t{subject}\tNA\tNA' for subject in unmatched_subjects]
+	unmatched_lines = unmatched_queries_lines + unmatched_subjects_lines
+	if len(unmatched_lines) > 0: 
+		unmatched_file = os.path.join(output_directory, 'unmatched.tsv')
+		ff.write_lines(unmatched_lines, unmatched_file)
+		results_files.append(unmatched_file)
 
 	# Concatenate results files
 	final_results_file = os.path.join(output_directory, 'match_results.tsv')
