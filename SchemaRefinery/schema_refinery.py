@@ -22,7 +22,7 @@ try:
 	from RefineSchema import IdentifySpuriousGenes
 	from IdentifyParalagousLoci import IdentifyParalogousLoci
 	from AdaptLoci import AdaptLoci
-	from MatchSchema import MatchSchemas
+	from MatchSchemas import MatchSchemas
 	from CreateSchemaStructure import CreateSchemaStructure
 	from utils import (constants as ct,
 					   validation as val,
@@ -38,7 +38,7 @@ except ModuleNotFoundError:
 	from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
 	from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
 	from SchemaRefinery.AdaptLoci import AdaptLoci
-	from SchemaRefinery.MatchSchema import MatchSchemas
+	from SchemaRefinery.MatchSchemas import MatchSchemas
 	from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
 	from SchemaRefinery.utils import (constants as ct,
 									  validation as val,
@@ -843,7 +843,7 @@ def match_schemas() -> None:
     -------
     None
     """
-    
+
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -896,7 +896,7 @@ def match_schemas() -> None:
 
     parser.add_argument('-ra',
 						'--rep-vs-alleles',
-						type=bool,
+						action='store_true',
 						required=False,
 						dest='rep_vs_alleles',
 						default=False,
@@ -1072,7 +1072,7 @@ module_info = {
 		'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against unclassified CDS to infer new loci and identify problematic genes.", identify_spurious_genes],
 		'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
 		'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
-		'MatchSchema': ["Match schemas to identify the best matches between two schemas.", match_schemas],
+		'MatchSchemas': ["Match schemas to identify the best matches between two schemas.", match_schemas],
 		'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
 		'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
 	}
