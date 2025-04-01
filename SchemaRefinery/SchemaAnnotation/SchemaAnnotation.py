@@ -122,16 +122,35 @@ def main(args: Namespace) -> None:
         matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).drop_duplicates(subset=['Subject']).reset_index(drop=True)
         annotations_sorted = annotations_df.sort_values(by=annotations_df.columns[0]).reset_index(drop=True)
 
+        matches = {
+            'f0s0': matched_0_filtered.iloc[:, 0].isin(annotations_sorted.iloc[:, 0]).sum(),
+            'f1s0': matched_1_filtered.iloc[:, 1].isin(annotations_sorted.iloc[:, 0]).sum(),
+            }
+
+        best_match = max(matches, key=matches.get)
+
         # Depending on which columns are a match run different versions of the merging
-        if matched_0_filtered.iloc[:, 0].equals(annotations_sorted.iloc[:, 0]):
+        if best_match == 'f0s0':
             prf.print_message("Annotating from the Query", "info")
+            mismatched_f0s0 = matched_0_filtered.iloc[:, 0][~matched_0_filtered.iloc[:, 0].isin(annotations_sorted.iloc[:, 0])]
+            prf.print_message("Mismatched rows in Query compared and annotations:")
+            prf.print_message(f"From Query: {mismatched_f0s0}", 'info')
+            mismatched_s0f0 = annotations_sorted.iloc[:, 0][~annotations_sorted.iloc[:, 0].isin(matched_0_filtered.iloc[:, 0])]
+            prf.print_message(f"From Annotation: {mismatched_s0f0}", 'info')
+
             matched_annotations: str = upf.merge_files_by_column_values(args.matched_schemas,
                                             args.match_annotations,
                                             0,
                                             0,
                                             merged_file_path)
-        elif matched_1_filtered.iloc[:, 1].equals(annotations_sorted.iloc[:, 0]):
-            prf.print_message('Annotating from the Subject', 'info')                                    
+        elif best_match == 'f1s0':
+            prf.print_message('Annotating from the Subject', 'info') 
+            mismatched_f1s0 = matched_1_filtered.iloc[:, 1][~matched_1_filtered.iloc[:, 1].isin(annotations_sorted.iloc[:, 0])]
+            prf.print_message("Mismatched rows in Subject compared and annotations:")
+            prf.print_message(f"From Subject: {mismatched_f1s0}", 'info')
+            mismatched_s0f1 = annotations_sorted.iloc[:, 0][~annotations_sorted.iloc[:, 0].isin(matched_1_filtered.iloc[:, 1])]
+            prf.print_message(f"From Annotation: {mismatched_s0f1}", 'info')
+
             matched_annotations: str = upf.merge_files_by_column_values(args.matched_schemas,
                                             args.match_annotations,
                                             1,
