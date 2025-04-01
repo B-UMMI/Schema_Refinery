@@ -235,8 +235,8 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
 	pf.print_message(f"{query_schema_data[0]} set as Query.", "info")
 	pf.print_message(f"{subject_schema_data[0]} set as Subject.", "info")
-	pf.print_message(f"Total alleles in Query Schema: {query_schema_data[3]}. Total Loci: {len(query_schema_data[1])}. And an average of {round(query_schema_data[4])} alleles per loci.", "info")
-	pf.print_message(f"Total alleles in Subject Schema: {subject_schema_data[3]}. Total Loci: {len(subject_schema_data[1])}. And an average of {round(subject_schema_data[4])} alleles per loci.", "info")
+	pf.print_message(f"Total alleles in Query Schema: {query_schema_data[3]}. Total Loci: {len(query_schema_data[1])}. And an average of {round(query_schema_data[4])} alleles per locus.", "info")
+	pf.print_message(f"Total alleles in Subject Schema: {subject_schema_data[3]}. Total Loci: {len(subject_schema_data[1])}. And an average of {round(subject_schema_data[4])} alleles per locus.", "info")
 
 	# Create the output directories
 	blast_folder: str = os.path.join(output_directory, 'blast_processing')
@@ -505,8 +505,14 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
 	pf.print_message(f"Writing file with list of unmatched queries and subjects...", "info")
 	# Create file with list of queries and subjects that had no matches
-	unmatched_queries_lines = [f'{query}\tNA\tNA\tNA' for query in unmatched_queries]
-	unmatched_subjects_lines = [f'NA\t{subject}\tNA\tNA' for subject in unmatched_subjects]
+	unmatched_queries_lines = [f'{query}\tNot matched\tNA\treps_vs_reps'
+							   if not rep_vs_alleles
+							   else f'{query}\tNot matched\tNA\treps_vs_alleles'
+							   for query in unmatched_queries]
+	unmatched_subjects_lines = [f'Not matched\t{subject}\tNA\treps_vs_reps'
+							   if not rep_vs_alleles
+							   else f'Not matched\t{subject}\tNA\treps_vs_alleles'
+							   for subject in unmatched_subjects]
 	unmatched_lines = unmatched_queries_lines + unmatched_subjects_lines
 	if len(unmatched_lines) > 0: 
 		unmatched_file = os.path.join(output_directory, 'unmatched.tsv')
