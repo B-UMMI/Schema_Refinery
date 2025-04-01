@@ -16,8 +16,6 @@ try:
 					   print_functions as prf,
 					   logger_functions as logf,
 					   globals as gb)
-	from MatchSchema import (MatchSchemas as ms)
-
 except ModuleNotFoundError:
 	from SchemaRefinery.SchemaAnnotation import (proteome_fetcher as pf,
 												proteome_splitter as ps,
@@ -29,7 +27,7 @@ except ModuleNotFoundError:
 									  print_functions as prf,
 									  logger_functions as logf,
 									  globals as gb)
-	from SchemaRefinery.MatchSchema import (MatchSchemas as ms)
+
 
 def main(args: Namespace) -> None:
 
