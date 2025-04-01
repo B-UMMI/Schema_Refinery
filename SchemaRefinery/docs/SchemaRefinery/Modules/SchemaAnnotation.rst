@@ -31,7 +31,7 @@ The `SchemaAnnotation` module can be used as follows:
 
 .. code-block:: bash
 
-    SR SchemaAnnotation -s /path/to/schema -o /path/to/output -ao uniprot-proteomes genbank-files -pt path/to/proteome/table -gf path/to/genbank/files
+    SR SchemaAnnotation -s /path/to/schema -o /path/to/output -ao uniprot-proteomes -pt path/to/proteome/table
 
 Command-Line Arguments
 ----------------------
@@ -39,29 +39,35 @@ Command-Line Arguments
 ::
 
     -s, --schema-directory
-        (Required) Path to the schema's directory.
+        (Optional) Path to the schema's directory.  Needed for option 'uniprot-proteomes' and 'genbank'.
 
     -o, --output-directory
         (Required) Path to the output directory where to save the files.
 
     -ao, --annotation-options
         (Required) Annotation options to run.
-        Choices: uniprot-proteomes, genbank-files, match-schemas.
+        Choices: uniprot-proteomes, genbank-files, match-schemas, consolidate.
 
     -pt, --proteome-table
         (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
+        Should be used with --annotation-options uniprot-proteomes.
 
     -gf, --genbank-files
         (Optional) Path to the directory that contains Genbank files with annotations to extract.
+        Should be used with --annotation-options genbank.
 
     -ca, --chewie-annotations
         (Optional) File with the results from chewBBACA UniprotFinder module.
 
-    -ss, --subject-schema
-        (Optional) Path to the subject schema directory. This argument is needed by the Match Schemas sub-module.
+    -ms, --matched-schema
+        (Optional) Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).
+
+    -ma, --match-annotations
+        (Optional) Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.
+		Should be used with --annotation-options match_schema and --matched-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.
 
     --bsr
-        (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus.
+        (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus. This argument is optional for the Match Schemas sub-module.
         Default: 0.6
 
     -t, --threads
@@ -80,27 +86,10 @@ Command-Line Arguments
         (Optional) Translation table to use for the CDS translation.
         Default: 11
 
-    -cs, --clustering-sim
-        (Optional) Similarity value for kmers representatives (float: 0-1).
-        Default: 0.9
-
-    -cc, --clustering-cov
-        (Optional) Coverage value for kmers representatives (float: 0-1).
-        Default: 0.9
-
-    -sr, --size-ratio
-        (Optional) Size ratio to consider alleles as the same locus.
-        Default: 0.8
-
     -rm, --run-mode
         (Optional) Mode to run the module.
         Choices: reps, alleles.
         Default: reps
-
-    -pm, --processing-mode
-        (Optional) Mode to run the module for Schema match.
-        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-        Default: None
 
     -egtc, --extra-genbank-table-columns
         (Optional) List of columns to add to annotation file.
@@ -113,6 +102,12 @@ Command-Line Arguments
     -pia, --proteome-ids-to-add
         (Optional) List of Proteome IDs to add to final results.
         Default: []
+    
+    -cn, --consolidate-annotations
+        (Optional) 2 or more paths to the files with the annotations that are to be consolidated.
+    
+    -cc, --consolidate-cleanup
+        (Optional) For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.
 
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
@@ -128,7 +123,7 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
-The `SchemaAnnotation` module annotates using three different options: `GenBank files`, `UniProt proteomes`, and `Match Schemas`.
+The `SchemaAnnotation` module annotates using three different options: `GenBank files`, `UniProt proteomes`, `Match Schemas`, and `Consolidate`.
 The following is the flowchart for the `SchemaAnnotation` module:
 
 .. image:: source/SchemaAnnotation.png
@@ -150,12 +145,8 @@ The `SchemaAnnotation` module annotates using `GenBank files` based on the follo
    :width: 80%
    :align: center
 
-The `SchemaAnnotation` module matches schemas based on `MatchSchemas` module with the following Flowchart:
 
-.. image:: source/match_schemas.png
-   :alt: SchemaAnnotation Match Schemas Flowchart
-   :width: 80%
-   :align: center
+For the options `Match Schemas` and `Consolidate` the process is the merging of the given files based on the Locus columns that are the same between files.
 
 Outputs
 -------
@@ -164,14 +155,16 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
 ::
 
     OutputFolderName
-    ├── genbank_annotations # --nocleanup -ao genbank-files -gf path/to/genbank/files
+    ├── # --nocleanup -ao genbank
+    ├── genbank_annotations.tsv
+    ├── genbank_annotations 
+    |   ├── genbank_annotations.tsv
     │   ├── best_annotations_all_genbank_files
     │   │   └── best_genbank_annotations.tsv
     │   ├── best_annotations_per_genbank_file
     │   │   ├── genbank_file_x_annotations.tsv
     │   │   ├── genbank_file_y_annotations.tsv
     │   │   └── ...
-    │   ├── best_genbank_annotations.tsv
     │   ├── blast_processing
     │   │   ├── selected_genbank_proteins.fasta
     │   │   ├── blast_db
@@ -196,94 +189,80 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
     │       ├── x_translation.fasta
     │       ├── y_translation.fasta
     │       └── ...
-    ├── matched_schemas # --nocleanup -ao match-schemas -ss path/to/subject/schema
-    │   ├── best_blast_matches.tsv
-    │   ├── blast_processing
-    │   │   ├── blast_db
-    │   │   │   ├── blast_db_protein.pdb
-    │   │   │   ├── blast_db_protein.phr
-    │   │   │   ├── blast_db_protein.pin
-    │   │   │   ├── blast_db_protein.pog
-    │   │   │   ├── blast_db_protein.pos
-    │   │   │   ├── blast_db_protein.pot
-    │   │   │   ├── blast_db_protein.psq
-    │   │   │   ├── blast_db_protein.ptf
-    │   │   │   └── blast_db_protein.pto
-    │   │   ├── blastp_results
-    │   │   │   ├── blast_results_x.tsv
-    │   │   │   ├── blast_results_y.tsv
-    │   │   │   └── ...
-    │   │   ├── master_file.fasta
-    │   │   ├── self_score_folder
-    │   │   │   ├── blast_results_x.tsv
-    │   │   │   ├── blast_results_y.tsv
-    │   │   │   └── ...
-    │   ├── Query_Translation
-    │   │   ├── x_translation.fasta
-    │   │   ├── y_translation.fasta
-    │   │   └── ...
-    │   └── Subject_Translation
-    │       ├── x_translation.fasta
-    │       ├── y_translation.fasta
-    │       └── ...
-    ├── annotations_summary.tsv
-    └── uniprot_annotations # --nocleanup -ao uniprot-proteomes -pt path/to/proteome/table
-        ├── best_proteomes_annotations_swiss_prot.tsv
-        ├── best_proteomes_annotations_trEMBL.tsv
-        ├── proteome_matcher_output
-        │   ├── best_annotations_per_proteome_file
-        │   │   ├── Swiss-Prot
-        │   │   │   ├── proteome_file_x_Swiss-Prot_annotations.tsv
-        │   │   │   ├── proteome_file_y_Swiss-Prot_annotations.tsv
-        │   │   │   └── ...
-        │   │   └── TrEMBL
-        │   │       ├── proteome_file_x_TrEMBL_annotations.tsv
-        │   │       ├── proteome_file_y_TrEMBL_annotations.tsv
-        │   │       └── ...
-        │   ├── reps_translations
-        │   │   ├── x_translation.fasta
-        │   │   ├── y_translation.fasta
-        │   │   └── ...
-        │   ├── self_score_folder
-        │   │   ├── blast_results_x.tsv
-        │   │   ├── blast_results_y.tsv
-        │   │   └── ...
-        ├── swiss_prots_processing
-        │   ├── blast_processing
-        │   │   ├── blast_db
-        │   │   │   ├── blast_db_protein.pdb
-        │   │   │   ├── blast_db_protein.phr
-        │   │   │   ├── blast_db_protein.pin
-        │   │   │   ├── blast_db_protein.pog
-        │   │   │   ├── blast_db_protein.pos
-        │   │   │   ├── blast_db_protein.pot
-        │   │   │   ├── blast_db_protein.psq
-        │   │   │   ├── blast_db_protein.ptf
-        │   │   │   └── blast_db_protein.pto
-        │   │   ├── blastp_results
-        │   │   │   ├── blast_results_x.tsv
-        │   │   │   ├── blast_results_y.tsv
-        │   │   │   └── ...
-        │   │   └── swiss_prots.fasta
-        │   └── swiss_prots_annotations.tsv
-        └── trembl_prots_processing
-            ├── blast_processing
-            │   ├── blast_db
-            │   │   ├── blast_db_protein.pdb
-            │   │   ├── blast_db_protein.phr
-            │   │   ├── blast_db_protein.pin
-            │   │   ├── blast_db_protein.pog
-            │   │   ├── blast_db_protein.pos
-            │   │   ├── blast_db_protein.pot
-            │   │   ├── blast_db_protein.psq
-            │   │   ├── blast_db_protein.ptf
-            │   │   └── blast_db_protein.pto
-            │   ├── blastp_results
-            │   │   ├── blast_results_x.tsv
-            │   │   ├── blast_results_y.tsv
-            │   │   └── ...
-            │   └── trembl_prots.fasta
-            └── trembl_prots_annotations.tsv    
+    |
+    ├── # --nocleanup -ao match-schemas
+    ├── matched_annotations.tsv
+    |
+    ├── # --nocleanup -ao uniprot-proteomes
+    ├── uniprot_annotations.tsv
+    ├── uniprot_annotations
+    |   ├── best_proteomes_annotations_swiss_prot.tsv
+    |   ├── best_proteomes_annotations_trEMBL.tsv
+    |   ├── proteome_matcher_output
+    |   │   ├── best_annotations_per_proteome_file
+    |   │   │   ├── Swiss-Prot
+    |   │   │   │   ├── proteome_file_x_Swiss-Prot_annotations.tsv
+    |   │   │   │   ├── proteome_file_y_Swiss-Prot_annotations.tsv
+    |   │   │   │   └── ...
+    |   │   │   └── TrEMBL
+    |   │   │       ├── proteome_file_x_TrEMBL_annotations.tsv
+    |   │   │       ├── proteome_file_y_TrEMBL_annotations.tsv
+    |   │   │       └── ...
+    |   │   ├── reps_translations
+    |   │   │   ├── x_translation.fasta
+    |   │   │   ├── y_translation.fasta
+    |   │   │   └── ...
+    |   │   ├── self_score_folder
+    |   │   │   ├── blast_results_x.tsv
+    |   │   │   ├── blast_results_y.tsv
+    |   │   │   └── ...
+    |   |   ├── swiss_prots_processing
+    |   |   │   ├── blast_processing
+    |   |   │   │   ├── blast_db
+    |   |   │   │   │   ├── blast_db_protein.pdb
+    |   |   │   │   │   ├── blast_db_protein.phr
+    |   |   │   │   │   ├── blast_db_protein.pin
+    |   |   │   │   │   ├── blast_db_protein.pog
+    |   |   │   │   │   ├── blast_db_protein.pos
+    |   |   │   │   │   ├── blast_db_protein.pot
+    |   |   │   │   │   ├── blast_db_protein.psq
+    |   |   │   │   │   ├── blast_db_protein.ptf
+    |   |   │   │   │   └── blast_db_protein.pto
+    |   |   │   │   ├── blastp_results
+    |   |   │   │   │   ├── blast_results_x.tsv
+    |   |   │   │   │   ├── blast_results_y.tsv
+    |   |   │   │   │   └── ...
+    |   |   │   │   └── swiss_prots.fasta
+    |   |   │   └── swiss_prots_annotations.tsv
+    |   |   └── trembl_prots_processing
+    |   |       ├── blast_processing
+    |   |       │   ├── blast_db
+    |   |       │   │   ├── blast_db_protein.pdb
+    |   |       │   │   ├── blast_db_protein.phr
+    |   |       │   │   ├── blast_db_protein.pin
+    |   |       │   │   ├── blast_db_protein.pog
+    |   |       │   │   ├── blast_db_protein.pos
+    |   |       │   │   ├── blast_db_protein.pot
+    |   |       │   │   ├── blast_db_protein.psq
+    |   |       │   │   ├── blast_db_protein.ptf
+    |   |       │   │   └── blast_db_protein.pto
+    |   |       │   ├── blastp_results
+    |   |       │   │   ├── blast_results_x.tsv
+    |   |       │   │   ├── blast_results_y.tsv
+    |   |       │   │   └── ...
+    |   |       │   └── trembl_prots.fasta
+    |   |       └── trembl_prots_annotations.tsv    
+    |   ├── Proteomes
+    |   |   ├── Proteome_x.fasta.gz
+    |   |   ├── Proteome_x.fasta.gz
+    |   |   └── ...
+    |   └── split_proteomes
+    |       ├── prots_descriptions
+    |       ├── swiss_prots.fasta
+    |       └── trembl_prots.fasta 
+    ├── # --nocleanup -ao consolidate
+    └── consolidated_annotations.tsv 
+
 
 .. toctree::
    :maxdepth: 1
@@ -293,13 +272,31 @@ Folder and file structure for the output directory of the `SchemaAnnotation` mod
 Report files description
 ------------------------
 
-.. csv-table:: annotations_summary.tsv'
-    :header: "Locus", "Protein_ID", "Protein_product", "Protein_short_name", "BSR", "genebank_origin_id", "genebank_origin_product", "genebank_origin_name", "BSR_best_genbank_annotations", "Best Match", "BSR_best_blast_matches"
+.. csv-table:: uniprot_annotations.tsv
+    :header: "Locus", "Proteome_ID", "Proteome_product", "Proteome_gene_name", "Proteome_BSR", "Proteome_ID_best_proteomes_annotations_swiss_prot", "Proteome_product_best_proteomes_annotations_swiss_prot", "Proteome_gene_name_best_proteomes_annotations_swiss_prot", "Proteome_BSR_best_proteomes_annotations_swiss_prot"
+    :widths: 20, 20, 20, 20, 15, 20, 20, 20, 20, 20
+
+    x, tr|Q8DZC3|Q8DZC3_STRA5, Ribonuclease J, rnj, 1.0, NA, NA, NA, NA
+    y, tr|R4ZAV0|R4ZAV0_STRAG, Alkaline shock protein, AX245_09465, 1.0, NA, NA, NA, NA
+    z, tr|A0A0E1EGL7|A0A0E1EGL7_STRAG, Phosphoenolpyruvate carboxylase, ppc, 1.0, sp|Q8E0H2|CAPP_STRA5, Phosphoenolpyruvate carboxylase, ppc, 1.0
+    ...
+
+.. csv-table:: genbank_annotations.tsv
+    :header: "Locus", "Genbank_ID", "Genbank_gene_name", "Genbank_product", "Genbank_BSR"
+    :widths: 20, 20, 20, 20, 15
+
+    x, AMD32818.1, NA, cysteine desulfurase, 0.9932627526467758	
+    y, AMD31754.1, NA, histidine triad protein, 0.9891156462585035	
+    z, AMD31913.1, rplS, 50S ribosomal protein L19, 1.0	
+    ...
+
+.. csv-table:: matched_annotations.tsv if made with uniprot annotations
+    :header: "Query", "Subject", "BSR", "Process", "matched_Proteome_ID", "matched_Proteome_product", "matched_Proteome_gene_name", "matched_Proteome_BSR", "matched_Proteome_ID_best_proteomes_annotations_swiss_prot", "matched_Proteome_product_best_proteomes_annotations_swiss_prot", "matched_Proteome_gene_name_best_proteomes_annotations_swiss_prot", "matched_Proteome_BSR_best_proteomes_annotations_swiss_prot"
     :widths: 20, 20, 20, 20, 15, 20, 20, 20, 20, 20, 15, 5
 
-    x, sp|P75510|SYW_MYCPN, Tryptophan--tRNA ligase, trpS, 1.0, ADK86998.1, trpS, tryptophan--tRNA ligase, 0.9966923925027563, a, 1.0
-    y, sp|P75528|DACB_MYCPN, Diadenylate cyclase, dacB, 1.0, ADK87204.1, NA, conserved hypothetical protein TIGR00159, 1.0, b, 1.0
-    z, sp|P75473|OTCC_MYCPN, Ornithine carbamoyltransferase, catabolic, arcB, 1.0, AAB96178.1, argI, ArgI, 0.8808227465214761, c, 1.0
+    x, a, 1.0, hashes_dna, tr|X5K2G1|X5K2G1_STRAG, dITP/XTP pyrophosphatase, rdgB, 1.0, sp|Q8DY93|IXTPA_STRA5, dITP/XTP pyrophosphatase, SAG1599, 1.0
+    y, b, 1.0, hashes_dna, tr|A0AAW3HT12|A0AAW3HT12_STRAG, tRNA N6-adenosine threonylcarbamoyltransferase, tsaD, 1.0, sp|Q8DXT9|TSAD_STRA5, tRNA N6-adenosine threonylcarbamoyltransferase, tsaD, 1.0
+    z, c, 1.0, hashes_dna, tr|A0AAE9TM16|A0AAE9TM16_STRAG, PTS fructose transporter subunit IIC, NCTC8184_00378, 1.0, , , , 
     ...
 
 columns description:
@@ -307,18 +304,32 @@ columns description:
 ::
 
     Locus: The locus from the query schema.
-    Uniprot_protein_ID: The identifier for the protein.
-    Uniprot_protein_product: The product of the protein.
-    Uniprot_protein_short_name: The short name of the protein.
-    Uniprot_BSR: The BLAST Score Ratio for the protein.
-    genebank_ID: The GenBank origin ID.
-    genebank_product: The product of the GenBank origin.
-    genebank_name: The name of the GenBank origin.
-    genebank_BSR: The BSR value for the best GenBank annotations.
-    best_matched_loci: The best match for the locus.
-    best_matched_loci_BSR: The BSR value for the best BLAST matches.
+    (matched_)Proteome_ID: The identifier for the trEMBL protein.
+    (matched_)Proteome_product: The product of the trEMBL protein.
+    (matched_)Proteome_gene_name: The gene name of the trEMBL protein.
+    (matched_)Proteome_BSR: The BLAST Score Ratio for the trEMBL protein.
+    (matched_)Proteome_ID_best_proteomes_annotations_swiss_prot: The identifier for the swiss prot protein.
+    (matched_)Proteome_product_best_proteomes_annotations_swiss_prot: The product of the swiss prot protein.
+    (matched_)Proteome_gene_name_best_proteomes_annotations_swiss_prot: The gene name of the swiss prot protein.
+    (matched_)Proteome_BSR_best_proteomes_annotations_swiss_prot: The BLAST Score Ratio for the swiss prot protein.
+    Genebank_ID: The GenBank origin ID.
+    Genebank_product: The product of the GenBank origin.
+    Genebank_gene_name: The name of the GenBank origin.
+    Genebank_BSR: The BSR value for the best GenBank annotations.
+    Query: The locus from the query schema.
+    Subject: The locus from the subject schema.
+    BSR: The BSR value for the best loci matches.
+    Process: Process where that match was found in MatchSchemas.
 
-Note: The annotations_summary.tsv' contains all of the annotations that user chose to annotate with in input arguments.
+Note: The consolidated_annotations.tsv' contains all of the annotations that user chose to annotate with in input arguments.
+Consolidate column suffixes:
+::
+    _file_x 
+        x being the number of the file that column comes from.
+        Which file corresponds to which number is specified in the output log file.
+    None
+        The columns that have a unique header or are the first instance of that header will not have any suffix.
+    
 
 Examples
 --------
@@ -331,7 +342,7 @@ Here are some example commands to use the `SchemaAnnotation` module:
     SR SchemaAnnotation -s /path/to/schema -o /path/to/output -ao uniprot-proteomes -pt path/to/proteome/table
 
     # Annotate schema with custom parameters
-    SR SchemaAnnotation -s /path/to/schema -o /path/to/output -ao uniprot-proteomes genbank-files -pt path/to/proteome/table -gf path/to/genbank/files -c 4 -t 4 -b 0.7 -tt 1 --nocleanup
+    SR SchemaAnnotation -o /path/to/output -ao consolidate -cn 'path/to/uniprot_annotations/output' 'path/to/genebank_annotations/output' -c 4 -t 4 -b 0.7 -tt 1 --nocleanup
 
 Troubleshooting
 ---------------

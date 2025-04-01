@@ -23,8 +23,9 @@ Procedure
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -db NCBI -th 3 --download -fm -o 'path/to/files/DownloadAssemblies_Results' -t "Mycoplasma pneumonia" -e your_email@email.com
+    SR DownloadAssemblies -db NCBI -th 3 --download -fm -o 'path/to/files/DownloadAssemblies_Results' -f '/path/to/Schema_Refinery/SchemaRefinery/DownloadAssemblies/input_table_example.tsv' -e your_email@email.com
 
+- The input table used is in the DownloadAssemblies folder.
 - Replace `path/to/files/` with the actual path to the files.
 - Replace `your_email@email.com` with your email address.
 
@@ -32,7 +33,7 @@ Procedure
 
 4. Wait for the download process to complete.
 
-5. Check the output directory for the downloaded assemblies (The results are also available in the zenodo files).
+5. Check the output directory for the downloaded assemblies.
 
 Example Output Structure
 ------------------------

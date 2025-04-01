@@ -53,6 +53,7 @@ def main(args: Namespace) -> None:
     if 'uniprot-proteomes' in args.annotation_options:
         prf.print_message('Running Annotation with proteomes.', 'info')
         uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
+        merged_file_path = os.path.join(args.output_directory, 'uniprot_annotations.tsv')
         # Fetch proteome data and store the directory path
         proteomes_directory: Optional[str] = pf.proteome_fetcher(args.proteome_table,
                                                                  uniprot_annotations_folder,
@@ -83,13 +84,13 @@ def main(args: Namespace) -> None:
                                                          args.proteome_ids_to_add)
             results_files.extend(annotations)
             prf.print_message('Matching successfully completed.', 'info')
-
     
 
     # Check if 'genbank' is in the annotation options
     if 'genbank' in args.annotation_options:
         prf.print_message('Running Annotation with GenBank.', 'info')
         genbank_annotation_folder: str = os.path.join(args.output_directory, 'genbank_annotations')
+        merged_file_path = os.path.join(args.output_directory, 'genbank_annotations.tsv')
         # Process GenBank annotations
         genbank_file: str = ga.genbank_annotations(args.genbank_files,
                                                    args.schema_directory,
@@ -97,9 +98,6 @@ def main(args: Namespace) -> None:
                                                    args.cpu,
                                                    args.bsr,
                                                    args.translation_table,
-                                                   args.clustering_sim,
-                                                   args.clustering_cov,
-                                                   args.size_ratio, 
                                                    args.run_mode,
                                                    args.extra_genbank_table_columns,
                                                    args.genbank_ids_to_add)
@@ -111,79 +109,86 @@ def main(args: Namespace) -> None:
     if 'match-schemas' in args.annotation_options:
         # Merge matched loci with their annotation
         prf.print_message('Running Annotation with MatchSchemas.', 'info')
-        matched_annotations = os.path.join(args.output_directory, "matched_annotations.tsv")
+        merged_file_path = os.path.join(args.output_directory, "matched_annotations.tsv")
+        matched_annotations = None
 
+        # Create df from the tsv files given and compare the sorted and filtered columns
         matched_df = pd.read_csv(args.matched_schemas, delimiter='\t', dtype=str, index_col=False)
-        annotations_df = pd.read_csv(args.subject_annotations, delimiter='\t', dtype=str, index_col=False)
+        annotations_df = pd.read_csv(args.match_annotations, delimiter='\t', dtype=str, index_col=False)
 
         matched_0_filtered = matched_df[matched_df.iloc[:, 0] != 'Not matched'].sort_values(by=matched_df.columns[0]).drop_duplicates(subset=['Query']).reset_index(drop=True)
         matched_1_filtered = matched_df[matched_df.iloc[:, 1] != 'Not matched'].sort_values(by=matched_df.columns[1]).drop_duplicates(subset=['Subject']).reset_index(drop=True)
         annotations_sorted = annotations_df.sort_values(by=annotations_df.columns[0]).reset_index(drop=True)
 
-        prf.print_message(f'{matched_0_filtered.iloc[:, 0]}', 'info')
-        prf.print_message(f'{annotations_sorted.iloc[:, 0]}', 'info')
+        matches = {
+            'f0s0': matched_0_filtered.iloc[:, 0].isin(annotations_sorted.iloc[:, 0]).sum(),
+            'f1s0': matched_1_filtered.iloc[:, 1].isin(annotations_sorted.iloc[:, 0]).sum(),
+            }
 
-        if matched_0_filtered.iloc[:, 0].equals(annotations_sorted.iloc[:, 0]):
+        best_match = max(matches, key=matches.get)
+
+        # Depending on which columns are a match run different versions of the merging
+        if best_match == 'f0s0':
             prf.print_message("Annotating from the Query", "info")
-            upf.merge_files_by_column_values(args.matched_schemas,
-                                            args.subject_annotations,
+            mismatched_f0s0 = matched_0_filtered.iloc[:, 0][~matched_0_filtered.iloc[:, 0].isin(annotations_sorted.iloc[:, 0])]
+            prf.print_message("Mismatched rows in Query compared and annotations:")
+            prf.print_message(f"From Query: {mismatched_f0s0}", 'info')
+            mismatched_s0f0 = annotations_sorted.iloc[:, 0][~annotations_sorted.iloc[:, 0].isin(matched_0_filtered.iloc[:, 0])]
+            prf.print_message(f"From Annotation: {mismatched_s0f0}", 'info')
+
+            matched_annotations: str = upf.merge_files_by_column_values(args.matched_schemas,
+                                            args.match_annotations,
                                             0,
                                             0,
-                                            matched_annotations)
-        if matched_1_filtered.iloc[:, 1].equals(annotations_df.iloc[:, 0]):
-            prf.print_message('Annotating from the Subject', 'info')                                    
-            upf.merge_files_by_column_values(args.matched_schemas,
-                                            args.subject_annotations,
+                                            merged_file_path)
+        elif best_match == 'f1s0':
+            prf.print_message('Annotating from the Subject', 'info') 
+            mismatched_f1s0 = matched_1_filtered.iloc[:, 1][~matched_1_filtered.iloc[:, 1].isin(annotations_sorted.iloc[:, 0])]
+            prf.print_message("Mismatched rows in Subject compared and annotations:")
+            prf.print_message(f"From Subject: {mismatched_f1s0}", 'info')
+            mismatched_s0f1 = annotations_sorted.iloc[:, 0][~annotations_sorted.iloc[:, 0].isin(matched_1_filtered.iloc[:, 1])]
+            prf.print_message(f"From Annotation: {mismatched_s0f1}", 'info')
+
+            matched_annotations: str = upf.merge_files_by_column_values(args.matched_schemas,
+                                            args.match_annotations,
                                             1,
                                             0,
-                                            matched_annotations)
+                                            merged_file_path)
         else:
             prf.print_message('No matches found in columns', 'info')
             
         results_files.append(matched_annotations)
         prf.print_message('Matching successfully completed.', 'info')
 
+    # Check if 'consolidate' is in the annotation options
     if 'consolidate' in args.annotation_options:
         prf.print_message("Consolidating annoations...", "info")
-        consolidated_annotations = os.path.join(args.output_directory, "consolidated_annotations.tsv")
-        consolidated_annotations_final: str = cs.consolidate_annotations(args.consolidate_annotations,
-                                                                            args.consolidate_cleanup,
-                                                                            consolidated_annotations)
+        merged_file_path = os.path.join(args.output_directory, "consolidated_annotations.tsv")
+        consolidated_annotations = None
+        consolidated_annotations: str = cs.consolidate_annotations(args.consolidate_annotations,
+                                    args.consolidate_cleanup,
+                                    merged_file_path)
 
-        results_files.append(consolidated_annotations_final)
+        results_files.append(consolidated_annotations)
         prf.print_message('Annotation consolidation successfully completed.', 'info')
+        prf.print_message('')
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
         results_files.extend(args.chewie_annotations)
-
-    merged_file_path = os.path.join(args.output_directory, 'annotations_summary.tsv')
+        upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
     # If only one result file is present, copy it to the output directory
     if len(results_files) == 1:
-        shutil.copy(results_files[0], merged_file_path)
+        if 'match-schemas' not in args.annotation_options and 'consolidate' not in args.annotation_options:
+            shutil.copy(results_files[0], merged_file_path)
     else:
         # Merge all results into a single file
         upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
-    if args.best_annotations_bsr:
-        priority_dict = {}
-        if 'genbank' in args.annotation_options:
-            priority_dict.update({
-                'Genbank_BSR' : ['Locus', 'Genbank_ID', 'Genbank_gene_name', 'Genbank_product', 'Genbank_BSR']
-            })
-        if 'uniprot-proteomes' in args.annotation_options:
-            priority_dict.update({
-                'Proteome_BSR' : ['Locus', 'Proteome_ID', 'Proteome_product', 'Proteome_gene_name', 'Proteome_BSR']
-            })
-        # Process the merged file based on the priority dictionary
-        output_file = os.path.join(args.output_directory, 'best_annotations_user_input.tsv')
-        # Define the columns to include in the output file
-        output_columns = ['Locus', 'Protein_ID', 'Protein_gene_name', 'Protein_product', 'Protein_BSR', 'Source']
-        upf.process_tsv_with_priority(merged_file_path, priority_dict, output_file, args.best_annotations_bsr, output_columns)
     # Clean up temporary files
     if not args.no_cleanup:
         if 'match-schemas' not in args.annotation_options:
             prf.print_message("Cleaning up temporary files...", 'info')
         # Remove temporary files
-        ff.cleanup(args.output_directory, [merged_file_path, output_file, logf.get_log_file_path(gb.LOGGER)])
+        ff.cleanup(args.output_directory, [merged_file_path, logf.get_log_file_path(gb.LOGGER)])

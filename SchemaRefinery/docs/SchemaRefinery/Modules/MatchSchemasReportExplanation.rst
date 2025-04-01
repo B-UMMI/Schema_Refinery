@@ -169,4 +169,4 @@ Output files and folders description for the MatchSchemas module
         TXT file containing the blast matches from all processes.
 
     **Match_Schemas_Results.tsv**
-        TSV file containing the best BLAST matches for the query and subject schemas sorted by locus name. Also contains the final non matched locus from both QUery and Subject.
+        TSV file containing the best BLAST matches for the query and subject schemas sorted by locus name. Also contains the final non matched locus from both Query and Subject.
