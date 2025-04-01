@@ -2185,7 +2185,6 @@ def prepare_loci(schema_folder: str,
                                                         trans_path_file,
                                                         None,
                                                         constants[5],
-                                                        False,
                                                         constants[6],
                                                         False)
         
