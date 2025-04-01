@@ -393,7 +393,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	# Print out stats
 	pf.print_message(f"The protein hash comparison found {len(common_keys)} matches.", "info")
 	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
-	pf.print_message(f"{len(subject_schema_data)} subject loci will continue to the next step.", "info")
+	pf.print_message(f"{len(subject_schema_data[1])} subject loci will continue to the next step.", "info")
 
 	# -------------------------------------------------------------------
 	# Blast with rep vs rep
@@ -435,7 +435,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 																			bsr,
 																			cpu)
 
-
 	# Write the best BLAST matches to a file
 	if len(best_bsr_values) > 0:
 		pf.print_message("Writting results to the output file...", "info")
@@ -457,7 +456,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	pf.print_message(f"The BLASTp rep vs rep comparison found {len(best_bsr_values)} matches.", "info")
 	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
 	if rep_vs_alleles:
-		pf.print_message(f"{len(subject_translated_paths)} subject loci will continue to the next step.", "info")
+		pf.print_message(f"{len(subject_reps_translated_paths)} subject loci will continue to the next step.", "info")
 
 	# -------------------------------------------------------------------
 	# Blast with rep vs alleles
