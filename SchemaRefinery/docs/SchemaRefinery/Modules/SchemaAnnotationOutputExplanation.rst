@@ -6,185 +6,219 @@ Output files and folders description for the SchemaAnnotation module
     **OutputFolderName**
         The folder where the output files are stored.
 
-    genbank_annotations
-        Folder containing GenBank annotations.
+        **genebank_annotations.tsv**
+            Final tsv file with all the annotations from the Genbank and ids to add.
+            What is left after the cleanup.
 
-        best_annotations_all_genbank_files
-            Folder containing the best GenBank annotations.
+        genbank_annotations
+            Folder containing GenBank annotations.
 
-        best_genbank_annotations.tsv
-            Best GenBank annotations.
+            genebank_annotations.tsv
+                tsv file with all the annotations from the Genbank and ids to add.
 
-        best_annotations_per_genbank_file
-            Folder containing the best GenBank annotations per file.
+            best_annotations_all_genbank_files
+                Folder containing the best GenBank annotations.
 
-            genbank_file_x_annotations.tsv
-                GenBank file x annotations.
+                best_genbank_annotations.tsv
+                    Best GenBank annotations.
 
-            genbank_file_y_annotations.tsv
-                GenBank file y annotations.
+            best_annotations_per_genbank_file
+                Folder containing the best GenBank annotations per file.
 
-            ...
-                Other GenBank file annotations.
+                genbank_file_x_annotations.tsv
+                    GenBank file x annotations.
 
-    blast_processing
-        Folder containing BLASTp database, BLASTp output files, and translation files.
+                genbank_file_y_annotations.tsv
+                    GenBank file y annotations.
 
-        selected_genbank_proteins.fasta
-            Selected GenBank proteins.
+                ...
+                    Other GenBank file annotations.
 
-        blast_db
-            Folder containing the BLASTp database.
+            blast_processing
+                Folder containing BLASTp database, BLASTp output files, and translation files.
 
-            blast_db_protein.pdb
-                Position-specific Data Base file.
+                selected_genbank_proteins.fasta
+                    Selected GenBank proteins.
 
-            blast_db_protein.phr
-                Protein Header Record file.
+                blast_db
+                    Folder containing the BLASTp database.
 
-            blast_db_protein.pin
-                Protein Index file.
+                    blast_db_protein.pdb
+                        Position-specific Data Base file.
 
-            blast_db_protein.pog
-                Protein Organism Group file.
+                    blast_db_protein.phr
+                        Protein Header Record file.
 
-            blast_db_protein.pos
-                Protein Organism Sequence file.
+                    blast_db_protein.pin
+                        Protein Index file.
 
-            blast_db_protein.pot
-                Protein Organism Taxonomy file.
+                    blast_db_protein.pog
+                        Protein Organism Group file.
 
-            blast_db_protein.psq
-                Protein Sequence Query file.
+                    blast_db_protein.pos
+                        Protein Organism Sequence file.
 
-            blast_db_protein.ptf
-                Protein Taxonomy File.
+                    blast_db_protein.pot
+                        Protein Organism Taxonomy file.
 
-            blast_db_protein.pto
-                Protein Taxonomy Organism file.
+                    blast_db_protein.psq
+                        Protein Sequence Query file.
 
-        blastp_results
-            Folder containing BLASTp results.
+                    blast_db_protein.ptf
+                        Protein Taxonomy File.
 
-            blast_results_x.tsv
-                BLAST results for x.
+                    blast_db_protein.pto
+                        Protein Taxonomy Organism file.
 
-            blast_results_y.tsv
-                BLAST results for y.
+                blastp_results
+                    Folder containing BLASTp results.
 
-            ...
-                Other BLAST results.
+                    blast_results_x.tsv
+                        BLAST results for x.
 
-        self_score_folder
-            Folder containing self-score results.
-
-            blast_results_x.tsv
-                BLAST results for x.
-
-            blast_results_y.tsv
-                BLAST results for y.
-
-            ...
-                Other BLAST results.
-
-        reps_translations
-            Folder containing translations.
-
-            x_translation.fasta
-                Translation for x.
-
-            y_translation.fasta
-                Translation for y.
-
-            ...
-                Other translations.
-
-    matched_schemas
-        Folder containing matched schemas.
-
-        best_blast_matches.tsv
-            Best BLAST matches.
-
-    **annotations_summary.tsv**
-        Merged file containing all annotations.
-
-    uniprot_annotations
-        Folder containing UniProt annotations.
-
-        best_proteomes_annotations_swiss_prot.tsv
-            Best annotations for Swiss-Prot proteomes.
-
-        best_proteomes_annotations_trEMBL.tsv
-            Best annotations for TrEMBL proteomes.
-
-        proteome_matcher_output
-            Folder containing proteome matcher output.
-
-            best_annotations_per_proteome_file
-                Folder containing the best annotations per proteome file.
-
-                Swiss-Prot
-                    Folder containing Swiss-Prot annotations.
-
-                    proteome_file_x_Swiss-Prot_annotations.tsv
-                        Swiss-Prot annotations for proteome file x.
-
-                    proteome_file_y_Swiss-Prot_annotations.tsv
-                        Swiss-Prot annotations for proteome file y.
+                    blast_results_y.tsv
+                        BLAST results for y.
 
                     ...
-                        Other Swiss-Prot annotations.
+                        Other BLAST results.
 
-                TrEMBL
-                    Folder containing TrEMBL annotations.
+                self_score_folder
+                    Folder containing self-score results.
 
-                    proteome_file_x_TrEMBL_annotations.tsv
-                        TrEMBL annotations for proteome file x.
+                    blast_results_x.tsv
+                        BLAST results for x.
 
-                    proteome_file_y_TrEMBL_annotations.tsv
-                        TrEMBL annotations for proteome file y.
+                    blast_results_y.tsv
+                        BLAST results for y.
 
                     ...
-                        Other TrEMBL annotations.
+                        Other BLAST results.
 
-        reps_translations
-            Folder containing translations.
+            reps_translations
+                Folder containing translations.
 
-            x_translation.fasta
-                Translation for x.
+                x_translation.fasta
+                    Translation for x.
 
-            y_translation.fasta
-                Translation for y.
+                y_translation.fasta
+                    Translation for y.
 
-            ...
-                Other translations.
+                ...
+                    Other translations.
 
-        self_score_folder
-            Folder containing self-score results.
 
-            blast_results_x.tsv
-                BLAST results for x.
+        **matched_annotations.tsv**
+            Final file containing all annotations from the match schema option.
+            What is left after cleanup.
 
-            blast_results_y.tsv
-                BLAST results for y.
+        **uniprot_annotations.tsv**
+            Final file containing all the uniprot annotations.
+            What is left after cleanup.
 
-            ...
-                Other BLAST results.
+        uniprot_annotations
+            Folder containing UniProt annotations.
 
-    swiss_prots_processing
-        Folder containing Swiss-Prot processing results.
+            best_proteomes_annotations_swiss_prot.tsv
+                Best annotations for Swiss-Prot proteomes.
 
-        swiss_prots.fasta
-            Swiss-Prot protein sequences.
+            best_proteomes_annotations_trEMBL.tsv
+                Best annotations for TrEMBL proteomes.
 
-        swiss_prots_annotations.tsv
-            Swiss-Prot annotations.
+            proteome_matcher_output
+                Folder containing proteome matcher output.
 
-    trembl_prots_processing
-        Folder containing TrEMBL processing results.
+                best_annotations_per_proteome_file
+                    Folder containing the best annotations per proteome file.
 
-        trembl_prots.fasta
-            TrEMBL protein sequences.
+                    Swiss-Prot
+                        Folder containing Swiss-Prot annotations.
 
-        trembl_prots_annotations.tsv
-            TrEMBL annotations.
+                        proteome_file_x_Swiss-Prot_annotations.tsv
+                            Swiss-Prot annotations for proteome file x.
+
+                        proteome_file_y_Swiss-Prot_annotations.tsv
+                            Swiss-Prot annotations for proteome file y.
+
+                        ...
+                            Other Swiss-Prot annotations.
+
+                    TrEMBL
+                        Folder containing TrEMBL annotations.
+
+                        proteome_file_x_TrEMBL_annotations.tsv
+                            TrEMBL annotations for proteome file x.
+
+                        proteome_file_y_TrEMBL_annotations.tsv
+                            TrEMBL annotations for proteome file y.
+
+                        ...
+                            Other TrEMBL annotations.
+
+                reps_translations
+                    Folder containing translations.
+
+                    x_translation.fasta
+                        Translation for x.
+
+                    y_translation.fasta
+                        Translation for y.
+
+                    ...
+                        Other translations.
+
+                self_score_folder
+                    Folder containing self-score results.
+
+                    blast_results_x.tsv
+                        BLAST results for x.
+
+                    blast_results_y.tsv
+                        BLAST results for y.
+
+                    ...
+                        Other BLAST results.
+
+                swiss_prots_processing
+                    Folder containing Swiss-Prot processing results.
+
+                    blast_processing
+                        Folder with the files of the Blast database and the Blastp results.
+                        
+                        swiss_prots.fasta
+                            Swiss-Prot protein sequences.
+
+                    swiss_prots_annotations.tsv
+                        Swiss-Prot annotations.
+
+                trembl_prots_processing
+                    Folder containing TrEMBL processing results.
+
+                    blast_processing
+                        Folder with the files of the Blast database and the Blastp results.
+
+                        trembl_prots.fasta
+                            TrEMBL protein sequences.
+
+                    trembl_prots_annotations.tsv
+                        TrEMBL annotations.
+            
+            Proteomes
+                Folder containing the zipped fasta files of each proteome.
+                
+                Proteome_x.fasta.gz
+                    Fasta file withe the sequence of the proteome x.
+            
+            split_proteomes
+                folder with the files with all the sequences for each database.
+
+                prots_descriptions
+                    File with the information of each sequence.
+                
+                swiss_prot.fasta
+                    File with all the proteome sequences that are from the swiss-prot database.
+                
+                trembl_prot.fasta
+                    File with all the proteome sequences that are from the trembl database.
+        
+        **consolidated_annotations**
+            Final file containing all the annotations of the inputs in a single file.

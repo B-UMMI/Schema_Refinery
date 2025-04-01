@@ -48,7 +48,7 @@ Command-Line Arguments
         (Required) Path to the directory to which files will be stored.
 
     -a, --allelecall-directory
-        (Required) Path to the directory that contains allele call directory that was run with --no-cleanup.
+        (Required) Path to the directory that contains allele call directory from chewBBACA that was run with --no-cleanup and --output-unclassified.
 
     -pnl, --possible-new-loci
         (Optional) Path to the directory that contains possible new loci.
