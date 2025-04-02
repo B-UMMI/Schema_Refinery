@@ -254,27 +254,23 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
 	# Process query FASTA files for the complete query schema
 	pf.print_message('Processing the complete Query FASTA files...', 'info')
-	query_allele_ids: Dict[str, List[List[str]]] = {}
 	query_hashes: Dict[str, str] = {}
 	for qlocus, path in query_schema_data[1].items():
 		fasta_dict: Dict[str, str] = sf.import_sequences(path)
 		hash_dict: Dict[str, str] = {sf.seq_to_hash(v): k for k, v in fasta_dict.items()}
-		# Save the IDs of the alleles
-		query_allele_ids.setdefault(qlocus, []).append([allele_id for allele_id in fasta_dict.keys()])
-		# WIP: Need to consider that same sequence/hash can be represented more than once
-		query_hashes.update(hash_dict)
+		# Need to consider that same sequence/hash can be represented more than once
+		for k, v in hash_dict.items():
+			query_hashes.setdefault(k, []).append(v)
 
 	# Process subject FASTA files for the complete subject schema
 	pf.print_message('Processing the complete Subject FASTA files...', 'info')
-	subject_allele_ids: Dict[str, List[List[str]]] = {}
 	subject_hashes: Dict[str, str] = {}
 	for slocus, path in subject_schema_data[1].items():
 		fasta_dict = sf.import_sequences(path)
 		hash_dict: Dict[str, str] = {sf.seq_to_hash(v): k for k, v in fasta_dict.items()}
-		# Save the IDs of the alleles
-		subject_allele_ids.setdefault(slocus, []).append([allele_id for allele_id in fasta_dict.keys()])
-		# WIP: Need to consider that same sequence/hash can be represented more than once
-		subject_hashes.update(hash_dict)
+		# Need to consider that same sequence/hash can be represented more than once
+		for k, v in hash_dict.items():
+			subject_hashes.setdefault(k, []).append(v)
 
 	# -------------------------------------------------------------------
 	# Comparision of the Query and Subject DNA hashes (BSR = 1.0)
@@ -291,24 +287,26 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	common_keys = set(query_hashes) & set(subject_hashes)
 	match_data = {}
 	for dna_hash in common_keys:
-		# WIP: Need to consider that same sequence/hash can be represented more than once
 		# Get query locus ID
-		query_locus = '_'.join(query_hashes[dna_hash].split('_')[:-1])
+		# Possible to have multiple query loci with the same hash
+		query_loci = ['_'.join(qlocus.split('_')[:-1]) for qlocus in query_hashes[dna_hash]]
 		# Get subject locus ID
-		subject_locus = '_'.join(subject_hashes[dna_hash].split('_')[:-1])
-		# Do not proceed if subject locus was already excluded
-		if subject_locus in matched_subjects:
-			continue
+		# Possible to have multiple subject loci with the same hash
+		subject_loci = ['_'.join(slocus.split('_')[:-1]) for slocus in subject_hashes[dna_hash]]
+		# Add matches to the match data
+		for query_locus in query_loci:
+			match_data.setdefault(query_locus, {})
+			# Add each subject locus that matched query locus
+			for subject_locus in subject_loci:
+				match_data[query_locus].setdefault(subject_locus, 1.0)
+				matched_subjects.add(subject_locus)
+			matched_queries.add(query_locus)
 		# Exclude subject loci that matched
-		# Exclude main FASTA file
-		subject_schema_data[1].pop(subject_locus, None)
-		# Exclude FASTA file with representative alleles
-		subject_schema_data[2].pop(subject_locus, None)
-		match_data.setdefault(query_locus, {})
-		if not match_data[query_locus].get(subject_locus):
-			match_data[query_locus][subject_locus] = 1.0
-		matched_queries.add(query_locus)
-		matched_subjects.add(subject_locus)
+		for subject_locus in subject_loci:
+			# Exclude main FASTA file
+			subject_schema_data[1].pop(subject_locus, None)
+			# Exclude FASTA file with representative alleles
+			subject_schema_data[2].pop(subject_locus, None)
 
 	# Keep track of queries and subjects that do not have matches
 	unmatched_queries = unmatched_queries - matched_queries
@@ -352,31 +350,28 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	matched_subjects = set()
 	# Find common keys (matching protein hashes)
 	common_keys = set(query_protein_hashes) & set(subject_protein_hashes)
-	# Store subject loci that matched and were excluded
-	excluded = set()
 	match_data = {}
 	for prot_hash in common_keys:
-		# WIP: Need to consider that same protein/hash can be represented more than once
 		# Get query locus ID
-		## HERE
-		query_locus = '_'.join(query_protein_hashes[prot_hash][0].split('_')[:-1])
+		# Possible to have multiple query loci with the same hash
+		query_loci = ['_'.join(qlocus.split('_')[:-1]) for qlocus in query_protein_hashes[prot_hash]]
 		# Get subject locus ID
-		## HERE
-		subject_locus = '_'.join(subject_protein_hashes[prot_hash][0].split('_')[:-1])
-		# Do not proceed if subject locus was already excluded
-		if subject_locus in excluded:
-			continue
+		# Possible to have multiple subject loci with the same hash
+		subject_loci = ['_'.join(slocus.split('_')[:-1]) for slocus in subject_protein_hashes[prot_hash]]
+		# Add matches to the match data
+		for query_locus in query_loci:
+			match_data.setdefault(query_locus, {})
+			# Add each subject locus that matched query locus
+			for subject_locus in subject_loci:
+				match_data[query_locus].setdefault(subject_locus, 1.0)
+				matched_subjects.add(subject_locus)
+			matched_queries.add(query_locus)
 		# Exclude subject loci that matched
-		# Exclude main FASTA file
-		subject_schema_data[1].pop(subject_locus, None)
-		# Exclude FASTA file with representative alleles
-		subject_schema_data[2].pop(subject_locus, None)
-		excluded.add(subject_locus)
-		match_data.setdefault(query_locus, {})
-		if not match_data[query_locus].get(subject_locus):
-			match_data[query_locus][subject_locus] = 1.0
-		matched_queries.add(query_locus)
-		matched_subjects.add(subject_locus)
+		for subject_locus in subject_loci:
+			# Exclude main FASTA file
+			subject_schema_data[1].pop(subject_locus, None)
+			# Exclude FASTA file with representative alleles
+			subject_schema_data[2].pop(subject_locus, None)
 
 	# Keep track of queries and subjects that do not have matches
 	unmatched_queries = unmatched_queries - matched_queries
