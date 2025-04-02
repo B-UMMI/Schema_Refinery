@@ -368,10 +368,10 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 			matched_queries.add(query_locus)
 		# Exclude subject loci that matched
 		for subject_locus in subject_loci:
-			# Exclude main FASTA file
-			subject_schema_data[1].pop(subject_locus, None)
+			# Exclude main translated FASTA file
+			subject_translated_paths.pop(subject_locus, None)
 			# Exclude FASTA file with representative alleles
-			subject_schema_data[2].pop(subject_locus, None)
+			subject_reps_translated_paths.pop(subject_locus, None)
 
 	# Keep track of queries and subjects that do not have matches
 	unmatched_queries = unmatched_queries - matched_queries
@@ -388,7 +388,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	# Print out stats
 	pf.print_message(f"The protein hash comparison found {len(common_keys)} matches.", "info")
 	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
-	pf.print_message(f"{len(subject_schema_data[1])} subject loci will continue to the next step.", "info")
+	pf.print_message(f"{len(subject_translated_paths)} subject loci will continue to the next step.", "info")
 
 	# -------------------------------------------------------------------
 	# Blast with rep vs rep
