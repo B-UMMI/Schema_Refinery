@@ -84,11 +84,15 @@ MatchSchemas Algorithm Flowchart:
    :width: 80%
    :align: center
 
-The algorithm goes throught three matching process and a fourth optional one.
+The module assignes the designation of Query to the schema with higher allele density per loci.
+
+The module goes throught three matching process and a fourth optional one.
     - DNA hashes comparision
     - Protein hashes comparision
     - Blast with reps vs reps
     - (optional) Blast with rep vs alleles
+
+After each process it removes the subject loci that have been matched from the main dictionary so that they are not matched again.
 
 Outputs
 -------
@@ -98,18 +102,26 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
 
     OutputFolderName
     ├── blast_processing # --nocleanup
-    |   ├── subject_master_file.fasta
-    |   ├── subject_master_rep_file.fasta
-    │   ├── Blast_db_prot
-    │   │   ├── Blast_db_protein.pdb
-    │   │   ├── Blast_db_protein.phr
-    │   │   ├── Blast_db_protein.pin
-    │   │   ├── Blast_db_protein.pog
-    │   │   ├── Blast_db_protein.pos
-    │   │   ├── Blast_db_protein.pot
-    │   │   ├── Blast_db_protein.psq
-    │   │   ├── Blast_db_protein.ptf
-    │   │   └── Blast_db_protein.pto
+    │   ├── subject_reps_vs_reps_blastdb
+    │   │   ├── subject_reps_vs_reps_blastdb.pdb
+    │   │   ├── subject_reps_vs_reps_blastdb.phr
+    │   │   ├── subject_reps_vs_reps_blastdb.pin
+    │   │   ├── subject_reps_vs_reps_blastdb.pog
+    │   │   ├── subject_reps_vs_reps_blastdb.pos
+    │   │   ├── subject_reps_vs_reps_blastdb.pot
+    │   │   ├── subject_reps_vs_reps_blastdb.psq
+    │   │   ├── subject_reps_vs_reps_blastdb.ptf
+    │   │   └── subject_reps_vs_reps_blastdb.pto
+    │   ├── subject_reps_vs_alleles_blastdb
+    │   │   ├── subject_reps_vs_alleles_blastdb.pdb
+    │   │   ├── subject_reps_vs_alleles_blastdb.phr
+    │   │   ├── subject_reps_vs_alleles_blastdb.pin
+    │   │   ├── subject_reps_vs_alleles_blastdb.pog
+    │   │   ├── subject_reps_vs_alleles_blastdb.pos
+    │   │   ├── subject_reps_vs_alleles_blastdb.pot
+    │   │   ├── subject_reps_vs_alleles_blastdb.psq
+    │   │   ├── subject_reps_vs_alleles_blastdb.ptf
+    │   │   └── subject_reps_vs_alleles_blastdb.pto
     │   ├── blastp_results
     │   │   ├── blast_results_x.tsv
     │   │   ├── blast_results_y.tsv
@@ -124,16 +136,6 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │   │   ├── x_rep_translation.fasta
     │   │   ├── y_rep_translation.fasta
     │   │   ├── z_rep_translation.fasta
-    │   │   └── ...
-    |   ├── Query_Not_Translated
-    │   │   ├── x_not_translated.fasta
-    │   │   ├── y_not_translated.fasta
-    │   │   ├── z_not_translated.fasta
-    │   │   └── ...
-    |   ├── Query_Not_Translated_Rep
-    │   │   ├── x_rep_not_translated.fasta
-    │   │   ├── y_rep_not_translated.fasta
-    │   │   ├── z_rep_not_translated.fasta
     │   │   └── ...
     │   ├── Subject_Translation
     │   │   ├── x_translation.fasta
@@ -150,7 +152,11 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │       ├── blast_results_y.tsv
     │       ├── blast_results_z.tsv
     │       └── ...
-    ├── existing_matches.txt
+    ├── hashes_dna_matches.tsv
+    ├── hashes_prot_matches.tsv
+    ├── reps_vs_reps_matches.tsv
+    ├── reps_vs_alleles_matches.tsv
+    ├── unmatched.tsv
     └── Match_Schemas_Results.tsv
 
 .. toctree::
