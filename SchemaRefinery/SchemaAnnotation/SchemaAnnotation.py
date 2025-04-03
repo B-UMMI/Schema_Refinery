@@ -45,6 +45,7 @@ def main(args: Namespace) -> None:
     """
     # Create the output directory if it doesn't exist
     ff.create_directory(args.output_directory)
+    output_d= os.path.abspath(args.output_directory)
 
     # Initialize a list to store result files
     results_files: List[str] = []
@@ -52,8 +53,8 @@ def main(args: Namespace) -> None:
     # Check if 'uniprot-proteomes' is in the annotation options
     if 'uniprot-proteomes' in args.annotation_options:
         prf.print_message('Running Annotation with proteomes.', 'info')
-        uniprot_annotations_folder: str = os.path.join(args.output_directory, 'uniprot_annotations')
-        merged_file_path = os.path.join(args.output_directory, 'uniprot_annotations.tsv')
+        uniprot_annotations_folder: str = os.path.join(output_d, 'uniprot_annotations')
+        merged_file_path = os.path.join(output_d, 'uniprot_annotations.tsv')
         # Fetch proteome data and store the directory path
         proteomes_directory: Optional[str] = pf.proteome_fetcher(args.proteome_table,
                                                                  uniprot_annotations_folder,
@@ -89,8 +90,8 @@ def main(args: Namespace) -> None:
     # Check if 'genbank' is in the annotation options
     if 'genbank' in args.annotation_options:
         prf.print_message('Running Annotation with GenBank.', 'info')
-        genbank_annotation_folder: str = os.path.join(args.output_directory, 'genbank_annotations')
-        merged_file_path = os.path.join(args.output_directory, 'genbank_annotations.tsv')
+        genbank_annotation_folder: str = os.path.join(output_d, 'genbank_annotations')
+        merged_file_path = os.path.join(output_d, 'genbank_annotations.tsv')
         # Process GenBank annotations
         genbank_file: str = ga.genbank_annotations(args.genbank_files,
                                                    args.schema_directory,
@@ -109,7 +110,7 @@ def main(args: Namespace) -> None:
     if 'match-schemas' in args.annotation_options:
         # Merge matched loci with their annotation
         prf.print_message('Running Annotation with MatchSchemas.', 'info')
-        merged_file_path = os.path.join(args.output_directory, "matched_annotations.tsv")
+        merged_file_path = os.path.join(output_d, "matched_annotations.tsv")
         matched_annotations = None
 
         # Create df from the tsv files given and compare the sorted and filtered columns
@@ -163,7 +164,7 @@ def main(args: Namespace) -> None:
     # Check if 'consolidate' is in the annotation options
     if 'consolidate' in args.annotation_options:
         prf.print_message("Consolidating annoations...", "info")
-        merged_file_path = os.path.join(args.output_directory, "consolidated_annotations.tsv")
+        merged_file_path = os.path.join(output_d, "consolidated_annotations.tsv")
         consolidated_annotations = None
         consolidated_annotations: str = cs.consolidate_annotations(args.consolidate_annotations,
                                     args.consolidate_cleanup,
@@ -186,9 +187,7 @@ def main(args: Namespace) -> None:
         # Merge all results into a single file
         upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
-    # Clean up temporary files
     if not args.no_cleanup:
         if 'match-schemas' not in args.annotation_options:
             prf.print_message("Cleaning up temporary files...", 'info')
-        # Remove temporary files
-        ff.cleanup(args.output_directory, [merged_file_path, logf.get_log_file_path(gb.LOGGER)])
+        ff.cleanup(output_d, [merged_file_path, logf.get_log_file_path(gb.LOGGER)])

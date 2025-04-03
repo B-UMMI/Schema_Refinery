@@ -79,6 +79,8 @@ def identify_paralogous_loci(schema_directory: str,
     >>> identify_paralogous_loci(schema_directory, output_directory, cpu, bsr, translation_table, size_threshold, processing_mode)
     """
 
+    output_d= os.path.abspath(output_directory)
+
     # Identify all of the fastas in the schema directory
     fasta_files_dict: Dict[str, str] = {
         loci.split('.')[0]: os.path.join(schema_directory, loci)
@@ -92,7 +94,7 @@ def identify_paralogous_loci(schema_directory: str,
         for loci in os.listdir(short_folder)
         if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
     }
-    blast_folder: str = os.path.join(output_directory, 'Blast')
+    blast_folder: str = os.path.join(output_d, 'Blast')
     ff.create_directory(blast_folder)
     translation_folder: str = os.path.join(blast_folder, 'Translation')
     ff.create_directory(translation_folder)
@@ -217,7 +219,7 @@ def identify_paralogous_loci(schema_directory: str,
 
     pf.print_message(f"", None)
     
-    paralogous_loci_report: str = os.path.join(output_directory, 'paralogous_loci_report.tsv')
+    paralogous_loci_report: str = os.path.join(output_d, 'paralogous_loci_report.tsv')
     paralogous_list: List[Tuple[str, str]] = []
     paralogous_list_check: List[Tuple[str, str]] = []
     # Write the report file with all of the paralogous loci results
@@ -264,7 +266,7 @@ def identify_paralogous_loci(schema_directory: str,
     # Cluster the paralogous loci by id and write the results to a file
     header: str = "Joined_loci_id\Clustered_loci_ids\n"
     paralogous_list = cf.cluster_by_ids(paralogous_list)
-    paralogous_loci_report_cluster_by_id: str = os.path.join(output_directory, 'paralogous_loci_report_cluster_by_id.tsv')
+    paralogous_loci_report_cluster_by_id: str = os.path.join(output_d, 'paralogous_loci_report_cluster_by_id.tsv')
     with open(paralogous_loci_report_cluster_by_id, 'w') as report_file:
         report_file.write(header)
         for cluster in paralogous_list:
@@ -272,7 +274,7 @@ def identify_paralogous_loci(schema_directory: str,
 
     # Cluster the paralogous loci by id that passed the mode check and write the results to a file
     paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
-    paralogous_loci_report_mode: str = os.path.join(output_directory, 'paralogous_loci_report_passed_all_checks.tsv')
+    paralogous_loci_report_mode: str = os.path.join(output_d, 'paralogous_loci_report_passed_all_checks.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
         report_file.write(header)
         for cluster in paralogous_list_check:
@@ -282,7 +284,7 @@ def identify_paralogous_loci(schema_directory: str,
     if not no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
-        ff.cleanup(output_directory, [paralogous_loci_report,
+        ff.cleanup(output_d, [paralogous_loci_report,
                                       paralogous_loci_report_cluster_by_id,
-                                      paralogous_list_check,
+                                      paralogous_loci_report_mode,
                                       logf.get_log_file_path(gb.LOGGER)])

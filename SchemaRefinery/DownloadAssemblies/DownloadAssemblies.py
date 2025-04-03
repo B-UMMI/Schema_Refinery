@@ -216,7 +216,8 @@ def main(args: Any) -> None:
     if not args.no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
-        ff.cleanup(args.output_directory, [all_metadata_directory,
+        output_d= os.path.abspath(args.output_directory)
+        ff.cleanup(output_d, [all_metadata_directory,
                                            assemblies_directory,
                                            assemblies_zip,
                                            selected_file_ena661k,

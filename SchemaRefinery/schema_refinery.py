@@ -1086,7 +1086,7 @@ def entry_point():
 		elif argv[i] == '--logger' and i + 1 < len(argv):
 			logger = argv[i + 1]
 			i += 1
-		elif argv[i] == '--output' or argv[i] == '-o' and i + 1 < len(argv):
+		elif argv[i] == '--output-directory' or argv[i] == '-o' and i + 1 < len(argv):
 			output_folder = argv[i + 1]
 			i += 1
 		elif argv[i] == '--version':

@@ -155,4 +155,5 @@ def create_schema_structure(recommendations_file: str,
 
     if not no_cleanup:
         print("\nCleaning up temporary files...")
-        ff.cleanup(output_directory, [schema_path, logf.get_log_file_path(gb.LOGGER)])
+        output_d= os.path.abspath(output_directory)
+        ff.cleanup(output_d, [schema_path, logf.get_log_file_path(gb.LOGGER)])

@@ -422,8 +422,6 @@ def process_cds_not_present(initial_processing_output: str, temp_folder: str,
     Tuple[str, Dict[str, int], Dict[str, List[str]]]
         A tuple containing the path to the CDS present file, frequency of CDS, and their presence in genomes.
     """
-    pf.print_message("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...", 'info')
-    
     cds_not_present_file_path: str = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
     write_cds_to_fasta(all_nucleotide_sequences, cds_not_present_file_path)
 
@@ -466,7 +464,6 @@ def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str],
     all_translation_dict, protein_hashes, _ = sf.translate_seq_deduplicate(
         all_nucleotide_sequences,
         cds_not_present_trans_file_path,
-        cds_not_present_untrans_file_path,
         constants[5],
         constants[6],
         True
