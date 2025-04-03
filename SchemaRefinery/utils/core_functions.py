@@ -1948,7 +1948,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
-    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the.", None)
+    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the schema DNA sequences.", None)
     for class_, count in count_cases.items():
         print_results(class_, count, merged_all_classes)
     prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches", None)
@@ -2183,7 +2183,6 @@ def prepare_loci(schema_folder: str,
         trans_path_file = os.path.join(possible_new_loci_translation_folder, f"{loci_id}.fasta")
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
                                                         trans_path_file,
-                                                        None,
                                                         constants[5],
                                                         constants[6],
                                                         False)
