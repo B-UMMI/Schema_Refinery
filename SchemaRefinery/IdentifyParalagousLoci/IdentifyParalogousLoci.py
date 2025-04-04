@@ -1,5 +1,6 @@
 import os
 import statistics
+import sys
 from typing import Dict, List, Tuple
 
 try:
@@ -262,6 +263,17 @@ def identify_paralogous_loci(schema_directory: str,
                 
                 if if_loci_intersect or if_close_distance:
                     paralogous_list_check.append((query_loci_id, subject_loci_id))
+
+    # open the sample file used 
+    paralogous = open(paralogous_loci_report)
+    if len(paralogous.readlines()) < 2:
+        pf.print_message('No paralogs were found', 'info')
+        # Clean up temporary files
+        if not no_cleanup:
+            pf.print_message("Cleaning up temporary files...", "info")
+            # Remove temporary files
+            ff.cleanup(output_d, [logf.get_log_file_path(gb.LOGGER)])
+        sys.exit(0)
 
     # Cluster the paralogous loci by id and write the results to a file
     header: str = "Joined_loci_id\Clustered_loci_ids\n"
