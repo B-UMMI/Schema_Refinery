@@ -442,7 +442,14 @@ def identify_spurious_genes() -> None:
 						required=True,
 						dest='allelecall_directory',
 						help='Path to the directory that contains allele call directory that was run with --no-cleanup.')
-	
+
+	parser.add_argument('-ann',
+						'--annotations-directory',
+						type=str,
+						required=False,
+						dest='annotation_directory',
+						help='Path to the tsv file with the schema annotations.')
+
 	parser.add_argument('-pnl',
 						'--possible-new-loci',
 						type=str,
@@ -714,6 +721,13 @@ def identify_paralogous_loci() -> None:
 						required=True,
 						dest='output_directory',
 						help='Path to the directory to which files will be stored.')
+
+	parser.add_argument('-ann',
+						'--annotations-directory',
+						type=str,
+						required=False,
+						dest='annotation_directory',
+						help='Path to the tsv file with the schema annotations.')
 	
 	parser.add_argument('-c',
 						'--cpu',

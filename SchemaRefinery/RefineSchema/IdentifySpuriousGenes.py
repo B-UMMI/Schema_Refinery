@@ -7,6 +7,7 @@ from typing import Any, List, Dict, Optional, Set, Tuple
 
 
 try:
+    from SchemaAnnotation import (consolidate as cs)
     from utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
@@ -20,6 +21,7 @@ try:
                                         logger_functions as logf,
                                         globals as gb)
 except ModuleNotFoundError:
+    from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
@@ -88,6 +90,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
 
 
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
+                            annotation_directory: str,
                             possible_new_loci: str, constants: List[Any], temp_paths: List[str],
                             run_mode: str, processing_mode: str, cpu: int, no_cleanup: bool) -> None:
     """
@@ -391,6 +394,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                             merged_all_classes,
                                                             dropped_loci_ids,
                                                             classes_outcome)
+    
+    #pf.print_message(f'{recommendations}', 'info')
 
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
@@ -473,19 +478,34 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             cof.create_graphs(file,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
+
+
+#### Anotações
+    consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv") 
+    if annotation_directory:
+        files = [recommendations_file_path, annotation_directory]
+        pf.print_message("Consolidating annoations...", "info")
+        consolidated_annotations: str = cs.consolidate_annotations(files,
+                                    False,
+                                    consolidated_annotations)
+        pf.print_message('Annotation consolidation successfully completed.', 'info')
+        pf.print_message('')
+
     # Clean up temporary files
     if not no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_d, [related_matches_path,
-                                      count_results_by_cluster_path,
-                                      recommendations_file_path,
-                                      drop_possible_loci_output,
-                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
-                                      logf.get_log_file_path(gb.LOGGER)])
+                                    count_results_by_cluster_path,
+                                    recommendations_file_path,
+                                    consolidated_annotations if annotation_directory else None,
+                                    drop_possible_loci_output,
+                                    temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                    logf.get_log_file_path(gb.LOGGER)])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
+        annotation_directory: str,
         possible_new_loci: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
@@ -558,6 +578,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
     identify_spurious_genes(schema_directory,
                 output_directory,
                 allelecall_directory,
+                annotation_directory,
                 possible_new_loci,
                 constants,
                 temp_paths,

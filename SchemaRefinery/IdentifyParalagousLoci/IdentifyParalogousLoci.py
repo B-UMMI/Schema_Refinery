@@ -4,6 +4,7 @@ import sys
 from typing import Dict, List, Tuple
 
 try:
+    from SchemaAnnotation import (consolidate as cs)
     from utils import (
                         sequence_functions as sf,
                         blast_functions as bf,
@@ -18,6 +19,7 @@ try:
 
     )
 except ModuleNotFoundError:
+    from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
     from SchemaRefinery.utils import (
                                     sequence_functions as sf,
                                     blast_functions as bf,
@@ -32,7 +34,8 @@ except ModuleNotFoundError:
     )
 
 def identify_paralogous_loci(schema_directory: str, 
-                             output_directory: str, 
+                             output_directory: str,
+                             annotation_directory: str, 
                              cpu: int, 
                              bsr: float,
                              translation_table: int, 
@@ -264,6 +267,7 @@ def identify_paralogous_loci(schema_directory: str,
                 if if_loci_intersect or if_close_distance:
                     paralogous_list_check.append((query_loci_id, subject_loci_id))
 
+
     # open the sample file used 
     paralogous = open(paralogous_loci_report)
     if len(paralogous.readlines()) < 2:
@@ -275,6 +279,17 @@ def identify_paralogous_loci(schema_directory: str,
             ff.cleanup(output_d, [logf.get_log_file_path(gb.LOGGER)])
         sys.exit(0)
 
+    ##### Novo ficheiro output para anotação
+    header: str = "Locus\tAction\n"
+    paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
+    paralogous_loci_report_mode: str = os.path.join(output_d, 'paralogous_loci_final_recommendations.tsv')
+    with open(paralogous_loci_report_mode, 'w') as report_file:
+        report_file.write(header)
+        for cluster in paralogous_list_check:
+            for loci in cluster:
+                report_file.write(f"{loci}\tJoin\n")
+            report_file.write("#\t\n")
+
     # Cluster the paralogous loci by id and write the results to a file
     header: str = "Joined_loci_id\Clustered_loci_ids\n"
     paralogous_list = cf.cluster_by_ids(paralogous_list)
@@ -284,19 +299,23 @@ def identify_paralogous_loci(schema_directory: str,
         for cluster in paralogous_list:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 
-    # Cluster the paralogous loci by id that passed the mode check and write the results to a file
-    paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
-    paralogous_loci_report_mode: str = os.path.join(output_d, 'paralogous_loci_report_passed_all_checks.tsv')
-    with open(paralogous_loci_report_mode, 'w') as report_file:
-        report_file.write(header)
-        for cluster in paralogous_list_check:
-            report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
+#### Anotações
+    consolidated_annotations = os.path.join(output_d, "paralogous_annotations.tsv") 
+    if annotation_directory:
+        files = [paralogous_loci_report_mode, annotation_directory]
+        pf.print_message("Consolidating annoations...", "info")
+        consolidated_annotations: str = cs.consolidate_annotations(files,
+                                    False,
+                                    consolidated_annotations)
+        pf.print_message('Annotation consolidation successfully completed.', 'info')
+        pf.print_message('')
+
 
     # Clean up temporary files
     if not no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_d, [paralogous_loci_report,
-                                      paralogous_loci_report_cluster_by_id,
-                                      paralogous_loci_report_mode,
-                                      logf.get_log_file_path(gb.LOGGER)])
+                                    paralogous_loci_report_mode,
+                                    consolidated_annotations if annotation_directory else None,
+                                    logf.get_log_file_path(gb.LOGGER)])

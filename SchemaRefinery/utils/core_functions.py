@@ -1033,8 +1033,8 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         recommendations.setdefault(key, {})
         # Checks to make, so that we can add the ID to the right recommendations.
         if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
-        if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Joined'])
-        if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
+        if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Join'])
+        if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Join'])
         if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
         if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
         if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
@@ -1056,9 +1056,9 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
             if results[0] == '1a':
                 # If it is part of a joined cluster, add to the recommendations
                 if joined_query_id is not None:
-                    add_to_recommendations('Joined', joined_query_to_write, key, recommendations, joined_query_id)
+                    add_to_recommendations('Join', joined_query_to_write, key, recommendations, joined_query_id)
                 if joined_subject_id is not None:
-                    add_to_recommendations('Joined', joined_subject_to_write, key, recommendations, joined_subject_id)
+                    add_to_recommendations('Join', joined_subject_to_write, key, recommendations, joined_subject_id)
             # Process the choice cases
             elif results[0] in ['1c', '2b', '3b', '4b']:
                 # If it is not dropped and not the same joined cluster, add to the choice recommendations
@@ -1097,7 +1097,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                     if match_[2] in dropped:
                         add_to_recommendations('Choice', dropped[2], key, recommendations, match_[3])
 
-    sort_order: List[str] = ['Joined', 'Choice', 'Keep', 'Drop']
+    sort_order: List[str] = ['Join', 'Choice', 'Keep', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
     return related_clusters, recommendations
@@ -1155,20 +1155,19 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
       and total count of results for the cluster, with each piece of information separated by tabs.
       A blank line is added after each cluster's information.
     """
-    
-    # Write the recommendations to the output file
+
+    ##### Novo output só com 2 colunas
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
     with open(recommendations_file_path, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Recommendation\tIDs\n")
+        recommendations_report_file.write("Locus\tAction\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
-                category = category.split('_')[:2] if 'Choice' in category else category
-                # If the category is Choice, add the class to the category
-                if isinstance(category, list):
-                    category = '_'.join(category)
-                # Convert all to string
-                ids = itf.convert_set_elements_to_strings(ids)
-                recommendations_report_file.write(f"{category}\t{','.join(ids)}\n")
+                if 'Drop' in category:
+                    category=category
+                else:
+                    category = category.split('_', 1)[0]
+                for loci_id in ids:
+                   recommendations_report_file.write(f"{loci_id}\t{category}\n")
             recommendations_report_file.write("#\n")
             
     # Add the reverse matches to the related clusters
