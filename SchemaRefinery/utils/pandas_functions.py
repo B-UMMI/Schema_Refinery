@@ -172,6 +172,9 @@ def merge_files_by_column_values_df(df1: pd.DataFrame, df2: pd.DataFrame, column
 	if 'Query' in merged_table.columns:
 		if 'Locus' in merged_table.columns:
 			merged_table.drop(columns=['Locus'], inplace=True)
+	if 'Loci' in merged_table.columns:
+		if 'Locus' in merged_table.columns:
+			merged_table.drop(columns=['Locus'], inplace=True)
 
 	# Save the merged table to a TSV file
 	merged_table.to_csv(output_file, sep='\t', index=False)
