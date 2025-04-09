@@ -1159,7 +1159,7 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
     ##### Novo output só com 2 colunas
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
     with open(recommendations_file_path, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Locus\tAction\n")
+        recommendations_report_file.write("Loci\tAction\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
                 if 'Drop' in category:

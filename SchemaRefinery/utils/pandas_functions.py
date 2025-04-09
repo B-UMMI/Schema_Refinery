@@ -164,7 +164,6 @@ def merge_files_by_column_values_df(df1: pd.DataFrame, df2: pd.DataFrame, column
 	# Merge the dataframes based on the specified column values
 	merged_table = pd.merge(df1, df2, left_on=column_value1, right_on=column_value2, how='left', suffixes=(left, right))
 	
-	# Drop the 'Locus_y' which is original subject id column and rename 'Locus_x' to 'Locus'
 	# Drop all the locus columns
 	if 'Locus_y' in merged_table.columns:
 		merged_table.drop(columns=['Locus_y'], inplace=True)

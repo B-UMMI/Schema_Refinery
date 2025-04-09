@@ -35,7 +35,7 @@ except ModuleNotFoundError:
 
 def identify_paralogous_loci(schema_directory: str, 
                              output_directory: str,
-                             annotation_directory: str, 
+                             annotation_paths: List[str], 
                              cpu: int, 
                              bsr: float,
                              translation_table: int, 
@@ -51,6 +51,8 @@ def identify_paralogous_loci(schema_directory: str,
         Path to the directory containing schema FASTA files.
     output_directory : str
         Path to the directory where output files will be saved.
+    annotation_paths : List[str]
+        Paths to the files with annotations to be added to the final recommendations file.
     cpu : int
         Number of CPU cores to use for parallel processing.
     bsr : float
@@ -83,7 +85,7 @@ def identify_paralogous_loci(schema_directory: str,
     >>> identify_paralogous_loci(schema_directory, output_directory, cpu, bsr, translation_table, size_threshold, processing_mode)
     """
 
-    output_d= os.path.abspath(output_directory)
+    pf.print_message("Identify Schema FASTAs...", "info")
 
     # Identify all of the fastas in the schema directory
     fasta_files_dict: Dict[str, str] = {
@@ -98,6 +100,8 @@ def identify_paralogous_loci(schema_directory: str,
         for loci in os.listdir(short_folder)
         if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
     }
+
+    output_d= os.path.abspath(output_directory)
     blast_folder: str = os.path.join(output_d, 'Blast')
     ff.create_directory(blast_folder)
     translation_folder: str = os.path.join(blast_folder, 'Translation')
@@ -108,6 +112,9 @@ def identify_paralogous_loci(schema_directory: str,
     query_paths_dict: Dict[str, str] = {}
     all_loci_allele_size_stats = {}
     i: int = 1
+
+    pf.print_message('')
+    pf.print_message('Translating fasta files', 'info')
     # Translate the sequences that are to be used in the BLASTp search
     for loci in fasta_files_dict:
         # Get the subject and query FASTA files
@@ -153,6 +160,9 @@ def identify_paralogous_loci(schema_directory: str,
     max_id_length: int = len(max(query_paths_dict.keys(), key=len))
     # Blast executable
     blast_exec: str = lf.get_tool_path('blastp')
+
+    pf.print_message('')
+    pf.print_message('Calculating self-scores', 'info')
     # Calculate self-score
     self_score_dict: Dict[str, float] = bf.calculate_self_score(query_paths_dict,
                                                                 blast_exec,
@@ -171,11 +181,12 @@ def identify_paralogous_loci(schema_directory: str,
     # Blast output folder
     blast_output_folder: str = os.path.join(blast_folder, 'Blast_output')
     ff.create_directory(blast_output_folder)
-
     bsr_values: Dict[str, Dict[str, float]] = {}
     best_bsr_values: Dict[str, Dict[str, float]] = {}
     total_blasts: int = len(query_paths_dict)
     # Run BLASTp in parallel
+    pf.print_message('')
+    pf.print_message('Running Blastp', 'info')
     blastp_results_files = bf.run_blastp_operations(cpu,
                                                     blast_exec,
                                                     blast_db_prot,
@@ -227,6 +238,7 @@ def identify_paralogous_loci(schema_directory: str,
     paralogous_list: List[Tuple[str, str]] = []
     paralogous_list_check: List[Tuple[str, str]] = []
     # Write the report file with all of the paralogous loci results
+    pf.print_message('Writting report file with all of the paralogous loci results', 'info')
     with open(paralogous_loci_report, 'w') as report_file:
         report_file.write("Query_loci_id\t"
                           "Subject_loci_id\t"
@@ -279,19 +291,23 @@ def identify_paralogous_loci(schema_directory: str,
             ff.cleanup(output_d, [logf.get_log_file_path(gb.LOGGER)])
         sys.exit(0)
 
-    ##### Novo ficheiro output para anotação
-    header: str = "Locus\tAction\n"
+    # Write recomendation file
+    pf.print_message('Writting recommendations TSV file', 'info')
+    header: str = "Loci\tAction\n"
     paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
     paralogous_loci_report_mode: str = os.path.join(output_d, 'paralogous_loci_final_recommendations.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
         report_file.write(header)
         for cluster in paralogous_list_check:
             for loci in cluster:
+                # The action is always 'Join'
                 report_file.write(f"{loci}\tJoin\n")
+            # Each cluster is separated by a '#' row
             report_file.write("#\t\n")
 
     # Cluster the paralogous loci by id and write the results to a file
-    header: str = "Joined_loci_id\Clustered_loci_ids\n"
+    pf.print_message('Writting Clusters by IDs TSV file', 'info')
+    header: str = "Joined_loci_id\tClustered_loci_ids\n"
     paralogous_list = cf.cluster_by_ids(paralogous_list)
     paralogous_loci_report_cluster_by_id: str = os.path.join(output_d, 'paralogous_loci_report_cluster_by_id.tsv')
     with open(paralogous_loci_report_cluster_by_id, 'w') as report_file:
@@ -299,11 +315,14 @@ def identify_paralogous_loci(schema_directory: str,
         for cluster in paralogous_list:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 
-#### Anotações
+    # Annotate the recomendations files using the consolidate option from the annotation module
     consolidated_annotations = os.path.join(output_d, "paralogous_annotations.tsv") 
-    if annotation_directory:
-        files = [paralogous_loci_report_mode, annotation_directory]
+    if annotation_paths:
+        # Append the recommendation files to the begginig of the list of files to annotate
+        files: List[str]
+        files = [paralogous_loci_report_mode] + annotation_paths
         pf.print_message("Consolidating annoations...", "info")
+        # Cleanup is put as False by deafult
         consolidated_annotations: str = cs.consolidate_annotations(files,
                                     False,
                                     consolidated_annotations)
@@ -317,5 +336,5 @@ def identify_paralogous_loci(schema_directory: str,
         # Remove temporary files
         ff.cleanup(output_d, [paralogous_loci_report,
                                     paralogous_loci_report_mode,
-                                    consolidated_annotations if annotation_directory else None,
+                                    consolidated_annotations if annotation_paths else None,
                                     logf.get_log_file_path(gb.LOGGER)])

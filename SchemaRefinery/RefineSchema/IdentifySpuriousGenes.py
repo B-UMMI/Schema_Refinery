@@ -90,7 +90,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
 
 
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
-                            annotation_directory: str,
+                            annotation_paths: List[str],
                             possible_new_loci: str, constants: List[Any], temp_paths: List[str],
                             run_mode: str, processing_mode: str, cpu: int, no_cleanup: bool) -> None:
     """
@@ -482,8 +482,9 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
 #### Anotações
     consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv") 
-    if annotation_directory:
-        files = [recommendations_file_path, annotation_directory]
+    if annotation_paths:
+        files: List[str]
+        files = [recommendations_file_path] + annotation_paths
         pf.print_message("Consolidating annoations...", "info")
         consolidated_annotations: str = cs.consolidate_annotations(files,
                                     False,
@@ -498,14 +499,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         ff.cleanup(output_d, [related_matches_path,
                                     count_results_by_cluster_path,
                                     recommendations_file_path,
-                                    consolidated_annotations if annotation_directory else None,
+                                    consolidated_annotations if annotation_paths else None,
                                     drop_possible_loci_output,
                                     temp_fastas_folder if run_mode == 'unclassified_cds' else None,
                                     logf.get_log_file_path(gb.LOGGER)])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
-        annotation_directory: str,
+        annotation_paths: List[str],
         possible_new_loci: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
@@ -578,7 +579,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
     identify_spurious_genes(schema_directory,
                 output_directory,
                 allelecall_directory,
-                annotation_directory,
+                annotation_paths,
                 possible_new_loci,
                 constants,
                 temp_paths,
