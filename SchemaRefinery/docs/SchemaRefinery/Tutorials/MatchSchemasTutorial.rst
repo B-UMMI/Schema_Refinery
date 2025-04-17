@@ -23,7 +23,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR MatchSchema -fs /path/to/tutorial_schema -ss /path/to/tutorial_schema -o path/to/output_folder -c 6 --nocleanup
+    SR MatchSchemas -fs /path/to/tutorial_schema -ss /path/to/tutorial_schema -o path/to/output_folder -c 6 --nocleanup
 
 - Replace `path/to/files/` with the actual path to the files.
 - This will run the tutorial schema against itself.

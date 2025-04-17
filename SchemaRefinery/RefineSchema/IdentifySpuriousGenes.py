@@ -7,6 +7,7 @@ from typing import Any, List, Dict, Optional, Set, Tuple
 
 
 try:
+    from SchemaAnnotation import (consolidate as cs)
     from utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
@@ -20,6 +21,7 @@ try:
                                         logger_functions as logf,
                                         globals as gb)
 except ModuleNotFoundError:
+    from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
@@ -51,21 +53,22 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     """
     # Create base output directory
     ff.create_directory(output_directory)
+    output_d= os.path.abspath(output_directory)
     
     # Create initial processing output directory based on run mode
     initial_processing_output: str
     schema_folder: Optional[str]
     if run_mode == 'unclassified_cds':
-        initial_processing_output = os.path.join(output_directory, '1_CDS_processing')
+        initial_processing_output = os.path.join(output_d, '1_CDS_processing')
         ff.create_directory(initial_processing_output)
         schema_folder = None
     else:
-        initial_processing_output = os.path.join(output_directory, '1_schema_processing')
+        initial_processing_output = os.path.join(output_d, '1_schema_processing')
         schema_folder = os.path.join(initial_processing_output, 'schema')
         ff.create_directory(schema_folder)
 
     # Create BLAST processing directories
-    blast_output: str = os.path.join(output_directory, '2_BLAST_processing')
+    blast_output: str = os.path.join(output_d, '2_BLAST_processing')
     blastn_output: str = os.path.join(blast_output, '1_BLASTn_processing')
     blast_db: str = os.path.join(blastn_output, 'blast_db_nucl')
     ff.create_directory(blast_db)
@@ -79,7 +82,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
         representatives_blastn_folder = None
         
     # Create results output directories
-    results_output: str = os.path.join(output_directory, '3_processing_results')
+    results_output: str = os.path.join(output_d, '3_processing_results')
     blast_results: str = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
     
@@ -87,6 +90,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
 
 
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
+                            annotation_paths: List[str],
                             possible_new_loci: str, constants: List[Any], temp_paths: List[str],
                             run_mode: str, processing_mode: str, cpu: int, no_cleanup: bool) -> None:
     """
@@ -120,6 +124,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     None
     """
     
+    output_d= os.path.abspath(output_directory)
+
     # Create directories structure.
     (initial_processing_output,
      schema_folder,
@@ -128,7 +134,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
      blast_db,
      representatives_blastn_folder,
      results_output,
-     blast_results) = create_directories(output_directory, run_mode)
+     blast_results) = create_directories(output_d, run_mode)
     
     # Process unclassified CDS, retrieving and clustering
     if run_mode == 'unclassified_cds':
@@ -394,7 +400,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     reverse_matches: bool = True
     (related_matches_path,
      count_results_by_cluster_path,
-     recommendations_file_path) = cof.write_recommendations_summary_results(related_clusters,
+     recommendations_file_path) = cof.write_recommendations_summary_results(to_blast_paths,
+                                                                            related_clusters,
                                                                             count_results_by_class_with_inverse,
                                                                             group_reps_ids,
                                                                             group_alleles_ids,
@@ -402,10 +409,9 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                             recommendations,
                                                                             reverse_matches,
                                                                             classes_outcome,
-                                                                            output_directory)
+                                                                            output_d)
 
     # Get all of the CDS that matched with loci or loci matched with loci
-    #TODO fix this
     is_matched: Dict[str, Any]
     is_matched_alleles: Dict[str, Any]
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
@@ -444,7 +450,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     # Write the dropped possible new loci to a file.
     drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                                         dropped_alleles,
-                                                                        output_directory)
+                                                                        output_d)
     # Print the classification results
     cof.print_classifications_results(merged_all_classes,
                                         dropped_loci_ids,
@@ -453,7 +459,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
         pf.print_message("Writing temporary fastas to file...", "info")
-        temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_directory)
+        temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_d)
 
         pf.print_message("Creating graphs for the BLAST results...", "info")
         cds_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
@@ -470,19 +476,36 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             cof.create_graphs(file,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
+
+
+    # Annotate the recommendation outputs with the given annotation files using consolidate
+    pf.print_message("")
+    consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv") 
+    if annotation_paths:
+        files: List[str]
+        files = [recommendations_file_path] + annotation_paths
+        pf.print_message("Consolidating annoations...", "info")
+        consolidated_annotations: str = cs.consolidate_annotations(files,
+                                    False,
+                                    consolidated_annotations)
+        pf.print_message('Annotation consolidation successfully completed.', 'info')
+        pf.print_message('')
+
     # Clean up temporary files
     if not no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
-        ff.cleanup(output_directory, [related_matches_path,
-                                      count_results_by_cluster_path,
-                                      recommendations_file_path,
-                                      drop_possible_loci_output,
-                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
-                                      logf.get_log_file_path(gb.LOGGER)])
+        ff.cleanup(output_d, [related_matches_path,
+                                    count_results_by_cluster_path,
+                                    recommendations_file_path,
+                                    consolidated_annotations if annotation_paths else None,
+                                    drop_possible_loci_output,
+                                    temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                    logf.get_log_file_path(gb.LOGGER)])
 
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
+        annotation_paths: List[str],
         possible_new_loci: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
@@ -555,6 +578,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
     identify_spurious_genes(schema_directory,
                 output_directory,
                 allelecall_directory,
+                annotation_paths,
                 possible_new_loci,
                 constants,
                 temp_paths,

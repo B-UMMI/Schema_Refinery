@@ -35,7 +35,7 @@ Modules Usage
 
 Each module can be used independently by running the corresponding script with the required command-line arguments. Below are examples for each module:
 
-`IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalagousLoci.html>`_
+`IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_
 
 .. code-block:: bash
 

@@ -45,6 +45,16 @@ def identify_duplicate_gene(distinct_hashtable: str,
     - It calculates the proportion of problematic genomes for each locus and determines if it should be dropped.
     - Finally, it writes the results to a TSV file in the specified output directory.
     """
+
+#distinct_hashtable: str = '/home/randrade/SR/SR/Allele_calling/temp/2_cds_preprocess/cds_deduplication/distinct.hashtable'
+#schema_directory: str =  '/home/randrade/SR/SR/Schema_Refinery/testing_schema1'
+#output_directory: str = '/home/randrade/SR/SR/IDG_Results_trial' 
+#problematic_threshold: float = 0.1
+#no_cleanup: bool = True
+
+    ff.create_directory(output_directory)
+
+
     print('Identifying problematic loci based on the presence of NIPHs and NIPHEMs...')
     print("Importing DNA hashes and the genomes where they are identified...")
     # Decode the CDS sequences from the provided file

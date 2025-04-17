@@ -1033,8 +1033,8 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         recommendations.setdefault(key, {})
         # Checks to make, so that we can add the ID to the right recommendations.
         if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
-        if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Joined'])
-        if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Joined'])
+        if_joined_query: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Join'])
+        if_joined_subject: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Join'])
         if_query_in_choice: bool = check_in_recommendations(query_id, joined_query_id, recommendations, key, ['Choice'])
         if_subject_in_choice: bool = check_in_recommendations(subject_id, joined_subject_id, recommendations, key, ['Choice'])
         if_query_dropped: bool = (joined_query_id or query_id) in dropped_loci_ids
@@ -1056,9 +1056,9 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
             if results[0] == '1a':
                 # If it is part of a joined cluster, add to the recommendations
                 if joined_query_id is not None:
-                    add_to_recommendations('Joined', joined_query_to_write, key, recommendations, joined_query_id)
+                    add_to_recommendations('Join', joined_query_to_write, key, recommendations, joined_query_id)
                 if joined_subject_id is not None:
-                    add_to_recommendations('Joined', joined_subject_to_write, key, recommendations, joined_subject_id)
+                    add_to_recommendations('Join', joined_subject_to_write, key, recommendations, joined_subject_id)
             # Process the choice cases
             elif results[0] in ['1c', '2b', '3b', '4b']:
                 # If it is not dropped and not the same joined cluster, add to the choice recommendations
@@ -1097,21 +1097,22 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                     if match_[2] in dropped:
                         add_to_recommendations('Choice', dropped[2], key, recommendations, match_[3])
 
-    sort_order: List[str] = ['Joined', 'Choice', 'Keep', 'Drop']
+    sort_order: List[str] = ['Join', 'Choice', 'Keep', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
     return related_clusters, recommendations
 
 
-def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
-                                        count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse, 
-                                        group_reps_ids: Dict[str, List[str]],
-                                        group_alleles_ids: Dict[str, List[str]], 
-                                        frequency_in_genomes: Dict[str, int],
-                                        recommendations: tp.Recomendations, 
-                                        reverse_matches: bool,
-                                        classes_outcome: Tuple[str, ...],
-                                        output_directory: str) -> Tuple[str, str, str]:
+def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
+                                            related_clusters: tp.RelatedClusters,
+                                            count_results_by_class_with_inverse: tp.CountResultsByClassWithInverse, 
+                                            group_reps_ids: Dict[str, List[str]],
+                                            group_alleles_ids: Dict[str, List[str]], 
+                                            frequency_in_genomes: Dict[str, int],
+                                            recommendations: tp.Recomendations, 
+                                            reverse_matches: bool,
+                                            classes_outcome: Tuple[str, ...],
+                                            output_directory: str) -> Tuple[str, str, str]:
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -1155,21 +1156,29 @@ def write_recommendations_summary_results(related_clusters: tp.RelatedClusters,
       and total count of results for the cluster, with each piece of information separated by tabs.
       A blank line is added after each cluster's information.
     """
-    
-    # Write the recommendations to the output file
+
+    ##### Novo output só com 2 colunas
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
+
+    ## Add
+    matched_loci: List[str] = []
     with open(recommendations_file_path, 'w') as recommendations_report_file:
-        recommendations_report_file.write("Recommendation\tIDs\n")
+        recommendations_report_file.write("Locus\tAction\n")
         for key, recommendation in recommendations.items():
             for category, ids in recommendation.items():
-                category = category.split('_')[:2] if 'Choice' in category else category
-                # If the category is Choice, add the class to the category
-                if isinstance(category, list):
-                    category = '_'.join(category)
-                # Convert all to string
-                ids = itf.convert_set_elements_to_strings(ids)
-                recommendations_report_file.write(f"{category}\t{','.join(ids)}\n")
+                if 'Drop' in category:
+                    category=category
+                else:
+                    category = category.split('_', 1)[0]
+                for loci_id in ids:
+                   recommendations_report_file.write(f"{loci_id}\t{category}\n")
+                   matched_loci.append(loci_id)
             recommendations_report_file.write("#\n")
+        # Add the loci that had no action needed to the output file with the action 'Add'
+        for loci, loci_path in to_blast_paths.items():
+            loci_id = ff.file_basename(loci).split('.')[0]
+            if loci_id not in matched_loci:
+               recommendations_report_file.write(f"{loci_id}\tAdd\n") 
             
     # Add the reverse matches to the related clusters
     reported_cases: Dict[str, List[Tuple[str, str]]] = {}
@@ -1948,7 +1957,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
-    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the.", None)
+    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the schema DNA sequences.", None)
     for class_, count in count_cases.items():
         print_results(class_, count, merged_all_classes)
     prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches", None)
@@ -2132,17 +2141,17 @@ def prepare_loci(schema_folder: str,
     to_run_against = schema_short if processing_mode.split('_')[-1] == 'rep' else schema
 
     # Initialize dictionaries for alleles, translations, and frequencies
-    all_alleles: Dict[str, List[str]] = {}
-    all_nucleotide_sequences: Dict[str, str] = {}
-    translation_dict: Dict[str, str] = {}
-    frequency_in_genomes: Dict[str, int] = {}
+    all_alleles: Dict[str, List[str]] = {} 
+    all_nucleotide_sequences: Dict[str, str] = {} 
+    translation_dict: Dict[str, str] = {} 
+    frequency_in_genomes: Dict[str, int] = {} 
     temp_frequency_in_genomes: Dict[str, List[str]] = {}
-    group_reps_ids: Dict[str, List[str]] = {}
-    group_alleles_ids: Dict[str, List[str]] = {}
+    group_reps_ids: Dict[str, List[str]] = {} 
+    group_alleles_ids: Dict[str, List[str]] = {} 
     
     # Path to the CDS presence file
-    cds_present = os.path.join(allelecall_directory, "temp", "2_cds_preprocess/cds_deduplication/distinct.hashtable")
-    decoded_sequences_ids = itf.decode_CDS_sequences_ids(cds_present)
+    cds_present = os.path.join(allelecall_directory, "results_alleles.tsv")
+    df = pd.read_csv(cds_present, sep = '\t')
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
@@ -2164,26 +2173,27 @@ def prepare_loci(schema_folder: str,
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(sequence)}\n")
 
-    # Count loci presence and translate all of the alleles
+    # Calculate the frequency of a locus in each genome
+    frequency_in_genomes = {}
+    allele_columns = df.columns[1:]
+
     for loci, loci_path in schema.items():
         loci_id = ff.file_basename(loci).split('.')[0]
+        # For each locus count the frequency (don't count LNF, ASM or ALM)
+        matching_cols = [col for col in allele_columns if loci_id in col]
+        # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
+        presence_mask = df[matching_cols].applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
+        # Count the frequency of each locus in all genome
+        genome_presence = presence_mask.any(axis=1)
+        frequency_in_genomes[loci_id] = genome_presence.sum()
         all_alleles.setdefault(loci_id, [])
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():  
             all_alleles[loci_id].append(allele_id)
-            hashed_seq = sf.seq_to_hash(str(sequence))
-            # If CDS sequence is present in the schema, count the number of genomes it is found in
-            if hashed_seq in decoded_sequences_ids:
-                # Count frequency of only presence, do not include the total CDS in the genomes
-                temp_frequency_in_genomes.setdefault(loci_id, []).extend(decoded_sequences_ids[hashed_seq][1:])
-
-        frequency_in_genomes.setdefault(loci_id, len(set(temp_frequency_in_genomes[loci_id])))
-
         # Translate sequences and update translation dictionary
         trans_path_file = os.path.join(possible_new_loci_translation_folder, f"{loci_id}.fasta")
         trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
                                                         trans_path_file,
-                                                        None,
                                                         constants[5],
                                                         constants[6],
                                                         False)

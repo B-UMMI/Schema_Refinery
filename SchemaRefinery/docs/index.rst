@@ -17,7 +17,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Modules/IdentifySpuriousGenes
    SchemaRefinery/Modules/MatchSchemas
    SchemaRefinery/Modules/SchemaAnnotation
-   SchemaRefinery/Modules/IdentifyParalagousLoci
+   SchemaRefinery/Modules/IdentifyParalogousLoci
    SchemaRefinery/Modules/DownloadAssemblies
    SchemaRefinery/Modules/AdaptLoci
 

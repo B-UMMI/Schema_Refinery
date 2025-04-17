@@ -20,7 +20,7 @@ try:
 	from DownloadAssemblies import DownloadAssemblies
 	from SchemaAnnotation import SchemaAnnotation
 	from RefineSchema import IdentifySpuriousGenes
-	from IdentifyParalagousLoci import IdentifyParalogousLoci
+	from IdentifyParalogousLoci import IdentifyParalogousLoci
 	from AdaptLoci import AdaptLoci
 	from MatchSchemas import MatchSchemas
 	from CreateSchemaStructure import CreateSchemaStructure
@@ -36,7 +36,7 @@ except ModuleNotFoundError:
 	from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
 	from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
 	from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
-	from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
+	from SchemaRefinery.IdentifyParalogousLoci import IdentifyParalogousLoci
 	from SchemaRefinery.AdaptLoci import AdaptLoci
 	from SchemaRefinery.MatchSchemas import MatchSchemas
 	from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
@@ -442,7 +442,16 @@ def identify_spurious_genes() -> None:
 						required=True,
 						dest='allelecall_directory',
 						help='Path to the directory that contains allele call directory that was run with --no-cleanup.')
-	
+
+	parser.add_argument('-ann',
+						'--annotations',
+						type=str,
+						nargs='+',
+						required=False,
+						default=None,
+						dest='annotation_paths',
+						help='Path to the tsv file with the schema annotations.')
+
 	parser.add_argument('-pnl',
 						'--possible-new-loci',
 						type=str,
@@ -714,6 +723,15 @@ def identify_paralogous_loci() -> None:
 						required=True,
 						dest='output_directory',
 						help='Path to the directory to which files will be stored.')
+
+	parser.add_argument('-ann',
+						'--annotations',
+						type=str,
+						nargs='+',
+						required=False,
+						default=None,
+						dest='annotation_paths',
+						help='Path to the tsv file with the schema annotations to be added to the recommendations file.')
 	
 	parser.add_argument('-c',
 						'--cpu',
@@ -1039,7 +1057,7 @@ module_info = {
 		'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based on alignment against Genbank files and other schemas.', schema_annotation],
 		'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against unclassified CDS to infer new loci and identify problematic genes.", identify_spurious_genes],
 		'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
-		'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
+		'IdentifyParalogousLoci': ["Identifies paralogous loci based on schema input", identify_paralogous_loci],
 		'MatchSchemas': ["Match schemas to identify the best matches between two schemas.", match_schemas],
 		'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
 		'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
@@ -1086,7 +1104,7 @@ def entry_point():
 		elif argv[i] == '--logger' and i + 1 < len(argv):
 			logger = argv[i + 1]
 			i += 1
-		elif argv[i] == '--output' or argv[i] == '-o' and i + 1 < len(argv):
+		elif argv[i] == '--output-directory' or argv[i] == '-o' and i + 1 < len(argv):
 			output_folder = argv[i + 1]
 			i += 1
 		elif argv[i] == '--version':

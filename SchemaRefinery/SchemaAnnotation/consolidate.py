@@ -70,9 +70,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     if best_match == 'f0s0':
         prf.print_message('First columns are a match', 'info')
         mismatched_f0s0 = first_0_filtered.iloc[:, 0][~first_0_filtered.iloc[:, 0].isin(second_0_filtered.iloc[:, 0])]
-        prf.print_message(f"From First file: {mismatched_f0s0}", 'info')
+        prf.print_message(f"Ids from the First file that didn't match: {mismatched_f0s0}", 'info')
         mismatched_s0f0 = second_0_filtered.iloc[:, 0][~second_0_filtered.iloc[:, 0].isin(first_0_filtered.iloc[:, 0])]
-        prf.print_message(f"From second file: {mismatched_s0f0}", 'info')
+        prf.print_message(f"Ids from the second file that didn't match: {mismatched_s0f0}", 'info')
         upf.merge_files_by_column_values_df(first_df,
                                             second_0_filtered,
                                             0,
@@ -84,9 +84,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     elif best_match == 'f0s1':
         prf.print_message('First and second columns are a match', 'info')
         mismatched_f0s1 = first_0_filtered.iloc[:, 0][~first_0_filtered.iloc[:, 0].isin(second_1_filtered.iloc[:, 1])]
-        prf.print_message(f"From First file: {mismatched_f0s1}", 'info')
+        prf.print_message(f"Ids from the First file that didn't match: {mismatched_f0s1}", 'info')
         mismatched_s1f0 = second_1_filtered.iloc[:, 1][~second_1_filtered.iloc[:, 1].isin(first_0_filtered.iloc[:, 0])]
-        prf.print_message(f"From second file: {mismatched_s1f0}", 'info')
+        prf.print_message(f"Ids from the Second file that didn't match: {mismatched_s1f0}", 'info')
         upf.merge_files_by_column_values_df(second_df,
                                             first_0_filtered,
                                             1,
@@ -103,9 +103,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     elif best_match == 'f1s0':
         prf.print_message('Second and first columns are a match', 'info')
         mismatched_f1s0 = first_1_filtered.iloc[:, 1][~first_1_filtered.iloc[:, 1].isin(second_0_filtered.iloc[:, 0])]
-        prf.print_message(f"From First file: {mismatched_f1s0}", 'info')
+        prf.print_message(f"Ids from the First file that didn't match: {mismatched_f1s0}", 'info')
         mismatched_s0f0 = second_0_filtered.iloc[:, 0][~second_0_filtered.iloc[:, 0].isin(first_0_filtered.iloc[:, 0])]
-        prf.print_message(f"From second file: {mismatched_s0f0}", 'info')
+        prf.print_message(f"Ids from the Second file that didn't match: {mismatched_s0f0}", 'info')
         upf.merge_files_by_column_values_df(first_df,
                                             second_0_filtered,
                                             1,
@@ -122,9 +122,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     elif best_match == 'f1s1':
         prf.print_message('Second columns are a match', 'info')
         mismatched_f1s1 = first_1_filtered.iloc[:, 1][~first_1_filtered.iloc[:, 1].isin(second_1_filtered.iloc[:, 1])]
-        prf.print_message(f"From First file: {mismatched_f1s1}", 'info')
+        prf.print_message(f"Ids from the First file that didn't match: {mismatched_f1s1}", 'info')
         mismatched_s1f1 = second_1_filtered.iloc[:, 1][~second_1_filtered.iloc[:, 1].isin(first_1_filtered.iloc[:, 1])]
-        prf.print_message(f"From second file: {mismatched_s1f1}", 'info')
+        prf.print_message(f"Ids from the Second file that didn't match: {mismatched_s1f1}", 'info')
         upf.merge_files_by_column_values_df(first_df,
                                             second_1_filtered,
                                             1,
@@ -168,9 +168,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             if best_match == 'f0s0':
                 prf.print_message('First columns are a match', 'info')
                 mismatched_f0s0 = old_0_filtered.iloc[:, 0][~old_0_filtered.iloc[:, 0].isin(new_0_filtered.iloc[:, 0])]
-                prf.print_message(f"From consolidated file: {mismatched_f0s0}", 'info')
+                prf.print_message(f"Ids from the consolidated file that didn't match: {mismatched_f0s0}", 'info')
                 mismatched_s0f0 = new_0_filtered.iloc[:, 0][~new_0_filtered.iloc[:, 0].isin(old_0_filtered.iloc[:, 0])]
-                prf.print_message(f"From fie {i+1} file: {mismatched_s0f0}", 'info')
+                prf.print_message(f"Ids from the {i+1} file that didn't match: {mismatched_s0f0}", 'info')
                 upf.merge_files_by_column_values_df(old_df,
                                                     new_0_filtered,
                                                     0,
@@ -182,9 +182,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             elif best_match == 'f0s1':
                 prf.print_message('First and second columns are a match', 'info')
                 mismatched_f0s1 = old_0_filtered.iloc[:, 0][~old_0_filtered.iloc[:, 0].isin(new_1_filtered.iloc[:, 1])]
-                prf.print_message(f"From consolidated file: {mismatched_f0s1}", 'info')
+                prf.print_message(f"Ids from the consolidated file that didn't match: {mismatched_f0s1}", 'info')
                 mismatched_s1f0 = new_1_filtered.iloc[:, 1][~new_1_filtered.iloc[:, 1].isin(old_0_filtered.iloc[:, 0])]
-                prf.print_message(f"From fie {i+1} file: {mismatched_s1f0}", 'info')
+                prf.print_message(f"Ids from the {i+1} file that didn't match: {mismatched_s1f0}", 'info')
                 upf.merge_files_by_column_values_df(new_df,
                                                     old_0_filtered,
                                                     1,
@@ -200,9 +200,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             elif best_match == 'f1s0':
                 prf.print_message('Second and first columns are a match', 'info')
                 mismatched_f1s0 = old_1_filtered.iloc[:, 1][~old_1_filtered.iloc[:, 1].isin(new_0_filtered.iloc[:, 0])]
-                prf.print_message(f"From consolidated file: {mismatched_f1s0}", 'info')
+                prf.print_message(f"Ids from the consolidated file that didn't match: {mismatched_f1s0}", 'info')
                 mismatched_s0f1 = new_0_filtered.iloc[:, 0][~new_0_filtered.iloc[:, 0].isin(old_1_filtered.iloc[:, 1])]
-                prf.print_message(f"From fie {i+1} file: {mismatched_s0f1}", 'info')
+                prf.print_message(f"Ids from the {i+1} file that didn't match: {mismatched_s0f1}", 'info')
                 upf.merge_files_by_column_values_df(old_df,
                                                     new_0_filtered,
                                                     1,
@@ -218,9 +218,9 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
             elif best_match == 'f1s1':
                 prf.print_message('Second columns are a match', 'info')
                 mismatched_f1s1 = old_1_filtered.iloc[:, 1][~old_1_filtered.iloc[:, 1].isin(new_1_filtered.iloc[:, 1])]
-                prf.print_message(f"From consolidated file: {mismatched_f1s1}", 'info')
+                prf.print_message(f"Ids from the consolidated file that didn't match: {mismatched_f1s1}", 'info')
                 mismatched_s1f1 = new_1_filtered.iloc[:, 0][~new_1_filtered.iloc[:, 1].isin(old_1_filtered.iloc[:, 1])]
-                prf.print_message(f"From fie {i+1} file: {mismatched_s1f1}", 'info')
+                prf.print_message(f"Ids from the {i+1} file that didn't match: {mismatched_s1f1}", 'info')
                 upf.merge_files_by_column_values_df(old_df,
                                                     new_1_filtered,
                                                     1,

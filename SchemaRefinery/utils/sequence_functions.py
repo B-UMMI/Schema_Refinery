@@ -616,7 +616,6 @@ def translate_schema_loci(schema_directory: str,
 		trans_dict: Dict[str, str]
 		trans_dict, _, _ = translate_seq_deduplicate(fasta_dict,
 													 trans_path_file,
-													 None,
 													 0,
 													 translation_table,
 													 False)

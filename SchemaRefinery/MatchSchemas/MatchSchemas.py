@@ -545,13 +545,14 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		results_files.append(unmatched_file)
 
 	# Concatenate results files
-	final_results_file = os.path.join(output_directory, 'match_results.tsv')
+	output_d= os.path.abspath(output_directory)
+	final_results_file = os.path.join(output_d, 'Match_Schemas_Results.tsv')
 	ff.concatenate_files(results_files, final_results_file, header='Query\tSubject\tBSR\tProcess\n')
 
 	# Clean up temporary files
 	if not no_cleanup:
 		pf.print_message("Cleaning up temporary files...", "info")
 		# Remove temporary files
-		ff.cleanup(output_directory, [final_results_file, logf.get_log_file_path(gb.LOGGER)])
+		ff.cleanup(output_d, [final_results_file, logf.get_log_file_path(gb.LOGGER)])
 
 	return final_results_file

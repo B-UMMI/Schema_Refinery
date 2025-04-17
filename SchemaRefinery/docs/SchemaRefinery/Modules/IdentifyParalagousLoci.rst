@@ -44,6 +44,9 @@ Command-Line Arguments
     -o, --output-directory
         (Required) Path to the directory to which files will be stored.
 
+    -ann, --annotations
+        (Optional) Path to the tsv file with the schema annotations to be added to the recommendations file.
+
     -c, --cpu
         (Optional) Number of CPUs to run BLAST instances.
         Default: 1
@@ -79,9 +82,9 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 
-Algorithm to identify paralagous loci in a schema is shown below:
+Algorithm to identify paralogous loci in a schema is shown below:
 
-.. image:: source/paralagous_loci.png
+.. image:: source/paralogous_loci.png
    :alt: IdentifyParalogousLoci Algorithm
    :width: 80%
    :align: center
@@ -120,9 +123,10 @@ Folder and file structure for the output directory of the `IdentifyParalogousLoc
     │       ├── y_translation.fasta
     │       ├── z_translation.fasta
     │       └── ...
+    ├── paralogous_annotations.tsv
     ├── paralogous_loci_report.tsv
     ├── paralogous_loci_report_cluster_by_id.tsv
-    └── paralogous_loci_report_passed_all_checks.tsv
+    └── paralogous_loci_final_recommendations.tsv
 
 .. toctree::
    :maxdepth: 1
@@ -164,15 +168,55 @@ columns description:
    ...
 
 columns description:
+::
+    Joined_loci_id: First Locus on the cluster.
+    Clustered_loci_ids: List of all the loci that should be joined together.
 
-.. csv-table:: **paralogous_loci_report_passed_all_checks.tsv**
-   :header: "Joined_loci_id", "Clustered_loci_ids"
-   :widths: 20, 80
 
-   x, "x,b,c"
-   y, "y,d"
-   z, "z,h"
+.. csv-table:: **paralogous_loci_final_recommendations.tsv**
+   :header: "Locus", "Action"
+   :widths: 80, 20
+
+   x, Join
+   y, Join
+   z, Join
+   #
+   a, Join
+   b, Join
+   #
    ...
+
+columns description:
+
+::
+    Locus: Name of the locus to be joined in the clustered.
+    Action: Action to be taken, always 'Join' in this module.
+    #: Separates each cluster of loci.
+
+
+.. csv-table:: **paralogous_annotations.tsv**
+   :header: "Locus", "Action", "Locus_annotation", "Annotation"
+   :widths: 80, 20, 80, 80
+
+   x, Join, x, annotation
+   y, Join, y, annotation
+   z, Join, z, annotation
+   #
+   a, Join, a, annotation
+   b, Join, b, annotation
+   #
+   ...
+
+columns description:
+
+::
+    Locus: Name of the locus to be joined in the clustered.
+    Action: Action to be taken, always 'Join' in this module.
+    Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).
+    Annotation: Column with annotation from the annotation file.
+        (The name and numer of columns with annotations will depend on the file with the annotation, follows the structure of the output of the consolidate module).
+    #: Separates each cluster of loci.
+
 
 Examples
 --------
@@ -185,7 +229,7 @@ Here are some example commands to use the `IdentifyParalogousLoci` module:
     SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output
 
     # Identify paralogous loci with custom parameters
-    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output -c 4 -b 0.7 -tt 4 -st 0.3 -pm reps_vs_reps --nocleanup
+    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output -ann /path/to/annotation/file -c 4 -b 0.7 -tt 4 -st 0.3 -pm reps_vs_reps --nocleanup
 
 Troubleshooting
 ---------------
