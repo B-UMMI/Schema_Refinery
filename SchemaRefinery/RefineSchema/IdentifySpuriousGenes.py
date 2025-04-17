@@ -394,15 +394,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                             merged_all_classes,
                                                             dropped_loci_ids,
                                                             classes_outcome)
-    
-    #pf.print_message(f'{recommendations}', 'info')
 
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
     reverse_matches: bool = True
     (related_matches_path,
      count_results_by_cluster_path,
-     recommendations_file_path) = cof.write_recommendations_summary_results(related_clusters,
+     recommendations_file_path) = cof.write_recommendations_summary_results(to_blast_paths,
+                                                                            related_clusters,
                                                                             count_results_by_class_with_inverse,
                                                                             group_reps_ids,
                                                                             group_alleles_ids,
@@ -413,7 +412,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                                                                             output_d)
 
     # Get all of the CDS that matched with loci or loci matched with loci
-    #TODO fix this
     is_matched: Dict[str, Any]
     is_matched_alleles: Dict[str, Any]
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
@@ -480,7 +478,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
 
 
-#### Anotações
+    # Annotate the recommendation outputs with the given annotation files using consolidate
+    pf.print_message("")
     consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv") 
     if annotation_paths:
         files: List[str]

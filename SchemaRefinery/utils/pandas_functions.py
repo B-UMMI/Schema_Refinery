@@ -104,7 +104,7 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
 	if 'Locus_x' in merged_table.columns:
 		merged_table.drop(columns=['Locus_x'], inplace=True)
 	if 'Query' in merged_table.columns:
-		if 'Locus' in merged_table.columns:
+		if 'Locus' in merged_table.columns and 'Action' not in merged_table.columns:
 			merged_table.drop(columns=['Locus'], inplace=True)
 
 	# Rename specified columns by adding 'matched_' prefix
@@ -170,10 +170,7 @@ def merge_files_by_column_values_df(df1: pd.DataFrame, df2: pd.DataFrame, column
 	if 'Locus_x' in merged_table.columns:
 		merged_table.drop(columns=['Locus_x'], inplace=True)
 	if 'Query' in merged_table.columns:
-		if 'Locus' in merged_table.columns:
-			merged_table.drop(columns=['Locus'], inplace=True)
-	if 'Loci' in merged_table.columns:
-		if 'Locus' in merged_table.columns:
+		if 'Locus' in merged_table.columns and 'Action' not in merged_table.columns:
 			merged_table.drop(columns=['Locus'], inplace=True)
 
 	# Save the merged table to a TSV file

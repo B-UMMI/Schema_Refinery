@@ -293,7 +293,8 @@ def identify_paralogous_loci(schema_directory: str,
 
     # Write recomendation file
     pf.print_message('Writting recommendations TSV file', 'info')
-    header: str = "Loci\tAction\n"
+    header: str = "Locus\tAction\n"
+    Joined: List[str] = []
     paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
     paralogous_loci_report_mode: str = os.path.join(output_d, 'paralogous_loci_final_recommendations.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
@@ -302,8 +303,12 @@ def identify_paralogous_loci(schema_directory: str,
             for loci in cluster:
                 # The action is always 'Join'
                 report_file.write(f"{loci}\tJoin\n")
+                Joined.append(loci)
             # Each cluster is separated by a '#' row
             report_file.write("#\t\n")
+        for loci, loci_path in query_paths_dict.items():
+            if loci not in Joined:
+               report_file.write(f"{loci}\tAdd\n")
 
     # Cluster the paralogous loci by id and write the results to a file
     pf.print_message('Writting Clusters by IDs TSV file', 'info')
