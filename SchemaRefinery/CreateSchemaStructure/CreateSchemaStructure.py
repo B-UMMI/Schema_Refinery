@@ -4,17 +4,21 @@ from typing import Dict, List
 
 
 try:
-    from utils import (sequence_functions as sf,
-                       file_functions as ff,
-                       logger_functions as logf,
-                       globals as gb)
     from AdaptLoci import AdaptLoci
+    from utils import (sequence_functions as sf,
+                                            file_functions as ff,
+                                            logger_functions as logf,
+                                            print_functions as pf,
+                                            globals as gb)
+    
 except ModuleNotFoundError:
-    from SchemaRefinery.utils import (sequence_functions as sf,
-                                      file_functions as ff,
-                                      logger_functions as logf,
-                                      globals as gb)
     from SchemaRefinery.AdaptLoci import AdaptLoci
+    from SchemaRefinery.utils import (sequence_functions as sf,
+                                                            file_functions as ff,
+                                                            logger_functions as logf,
+                                                            print_functions as pf,
+                                                            globals as gb)
+    
 
 def create_schema_structure(recommendations_file: str, 
                             fastas_folder: str,
@@ -42,6 +46,9 @@ def create_schema_structure(recommendations_file: str,
     None
         The function writes the output files to the specified directory.
     """
+
+    output_d= os.path.abspath(output_directory)
+
     # Get all FASTA paths in the FASTA folder
     fastas_files: Dict[str, str] = {
         os.path.basename(fasta_file).split('.')[0]: os.path.join(fastas_folder, fasta_file)
@@ -49,10 +56,12 @@ def create_schema_structure(recommendations_file: str,
     }
     action_list: Dict[int, Dict[str, List[str]]] = {}
     action_id: int = 1
+    ids_list: List[str] = []
+    last_rec: str = None
 
     new_fastas_path: List[str] = []
     
-    temp_fasta_folder = os.path.join(output_directory, 'temp_fasta')
+    temp_fasta_folder = os.path.join(output_d, 'temp_fasta')
     ff.create_directory(temp_fasta_folder)
     # Read and process the recommendations file
     with open(recommendations_file, 'r') as f:
@@ -65,25 +74,30 @@ def create_schema_structure(recommendations_file: str,
             # Skip empty lines and lines starting with '#'
             if line == '#':
                 action_id += 1
+                ids_list = []
                 continue
-            # Split the line into the action and the IDs
-            recommendation, ids = line.split('\t')
-            # Split the IDs into a list
-            ids_list: List[str] = ids.split(',')
+            # Split the line into the action and the IDs   
+            id, recommendation = line.split('\t')
+            # Check if the recommendation is different from the preivous one
+            # If so, start a new set of IDs
+            if recommendation != last_rec:
+                # Split the IDs into a list
+                ids_list = []
+                last_rec = recommendation
             # Save the action and the IDs in the action_list dictionary
+            ids_list.append(id)
             action_list.setdefault(action_id, {}).update({recommendation: ids_list})
 
     processed_files: List[str] = []
     # For each action in the action_list dictionary
-    # Recomendations can be 'Joined', 'Choice' or 'Drop'
+    # Recomendations can be 'Joined', 'Choice', 'Drop' or 'Add'
     for action_id, recommendations in action_list.items():
         # For each recommendation in the action dictionary
         for recommendation, ids_list in recommendations.items():
             # If the recommendation is 'Joined'
-            if "Joined" in recommendation:
-                
-                new_file_name: str = recommendation.split('_')[1]  # Get the new file name
-                output_file: str = os.path.join(temp_fasta_folder, f'{new_file_name}.fasta')
+            if "Join" in recommendation:
+                #new_file_name: str = recommendation.split('_')[1]  # Get the new file name
+                output_file: str = os.path.join(temp_fasta_folder, f'{ids_list[0]}.fasta')
                 # Append the new FASTA file path to the new_fastas_path list
                 new_fastas_path.append(output_file)
                 # Write the new FASTA file with the desired outcome
@@ -102,18 +116,18 @@ def create_schema_structure(recommendations_file: str,
                                 # If the FASTA hash is not in the seen_fastas list
                                 if fasta_hash not in seen_fastas:
                                     # Write the new header and sequence to the output file
-                                    out.write(f'>{new_file_name}_{allele_id}\n{seq}\n')
+                                    out.write(f'>{ids_list[0]}_{allele_id}\n{seq}\n')
                                     # Increment the allele_id and add the FASTA hash to the seen_fastas list
                                     allele_id += 1
                                     seen_fastas.append(fasta_hash)
                                 else:
                                     continue
 
-                            print(f'File {id} added to {new_file_name} at {output_file}')
+                            pf.print_message(f'File {id_} added to {ids_list[0]} at {output_file}', "info")
                         else:
-                            print(f'File {id} not found in the FASTA folder')
-            # If the recommendation is 'Choice'
-            elif "Choice" in recommendation:
+                            pf.print_message(f'File {id_} not found in the FASTA folder', "info")
+            # If the recommendation is 'Choice' or 'Add'
+            elif "Choice" in recommendation or "Add" in recommendation:
                 for id_ in ids_list:
                     processed_files.append(id_) # Add the ID to the processed_files list
                     output_file = os.path.join(temp_fasta_folder, f'{id_}.fasta')
@@ -121,39 +135,17 @@ def create_schema_structure(recommendations_file: str,
                     new_fastas_path.append(output_file)
                     fasta_file= fastas_files[id_]  # Get the FASTA file path
                     shutil.copy(fasta_file, output_file)
-                    print(f'File {id_} copied to {output_file}')
+                    pf.print_message(f'File {id_} copied to {output_file}', "info")
             else:
                 processed_files.extend(ids_list) # Add the IDS to the processed_files list
-                print(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action")
-
-    print("Adding all of the remaining files that were not dropped or had action to do.")
-    # Remove from fasta _files the processed IDs
-    for id_ in processed_files:
-        if id_ in fastas_files:
-            fastas_files.pop(id_)
-    # For each ID in the fastas_files dictionary
-    for id_, fasta_file in fastas_files.items():
-        output_file = os.path.join(temp_fasta_folder, f'{id_}.fasta') # Create the output file path
-        # Append the new FASTA file path to the new_fastas_path list
-        new_fastas_path.append(output_file)
-        # Copy the FASTA file to the output file
-        shutil.copy(fasta_file, output_file) # Copy the FASTA file to the output file
-        print(f'File {id_} copied to {output_file}')
-
-    fastas_paths_file: str = os.path.join(output_directory, 'fastas_paths.txt')
-
-    with open(fastas_paths_file, 'w') as out:
-        for path in new_fastas_path:
-            out.write(f'{path}\n')
+                pf.print_message(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action", "info")
 
     # Create schema structure
-    print("Create Schema Structure...")
+    pf.print_message("Create Schema Structure...", "info")
     # Schema path
-    schema_path = os.path.join(output_directory, 'schema')
-    ff.create_directory(schema_path)
-    AdaptLoci.main(fastas_paths_file, schema_path, cpu, bsr, translation_table)
+    schema_path = os.path.join(output_d, 'schema')
+    AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, cpu, bsr, translation_table)
 
     if not no_cleanup:
-        print("\nCleaning up temporary files...")
-        output_d= os.path.abspath(output_directory)
+        pf.print_message("\nCleaning up temporary files...", "info")
         ff.cleanup(output_d, [schema_path, logf.get_log_file_path(gb.LOGGER)])

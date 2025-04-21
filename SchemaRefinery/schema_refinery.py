@@ -618,11 +618,11 @@ def adapt_loci() -> None:
 
 	# Add arguments to the parser
 	parser.add_argument('-i',
-						'--input-file',
+						'--input-fastas',
 						type=str,
 						required=True,
 						dest='input_file',
-						help='TSV file with the loci path to be adapted.')
+						help='Path to the folder with the fasta files.')
 	
 	parser.add_argument('-o',
 						'--output-directory',
@@ -685,7 +685,7 @@ def adapt_loci() -> None:
 
 	# Call the main function of the AdaptLoci class with the parsed arguments
 	pf.print_message(f"Running AdaptLoci module...", message_type="info")
-	AdaptLoci.main(**vars(args))
+	AdaptLoci.adapt_loci(**vars(args))
 
 
 def identify_paralogous_loci() -> None:
