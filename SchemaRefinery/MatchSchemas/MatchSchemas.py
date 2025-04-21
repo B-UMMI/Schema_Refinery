@@ -120,7 +120,21 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
 
 def write_best_matches_to_file(match_data, output_directory, match_type):
-	"""
+	"""Write the best matches to a file.
+
+	Parameters
+	----------
+	match_data : dict
+		Dictionary containing the data for the best matches.
+	output_directory : str
+		Path to the output directory.
+	match_type : str
+		Type of matches (e.g., 'hashes_dna', 'hashes_prot', 'reps_vs_reps').
+
+	Returns
+	-------
+	output_file: str
+		Path to the output file.
 	"""
 	# Define path to output file
 	output_file = os.path.join(output_directory, match_type+'_matches.tsv')
@@ -135,7 +149,23 @@ def write_best_matches_to_file(match_data, output_directory, match_type):
 
 
 def translate_files(input_files, output_directory, translation_table):
-	"""
+	"""Translate sequences in FASTA files.
+
+	Parameters
+	----------
+	input_files : dict
+		Dictionary with locus identifiers as keys and paths to the FASTA files as values.
+	output_directory : str
+		Path to the output directory.
+	translation_table : int
+		Translation table to use for translation.
+
+	Returns
+	-------
+	translated_paths : dict
+		Dictionary with locus identifiers as keys and paths to the translated FASTA files as values.
+	protein_hashes : dict
+		Dictionary with protein hashes as keys and locus identifiers as values.
 	"""
 	# Store paths to FASTA files containing translations
 	translated_paths: Dict[str, str] = {}
