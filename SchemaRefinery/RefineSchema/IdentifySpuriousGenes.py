@@ -65,7 +65,6 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     else:
         initial_processing_output = os.path.join(output_d, '1_schema_processing')
         schema_folder = os.path.join(initial_processing_output, 'schema')
-        ff.create_directory(schema_folder)
 
     # Create BLAST processing directories
     blast_output: str = os.path.join(output_d, '2_BLAST_processing')
@@ -92,7 +91,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
                             annotation_paths: List[str],
                             possible_new_loci: str, constants: List[Any], temp_paths: List[str],
-                            run_mode: str, processing_mode: str, cpu: int, no_cleanup: bool) -> None:
+                            run_mode: str, processing_mode: str, cpu: int, bsr: float, translation_table: int, no_cleanup: bool) -> None:
     """
     Identify spurious genes in the given schema.
 
@@ -278,8 +277,9 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     else:
         # If we want to run with new possible loci, we merge everything together and run
         if possible_new_loci:
-            ff.merge_folders(schema_directory, possible_new_loci, schema_folder, constants, cpu)
+            ff.merge_folders(schema_d, pnl_d, schema_folder, cpu, bsr, translation_table)
         else:
+            ff.create_directory(schema_folder)
             ff.copy_folder(schema_directory, schema_folder)
 
         dropped_alleles = {} # Empty dict to store dropped alleles
@@ -585,4 +585,6 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
                 run_mode,
                 processing_mode,
                 cpu,
+                bsr,
+                translation_table,
                 no_cleanup)

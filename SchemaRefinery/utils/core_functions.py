@@ -1097,7 +1097,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                     if match_[2] in dropped:
                         add_to_recommendations('Choice', dropped[2], key, recommendations, match_[3])
 
-    sort_order: List[str] = ['Join', 'Choice', 'Keep', 'Drop']
+    sort_order: List[str] = ['Join', 'Choice', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
     return related_clusters, recommendations
@@ -1157,10 +1157,10 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
       A blank line is added after each cluster's information.
     """
 
-    ##### Novo output só com 2 colunas
+    # Create recommendation file
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
 
-    ## Add
+    # Write loci groups by recommendation
     matched_loci: List[str] = []
     with open(recommendations_file_path, 'w') as recommendations_report_file:
         recommendations_report_file.write("Locus\tAction\n")

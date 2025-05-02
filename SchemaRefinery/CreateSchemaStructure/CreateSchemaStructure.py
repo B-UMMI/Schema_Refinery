@@ -96,7 +96,6 @@ def create_schema_structure(recommendations_file: str,
         for recommendation, ids_list in recommendations.items():
             # If the recommendation is 'Joined'
             if "Join" in recommendation:
-                #new_file_name: str = recommendation.split('_')[1]  # Get the new file name
                 output_file: str = os.path.join(temp_fasta_folder, f'{ids_list[0]}.fasta')
                 # Append the new FASTA file path to the new_fastas_path list
                 new_fastas_path.append(output_file)

@@ -441,7 +441,7 @@ def identify_spurious_genes() -> None:
 						type=str,
 						required=True,
 						dest='allelecall_directory',
-						help='Path to the directory that contains allele call directory that was run with --no-cleanup.')
+						help='Path to the directory that contains allele call directory from chewBBACA that was run with --no-cleanup and --output-unclassified.')
 
 	parser.add_argument('-ann',
 						'--annotations',
@@ -996,7 +996,7 @@ def create_schema_structure() -> None:
 						dest='translation_table',
 						help='Translation table to use for the CDS translation.')
 	
-	parser.add_argument('--no-cleanup',
+	parser.add_argument('--nocleanup',
 						action='store_true',
 						required=False,
 						dest='no_cleanup',
