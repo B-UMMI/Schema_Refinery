@@ -20,9 +20,9 @@ except ModuleNotFoundError:
 def adapt_loci(input_fastas: str, output_directory: str, cpu: int, bsr: float, translation_table: int) -> None:
     """
 
-    Adapts an external schema for usage with chewBBACA. Removes invalid
-    alleles and selects representative alleles to include in the "short"
-    directory.
+    Adapts an external schema for usage by calling chewBBACA PrepExternalSchema. 
+    Removes invalid alleles and selects representative alleles to include in 
+    the "short" directory.
 
     Parameters
     ----------
@@ -44,21 +44,36 @@ def adapt_loci(input_fastas: str, output_directory: str, cpu: int, bsr: float, t
         The function writes the output files to the specified directory.
     """
 
-    #chewie_path: subprocess.Popen = subprocess.Popen(["chewBBACA.py", 
-     #                                                   'PrepExternalSchema', 
-      #                                                  "-g", f"{input_file}", 
-       #                                                 "-o", f"{output_directory}",
-        #                                                "--cpu", f"{cpu}"], 
-         #                                               stdout=subprocess.PIPE,
-          #                                              stderr=subprocess.PIPE)
-
-    #stdout, stderr = chewie_path.communicate()
-
-    #for line in process.stdout:
-     #   pf.print_message(f"{line.strip()}", 'info')
-
+    pf.print_message("")
     pf.print_message("Starting External Schema Prep from chewBBACA...", "info")
-    cmd = f"chewBBACA.py PrepExternalSchema -g {input_fastas} -o {output_directory} --cpu {cpu} --bsr {bsr} --t {translation_table}"
-    os.system(cmd)
-    pf.print_message("Schema creation completed", "info")
+
+    cmd = [
+        "chewBBACA.py",
+        "PrepExternalSchema",
+        "-g", input_fastas,
+        "-o", output_directory,
+        "--cpu", str(cpu),
+        "--bsr", str(bsr),
+        "--t", str(translation_table)]
+
+    # Run the PrepExternalSchema from chewie
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1)
+
+    # Create the output from chewBBACA to this log file
+    for line in process.stdout:
+        pf.print_message(line.strip(), "info")
+    process.stdout.close()
+    exit_code = process.wait()
+
+    if exit_code == 0:
+        pf.print_message("")
+        pf.print_message("Schema creation completed", "info")
+    else:
+        pf.print_message("")
+        pf.print_message(f"Schema creation failed with exit code {exit_code}", "error")
 
