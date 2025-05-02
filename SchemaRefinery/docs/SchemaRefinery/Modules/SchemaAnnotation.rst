@@ -54,6 +54,7 @@ Command-Line Arguments
 
     -gf, --genbank-files
         (Optional) Path to the directory that contains Genbank files with annotations to extract.
+        Each genbank file in this folder should be named after the ID it represents.
         Should be used with --annotation-options genbank.
 
     -ca, --chewie-annotations
@@ -63,8 +64,14 @@ Command-Line Arguments
         (Optional) Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).
 
     -ma, --match-annotations
-        (Optional) Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.
+        (Optional) Path to the annotations file of one of the schemas used in the match schema module. This argument is needed by the Match Schemas sub-module.
 		Should be used with --annotation-options match_schema and --matched-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.
+    
+    -cn, --consolidate-annotations
+        (Optional) 2 or more paths to the files with the annotations that are to be consolidated.
+    
+    -cc, --consolidate-cleanup
+        (Optional) For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.
 
     --bsr
         (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus. This argument is optional for the Match Schemas sub-module.
@@ -103,12 +110,6 @@ Command-Line Arguments
         (Optional) List of Proteome IDs to add to final results.
         Default: []
     
-    -cn, --consolidate-annotations
-        (Optional) 2 or more paths to the files with the annotations that are to be consolidated.
-    
-    -cc, --consolidate-cleanup
-        (Optional) For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.
-
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
@@ -146,7 +147,7 @@ The `SchemaAnnotation` module annotates using `GenBank files` based on the follo
    :align: center
 
 
-For the options `Match Schemas` and `Consolidate` the process is the merging of the given files based on the Locus columns that are the same between files.
+For the options `Match Schemas` and `Consolidate` the process is the merging of the given files based on the Locus columns that are the have the highest amount of matches between files.
 
 Outputs
 -------
