@@ -480,7 +480,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
     # Annotate the recommendation outputs with the given annotation files using consolidate
     pf.print_message("")
-    consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv") 
+    consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv")
     if annotation_paths:
         files: List[str]
         files = [recommendations_file_path] + annotation_paths

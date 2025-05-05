@@ -498,7 +498,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
 
     pident_threshold: float = constants[1]
     bsr_threshold: float = constants[7]
-    size_ratio_threshold: float = 1 - constants[8]
+    size_ratio_threshold: float = constants[8]
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
@@ -517,8 +517,8 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
                 global_palign_all_min: float = blastn_entry['global_palign_all_min']
                 bsr_value: float = blastn_entry['bsr']
                 pident_value: float = blastn_entry['pident']
-                global_palign_pident_max: float = blastn_entry['global_palign_pident_max']
-                
+                global_palign_all_max: float = blastn_entry['global_palign_all_max']
+
                 # Classify based on global_palign_all_min and bsr
                 if global_palign_all_min >= size_ratio_threshold:
                     if bsr_value >= bsr_threshold:
@@ -529,12 +529,12 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
                         add_class_to_dict(query, id_subject, id_, '1c')
                 elif 0.4 <= global_palign_all_min < size_ratio_threshold:
                     if pident_value >= pident_threshold:
-                        if global_palign_pident_max >= size_ratio_threshold:
+                        if global_palign_all_max >= size_ratio_threshold:
                             add_class_to_dict(query, id_subject, id_, '2a' if freq_ratio <= 0.1 else '2b')
                         else:
                             add_class_to_dict(query, id_subject, id_, '3a' if freq_ratio <= 0.1 else '3b')
                     else:
-                        if global_palign_pident_max >= size_ratio_threshold:
+                        if global_palign_all_max >= size_ratio_threshold:
                             add_class_to_dict(query, id_subject, id_, '4a' if freq_ratio <= 0.1 else '4b')
                         else:
                             add_class_to_dict(query, id_subject, id_, '4c')
