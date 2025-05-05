@@ -498,7 +498,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
 
     pident_threshold: float = constants[1]
     bsr_threshold: float = constants[7]
-    size_ratio_threshold: float = 1 - constants[8]
+    size_ratio_threshold: float = constants[8]
 
     # Loop through the representative BLAST results
     for query, rep_blast_result in representative_blast_results.items():
@@ -517,8 +517,8 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
                 global_palign_all_min: float = blastn_entry['global_palign_all_min']
                 bsr_value: float = blastn_entry['bsr']
                 pident_value: float = blastn_entry['pident']
-                global_palign_pident_max: float = blastn_entry['global_palign_pident_max']
-                
+                global_palign_all_max: float = blastn_entry['global_palign_all_max']
+
                 # Classify based on global_palign_all_min and bsr
                 if global_palign_all_min >= size_ratio_threshold:
                     if bsr_value >= bsr_threshold:
@@ -529,12 +529,12 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
                         add_class_to_dict(query, id_subject, id_, '1c')
                 elif 0.4 <= global_palign_all_min < size_ratio_threshold:
                     if pident_value >= pident_threshold:
-                        if global_palign_pident_max >= size_ratio_threshold:
+                        if global_palign_all_max >= size_ratio_threshold:
                             add_class_to_dict(query, id_subject, id_, '2a' if freq_ratio <= 0.1 else '2b')
                         else:
                             add_class_to_dict(query, id_subject, id_, '3a' if freq_ratio <= 0.1 else '3b')
                     else:
-                        if global_palign_pident_max >= size_ratio_threshold:
+                        if global_palign_all_max >= size_ratio_threshold:
                             add_class_to_dict(query, id_subject, id_, '4a' if freq_ratio <= 0.1 else '4b')
                         else:
                             add_class_to_dict(query, id_subject, id_, '4c')
@@ -1097,7 +1097,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                     if match_[2] in dropped:
                         add_to_recommendations('Choice', dropped[2], key, recommendations, match_[3])
 
-    sort_order: List[str] = ['Join', 'Choice', 'Keep', 'Drop']
+    sort_order: List[str] = ['Join', 'Choice', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
     return related_clusters, recommendations
@@ -1157,10 +1157,10 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
       A blank line is added after each cluster's information.
     """
 
-    ##### Novo output só com 2 colunas
+    # Create recommendation file
     recommendations_file_path: str = os.path.join(output_directory, "recommendations.tsv")
 
-    ## Add
+    # Write loci groups by recommendation
     matched_loci: List[str] = []
     with open(recommendations_file_path, 'w') as recommendations_report_file:
         recommendations_report_file.write("Locus\tAction\n")

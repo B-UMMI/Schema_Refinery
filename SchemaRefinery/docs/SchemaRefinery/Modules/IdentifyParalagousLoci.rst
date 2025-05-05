@@ -46,6 +46,7 @@ Command-Line Arguments
 
     -ann, --annotations
         (Optional) Path to the tsv file with the schema annotations to be added to the recommendations file.
+        This file needs to have one column with loci with the same IDs as the ones in the schema.
 
     -c, --cpu
         (Optional) Number of CPUs to run BLAST instances.
@@ -89,6 +90,8 @@ Algorithm to identify paralogous loci in a schema is shown below:
    :width: 80%
    :align: center
 
+The column from the annotation file that has the highest number of matches between loci IDs with the schema fasta IDs will be chosen as the one to merge.
+
 Outputs
 -------
 Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
@@ -123,7 +126,7 @@ Folder and file structure for the output directory of the `IdentifyParalogousLoc
     │       ├── y_translation.fasta
     │       ├── z_translation.fasta
     │       └── ...
-    ├── paralogous_annotations.tsv
+    ├── paralogous_annotations.tsv #-ann
     ├── paralogous_loci_report.tsv
     ├── paralogous_loci_report_cluster_by_id.tsv
     └── paralogous_loci_final_recommendations.tsv
@@ -195,7 +198,7 @@ columns description:
 
 
 .. csv-table:: **paralogous_annotations.tsv**
-   :header: "Locus", "Action", "Locus_annotation", "Annotation"
+   :header: "Loci", "Action", "Locus_annotation", "Annotation"
    :widths: 80, 20, 80, 80
 
    x, Join, x, annotation
@@ -210,7 +213,7 @@ columns description:
 columns description:
 
 ::
-    Locus: Name of the locus to be joined in the clustered.
+    Loci: Name of the locus to be joined in the clustered.
     Action: Action to be taken, always 'Join' in this module.
     Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).
     Annotation: Column with annotation from the annotation file.

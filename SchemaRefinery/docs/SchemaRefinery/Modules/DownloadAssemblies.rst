@@ -48,7 +48,7 @@ Command-Line Arguments
 
     -db, --database
         (Required) Databases from which assemblies will be downloaded.
-        Choices: NCBI, ENA661
+        Choices: NCBI, ENA661K
 
     -o, --output-directory
         (Required) Path to the output directory.
@@ -131,9 +131,9 @@ Filtering criteria file should be a TSV file with the following columns:
 * verify_status: Verify status (NCBI) (True, False, None)
 * exclude_atypical: Exclude atypical (NCBI) (True, False, None)
 
-Note: The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
-Note: When None or empty value is provided, the filtering criteria will not be applied.
-Note: The file can only contain either the taxon or input_table row, not both.
+The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
+When None or empty value is provided, the filtering criteria will not be applied.
+The file can only contain either the taxon or input_table row, not both.
 
 Outputs
 -------
@@ -192,4 +192,5 @@ If you encounter issues while using the `DownloadAssemblies` module, consider th
 - Ensure that you have a stable internet connection.
 - Verify that your email and API key (if provided) are correct.
 - Check the output directory for any error logs or messages.
+- Check if the versions of the Dependencies are compatible with the environment.
 - Increase the number of retries using the `-r` or `--retry` option if downloads are failing.
