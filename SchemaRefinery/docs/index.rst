@@ -20,6 +20,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Modules/IdentifyParalogousLoci
    SchemaRefinery/Modules/DownloadAssemblies
    SchemaRefinery/Modules/AdaptLoci
+   SchemaRefinery/Modules/CreateSchemaStructure
 
 .. toctree::
    :maxdepth: 1
@@ -33,6 +34,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Tutorials/SchemaAnnotationTutorial
    SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
    SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS
+   SchemaRefinery/Tutorials/CreateSchemaStructureTutorial
 
 External Links:
 ---------------
