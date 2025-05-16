@@ -96,7 +96,7 @@ def identify_paralogous_loci(schema_directory: str,
     # Identify all of the fastas short in the schema directory
     short_folder: str = os.path.join(schema_directory, 'short')
     fasta_files_short_dict: Dict[str, str] = {
-        loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
+        loci.split('.')[0].rsplit('_', 1)[0]: os.path.join(short_folder, loci)
         for loci in os.listdir(short_folder)
         if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
     }
@@ -119,7 +119,7 @@ def identify_paralogous_loci(schema_directory: str,
     for loci in fasta_files_dict:
         # Get the subject and query FASTA files
         subject_fasta: str = fasta_files_dict[loci] if processing_mode.split('_')[-1] == 'alleles' else fasta_files_short_dict[loci]
-        query_fasta: str = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'rep' else fasta_files_dict[loci]
+        query_fasta: str = fasta_files_short_dict[loci] if processing_mode.split('_')[0] == 'reps' else fasta_files_dict[loci]
         fetch_size_fasta: str = fasta_files_dict[loci]
         # Translation variables
         query_fasta_translation: str = os.path.join(translation_folder, f"{loci}_translation.fasta")
@@ -168,7 +168,7 @@ def identify_paralogous_loci(schema_directory: str,
                                                                 blast_exec,
                                                                 blast_folder,
                                                                 max_id_length,
-                                                                cpu)   
+                                                                cpu)  
 
     # Get makeblastdb executable
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
@@ -207,30 +207,33 @@ def identify_paralogous_loci(schema_directory: str,
 
         # Since BLAST may find several local alignments choose the largest one to calculate BSR.
         for query, subjects_dict in filtered_alignments_dict.items():
-            query_loci_id: str = query.split('_')[0]
-            best_bsr_values.setdefault(query_loci_id, {})
-            bsr_values.setdefault(query, {})
-            for subject_id, results in subjects_dict.items():
-                # Highest score (First one)
-                subject_score: float = next(iter(results.values()))['score']
-                computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
-                # Check if the BSR value is higher than the threshold
-                if computed_score >= bsr:
-                    # Round BSR values if they are superior to 1.0 to 1 decimal place
-                    if computed_score > 1.0:
-                        computed_score = round(computed_score, 1)
-                    # Save all of the different matches that this query had and their BSR values
-                    bsr_values[query].update({subject_id: computed_score})
-                else:
-                    continue
-                # Get the best BSR value between loci
-                # If the BSR is better than the current best, update it
-                # Since there may be several paralogous we save the various matches
-                subject_loci_id: str = subject_id.split('_')[0]
-                if not best_bsr_values[query_loci_id].get(subject_loci_id):
-                    best_bsr_values[query_loci_id][subject_loci_id] = computed_score
-                elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
-                    best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+            # Only use the alleles that have a self_score
+            # Not all alleles pass the threshoolds when calculating the self-score
+            if query in self_score_dict.keys():
+                query_loci_id: str = query.rsplit('_', 1)[0]
+                best_bsr_values.setdefault(query_loci_id, {})
+                bsr_values.setdefault(query, {})
+                for subject_id, results in subjects_dict.items():
+                    # Highest score (First one)
+                    subject_score: float = next(iter(results.values()))['score']
+                    computed_score: float = bf.compute_bsr(subject_score, self_score_dict[query])
+                    # Check if the BSR value is higher than the threshold
+                    if computed_score >= bsr:
+                        # Round BSR values if they are superior to 1.0 to 1 decimal place
+                        if computed_score > 1.0:
+                            computed_score = round(computed_score, 1)
+                        # Save all of the different matches that this query had and their BSR values
+                        bsr_values[query].update({subject_id: computed_score})
+                    else:
+                        continue
+                    # Get the best BSR value between loci
+                    # If the BSR is better than the current best, update it
+                    # Since there may be several paralogous we save the various matches
+                    subject_loci_id: str = subject_id.rsplit('_', 1)[0]
+                    if not best_bsr_values[query_loci_id].get(subject_loci_id):
+                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
+                    elif computed_score > best_bsr_values[query_loci_id][subject_loci_id]:
+                        best_bsr_values[query_loci_id][subject_loci_id] = computed_score
 
     pf.print_message(f"", None)
     

@@ -1171,8 +1171,12 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                 else:
                     category = category.split('_', 1)[0]
                 for loci_id in ids:
-                   recommendations_report_file.write(f"{loci_id}\t{category}\n")
-                   matched_loci.append(loci_id)
+                    #Each gene can only have one action associated
+                    if loci_id not in matched_loci:
+                        recommendations_report_file.write(f"{loci_id}\t{category}\n")
+                        matched_loci.append(loci_id)
+                    else:
+                        continue
             recommendations_report_file.write("#\n")
         # Add the loci that had no action needed to the output file with the action 'Add'
         for loci, loci_path in to_blast_paths.items():
@@ -2138,7 +2142,7 @@ def prepare_loci(schema_folder: str,
 
     # Determine paths to sequences to be used for BLAST
     to_blast_paths = schema if processing_mode.split('_')[0] == 'alleles' else schema_short
-    to_run_against = schema_short if processing_mode.split('_')[-1] == 'rep' else schema
+    to_run_against = schema_short if processing_mode.split('_')[-1] == 'reps' else schema
 
     # Initialize dictionaries for alleles, translations, and frequencies
     all_alleles: Dict[str, List[str]] = {} 
@@ -2151,7 +2155,7 @@ def prepare_loci(schema_folder: str,
     
     # Path to the CDS presence file
     cds_present = os.path.join(allelecall_directory, "results_alleles.tsv")
-    df = pd.read_csv(cds_present, sep = '\t')
+    df = pd.read_csv(cds_present, sep = '\t', dtype = object)
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
@@ -2162,6 +2166,7 @@ def prepare_loci(schema_folder: str,
             all_nucleotide_sequences.setdefault(loci_id, str(sequence))
 
     # Write master file to run against, DNA sequences
+    pf.print_message('Write master file for Blast.', 'info')
     for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
@@ -2177,6 +2182,7 @@ def prepare_loci(schema_folder: str,
     frequency_in_genomes = {}
     allele_columns = df.columns[1:]
 
+    pf.print_message('Calculating frequenciees of each locus in each genome...', 'info')
     for loci, loci_path in schema.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         # For each locus count the frequency (don't count LNF, ASM or ALM)

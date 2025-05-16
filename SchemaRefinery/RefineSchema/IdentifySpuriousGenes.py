@@ -277,13 +277,14 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     else:
         # If we want to run with new possible loci, we merge everything together and run
         if possible_new_loci:
-            ff.merge_folders(schema_d, pnl_d, schema_folder, cpu, bsr, translation_table)
+            ff.merge_folders(schema_directory, possible_new_loci, schema_folder, cpu, bsr, translation_table)
         else:
             ff.create_directory(schema_folder)
             ff.copy_folder(schema_directory, schema_folder)
 
         dropped_alleles = {} # Empty dict to store dropped alleles
         # Get all the relevant data
+        pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
         (all_nucleotide_sequences,
         master_file_path,
         all_translation_dict,
