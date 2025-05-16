@@ -176,7 +176,7 @@ def main(args: Namespace) -> None:
 
     # Add Chewie annotations to the results files if provided
     if args.chewie_annotations:
-        results_files.extend(args.chewie_annotations)
+        results_files.append(args.chewie_annotations)
         upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
     # If only one result file is present, copy it to the output directory

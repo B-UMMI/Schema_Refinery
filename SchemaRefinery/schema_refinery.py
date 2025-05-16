@@ -346,9 +346,8 @@ def schema_annotation() -> None:
 
 	parser.add_argument('-cc',
 						'--consolidate-cleanup',
-						type=bool,
+						action='store_true',
 						required=False,
-						default=False,
 						dest='consolidate_cleanup',
 						help='For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
 
