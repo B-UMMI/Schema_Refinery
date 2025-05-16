@@ -345,7 +345,7 @@ columns description:
 
 .. csv-table:: **drop_loci_reason.tsv**
     :header: "Possible_new_loci_ID", "Drop_Reason"
-    :widths: 40, 60
+    :widths: 30, 60
 
     x, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     y, Dropped_due_to_smaller_genome_presence_than_matched_cluster
@@ -361,7 +361,7 @@ columns description:
 
 .. csv-table:: **recommendations.tsv**
     :header: "Locus", "Action"
-    :widths: 80, 20
+    :widths: 15, 20
 
     x, Join
     y, Join
@@ -385,7 +385,7 @@ columns description:
 
 .. csv-table:: **recommendations_annotations.tsv**
    :header: "Loci", "Action", "Locus_annotation", "Annotation"
-   :widths: 80, 20, 80, 80
+   :widths: 15, 20, 15, 40
 
    x, Join, x, annotation
    y, Join, y, annotation
@@ -401,13 +401,13 @@ columns description:
 columns description:
 
 ::
+
     Loci: Name of the locus to be joined in the clustered.
     Action: Action to be taken (Join, Choice, Drop or Add).
     Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).
     Annotation: Column with annotation from the annotation file.
         (The name and numer of columns with annotations will depend on the file with the annotation, follows the structure of the output of the consolidate module).
     #: Separates each cluster of loci.
-
 
 
 .. csv-table:: **related_matches.tsv**

@@ -12,8 +12,8 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
-- Download the schema file from the ChewBACCA tutorial: https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip
-- Download the proteome files from Uniprot: https://www.uniprot.org/proteomes?query=Streptococcus+agalactiae
+- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
+- Download the proteome files from `Uniprot https://www.uniprot.org/proteomes?query=Streptococcus+agalactiae`_
 
 Procedure
 ---------
@@ -34,7 +34,7 @@ Procedure
 
 5. Check the output folder for the annotated genomic schemas (it should have all columns of both files except for the Proteome ID column of the annotation file).
 
-Note: for the other options the module follow the same procedure just using the appropriate arguments.
+.. Note:: For the other options the module follow the same procedure just using the appropriate arguments.
 
 Example Output Structure
 ------------------------

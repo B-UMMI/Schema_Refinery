@@ -1,5 +1,5 @@
-CreateSchemaStructure
-======================
+CreateSchemaStructure - Create a new schema based on 
+=====================================================
 
 Description
 ------------
@@ -21,6 +21,10 @@ Dependencies
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 - ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
 - Install requirements using the following command:
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
 
 Usage
 -----
@@ -78,7 +82,9 @@ The `CreateSchemaStructure` module uses the following algorithm to create a sche
    :width: 80%
    :align: center
 
+
 Make sure that before running this module the input file `recommendations` has been check and that  you agree with all the changes proposed. For example, a locus that has the action Join should not have the action Choice as well. One of these rows should be removed.
+
 Since this module uses the AdaptLoci module to format the schema in the end, the schema created will conform with the structure of the schemas used by chewBBACA.
 
 Outputs
@@ -110,27 +116,30 @@ Folder and file structure for the output directory of the `CreateSchemaStructure
 .. toctree::
     :maxdepth: 1
     
-    CreateSchemaStructureOutputDescription~
+    CreateSchemaStructureOutputDescription
 
 Report files description
 ------------------------
 
 .. csv-table:: **schema_summary_stats.tsv**
    :header: "Gene", "Total_alleles", "Valid_alleles", "Number_representatives"
-   :widths: 20, 10, 10, 10
+   :widths: 10, 10, 10, 10
 
    x, 11, 11, 1
    y, 1, 1, 1
    z, 11, 11, 1
    ...
 
-columns description:
+
+Columns description:
 
 ::
+
     Gene: The locus ID of the query.
     Total_alleles: The number of alleles in the input schema.
     Valid_alleles: The number of alleles chosen to be in the final schema.
     Number_representatives: The number of alleles chosen to be the representatives of that loci.
+
 
 Examples
 --------

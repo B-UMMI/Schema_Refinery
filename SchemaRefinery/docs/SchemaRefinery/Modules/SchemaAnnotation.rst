@@ -5,6 +5,7 @@ Description
 -----------
 
 The `SchemaAnnotation` module is a versatile tool designed to facilitate the annotation of genomic schemas. This module parses command-line arguments and initiates the schema annotation process, providing a flexible and user-friendly interface for researchers and bioinformaticians.
+
 Features
 --------
 
@@ -323,13 +324,14 @@ columns description:
     Process: Process where that match was found in MatchSchemas.
 
 Note: The consolidated_annotations.tsv' contains all of the annotations that user chose to annotate with in input arguments.
+
 Consolidate column suffixes:
-::
-    _file_x 
-        x being the number of the file that column comes from.
-        Which file corresponds to which number is specified in the output log file.
-    None
-        The columns that have a unique header or are the first instance of that header will not have any suffix.
+
+- _file_x 
+    x being the number of the file that column comes from.
+    Which file corresponds to which number is specified in the output log file.
+- None
+    The columns that have a unique header or are the first instance of that header will not have any suffix.
     
 
 Examples

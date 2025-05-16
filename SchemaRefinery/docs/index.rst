@@ -14,12 +14,12 @@ Welcome to SchemaRefinery's documentation!
    :maxdepth: 1
    :caption: Modules:
 
-   SchemaRefinery/Modules/IdentifySpuriousGenes
-   SchemaRefinery/Modules/MatchSchemas
-   SchemaRefinery/Modules/SchemaAnnotation
-   SchemaRefinery/Modules/IdentifyParalogousLoci
    SchemaRefinery/Modules/DownloadAssemblies
    SchemaRefinery/Modules/AdaptLoci
+   SchemaRefinery/Modules/MatchSchemas
+   SchemaRefinery/Modules/IdentifyParalogousLoci
+   SchemaRefinery/Modules/IdentifySpuriousGenes
+   SchemaRefinery/Modules/SchemaAnnotation
    SchemaRefinery/Modules/CreateSchemaStructure
 
 .. toctree::
@@ -28,13 +28,14 @@ Welcome to SchemaRefinery's documentation!
 
    SchemaRefinery/Tutorials/FullTutorial
    SchemaRefinery/Tutorials/DownloadAssembliesTutorial
-   SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial
    SchemaRefinery/Tutorials/AdaptLociTutorial
    SchemaRefinery/Tutorials/MatchSchemasTutorial
-   SchemaRefinery/Tutorials/SchemaAnnotationTutorial
+   SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial
    SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
    SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS
+   SchemaRefinery/Tutorials/SchemaAnnotationTutorial
    SchemaRefinery/Tutorials/CreateSchemaStructureTutorial
+
 
 External Links:
 ---------------
