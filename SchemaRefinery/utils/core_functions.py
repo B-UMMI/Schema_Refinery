@@ -340,12 +340,13 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
         None
             This function does not return any value but modifies the `representative_blast_results` dictionary in place.
         """
+        pattern = '_(\d+)(?!.*_(\d+))'
         if allele_ids[0]:
             query_before: str = query
-            query = itf.remove_by_regex(query, '_(\\d+)')
+            query = itf.remove_by_regex(query, pattern)
         if allele_ids[1]:
             subject_before: str = subject
-            subject = itf.remove_by_regex(subject, '_(\\d+)')
+            subject = itf.remove_by_regex(subject, pattern)
         update_dict: Dict[str, Union[float, str, int]] = {
             'bsr': bsr,
             'kmers_sim': sim,
@@ -2166,7 +2167,7 @@ def prepare_loci(schema_folder: str,
             all_nucleotide_sequences.setdefault(loci_id, str(sequence))
 
     # Write master file to run against, DNA sequences
-    pf.print_message('Write master file for Blast.', 'info')
+    prf.print_message('Write master file for Blast.', 'info')
     for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
@@ -2182,7 +2183,7 @@ def prepare_loci(schema_folder: str,
     frequency_in_genomes = {}
     allele_columns = df.columns[1:]
 
-    pf.print_message('Calculating frequenciees of each locus in each genome...', 'info')
+    prf.print_message('Calculating frequenciees of each locus in each genome...', 'info')
     for loci, loci_path in schema.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         # For each locus count the frequency (don't count LNF, ASM or ALM)

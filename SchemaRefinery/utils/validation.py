@@ -534,10 +534,27 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     # Verify if files or directories exist
     verify_schema_structure(args.schema_directory, errors)
     verify_path_exists(args.output_directory, 'directory', errors)
-    verify_path_exists(args.allelecall_directory, 'file', errors)
+    verify_path_exists(args.allelecall_directory, 'directory', errors)
 
     if args.possible_new_loci:
-        verify_schema_structure(args.possible_new_loci, errors)
+        if os.path.isdir(args.possible_new_loci):
+            for file in os.listdir(args.possible_new_loci):
+                if not file.endswith((".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn")):
+                    errors.append("\nError: The dir has to have only fasta files.")
+        if os.path.isfile(args.possible_new_loci):
+            verify_path_exists(args.possible_new_loci, 'file', errors)
+        if not args.input_genomes:
+            errors.append("\nError: 'input_genomes' is missing. This argument must be provided when '-pnl' is used.")
+
+    if args.input_genomes:
+        if os.path.isdir(args.input_genomes):
+            for file in os.listdir(args.input_genomes):
+                if not file.endswith((".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn")):
+                    errors.append("\nError: The dir has to have only fasta files.")
+        if os.path.isfile(args.input_genomes):
+            verify_path_exists(args.input_genomes, 'file', errors)
+        if not args.possible_new_loci:
+            errors.append("\nError: '-pnl' is missing. This argument must be provided when 'input_genomes' is used.")
 
     if args.run_mode == 'unclassified-cds':
         if args.possible_new_loci:

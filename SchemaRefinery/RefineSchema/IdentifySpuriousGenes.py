@@ -3,6 +3,7 @@
 
 import os
 import sys
+import subprocess
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 
@@ -19,6 +20,7 @@ try:
                                         Types as tp,
                                         print_functions as pf,
                                         logger_functions as logf,
+                                        time_functions as ti,
                                         globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
@@ -33,6 +35,7 @@ except ModuleNotFoundError:
                                         Types as tp,
                                         print_functions as pf,
                                         logger_functions as logf,
+                                        time_functions as ti,
                                         globals as gb)
 
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
@@ -88,9 +91,77 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     return initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results
 
 
+def allelecal_chewie(input_genomes: str, schema_folder: str, output_folder: str, cpu: int) -> str:
+    """
+    Call and run ALleleCall from ChewBBACA.
+
+    Parameters
+    ----------
+    input_genomes : str
+        Path to the file/folder with the fastas of the complete genomes.
+    schema_folder : str
+        Path to the folder with the fastas of the new schema.
+    output_folder : str
+        Path to the folder that will have the output.
+    cpu : int
+        Number of CPUs to use.
+
+    Returns
+    -------
+    str
+        Path to the new Allele Call folder.
+    """
+
+    pf.print_message("")
+    pf.print_message("Starting Allele Call from chewBBACA...", "info")
+
+    # Check if the output folder already exists
+    if os.path.exists(output_folder):
+        # If so, create a new one with the time stamp
+        time: str = ti.current_date_time_for_filename()
+        path: str = os.path.dirname(output_folder)
+        output_folder = os.path.join(f'{path}', f'New_Allele_Call_{time}')
+
+    # Command to run the AlleleCall module from chewBBACA with the necessary arguments
+    cmd = [
+        "chewBBACA.py",
+        "AlleleCall",
+        "-i", input_genomes,
+        "-g", schema_folder,
+        "-o", output_folder,
+        "--cpu", str(cpu),
+        "--no-cleanup",
+        "--output-unclassified"
+        ]
+
+    # Run the AlleleCall from chewie
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1)
+
+    # Create the output from chewBBACA to this log file
+    for line in process.stdout:
+        pf.print_message(line.strip(), "info")
+    process.stdout.close()
+    exit_code = process.wait()
+
+    if exit_code == 0:
+        pf.print_message("")
+        pf.print_message("New AlleleCall created", "info")
+    else:
+        pf.print_message("")
+        pf.print_message(f"Allele Call failed with exit code {exit_code}", "error")
+
+    return output_folder
+
+
+
 def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
                             annotation_paths: List[str],
-                            possible_new_loci: str, constants: List[Any], temp_paths: List[str],
+                            possible_new_loci: str, input_genomes: str, constants: List[Any], temp_paths: List[str],
                             run_mode: str, processing_mode: str, cpu: int, bsr: float, translation_table: int, no_cleanup: bool) -> None:
     """
     Identify spurious genes in the given schema.
@@ -105,6 +176,8 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         Path to the allele call directory.
     possible_new_loci : str
         Path to possible new loci.
+    input_genomes: str
+        Path to the file/folder with the fastas of the complete genomes.
     constants : List[Any]
         List of constants used in the process.
     temp_paths : List[str]
@@ -278,6 +351,9 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         # If we want to run with new possible loci, we merge everything together and run
         if possible_new_loci:
             ff.merge_folders(schema_directory, possible_new_loci, schema_folder, cpu, bsr, translation_table)
+            # Create a new allele call using chewBBACA using the new schema created with the pnl
+            new_allelecall_dir: str = os.path.join(output_d, '0_PNL_Schema', 'New_Allele_Call')
+            allelecall_directory = allelecal_chewie(input_genomes, schema_folder, new_allelecall_dir, cpu)
         else:
             ff.create_directory(schema_folder)
             ff.copy_folder(schema_directory, schema_folder)
@@ -507,7 +583,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
 def main(schema_directory: str, output_directory: str, allelecall_directory: str,
         annotation_paths: List[str],
-        possible_new_loci: str, alignment_ratio_threshold: float, 
+        possible_new_loci: str, input_genomes: str, alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
         bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
@@ -525,6 +601,8 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Path to the allele call directory.
     possible_new_loci : str
         Path to the file with possible new loci.
+    input_genomes: str
+        Path to the file/folder with the fastas of the complete genomes.
     alignment_ratio_threshold : float
         Threshold for alignment ratio.
     pident_threshold : float
@@ -581,6 +659,7 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
                 allelecall_directory,
                 annotation_paths,
                 possible_new_loci,
+                input_genomes,
                 constants,
                 temp_paths,
                 run_mode,

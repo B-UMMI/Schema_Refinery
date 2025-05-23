@@ -462,10 +462,11 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, cpu: int, bsr:
 
 	# Find loci with the same name in both folders
 	loci_with_same_name = set(folder1_files) & set(folder2_files)
-
 	if loci_with_same_name:
 		pf.print_message(f"The following loci have the same name in both folders and will be merged: {loci_with_same_name}", "warning")
 		process_loci_with_same_name(folder1, folder2, loci_with_same_name, temp_folder)
+	else:
+		pf.print_message(f"There is no overlap between the sets of loci.", "warning")
 
 	# Remove loci with the same name from the lists
 	folder1_files = [f for f in folder1_files if f not in loci_with_same_name]

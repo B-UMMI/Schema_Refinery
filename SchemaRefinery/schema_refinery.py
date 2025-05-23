@@ -457,6 +457,13 @@ def identify_spurious_genes() -> None:
 						required=False,
 						dest='possible_new_loci',
 						help='Path to the directory that contains possible new loci.')
+	
+	parser.add_argument('-ig',
+						'--input-genomes',
+						type=str,
+						required=False,
+						dest='input_genomes',
+						help='Path to the directory with the input FASTA files of the complete genomes or to a file with a list of full paths to FASTA files, one per line. Needed when the argument -pnl is used')
 
 	parser.add_argument('-at',
 						'--alignment-ratio-threshold',
