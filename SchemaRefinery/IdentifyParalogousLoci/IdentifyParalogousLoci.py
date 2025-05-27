@@ -1,12 +1,14 @@
 import os
 import statistics
 import sys
+import pathlib
+import shutil
+from Bio import SeqIO
 from typing import Dict, List, Tuple
 
 try:
     from SchemaAnnotation import (consolidate as cs)
-    from utils import (
-                        sequence_functions as sf,
+    from utils import (sequence_functions as sf,
                         blast_functions as bf,
                         linux_functions as lf,
                         file_functions as ff,
@@ -15,13 +17,11 @@ try:
                         clustering_functions as cf,
                         print_functions as pf,
                         logger_functions as logf,
-                        globals as gb,
-
-    )
+                        constants as ct,
+                        globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
-    from SchemaRefinery.utils import (
-                                    sequence_functions as sf,
+    from SchemaRefinery.utils import (sequence_functions as sf,
                                     blast_functions as bf,
                                     linux_functions as lf,
                                     file_functions as ff,
@@ -30,8 +30,82 @@ except ModuleNotFoundError:
                                     clustering_functions as cf,
                                     print_functions as pf,
                                     logger_functions as logf,
-                                    globals as gb,
-    )
+                                    constants as ct,
+                                    globals as gb)
+
+
+def get_file_prefixes(path_list) -> Dict[str, str]:
+	"""
+    Determine the file prefix for each file in a list of file paths.
+
+	Parameters
+	----------
+	path_list : list
+		List with file paths.
+
+	Returns
+	-------
+	prefixes :  dict
+		Dictionary with file prefixes as keys and file basenames
+		as values.
+	"""
+	basenames = [pathlib.Path(file).stem for file in path_list]
+	prefixes = {}
+	for name in basenames:
+		prefix = name.rsplit('-protein', 1)[0]
+		prefixes.setdefault(prefix, []).append(name)
+		pf.print_message(f'Prefixes: {prefix}', 'info')
+
+	return prefixes
+
+
+def check_prefix_pdb(input_list, output_directory, makeblastdb_path, blastdbcmd_path) -> None:
+	"""
+    Check if the BLAST database includes the expected sequence IDs.
+
+	Parameters
+	----------
+	input_list : str
+		Path to file that contains the list of paths to input files.
+	output_directory : str
+		Path to the directory where dummy data will be created.
+	makeblastdb_path : str
+		Path to the makeblastdb executable.
+	blastdbcmd_path : str
+		Path to the blastdbcmd executable.
+
+	Returns
+	-------
+	None
+	"""
+    
+	input_paths = ff.read_lines(input_list)
+	prefixes = get_file_prefixes(input_paths)
+	# Create directory to store dummy data
+	dummy_dir = os.path.join(output_directory, ct.DUMMY_DIR)
+	ff.create_directory(dummy_dir)
+	# Create dummy FASTA records
+	dummy_seqids = [f'{i}-protein1' for i in (prefixes)]
+	dummy_records = [ct.FASTA_RECORD_TEMPLATE.format(*[i, ct.DUMMY_PROT]) for i in dummy_seqids]
+	dummy_fasta = os.path.join(dummy_dir, ct.DUMMY_FASTA)
+	ff.write_lines(dummy_records, dummy_fasta)
+	# Create BLAST db
+	dummy_blastdb = os.path.join(dummy_dir, ct.DUMMY_BLASTDB)
+	bf.make_blast_db(makeblastdb_path, dummy_fasta, dummy_blastdb, 'prot')
+	# Get sequence from BLAST db
+	dummy_blastdbcmd_fasta = os.path.join(dummy_dir, ct.DUMMY_BLASTDBCMD_FASTA)
+	blastdbcmd_std = bf.run_blastdbcmd(blastdbcmd_path, dummy_blastdb, dummy_blastdbcmd_fasta)
+	# Check if the sequence IDs in the BLAST db match the expected IDs
+	records = SeqIO.parse(dummy_blastdbcmd_fasta, 'fasta')
+	recids = [record.id for record in records]
+	modified_seqids = set(dummy_seqids) - set(recids)
+	# Delete dummy data
+	shutil.rmtree(dummy_dir)
+	# Exit if BLAST db includes sequence IDs that do not match the expected IDs
+	if len(modified_seqids) > 0:
+		pdb_prefix = [prefixes[p.split('-protein')[0]][0] for p in modified_seqids]
+		sys.exit(ct.INPUTS_PDB_PREFIX.format('\n'.join(pdb_prefix)))
+
 
 def identify_paralogous_loci(schema_directory: str, 
                              output_directory: str,
@@ -112,7 +186,6 @@ def identify_paralogous_loci(schema_directory: str,
     query_paths_dict: Dict[str, str] = {}
     all_loci_allele_size_stats = {}
     i: int = 1
-
     pf.print_message('')
     pf.print_message('Translating fasta files', 'info')
     # Translate the sequences that are to be used in the BLASTp search
@@ -172,6 +245,7 @@ def identify_paralogous_loci(schema_directory: str,
 
     # Get makeblastdb executable
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
+
     # Path to the blast database folder
     blast_db: str = os.path.join(blast_folder, 'Blast_db_prot')
     ff.create_directory(blast_db)

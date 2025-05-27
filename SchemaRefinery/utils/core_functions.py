@@ -880,6 +880,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         return clustered_choices
         """
     def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: tp.MergedAllClasses) -> Tuple[str, str, str]:
+###### change description
         """
         Process an identifier to check its presence in specific lists.
 
@@ -1240,8 +1241,6 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                                             "\tFrequency_in_genomes_query"
                                             "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class_with_inverse.items():
-            query
-            subject
             query, subject = id_.split('|')
             count_results_by_cluster_file.write('\t'.join(id_.split('|')))
             total_count_origin: int = sum([i[0] for i in classes.values() if i[0] != '-'])
@@ -2071,7 +2070,7 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     drop_possible_loci_output: str = os.path.join(output_directory, 'drop_loci_reason.tsv')
     
     # Create a dictionary mapping locus IDs to their drop reasons
-    locus_drop_reason: Dict[str, str] = {cds.split('_')[0]: reason 
+    locus_drop_reason: Dict[str, str] = {cds.rsplit('_', 1)[0]: reason 
                                          for cds, reason in dropped_cds.items() if '_' in cds}
     
     # Write the locus IDs and their drop reasons to the output file

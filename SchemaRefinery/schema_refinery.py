@@ -805,6 +805,22 @@ def identify_paralogous_loci() -> None:
 	# Validate the arguments
 	val.validate_identify_paralogous_loci_arguments(args)
 
+	# Validate schema fasta names
+	pf.print_message('PREFIXES TRIAL START', 'info')
+	gene_list_paths: str = os.path.join(args.output_directory, 'gene_list_paths.txt')
+	with open(gene_list_paths, 'w') as gene_list:
+		dir_list = os.listdir(args.schema_directory)
+		for file in dir_list:
+			if file.endswith(".fasta"):
+				path = os.path.abspath(file)
+				gene_list.write(f'{path}\n')
+                
+	makeblastdb_path = ff.join_paths(args.output_directory, [ct.MAKEBLASTDB_ALIAS])
+	blastdbcmd_path = ff.join_paths(args.output_directory, [ct.BLASTDBCMD_ALIAS])
+	pdb_prefixes = IdentifyParalogousLoci.check_prefix_pdb(gene_list_paths, args.output_directory, makeblastdb_path, blastdbcmd_path)
+
+	pf.print_message('PREFIXES TRIAL OVER', 'info')
+
 	# Print the validated input arguments if debug
 	if gb.DEBUG:
 		pf.print_input_arguments(args)
