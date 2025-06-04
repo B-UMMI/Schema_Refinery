@@ -102,7 +102,8 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
                          bsr_values: tp.BSRValues,
                          alignment_coords_all: tp.RepresentativeBlastResultsCoords,
                          alignment_coords_pident: tp.RepresentativeBlastResultsCoords,
-                         frequency_in_genomes: Dict[str, int], 
+                         frequency_in_genomes: Dict[str, int],
+                         frequency_in_genomes_second_schema: Optional[Dict[str, int]], 
                          allele_ids: List[bool]) -> None:
     """
     Enhances BLAST results with additional metrics and frequencies.
@@ -131,6 +132,10 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
     frequency_in_genomes : Dict[str, int]
         A dictionary summarizing the frequency of each representative cluster within the genomes of the schema,
         enhancing the context of BLAST results.
+    frequency_in_genomes_second_schema : [Dict[str, int]
+        A dictionary summarizing the frequency of each representative cluster within the genomes of the second schema,
+        enhancing the context of BLAST results.
+        Only not None with the scheam_vs_schema run mode.
     allele_ids : List[bool]
         Indicates whether the IDs of loci representatives are included in the `frequency_in_genomes`. If true,
         IDs follow the format `loci1_x`.
@@ -296,7 +301,8 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
 
     def update_results(representative_blast_results: tp.BlastDict, 
                        query: str, subject: str, entry_id: str, bsr: float, sim: Union[float, str], 
-                       cov: Union[float, str], frequency_in_genomes: Dict[str, int],
+                       cov: Union[float, str], frequency_in_genomes: Dict[str, int], 
+                       frequency_in_genomes_second_schema: Optional[Dict[str, int]],
                        global_palign_all_min: float, global_palign_all_max: float, 
                        global_palign_pident_min: float, global_palign_pident_max: float,
                        local_palign_min: float, allele_ids: List[bool]) -> None:
@@ -322,6 +328,8 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
             The coverage value to update.
         frequency_in_genomes : Dict[str, int]
             A dictionary containing the frequency of the query and subject in genomes.
+        frequency_in_genomes_second_schema : Dict[str, int]
+            A dictionary containing the frequency of the query and subject in genomes of the second schema.
         global_palign_all_min : float
             The minimum global pairwise alignment percentage.
         global_palign_all_max : float
@@ -347,18 +355,35 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
         if allele_ids[1]:
             subject_before: str = subject
             subject = itf.remove_by_regex(subject, pattern)
-        update_dict: Dict[str, Union[float, str, int]] = {
-            'bsr': bsr,
-            'kmers_sim': sim,
-            'kmers_cov': cov,
-            'frequency_in_genomes_query_cds': frequency_in_genomes[query],
-            'frequency_in_genomes_subject_cds': frequency_in_genomes[subject],
-            'global_palign_all_min' : global_palign_all_min,
-            'global_palign_all_max': global_palign_all_max,
-            'global_palign_pident_min': global_palign_pident_min,
-            'global_palign_pident_max': global_palign_pident_max,
-            'local_palign_min': local_palign_min
-        }
+        # For run_mode == schema_vs_schema
+        if frequency_in_genomes_second_schema is not None:
+            update_dict: Dict[str, Union[float, str, int]] = {
+                'bsr': bsr,
+                'kmers_sim': sim,
+                'kmers_cov': cov,
+                'frequency_in_genomes_query_cds': frequency_in_genomes[query],
+                'frequency_in_genomes_subject_cds': frequency_in_genomes[subject],
+                'frequency_in_genomes_second_schema_query_cds': frequency_in_genomes_second_schema[query],
+                'frequency_in_genomes_second_schema_subject_cds': frequency_in_genomes_second_schema[subject],
+                'global_palign_all_min' : global_palign_all_min,
+                'global_palign_all_max': global_palign_all_max,
+                'global_palign_pident_min': global_palign_pident_min,
+                'global_palign_pident_max': global_palign_pident_max,
+                'local_palign_min': local_palign_min
+            }
+        else:
+            update_dict: Dict[str, Union[float, str, int]] = {
+                'bsr': bsr,
+                'kmers_sim': sim,
+                'kmers_cov': cov,
+                'frequency_in_genomes_query_cds': frequency_in_genomes[query],
+                'frequency_in_genomes_subject_cds': frequency_in_genomes[subject],
+                'global_palign_all_min' : global_palign_all_min,
+                'global_palign_all_max': global_palign_all_max,
+                'global_palign_pident_min': global_palign_pident_min,
+                'global_palign_pident_max': global_palign_pident_max,
+                'local_palign_min': local_palign_min
+            }
         if allele_ids[0]:
             query = query_before
         if allele_ids[1]:
@@ -433,7 +458,7 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
                 local_palign_min = calculate_local_palign(result)
                 # Remove entries with negative local palign values meaning that they are inverse alignments.
                 if local_palign_min >= 0:
-                    update_results(filtered_alignments_dict, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids)
+                    update_results(filtered_alignments_dict, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, frequency_in_genomes_second_schema, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids)
                 else:
                     remove_results(filtered_alignments_dict, query, subject, entry_id)
 
@@ -702,15 +727,21 @@ def process_classes(representative_blast_results: tp.BlastDict,
                 run_next_step = False
 
             count_results_by_class.setdefault(f"{new_query}|{new_id_subject}", {})
+            # Count the pairs in each class
+            # Get the class of that pair
             if not count_results_by_class[f"{new_query}|{new_id_subject}"].get(class_):
+                # If the class has not yet be counted start the counter with 1
                 count_results_by_class[f"{new_query}|{new_id_subject}"].setdefault(class_, 1)
             else:
+                # Else add 1 to the counter
                 count_results_by_class[f"{new_query}|{new_id_subject}"][class_] += 1
             
+            # Count the inversed pairs in each class
             if f"{new_query}|{new_id_subject}" not in inverse_match:
                 count_results_by_class_with_inverse.setdefault(f"{new_query}|{new_id_subject}", {})
                 inverse_match.append(f"{new_id_subject}|{new_query}")
             if f"{new_query}|{new_id_subject}" in inverse_match:
+                # If the class of the inversed pair has not yet been counted
                 if not count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"].get(class_):
                     count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"].setdefault(class_, ['-', 1])
                 elif count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] == '-':
@@ -770,8 +801,8 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
-                    frequency_in_genomes: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
-                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
+                    frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
+                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations, Dict[str, List[set[str]]]]:
     """
     Extracts and organizes results from process_classes.
 
@@ -783,6 +814,8 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         A dictionary with counts of results by class.
     frequency_in_genomes : Dict[str, int]
         A dictionary containing the frequency of the query and subject in genomes.
+    frequency_in_genomes_second_schema : Dict[str, int]
+        A dictionary containing the frequency of the query and subject in genomes of the second schema.
     merged_all_classes : tp.MergedAllClasses
         A dictionary containing identifiers to check for a joined condition.
     dropped_loci_ids : List[str]
@@ -880,7 +913,6 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         return clustered_choices
         """
     def process_id(id_: str, to_cluster_list: Dict[int, List[str]], merged_all_classes: tp.MergedAllClasses) -> Tuple[str, str, str]:
-###### change description
         """
         Process an identifier to check its presence in specific lists.
 
@@ -896,8 +928,8 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         Returns
         -------
         Tuple[str, bool, bool]
-            A tuple containing the original id, a boolean indicating if the id is present in the to_cluster_list,
-            and a boolean indicating if the id is present in the merged_all_classes under a specific key.
+            A tuple containing the original id, a str indicating the key of the entry where the string is present, or None if not found,
+            and a str indicating the key of the entry where the string is present in 1a.
         """
         present: str = itf.identify_string_in_dict_get_key(id_, to_cluster_list)
         joined_id: str = itf.identify_string_in_dict_get_key(id_, merged_all_classes['1a'])
@@ -1006,8 +1038,10 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     related_clusters: tp.RelatedClusters = {}  # To keep track of the related clusters
     recommendations: tp.Recomendations = {}  # To keep track of the recommendations
     dropped_match: Dict[str, List[List[str]]] = {}  # To keep track of the dropped matches
-    matched_with_dropped: Dict[str, List[List[str]]] = {}  # To keep track of the matches that matched with dropped
+    # matched_with_dropped: Dict[str, List[List[str]]] = {}  # To keep track of the matches that matched with dropped
     processed_cases: List[List[str]] = []  # To keep track of the processed cases
+    moved_recs: Dict[str, List[Set[str]]] = {}  # To keep track of how many loci are moved into/out off drop/choice per class
+    written_down: List[str] = []
 
     # Filter the processed results by the order of classes
     processed_results = order_dict_by_first_value(processed_results, classes_outcome)
@@ -1026,11 +1060,21 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         key: str = query_present if query_present else subject_present
 
         direct_match_info = f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"
-        related_clusters.setdefault(key, []).append(results[4]
-                                                    + [direct_match_info]
-                                                    + [str(frequency_in_genomes[results[3][0]])]
-                                                    + [str(frequency_in_genomes[results[3][1]])]
-                                                    )
+        if frequency_in_genomes_second_schema is not None:
+            related_clusters.setdefault(key, []).append(results[4]
+                                                        + [direct_match_info]
+                                                        + [str(frequency_in_genomes[results[3][0]])]
+                                                        + [str(frequency_in_genomes[results[3][1]])]
+                                                        + [str(frequency_in_genomes_second_schema[results[3][0]])]
+                                                        + [str(frequency_in_genomes_second_schema[results[3][1]])]
+                                                        )
+        else:
+            related_clusters.setdefault(key, []).append(results[4]
+                                                        + [direct_match_info]
+                                                        + [str(frequency_in_genomes[results[3][0]])]
+                                                        + [str(frequency_in_genomes[results[3][1]])]
+                                                        )
+
 
         recommendations.setdefault(key, {})
         # Checks to make, so that we can add the ID to the right recommendations.
@@ -1053,6 +1097,8 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
 
         # Check if the pair was not processed yet
         if [query_id, subject_id] not in processed_cases:
+            if results[0] not in moved_recs:
+                moved_recs[results[0]] = [set(), set()]
 
             # Process the joined cases
             if results[0] == '1a':
@@ -1069,6 +1115,26 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                     if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
                         add_to_recommendations(f'Choice', query_to_write, key, recommendations, choice_id)
                         add_to_recommendations(f'Choice', subject_to_write, key, recommendations, choice_id)
+                        if query_to_write not in written_down:
+                            moved_recs[results[0]][0].add(query_to_write)
+                            written_down.append(query_to_write)
+                        if subject_to_write not in written_down:
+                            moved_recs[results[0]][0].add(subject_to_write)
+                            written_down.append(subject_to_write)
+                    else:
+                        if query_to_write not in moved_recs[results[0]][0] and query_to_write not in written_down:
+                            moved_recs[results[0]][1].add(query_to_write)
+                            written_down.append(query_to_write)
+                        if subject_to_write not in moved_recs[results[0]][0] and subject_to_write not in written_down:
+                            moved_recs[results[0]][1].add(subject_to_write)
+                            written_down.append(subject_to_write)
+                else:
+                    if query_to_write not in moved_recs[results[0]][0] and query_to_write not in written_down:
+                        moved_recs[results[0]][1].add(query_to_write)
+                        written_down.append(query_to_write)
+                    if subject_to_write not in moved_recs[results[0]][0] and subject_to_write not in written_down:
+                        moved_recs[results[0]][1].add(subject_to_write)
+                        written_down.append(subject_to_write)
             # Process cases where some ID is dropped
             elif results[0] in ['1b', '2a', '3a', '4a']:
                 # If it is part of a joined cluster and it gets dropped, add to the recommendations
@@ -1077,32 +1143,47 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                     if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
                         add_to_recommendations(f'Choice', query_to_write, key, recommendations, choice_id)
                         add_to_recommendations(f'Choice', subject_to_write, key, recommendations, choice_id)
+                        if query_to_write not in written_down:
+                            moved_recs[results[0]][1].add(query_to_write)
+                            written_down.append(query_to_write)
+                        if subject_to_write not in written_down:
+                            moved_recs[results[0]][1].add(subject_to_write)
+                            written_down.append(subject_to_write)
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
                 if if_query_dropped:
                     # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
                     if not if_joined_query and not if_query_in_choice:
                         add_to_recommendations('Drop', query_to_write, key, recommendations)
+                        if query_to_write not in written_down:
+                            moved_recs[results[0]][0].add(query_to_write)
+                            written_down.append(query_to_write)
                         dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
                 # If it is not part of a joined cluster and it gets dropped, add to the recommendations
                 elif if_subject_dropped:
                     # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
                     if not if_joined_subject and not if_subject_in_choice:
                         add_to_recommendations('Drop', subject_to_write, key, recommendations)
+                        if subject_to_write not in written_down:
+                            written_down.append(subject_to_write)
+                            moved_recs[results[0]][0].add(subject_to_write)
                         dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
         
     # Add cases where some ID matched with dropped ID, we need to add the ID that matched with the ID that made the other match
     # to be Dropped. e.g x and y matched with x dropping and x also matched with z, then we need to make a choice between x and z.
+    # Not being used currently
+    """
     for key, matches in matched_with_dropped.items():
         if dropped_match.get(key):
             for dropped in dropped_match[key]:
                 for match_ in matches:
                     if match_[2] in dropped:
                         add_to_recommendations('Choice', dropped[2], key, recommendations, match_[3])
+    """
 
     sort_order: List[str] = ['Join', 'Choice', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
-    return related_clusters, recommendations
+    return related_clusters, recommendations, moved_recs
 
 
 def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
@@ -1111,6 +1192,7 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                                             group_reps_ids: Dict[str, List[str]],
                                             group_alleles_ids: Dict[str, List[str]], 
                                             frequency_in_genomes: Dict[str, int],
+                                            frequency_in_genomes_second_schema: Dict[str, int],
                                             recommendations: tp.Recomendations, 
                                             reverse_matches: bool,
                                             classes_outcome: Tuple[str, ...],
@@ -1136,6 +1218,8 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
         A dictionary mapping sequence identifiers to their allele IDs.
     frequency_in_genomes : Dict[str, int]
         A dictionary mapping sequence identifiers to their frequency in genomes.
+    frequency_in_genomes_second_schema : Dict[str, int]
+        A dictionary mapping sequence identifiers to their frequency in genomes in the second schema.
     recommendations : tp.Recommendations
         A dictionary containing recommendations for each cluster based on the classification of the results.
     reverse_matches : bool
@@ -1233,13 +1317,25 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
     tab: str = '\t'
     count_results_by_cluster_path: str = os.path.join(output_directory, "count_results_by_cluster.tsv")
     with open(count_results_by_cluster_path, 'w') as count_results_by_cluster_file:
-        count_results_by_cluster_file.write("Query"
-                                            "\tSubject"
-                                            f"\t{tab.join(classes_outcome)}"
-                                            "\tAlleles_used_to_blast_count"
-                                            "\tAlleles_blasted_against_count"
-                                            "\tFrequency_in_genomes_query"
-                                            "\tFrequency_in_genomes_subject\n")
+        # for run_mode == schema_vs_schema
+        if frequency_in_genomes_second_schema is not None:
+            count_results_by_cluster_file.write("Query"
+                                                "\tSubject"
+                                                f"\t{tab.join(classes_outcome)}"
+                                                "\tAlleles_used_to_blast_count"
+                                                "\tAlleles_blasted_against_count"
+                                                "\tFrequency_in_genomes_query"
+                                                "\tFrequency_in_genomes_subject"
+                                                "\tFrequency_in_genomes_second_schema_query"
+                                                "\tFrequency_in_genomes_second_schema_subject\n")
+        else:
+            count_results_by_cluster_file.write("Query"
+                                                "\tSubject"
+                                                f"\t{tab.join(classes_outcome)}"
+                                                "\tAlleles_used_to_blast_count"
+                                                "\tAlleles_blasted_against_count"
+                                                "\tFrequency_in_genomes_query"
+                                                "\tFrequency_in_genomes_subject\n")
         for id_, classes in count_results_by_class_with_inverse.items():
             query, subject = id_.split('|')
             count_results_by_cluster_file.write('\t'.join(id_.split('|')))
@@ -1257,6 +1353,10 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
             
             query_frequency: int = frequency_in_genomes[query]
             subject_frequency: int = frequency_in_genomes[subject]
+            # for run_mode == schema_vs_schema
+            if frequency_in_genomes_second_schema is not None:
+                query_frequency_ss: int = frequency_in_genomes_second_schema[query]
+                subject_frequency_ss: int = frequency_in_genomes_second_schema[subject]
 
             for class_outcome in classes_outcome:
                 class_value: Union[Tuple[int, int], str] = classes.get(class_outcome, '-')
@@ -1267,6 +1367,11 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                     subject_class_count: Union[int, str] = class_value[1] if class_value[1] != '-' else '-'
                     count_results_by_cluster_file.write(f"\t{query_class_count}|{total_count_origin}|{subject_class_count}|{total_count_inverse}")
 
+        # for run_mode == schema_vs_schema    
+        if frequency_in_genomes_second_schema is not None:
+            count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\t{query_frequency_ss}\t{subject_frequency_ss}\n")
+            count_results_by_cluster_file.write('#\n')
+        else:
             count_results_by_cluster_file.write(f"\t{representatives_count}\t{allele_count}\t{query_frequency}\t{subject_frequency}\n")
             count_results_by_cluster_file.write('#\n')
 
@@ -1348,7 +1453,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
 
 def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], rep_paths_nuc: Dict[str, str], 
                output_dir: str, constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
-               frequency_in_genomes: Dict[str, int], cpu: int) -> tp.BlastDict:
+               frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int) -> tp.BlastDict:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
 
@@ -1370,6 +1475,8 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         A dictionary containing k-mer similarity values for representative sequences.
     frequency_in_genomes : Dict[str, int]
         A dictionary mapping sequence IDs to their frequency in genomes.
+    frequency_in_genomes_secong_schema : Dict[str, int]
+        A dictionary mapping sequence IDs to their frequency in genomes in the second schema.
     cpu : int
         The number of CPU cores to use for parallel processing.
 
@@ -1537,6 +1644,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                         alignment_coords_all,
                         alignment_coords_pident,
                         frequency_in_genomes,
+                        frequency_in_genomes_second_schema,
                         [True, True])
 
         # Save the BLASTn results
@@ -1880,7 +1988,7 @@ def create_graphs(file_path: str, output_path: str, filename: str, other_plots: 
 
 
 def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_possible_loci: List[int], 
-                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any]) -> None:
+                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any], moved_recs: Dict[str, List[Set[str]]]) -> None:
     """
     Prints the classification results based on the provided parameters.
 
@@ -1894,6 +2002,8 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         Path to BLAST.
     clusters : Dict[str, Any]
         The dictionary containing the clusters.
+    moved_recs : Dict[str, List[Set[str]]]
+        The dictionary of which loci in each class got the recommendation they were expected to or were moved, for exemple 'Drop' instead of 'Choice'.
 
     Returns
     -------
@@ -1908,7 +2018,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
       any recommendations for verification.
     - If there are any retained groups not matched by BLASTn, it handles them separately.
     """
-    def print_results(class_: str, count: int, printout: Dict[str, Any]) -> None:
+    def print_results(class_: str, count: int, printout: Dict[str, Any], moved_recs: Dict[str, List[Set[str]]]) -> None:
         """
         Prints the classification results based on the class type.
 
@@ -1920,6 +2030,8 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
             The count of groups.
         printout : Dict[str, Any]
             The dictionary containing printout information.
+        moved_recs : Dict[str, List[Set[str]]]
+            The dictionary of which loci in each class got the recommendation they were expected to or were moved, for exemple 'Drop' instead of 'Choice'.
 
         Returns
         -------
@@ -1933,16 +2045,18 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         """
         if count > 0:
             if class_ in ['2b', '4b']:
-                prf.print_message(f"\t\tOut of those groups, {count} are classified as {class_} and were retained"
+                prf.print_message(f"\t\t{count} loci are classified as {class_} and were retained"
                             " but it is recommended to verify them as they may be contained or contain partially inside"
                             " their BLAST match.", None)
             elif class_ == '1a':
-                prf.print_message(f"\t\tOut of those groups, {count} {'CDSs groups'} are classified as {class_}"
+                prf.print_message(f"\t\t{count} loci are classified as {class_}"
                             f" and are contained in {len(printout['1a'])} joined groups that were retained.", None)
-            elif class_ == 'dropped':
-                prf.print_message(f"\t\tOut of those {count} have been dropped due to frequency", None)
+            #elif class_ == 'dropped':  #### 1b, 2a, 3a
+                #prf.print_message(f"\t\t{count} have been dropped due to frequency", None)
+            elif class_ in ['4c', '5']:
+                prf.print_message(f"\t\t{count} loci are classified as {class_}. These will be added to recommendations with 'Add'.", None)
             else:
-                prf.print_message(f"\t\tOut of those groups, {count} are classified as {class_} and were retained.", None)
+                prf.print_message(f"\t\t{len(moved_recs[class_][0]) + len(moved_recs[class_][1])} loci are classified as {class_}. {len(moved_recs[class_][0])} were retained and {len(moved_recs[class_][1])} were dropped or given a different recommendation.", None)
 
     # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
     retained_not_matched_by_blastn: Optional[Any] = merged_all_classes.pop('Retained_not_matched_by_blastn', None)
@@ -1957,13 +2071,13 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         else:
             count_cases[class_] = len(loci)
         
-    count_cases['dropped'] = len(drop_possible_loci)
+    #count_cases['dropped'] = len(drop_possible_loci)
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
     prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the schema DNA sequences.", None)
     for class_, count in count_cases.items():
-        print_results(class_, count, merged_all_classes)
+        print_results(class_, count, merged_all_classes, moved_recs)
     prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches", None)
 
     if retained_not_matched_by_blastn:
@@ -2081,18 +2195,15 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     
     return drop_possible_loci_output
 
-def prepare_loci(schema_folder: str, 
-                 allelecall_directory: str, 
+def prepare_loci(schema_folder: str,
                  constants: List[Any], 
                  processing_mode: str, 
                  results_output: str) -> Tuple[
                      Dict[str, str], 
                      str, 
                      Dict[str, str], 
-                     Dict[str, int], 
                      Dict[str, str], 
-                     Dict[str, List[str]], 
-                     str, 
+                     Dict[str, List[str]],  
                      Dict[str, List[str]], 
                      Dict[str, List[str]]]:
     """
@@ -2102,8 +2213,6 @@ def prepare_loci(schema_folder: str,
     ----------
     schema_folder : str
         Path to the folder containing schema FASTA files.
-    allelecall_directory : str
-        Path to the directory containing allele call results.
     constants : list
         A list of constants used for processing.
     processing_mode : str
@@ -2119,7 +2228,6 @@ def prepare_loci(schema_folder: str,
         - all_nucleotide_sequences (Dict[str, str]): Dictionary of nucleotide sequences.
         - master_file_path (str): Path to the master FASTA file.
         - translation_dict (Dict[str, str]): Dictionary of translated sequences.
-        - frequency_in_genomes (Dict[str, int]): Dictionary of loci frequencies in genomes.
         - to_blast_paths (Dict[str, str]): Dictionary of paths to sequences to be used for BLAST.
         - all_alleles (Dict[str, List[str]]): Dictionary of all alleles with loci IDs as keys.
         - cds_present (str): Path to the CDS presence file.
@@ -2145,17 +2253,12 @@ def prepare_loci(schema_folder: str,
     to_run_against = schema_short if processing_mode.split('_')[-1] == 'reps' else schema
 
     # Initialize dictionaries for alleles, translations, and frequencies
-    all_alleles: Dict[str, List[str]] = {} 
+    all_alleles: Dict[str, List[str]] = {}
     all_nucleotide_sequences: Dict[str, str] = {} 
     translation_dict: Dict[str, str] = {} 
-    frequency_in_genomes: Dict[str, int] = {} 
     temp_frequency_in_genomes: Dict[str, List[str]] = {}
     group_reps_ids: Dict[str, List[str]] = {} 
     group_alleles_ids: Dict[str, List[str]] = {} 
-    
-    # Path to the CDS presence file
-    cds_present = os.path.join(allelecall_directory, "results_alleles.tsv")
-    df = pd.read_csv(cds_present, sep = '\t', dtype = object)
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
@@ -2178,20 +2281,8 @@ def prepare_loci(schema_folder: str,
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(sequence)}\n")
 
-    # Calculate the frequency of a locus in each genome
-    frequency_in_genomes = {}
-    allele_columns = df.columns[1:]
-
-    prf.print_message('Calculating frequenciees of each locus in each genome...', 'info')
     for loci, loci_path in schema.items():
         loci_id = ff.file_basename(loci).split('.')[0]
-        # For each locus count the frequency (don't count LNF, ASM or ALM)
-        matching_cols = [col for col in allele_columns if loci_id in col]
-        # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
-        presence_mask = df[matching_cols].applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
-        # Count the frequency of each locus in all genome
-        genome_presence = presence_mask.any(axis=1)
-        frequency_in_genomes[loci_id] = genome_presence.sum()
         all_alleles.setdefault(loci_id, [])
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():  
@@ -2206,4 +2297,4 @@ def prepare_loci(schema_folder: str,
         
         translation_dict.update(trans_dict)
                 
-    return all_nucleotide_sequences, master_file_path, translation_dict, frequency_in_genomes, to_blast_paths, all_alleles, cds_present, group_reps_ids, group_alleles_ids
+    return all_nucleotide_sequences, master_file_path, translation_dict, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids

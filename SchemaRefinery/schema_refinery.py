@@ -424,6 +424,7 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-s',
 						'--schema-directory',
 						type=str,
+						nargs='+',
 						required=True,
 						dest='schema_directory',
 						help='Path to the created schema directory.')
@@ -438,6 +439,7 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-a',
 						'--allelecall-directory',
 						type=str,
+						nargs='+',
 						required=True,
 						dest='allelecall_directory',
 						help='Path to the directory that contains allele call directory from chewBBACA that was run with --no-cleanup and --output-unclassified.')
@@ -450,20 +452,6 @@ def identify_spurious_genes() -> None:
 						default=None,
 						dest='annotation_paths',
 						help='Path to the tsv file with the schema annotations.')
-
-	parser.add_argument('-pnl',
-						'--possible-new-loci',
-						type=str,
-						required=False,
-						dest='possible_new_loci',
-						help='Path to the directory that contains possible new loci.')
-	
-	parser.add_argument('-ig',
-						'--input-genomes',
-						type=str,
-						required=False,
-						dest='input_genomes',
-						help='Path to the directory with the input FASTA files of the complete genomes or to a file with a list of full paths to FASTA files, one per line. Needed when the argument -pnl is used')
 
 	parser.add_argument('-at',
 						'--alignment-ratio-threshold',

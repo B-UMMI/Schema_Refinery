@@ -64,7 +64,7 @@ DNA_BASES = ['A', 'T', 'C', 'G']
 
 PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
 
-IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema']
+IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema', 'schema_vs_schema']
 
 SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
@@ -153,7 +153,7 @@ MAKEBLASTDB_ALIAS = 'makeblastdb.exe' if platform.system() == 'Windows' else shu
 INPUTS_PDB_PREFIX = ('The following input files have prefixes that are interpreted by BLAST '
 					 'as chain PDB IDs:\n{0}\nBLAST modifies the '
 					 'IDs of the CDSs that include these prefixes when creating a database, '
-					 'which leads to issues when chewBBACA cannot find the original '
+					 'which leads to issues when SchemaRefinery cannot find the original '
 					 'IDs in the results. Please ensure that the file prefixes (substring '
 					 'before the first "." in the filename) cannot be interpreted as chain PDB IDs.')
 
