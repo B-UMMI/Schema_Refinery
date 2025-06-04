@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from typing import Dict, List
 
 
@@ -125,8 +126,14 @@ def create_schema_structure(recommendations_file: str,
                             pf.print_message(f'File {id_} added to {ids_list[0]} at {output_file}', "info")
                         else:
                             pf.print_message(f'File {id_} not found in the FASTA folder', "info")
-            # If the recommendation is 'Choice' or 'Add'
-            elif "Choice" in recommendation or "Add" in recommendation:
+            # If the recommendation is 'Choice' system exits
+            # All Choice actions should be changed to one of the other 3 actions
+            elif "Choice" in recommendation:
+                pf.print_message('The recommendation file should have no loci with the action "Choice".', 'warning')
+                pf.print_message(f'{ids_list[0]} has the action "Choice". Change it to "Join", "Drop" or "Add".', 'warning')
+                sys.exit()
+            # If the recommendation is 'Add'
+            elif "Add" in recommendation:
                 for id_ in ids_list:
                     processed_files.append(id_) # Add the ID to the processed_files list
                     output_file = os.path.join(temp_fasta_folder, f'{id_}.fasta')
@@ -135,6 +142,7 @@ def create_schema_structure(recommendations_file: str,
                     fasta_file= fastas_files[id_]  # Get the FASTA file path
                     shutil.copy(fasta_file, output_file)
                     pf.print_message(f'File {id_} copied to {output_file}', "info")
+            # If the recommendation is 'Drop'
             else:
                 processed_files.extend(ids_list) # Add the IDS to the processed_files list
                 pf.print_message(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action", "info")
