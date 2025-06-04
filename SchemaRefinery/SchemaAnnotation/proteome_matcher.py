@@ -294,9 +294,11 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 				bsr_value: float = subject_info[1]
 				desc: str = descriptions[subject_id]
 				lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-				sname: str = desc.split('GN=')[1].split(' PE=')[0]
+				# Check if the protein has the needed information before writing short name
+				if 'GN=' in desc and ' PE=' in desc:
+					sname: str = desc.split('GN=')[1].split(' PE=')[0]
 				# If there is no short name, set it to 'NA'
-				if sname == '':
+				else:
 					sname = 'NA'
 				# Write the annotations to the file
 				at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")
