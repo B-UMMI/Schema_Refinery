@@ -36,16 +36,14 @@ Procedure
 ::
     
     Loci_id	Action
-    GCA-000007265-protein582	Join
-    GCA-000730215-protein582	Join
-    GCA-000831145-protein1681	Join
     GCA-001275545-protein1163	Join
-    GCA-000730255-protein607	Join
-    GCA-000427075-protein661	Join
-    GCA-000831105-protein622	Join
+    GCA-000831145-protein1681	Join
+    GCA-000007265-protein582	Join
     GCA-000012705-protein568	Join
+    GCA-000730215-protein582	Join
+    GCA-000831105-protein622	Join
+    GCA-000730255-protein607	Choice
     #
-
 
 Example Output Structure
 ------------------------

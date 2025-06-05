@@ -36,14 +36,13 @@ Procedure
 ::
     
     Loci_id	Action
-    GCA-000730255-protein547	Join
-    GCA-000427055-protein583	Join
-    GCA-000730255-protein547	Choice
-    GCA-000730215-protein2131	Choice
-    #
-    GCA-001448985-protein1872	Join
     GCA-000007265-protein1932	Join
     GCA-000730215-protein1962	Join
+    GCA-001448985-protein1872	Choice
+    #
+    GCA-000427035-protein1421	Join
+    GCA-000427055-protein1391	Join
+    GCA-000782855-protein1355	Join
     #
 
 
