@@ -56,6 +56,39 @@ def make_blast_db(makeblastdb_path: str, input_fasta: str, output_path: str, db_
 	stdout, stderr = makedb_process.communicate()
 	return stdout, stderr
 
+def run_blastdbcmd(blastdbcmd_path, blast_db, output_file) -> Tuple[bytes, Union[bytes, str]]:
+	"""Run blastdbcmd to extract sequences from a BLAST database.
+
+	Parameters
+	----------
+	blastdbcmd_path : str
+		Path to the blastdbcmd executable.
+	blast_db : str
+		Path to the BLAST database.
+	output_file : str
+		Path to the output file that will store the sequences.
+
+	Returns
+	-------
+	stdout : bytes
+		BLAST stdout.
+	stderr : bytes or str
+		BLAST stderr.
+	"""
+	blastdbcmd_args = [blastdbcmd_path, '-db', blast_db, '-out', output_file, '-entry', 'all']
+
+	blastdbcmd_process = subprocess.Popen(blastdbcmd_args,
+										  stdout=subprocess.PIPE,
+										  stderr=subprocess.PIPE)
+
+	stdout, stderr = blastdbcmd_process.communicate()
+
+	# Exit if it is not possible to extract sequences from BLAST db
+	if len(stderr) > 0:
+		sys.exit(f'Cound not extract sequences from {blast_db}.\n')
+
+	return stdout, stderr
+
 def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str,
 			  max_hsps: int = 1, threads: int = 1, ids_file: Optional[str] = None,
 			  blast_task: Optional[str] = None, max_targets: Optional[int] = None,

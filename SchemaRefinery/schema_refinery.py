@@ -346,9 +346,8 @@ def schema_annotation() -> None:
 
 	parser.add_argument('-cc',
 						'--consolidate-cleanup',
-						type=bool,
+						action='store_true',
 						required=False,
-						default=False,
 						dest='consolidate_cleanup',
 						help='For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
 
@@ -425,6 +424,7 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-s',
 						'--schema-directory',
 						type=str,
+						nargs='+',
 						required=True,
 						dest='schema_directory',
 						help='Path to the created schema directory.')
@@ -439,6 +439,7 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-a',
 						'--allelecall-directory',
 						type=str,
+						nargs='+',
 						required=True,
 						dest='allelecall_directory',
 						help='Path to the directory that contains allele call directory from chewBBACA that was run with --no-cleanup and --output-unclassified.')
@@ -451,13 +452,6 @@ def identify_spurious_genes() -> None:
 						default=None,
 						dest='annotation_paths',
 						help='Path to the tsv file with the schema annotations.')
-
-	parser.add_argument('-pnl',
-						'--possible-new-loci',
-						type=str,
-						required=False,
-						dest='possible_new_loci',
-						help='Path to the directory that contains possible new loci.')
 
 	parser.add_argument('-at',
 						'--alignment-ratio-threshold',
@@ -798,6 +792,22 @@ def identify_paralogous_loci() -> None:
 
 	# Validate the arguments
 	val.validate_identify_paralogous_loci_arguments(args)
+
+	# Validate schema fasta names
+	pf.print_message('PREFIXES TRIAL START', 'info')
+	gene_list_paths: str = os.path.join(args.output_directory, 'gene_list_paths.txt')
+	with open(gene_list_paths, 'w') as gene_list:
+		dir_list = os.listdir(args.schema_directory)
+		for file in dir_list:
+			if file.endswith(".fasta"):
+				path = os.path.abspath(file)
+				gene_list.write(f'{path}\n')
+                
+	makeblastdb_path = ff.join_paths(args.output_directory, [ct.MAKEBLASTDB_ALIAS])
+	blastdbcmd_path = ff.join_paths(args.output_directory, [ct.BLASTDBCMD_ALIAS])
+	pdb_prefixes = IdentifyParalogousLoci.check_prefix_pdb(gene_list_paths, args.output_directory, makeblastdb_path, blastdbcmd_path)
+
+	pf.print_message('PREFIXES TRIAL OVER', 'info')
 
 	# Print the validated input arguments if debug
 	if gb.DEBUG:

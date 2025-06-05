@@ -260,7 +260,7 @@ def main(sr_path: str, taxon: str, output_directory: str, ftp_download: bool,
     taxon_index: int = metadata_header.index('species')
     taxon_lines: List[List[str]] = [line for line in metadata_lines[1:] if all(t in line[taxon_index].split() for t in taxon.split())]
 
-    pf.print_message('\nFound {0} samples for taxon={1}.'.format(len(taxon_lines), taxon), "info")
+    pf.print_message('\nFound {0} samples for taxon = {1}.'.format(len(taxon_lines), taxon), "info")
 
     if not taxon_lines:
         pf.print_message(f'Did not find matches for {taxon}.', "warning")

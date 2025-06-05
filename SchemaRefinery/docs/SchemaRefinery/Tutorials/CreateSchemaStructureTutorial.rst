@@ -13,7 +13,7 @@ Prerequisites
 - Python 3.9 or higher
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 - ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
-- Download the schema file from the ChewBACCA tutorial: https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip
+- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure
 ---------
@@ -40,7 +40,7 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the `CreateSchemaStructure documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/CreateSchemaStructure.html>`_.
+To see the expected output structure, refer to the "Outputs" section in the `CreateSchemaStructure documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/CreateSchemaStructureOutputDescription.html>`_.
 
 Conclusion
 ----------

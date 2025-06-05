@@ -80,6 +80,7 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+
 Algorithm Explanation
 ---------------------
 
@@ -89,6 +90,7 @@ Algorithm to identify paralogous loci in a schema is shown below:
    :alt: IdentifyParalogousLoci Algorithm
    :width: 80%
    :align: center
+
 
 The column from the annotation file that has the highest number of matches between loci IDs with the schema fasta IDs will be chosen as the one to merge.
 
@@ -141,7 +143,7 @@ Report files description
 
 .. csv-table:: **paralogous_loci_report.tsv**
    :header: "Query_loci_id", "Subject_loci_id", "BSR", "if_loci_intersect", "if_close_distance", "Loci_min_allele_size", "Loci_max_allele_size", "Loci_mode_allele_size", "Loci_mean_allele_size"
-   :widths: 20, 20, 10, 10, 10, 20, 20, 20, 20
+   :widths: 15, 15, 10, 10, 10, 20, 20, 20, 20
 
    x, a, 0.7360028348688873, False, False, 416.0|1349.0, 544.0|1645.0, 515.0|1628.0, 476.75|1615.125
    x, b, 0.6146651702207258, False, True, 416.0|599.0, 544.0|738.0, 515.0|738.0, 476.75|720.625
@@ -151,6 +153,7 @@ Report files description
 columns description:
 
 ::
+
     Query_loci_id: The locus ID of the query.
     Subject_loci_id: The locus ID of the subject.
     BSR: The BSR value between the query and subject loci.
@@ -163,7 +166,7 @@ columns description:
 
 .. csv-table:: **paralogous_loci_report_cluster_by_id.tsv**
    :header: "Joined_loci_id", "Clustered_loci_ids"
-   :widths: 20, 80
+   :widths: 10, 40
 
    x, "x,a,b,c"
    y, "y,d,e,f"
@@ -172,13 +175,14 @@ columns description:
 
 columns description:
 ::
+
     Joined_loci_id: First Locus on the cluster.
     Clustered_loci_ids: List of all the loci that should be joined together.
 
 
 .. csv-table:: **paralogous_loci_final_recommendations.tsv**
    :header: "Locus", "Action"
-   :widths: 80, 20
+   :widths: 10, 20
 
    x, Join
    y, Join
@@ -192,6 +196,7 @@ columns description:
 columns description:
 
 ::
+
     Locus: Name of the locus to be joined in the clustered.
     Action: Action to be taken, always 'Join' in this module.
     #: Separates each cluster of loci.
@@ -199,7 +204,7 @@ columns description:
 
 .. csv-table:: **paralogous_annotations.tsv**
    :header: "Loci", "Action", "Locus_annotation", "Annotation"
-   :widths: 80, 20, 80, 80
+   :widths: 10, 20, 10, 40
 
    x, Join, x, annotation
    y, Join, y, annotation
@@ -213,6 +218,7 @@ columns description:
 columns description:
 
 ::
+
     Loci: Name of the locus to be joined in the clustered.
     Action: Action to be taken, always 'Join' in this module.
     Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).

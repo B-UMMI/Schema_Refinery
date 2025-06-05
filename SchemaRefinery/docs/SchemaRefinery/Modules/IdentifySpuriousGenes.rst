@@ -56,9 +56,6 @@ Command-Line Arguments
         (Optional) Path to the tsv file with the schema annotations.
         This file needs to have one column with loci with the same IDs as the ones in the schema.
 
-    -pnl, --possible-new-loci
-        (Optional) Path to the directory that contains possible new loci or schema to merge.
-
     -at, --alignment-ratio-threshold
         (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
         Default: 0.9
@@ -96,7 +93,7 @@ Command-Line Arguments
 
     -m, --run-mode
         (Optional) Run mode for identifying spurious loci.
-        Choices: unclassified_cds, schema
+        Choices: unclassified_cds, schema, schema_vs_schema
         Default: schema
 
     -pm, --processing-mode
@@ -119,6 +116,11 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+.. Note::
+    In `processing_mode` the option `reps_vs_reps` is the fastest and covers most of the cases.
+    The option `all_vs_all` takes much more time and changes the recommendation of around more 1% of the total loci. 
+    Choose the processing mode according to your computer capabilities and research needs.
+
 Algorithm Explanation
 ---------------------
 
@@ -129,7 +131,7 @@ Algorithm to identify new loci based on the CDS that are not in the schema:
    :width: 80%
    :align: center
 
-Algorithm to indentify spurious loci based on the schema input:
+Algorithm to indentify spurious loci based on schema inputs for run modes schema and schema_vs_schema:
 
 .. image:: source/IdentifySpuriousGenes_schema.png
    :alt: Algorithm to identify spurious loci
@@ -154,8 +156,13 @@ Depending on the classification, each locus will have a specific action recommen
     Join: 1a
     Choice: 1c, 2b, 3b, 4b
     Drop: 1b, 2a, 3a, 4a
+    Add: 4c and 5
 
-Choice is a recommendation for the user to decide if the locus should just be added with no alteration, dropped or joined to the cluster it is in.
+Choice is a recommendation for the user to decide if the locus should just be added with no alteration ('Add'), dropped ('Drop') or joined to the cluster it is in ('Join'). 
+
+.. Note:: 
+    Before passing the recommendation file to the CSS module make sure there are no 'Choice' in the action column.
+
 The other loci will have the action 'Add' and will just be added, without alteration, to the new schema.
 
 The column from the annotation file that has the highest number of matches between loci IDs with the schema fasta IDs will be chosen as the one to merge.
@@ -345,7 +352,7 @@ columns description:
 
 .. csv-table:: **drop_loci_reason.tsv**
     :header: "Possible_new_loci_ID", "Drop_Reason"
-    :widths: 40, 60
+    :widths: 30, 60
 
     x, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     y, Dropped_due_to_smaller_genome_presence_than_matched_cluster
@@ -361,7 +368,7 @@ columns description:
 
 .. csv-table:: **recommendations.tsv**
     :header: "Locus", "Action"
-    :widths: 80, 20
+    :widths: 15, 20
 
     x, Join
     y, Join
@@ -385,7 +392,7 @@ columns description:
 
 .. csv-table:: **recommendations_annotations.tsv**
    :header: "Loci", "Action", "Locus_annotation", "Annotation"
-   :widths: 80, 20, 80, 80
+   :widths: 15, 20, 15, 40
 
    x, Join, x, annotation
    y, Join, y, annotation
@@ -401,13 +408,13 @@ columns description:
 columns description:
 
 ::
+
     Loci: Name of the locus to be joined in the clustered.
     Action: Action to be taken (Join, Choice, Drop or Add).
     Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).
     Annotation: Column with annotation from the annotation file.
         (The name and numer of columns with annotations will depend on the file with the annotation, follows the structure of the output of the consolidate module).
     #: Separates each cluster of loci.
-
 
 
 .. csv-table:: **related_matches.tsv**
@@ -449,7 +456,7 @@ Here are some example commands to use the `IdentifySpuriousGenes` module:
     SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall
 
     # Identify spurious genes with custom parameters
-    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -ann /path/to/annotation-files -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
+    SR IdentifySpuriousGenes -s /path/to/schema /path/to/second_schema -o /path/to/output -a /path/to/allelecall /path/to/allelecall_second_schema  -ann /path/to/annotation-files -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema_vs_schema -pm reps_vs_alleles -c 4 --nocleanup
 
 Troubleshooting
 ---------------

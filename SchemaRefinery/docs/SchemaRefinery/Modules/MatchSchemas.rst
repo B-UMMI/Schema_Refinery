@@ -84,6 +84,7 @@ MatchSchemas Algorithm Flowchart:
    :width: 80%
    :align: center
 
+
 The module assignes the designation of Query to the schema with higher allele density per loci.
 
 The module goes throught three matching process and a fourth optional one.
@@ -169,7 +170,7 @@ Report files description
 
 .. csv-table:: **Match_Schemas_Results.tsv**
     :header: "Query", "Subject", "BSR", "Process"
-    :widths: 30, 30, 10, 30
+    :widths: 20, 20, 10, 20
 
     x, y, 0.8, hashes_vs_hashes
     z, a, 1.0, hashes_vs_hashes

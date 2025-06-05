@@ -20,7 +20,7 @@ Procedure
 
 1. Open a terminal window.
 
-2. Follow the following steps: `DownloadAssemblies tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/DownloadAssembliesTutorial.html>`.
+2. Follow the following steps: `DownloadAssemblies tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/DownloadAssembliesTutorial.html>`_.
 
 3. Based on the downloaded assemblies choose those that you want to use as schema seed (e.g best quality, most complete, etc.), create a schema using the `CreateSchema` module from chewBBACA.
 
@@ -45,37 +45,34 @@ Procedure
 - Replace `/path/to/output_folder` with the path to the output folder.
 - For more information on the `AlleleCall` module, refer to the `chewBBACA documentation <https://chewbbaca.readthedocs.io/en/latest/user/modules/AlleleCall.html>`_.
 
-5. Follow the following steps: `IdentifySpuriousGenes Unclassified CDS tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS.html>`.
+5. Follow the following steps: `IdentifySpuriousGenes Unclassified CDS tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS.html>`_.
 
-- In, normal workflow the users would ave to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
+- In a normal workflow the users would have to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
 
-6. Follow the following steps: `AdaptLoci tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/AdaptLociTutorial.html>`.
+6. Follow the following steps: `AdaptLoci tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/AdaptLociTutorial.html>`_.
 
 - Pass as input the temp_fastas_path.txt, that has the paths for temp_fastas folder generated in the `IdentifySpuriousGenes` module.
 
-7. Follow the following steps: `IdentifySpuriousGenes tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifySpuriousGenesSchema.html>`.
+7. Follow the following steps: `IdentifySpuriousGenes tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifySpuriousGenesSchema.html>`_.
 
-- In, normal workflow the users would ave to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
+- In a normal workflow the users would have to select the best loci to keep based on the recomendations of the `IdentifySpuriousGenes` module. Here we skip this step to show the full workflow.
 
 Optional modules to further refine or create a schema:
 ------------------------------------------------------
 
-8. Follow the following steps: `MatchSchemas tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/MatchSchemasTutorial.html>`.
+8. Follow the following steps: `MatchSchemas tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/MatchSchemasTutorial.html>`_.
 
 - Matches two different schema loci.
 
-9. Follow the following steps: `SchemaAnnotation tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/SchemaAnnotationTutorial.html>`.
+9. Follow the following steps: `SchemaAnnotation tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/SchemaAnnotationTutorial.html>`_.
 
 - Annotates the schema with additional information from various databases.
 
-10. Follow the following steps: `IdentifyParalogousLoci tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial.html>`.
+10. Follow the following steps: `IdentifyParalogousLoci tutorial <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Tutorials/IdentifyParalogousLociTutorial.html>`_.
 
 - Identifies paralogous loci in a schema.
 
-Note
-----
-
-The assemblies present in NCBI may change, so the results may vary. For exact results as provided in the Zenodo files, use the provided assemblies.
+.. Note:: The assemblies present in NCBI may change, so the results may vary.
 
 Conclusion
 ----------

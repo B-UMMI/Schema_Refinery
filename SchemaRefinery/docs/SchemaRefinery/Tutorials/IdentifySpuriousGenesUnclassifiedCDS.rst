@@ -12,7 +12,7 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
-- Download the schema file from the ChewBACCA tutorial: https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip
+- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure
 ---------
@@ -34,17 +34,16 @@ Procedure
 5. Check the output directory for the identified spurious genes.
     The first lines of the final clusters file should look like:
 ::
+    
     Loci_id	Action
-    GCA-000007265-protein582	Join
-    GCA-000730215-protein582	Join
-    GCA-000831145-protein1681	Join
     GCA-001275545-protein1163	Join
-    GCA-000730255-protein607	Join
-    GCA-000427075-protein661	Join
-    GCA-000831105-protein622	Join
+    GCA-000831145-protein1681	Join
+    GCA-000007265-protein582	Join
     GCA-000012705-protein568	Join
+    GCA-000730215-protein582	Join
+    GCA-000831105-protein622	Join
+    GCA-000730255-protein607	Choice
     #
-
 
 Example Output Structure
 ------------------------

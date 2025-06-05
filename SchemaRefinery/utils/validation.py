@@ -532,17 +532,16 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     errors: List[str] = []
 
     # Verify if files or directories exist
-    verify_schema_structure(args.schema_directory, errors)
+    for path in args.schema_directory:
+        verify_schema_structure(path, errors)
     verify_path_exists(args.output_directory, 'directory', errors)
-    verify_path_exists(args.allelecall_directory, 'file', errors)
+    for path in args.allelecall_directory:
+        verify_path_exists(path, 'directory', errors)
 
-    if args.possible_new_loci:
-        verify_schema_structure(args.possible_new_loci, errors)
+    if args.run_mode == 'schema_vs_schema':
+        if len(args.schema_directory) != 2 or len(args.allelecall_directory) != 2:
+            errors.append("\nError: With run mode 'schema_vs_schema', 'schema_directory' and 'allelecall_directory' need to have two paths each, one per schema.")
 
-    if args.run_mode == 'unclassified-cds':
-        if args.possible_new_loci:
-            errors.append("\nError: 'possible-new-loci' cannot be used with 'unclassified_cds' run mode.")
-    
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
         errors.append("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
     

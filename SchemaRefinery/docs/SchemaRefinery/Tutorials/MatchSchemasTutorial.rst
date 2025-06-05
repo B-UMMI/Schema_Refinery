@@ -12,14 +12,14 @@ Prerequisites
 - SchemaRefinery installed
 - Python 3.9 or higher
 - Biopython library (`pip install biopython`)
-- Download the schema file from the ChewBACCA tutorial: https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip
+- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure
 ---------
 
 1. Open a terminal window.
 
-2. Run the following command to cg/wgMSLT genomic schemas:
+2. Run the following command to match two genome schemas:
 
 .. code-block:: bash
 

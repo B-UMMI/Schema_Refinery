@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 from typing import Dict, Tuple, List
 
 try:
@@ -50,10 +51,10 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
     second_df = pd.read_csv(consolidate_annotation_files[1], delimiter='\t', dtype=str, index_col=False)
     
     # Filter and sort the first and second column of both files
-    first_0_filtered = first_df[first_df.iloc[:, 0] != 'Not matched'].sort_values(by=first_df.columns[0]).drop_duplicates(subset=first_df.columns[0]).reset_index(drop=True)
-    second_0_filtered = second_df[(second_df.iloc[:, 0] != 'Not matched')].sort_values(by=second_df.columns[0]).drop_duplicates(subset=second_df.columns[0]).reset_index(drop=True)
-    first_1_filtered = first_df[(first_df.iloc[:, 1] != 'Not matched')].sort_values(by=first_df.columns[1]).drop_duplicates(subset=first_df.columns[1]).reset_index(drop=True)
-    second_1_filtered = second_df[(second_df.iloc[:, 1] != 'Not matched')].sort_values(by=second_df.columns[1]).drop_duplicates(subset=second_df.columns[1]).reset_index(drop=True)
+    first_0_filtered = first_df[first_df.iloc[:, 0] != 'Not matched'].sort_values(by=first_df.columns[0]).drop_duplicates(subset=first_df.columns[0]).replace('', np.nan).dropna(subset=first_df.columns[0]).reset_index(drop=True)
+    second_0_filtered = second_df[(second_df.iloc[:, 0] != 'Not matched')].sort_values(by=second_df.columns[0]).drop_duplicates(subset=second_df.columns[0]).replace('', np.nan).dropna(subset=second_df.columns[0]).reset_index(drop=True)
+    first_1_filtered = first_df[(first_df.iloc[:, 1] != 'Not matched')].sort_values(by=first_df.columns[1]).drop_duplicates(subset=first_df.columns[1]).replace('', np.nan).dropna(subset=first_df.columns[1]).reset_index(drop=True)
+    second_1_filtered = second_df[(second_df.iloc[:, 1] != 'Not matched')].sort_values(by=second_df.columns[1]).drop_duplicates(subset=second_df.columns[1]).replace('', np.nan).dropna(subset=second_df.columns[1]).reset_index(drop=True)
 
     matches = {
     'f0s0': first_0_filtered.iloc[:, 0].isin(second_0_filtered.iloc[:, 0]).sum(),
@@ -64,6 +65,8 @@ def consolidate_annotations(consolidate_annotation_files: List[str],
 
     best_match = max(matches, key=matches.get)
 
+    if matches[best_match] == 0:
+        prf.print_message('No matches were found. The final file will have no annotations.', 'warning')
 
     prf.print_message('Merging first 2 files...', 'info')
     # Compare the first columns of both files

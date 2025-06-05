@@ -19,7 +19,7 @@ Dependencies
 
 - Python 3.9 or higher
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
-- ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
+- ChewBBACA (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html`_ or using bioconda)
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -69,7 +69,7 @@ Command-Line Arguments
 Algorithm Explanation
 ---------------------
 This module calls on the PrepExternalSchema module from chewBBACA with a simplified list of arguments.
-For more clarification check the PrepExternalSchema documentation (`https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#`)
+For more clarification check the PrepExternalSchema documentation (`https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#`_)
 
 Outputs
 -------

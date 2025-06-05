@@ -10,6 +10,8 @@ parameters.
 Code documentation
 ------------------
 """
+import platform
+import shutil
 from typing import Tuple
 
 # GitHub repository and contacts
@@ -62,7 +64,7 @@ DNA_BASES = ['A', 'T', 'C', 'G']
 
 PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
 
-IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema']
+IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema', 'schema_vs_schema']
 
 SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
@@ -133,3 +135,25 @@ FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 # IdentifyingSpuriousLoci module
 
 CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
+
+
+###### copied from chewBBACA for testing blast
+BLASTDBCMD_ALIAS = 'blastdbcmd.exe' if platform.system() == 'Windows' else shutil.which('blastdbcmd')
+
+# Protein to create dummy FASTA records used to check if sequence IDs are interpreted as PDB IDs
+GENOME_LIST = 'listGenomes2Call.txt'
+DUMMY_PROT = 'MKFFYRPTGLAISINDAYQKVNFSTDGSSLRVDNPTPYFITYDQIKINGKSVKNVDMVAPYSQQTYPFKGARANETVQWTVVNDYGGDQKGESILH'
+DUMMY_FASTA = 'dummy.fasta'
+DUMMY_BLASTDB = 'dummy_db'
+DUMMY_DIR = 'dummy_dir'
+DUMMY_BLASTDBCMD_FASTA = 'dummy_blastdbcmd.fasta'
+FASTA_RECORD_TEMPLATE = '>{0}\n{1}'
+MAKEBLASTDB_ALIAS = 'makeblastdb.exe' if platform.system() == 'Windows' else shutil.which('makeblastdb')
+
+INPUTS_PDB_PREFIX = ('The following input files have prefixes that are interpreted by BLAST '
+					 'as chain PDB IDs:\n{0}\nBLAST modifies the '
+					 'IDs of the CDSs that include these prefixes when creating a database, '
+					 'which leads to issues when SchemaRefinery cannot find the original '
+					 'IDs in the results. Please ensure that the file prefixes (substring '
+					 'before the first "." in the filename) cannot be interpreted as chain PDB IDs.')
+
