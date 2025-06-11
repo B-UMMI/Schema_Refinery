@@ -187,6 +187,22 @@ def main(args: Namespace) -> None:
         # Merge all results into a single file
         upf.merge_files_into_same_file_by_key(results_files, 'Locus', merged_file_path)
 
+    # Final statistics
+    annotations_count = 0
+    hypoteticals = 0
+    with open(merged_file_path, "r") as f:
+        for line in f:
+            parts = line.strip().split("\t")
+            if len(parts) > 3:
+                if any(field != "NA" for field in parts[1:]):
+                    annotations_count += 1
+            if any("hypothetical protein" in field.lower() for field in parts):
+                hypoteticals += 1
+
+    
+    prf.print_message(f'A total of {annotations_count-1} loci were annotated.', 'info')
+    prf.print_message(f'From these {hypoteticals} loci where annotated as "hypothetical proteins".', 'info')
+
     if not args.no_cleanup:
         if 'match-schemas' not in args.annotation_options:
             prf.print_message("Cleaning up temporary files...", 'info')
