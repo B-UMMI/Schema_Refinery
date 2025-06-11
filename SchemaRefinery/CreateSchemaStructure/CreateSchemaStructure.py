@@ -166,7 +166,7 @@ def create_schema_structure(recommendations_file: str,
     pf.print_message("Create Schema Structure...", "info")
     # Schema path
     schema_path = os.path.join(output_d, 'schema')
-    #AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, cpu, bsr, translation_table)
+    AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, cpu, bsr, translation_table)
 
     ###### Final stats to be printed
     # nr fasta inicial file
