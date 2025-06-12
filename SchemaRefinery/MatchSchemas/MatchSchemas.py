@@ -531,9 +531,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		pf.print_message(f"The BLASTp reps vs alleles comparison found {len(best_bsr_values)} matches.", "info")
 		pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
 
-	#pf.print_message(f"{len(unmatched_queries)} query loci had no matches.", "info")
-	#pf.print_message(f"{len(unmatched_subjects)} subject loci had no matches.", "info")
-
 	pf.print_message(f"Writing file with list of unmatched queries and subjects...", "info")
 	# Create file with list of queries and subjects that had no matches
 	unmatched_queries_lines = [f'{query}\tNot matched\tNA\treps_vs_reps'
@@ -555,7 +552,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	final_results_file = os.path.join(output_d, 'Match_Schemas_Results.tsv')
 	ff.concatenate_files(results_files, final_results_file, header='Query\tSubject\tBSR\tProcess\n')
 
-	# Final statistics
+	# Print final statistics
 	pf.print_message('')
 	pf.print_message(f'A total of {total_matches} loci were matched from each schema.', 'info')
 	pf.print_message(f'\t {len(unmatched_queries)} Query loci were not matched.', 'info')

@@ -372,6 +372,7 @@ def identify_paralogous_loci(schema_directory: str,
     pf.print_message('Writting recommendations TSV file', 'info')
     header: str = "Locus\tAction\n"
     Joined: List[str] = []
+    par_loci = 0
     paralogous_list_check = cf.cluster_by_ids(paralogous_list_check)
     paralogous_loci_report_mode: str = os.path.join(output_d, 'paralogous_loci_final_recommendations.tsv')
     with open(paralogous_loci_report_mode, 'w') as report_file:
@@ -381,6 +382,7 @@ def identify_paralogous_loci(schema_directory: str,
                 # The action is always 'Join'
                 report_file.write(f"{loci}\tJoin\n")
                 Joined.append(loci)
+                par_loci += 1
             # Each cluster is separated by a '#' row
             report_file.write("#\t\n")
         for loci, loci_path in query_paths_dict.items():
@@ -397,6 +399,11 @@ def identify_paralogous_loci(schema_directory: str,
         for cluster in paralogous_list:
             report_file.write(f"Joined_{cluster[0]}\t{','.join(cluster)}\n#\n")
 
+    # Final statistics
+    pf.print_message('')
+    pf.print_message(f'{par_loci} loci were found to be paralogous and joined into {len(paralogous_list_check)} groups.', 'info')
+    pf.print_message('')
+
     # Annotate the recomendations files using the consolidate option from the annotation module
     consolidated_annotations = os.path.join(output_d, "paralogous_annotations.tsv") 
     if annotation_paths:
@@ -408,6 +415,22 @@ def identify_paralogous_loci(schema_directory: str,
         consolidated_annotations: str = cs.consolidate_annotations(files,
                                     False,
                                     consolidated_annotations)
+         # Final statistics
+        annotations_count = 0
+        hypoteticals = 0
+        with open(consolidated_annotations, "r") as f:
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) > 3:
+                    if any(field != "NA" for field in parts[1:]):
+                        annotations_count += 1
+                if any("hypothetical protein" in field.lower() for field in parts):
+                    hypoteticals += 1
+
+        
+        prf.print_message(f'A total of {annotations_count-1} loci were annotated.', 'info')
+        prf.print_message(f'From these {hypoteticals} loci where annotated as "hypothetical proteins".', 'info')
+
         pf.print_message('Annotation consolidation successfully completed.', 'info')
         pf.print_message('')
 

@@ -79,6 +79,12 @@ def create_schema_structure(recommendations_file: str,
                 continue
             # Split the line into the action and the IDs   
             id, recommendation = line.split('\t')
+            # If there still is a action Choice in the recommendation file
+            # If yes, then exit the module, that action is not accepted
+            if recommendation == "Choice":
+                pf.print_message('The input recommendation file still has loci labeled "Choice".', 'warning')
+                pf.print_message('Please change these into Add, Join or Drop.', 'warning')
+                sys.exit()
             # Check if the recommendation is different from the preivous one
             # If so, start a new set of IDs
             if recommendation != last_rec:
@@ -138,13 +144,6 @@ def create_schema_structure(recommendations_file: str,
                             pf.print_message(f'File {id_} not found in the FASTA folder', "info")
                 total_groups += 1
                 pf.print_message(f'In this group there were a total of {total_alleles} alleles, out of which {allele_id-1} were unique.')
-            # If the recommendation is 'Choice' system exits
-            # All Choice actions should be changed to one of the other 3 actions
-            elif "Choice" in recommendation:
-                pf.print_message('The recommendation file should have no loci with the action "Choice".', 'warning')
-                pf.print_message(f'{ids_list[0]} has the action "Choice". Change it to "Join", "Drop" or "Add".', 'warning')
-                sys.exit()
-            # If the recommendation is 'Add'
             elif "Add" in recommendation:
                 for id_ in ids_list:
                     processed_files.append(id_) # Add the ID to the processed_files list
@@ -156,11 +155,14 @@ def create_schema_structure(recommendations_file: str,
                     pf.print_message(f'File {id_} copied to {output_file}', "info")
                     total_add += 1
             # If the recommendation is 'Drop'
-            else:
+            elif "Drop" in recommendation:
                 processed_files.extend(ids_list) # Add the IDS to the processed_files list
                 total_drop += len(ids_list)
                 pf.print_message(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action", "info")
-            pf.print_message('')
+            else:
+                pf.print_message(f'The action of ids {ids_list} is not recognized. Chose beteen Add, Join and Drop.', 'warning')
+                sys.exit()
+
 
     # Create schema structure
     pf.print_message("Create Schema Structure...", "info")
@@ -168,19 +170,17 @@ def create_schema_structure(recommendations_file: str,
     schema_path = os.path.join(output_d, 'schema')
     AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, cpu, bsr, translation_table)
 
-    ###### Final stats to be printed
-    # nr fasta inicial file
-    pf.print_message(f'The input schema ({fastas_folder}) has {len(fastas_files)} loci.')
-    # nr of files joined into x groups
-    pf.print_message(f'\t{total_join} loci were joined into {total_groups} groups.')
-    # nr of files dropped
-    pf.print_message(f'\t{total_drop} loci were dropped from the final schema.')
-    # nr of files added
-    pf.print_message(f'\t{total_add} loci were directly added into the final schema.')
-    # nr fastas final file
+    # Print final statistics
+    pf.print_message('')
+    pf.print_message(f'The input schema ({fastas_folder}) has {len(fastas_files)} loci.', 'info')
+    pf.print_message(f'\t{total_join} loci were joined into {total_groups} groups.', 'info')
+    pf.print_message(f'\t{total_drop} loci were dropped from the final schema.', 'info')
+    pf.print_message(f'\t{total_add} loci were directly added into the final schema.', 'info')
+
     final_schema: List[str] = []
     final_schema += [file for file in os.listdir(schema_path) if file.endswith('.fasta')]
-    pf.print_message(f'The final schema has a total of {len(final_schema)} loci.')
+    pf.print_message(f'The final schema has a total of {len(final_schema)} loci.', 'info')
+    pf.print_message('')
 
     if not no_cleanup:
         pf.print_message("\nCleaning up temporary files...", "info")
