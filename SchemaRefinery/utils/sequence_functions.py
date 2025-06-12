@@ -470,7 +470,7 @@ def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
 	i = 1
 	for rec in read_fasta_file_iterator(file_path):
 		if count_seq:
-			pf.print_message(f"Processed {i} CDS", "info", end='\r', flush=True)
+			# pf.print_message(f"Processed {i} CDS", "info", end='\r', flush=True)
 			i += 1
 		fasta_dict[rec.id] = str(rec.seq)
 	return fasta_dict

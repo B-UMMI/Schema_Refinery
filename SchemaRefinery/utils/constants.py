@@ -136,12 +136,9 @@ FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 
 CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5')
 
-
-###### copied from chewBBACA for testing blast
 BLASTDBCMD_ALIAS = 'blastdbcmd.exe' if platform.system() == 'Windows' else shutil.which('blastdbcmd')
 
 # Protein to create dummy FASTA records used to check if sequence IDs are interpreted as PDB IDs
-GENOME_LIST = 'listGenomes2Call.txt'
 DUMMY_PROT = 'MKFFYRPTGLAISINDAYQKVNFSTDGSSLRVDNPTPYFITYDQIKINGKSVKNVDMVAPYSQQTYPFKGARANETVQWTVVNDYGGDQKGESILH'
 DUMMY_FASTA = 'dummy.fasta'
 DUMMY_BLASTDB = 'dummy_db'
