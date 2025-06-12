@@ -6,6 +6,8 @@ Description
 
 The `MatchSchemas` module parses command-line arguments and initiates the process to match schemas. This module sets up an argument parser to handle various command-line options for matching schemas and then calls the main function of the `MatchSchemas` class with the parsed arguments.
 
+This module can be used to compare versions of schemas of the same species or schemas of two different species. It identifies matching loci between the two schemas.
+
 Features
 --------
 
@@ -74,6 +76,11 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+
+.. Note::
+    The --rep_vs_alleles mode is a more indept comparision. It takes longer to process, however the number of extra matches found is small.
+    Should be used as an extra and more detailed comparision.
+
 Algorithm Explanation
 ---------------------
 
@@ -83,6 +90,7 @@ MatchSchemas Algorithm Flowchart:
    :alt: MatchSchemas Algorithm
    :width: 80%
    :align: center
+
 
 
 The module assignes the designation of Query to the schema with higher allele density per loci.
@@ -172,8 +180,8 @@ Report files description
     :header: "Query", "Subject", "BSR", "Process"
     :widths: 20, 20, 10, 20
 
-    x, y, 0.8, hashes_vs_hashes
-    z, a, 1.0, hashes_vs_hashes
+    x, y, 1.0, hashes_dna
+    z, a, 1.0, hashes_prot
     b, c, 0.965, rep_vs_rep
     d, Not Matched, NA, rep_vs_rep
     Not Matched, e, NA, rep_vs_alleles
@@ -189,6 +197,8 @@ columns description:
     Process: From which type of comparision is this match from.
 
 For the hashes comparisions the BSR value will always be set to 1.0 as this will be considered the same locus.
+
+This file can be used as the input of the `SchemaAnnotation` module with the `match_schemas` option.
 
 Examples
 --------
