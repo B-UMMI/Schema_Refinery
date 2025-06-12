@@ -170,6 +170,7 @@ def fetch_linked_ids(identifiers: List[str], retry: int, database: str) -> Dict[
         Dictionary with keys as the input identifiers and values as lists of linked identifiers.
     """
     i = 0
+    linked_ids: Dict[str, List[str]] = []
     while i < retry:
         try:
             if database == 'assembly':

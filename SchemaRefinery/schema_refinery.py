@@ -162,6 +162,11 @@ def download_assemblies() -> None:
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 	
 	# Transfer values from criteria file to the args namespace
 	args.taxon = args.input_file.pop('taxon', None)
@@ -382,6 +387,11 @@ def schema_annotation() -> None:
 	# Parse the command-line arguments
 	args = parser.parse_args()
 
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
+
 	# Validate the arguments
 	val.validate_schema_annotation_module_arguments(args)
 
@@ -572,6 +582,11 @@ def identify_spurious_genes() -> None:
 	# Parse the command-line arguments
 	args = parser.parse_args()
 
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
+
 	# Validate the arguments
 	val.validate_identify_spurious_genes_module_arguments(args)
 
@@ -664,6 +679,11 @@ def adapt_loci() -> None:
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_adapt_loci_module_arguments(args)
@@ -789,6 +809,11 @@ def identify_paralogous_loci() -> None:
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_identify_paralogous_loci_arguments(args)
@@ -922,6 +947,11 @@ def match_schemas() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
+	
+    pf.print_message('Command line:', 'info')
+    for arg in vars(args):
+        pf.print_message(f'\t{arg}: {getattr(args, arg)}', 'info')
+    pf.print_message('')
 
     # Validate the arguments
     val.validate_match_schemas(args)
@@ -1027,6 +1057,11 @@ def create_schema_structure() -> None:
 	
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_create_schema_structure(args)

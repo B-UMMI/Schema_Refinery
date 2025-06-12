@@ -3,7 +3,7 @@ AdaptLoci - Adapt fastas into a chewBBACA schema
 
 Description
 -----------
-The `AdaptLoci` module is designed to adapt loci from FASTA files into a chewBBACA-compatible schema. This module processes input loci and runs the module PrepExternalSchema from chewBBACA.
+The `AdaptLoci` module is designed to adapt loci from FASTA files into a chewBBACA-compatible schema. This is teh schema structure that is assumed all throughout the tool. This module processes input loci and runs the module PrepExternalSchema from chewBBACA.
 
 This module is essential for researchers and bioinformaticians working on genomic schema refinement, providing a robust and flexible tool for adapting loci into a standardized schema format.
 
@@ -19,7 +19,7 @@ Dependencies
 
 - Python 3.9 or higher
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
-- ChewBBACA (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html`_ or using bioconda)
+- ChewBBACA (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda)
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -66,10 +66,12 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+
 Algorithm Explanation
 ---------------------
 This module calls on the PrepExternalSchema module from chewBBACA with a simplified list of arguments.
-For more clarification check the PrepExternalSchema documentation (`https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#`_)
+For more clarification check the PrepExternalSchema documentation (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html <https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#>`_)
+
 
 Outputs
 -------

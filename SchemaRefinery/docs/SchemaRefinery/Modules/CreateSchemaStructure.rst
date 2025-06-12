@@ -3,7 +3,7 @@ CreateSchemaStructure - Create a new schema based on
 
 Description
 ------------
-The `CreateSchemaStructure` module is a module designed to facilitate the creation of a schema structure from a given schema or fasta files based on user recommendation file. This module parses command-line arguments to initiate the schema creation process, allowing users to efficiently generate a schema structure from a provided schema file. The generated schema structure is stored in the specified output directory.
+The `CreateSchemaStructure` module is a module designed to facilitate the creation of a schema structure from a given schema or fasta files based on user recommendation file from the `IdentifyParalogousLoci` and `IdentifySpuriousGenes` modules. This module parses command-line arguments to initiate the schema creation process, allowing users to efficiently generate a schema structure from a provided schema file. The generated schema structure is stored in the specified output directory.
 
 Overview
 --------
@@ -83,7 +83,13 @@ The `CreateSchemaStructure` module uses the following algorithm to create a sche
    :align: center
 
 
-Make sure that before running this module the input file `recommendations` has been check and that  you agree with all the changes proposed. For example, a locus that has the action Join should not have the action Choice as well. One of these rows should be removed.
+Make sure that before running this module the input file `recommendations` has been check and that  you agree with all the changes proposed. **No action should have the option 'Choice'.** These should be changed into one of the other three actions.
+
+The action **'Join'** will move all the alleles of that cluster of loci into the fasta file of the first locus of the cluster. The other Loci files will be removed from the final schema.
+
+The action **'Drop'** will remove that locus fasta file from the final schema.
+
+The action **'Add'** will just copy the fasta file of that locus from the input schema into the final schema with no alterations.
 
 Since this module uses the AdaptLoci module to format the schema in the end, the schema created will conform with the structure of the schemas used by chewBBACA.
 

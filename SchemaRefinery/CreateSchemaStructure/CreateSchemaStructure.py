@@ -53,7 +53,7 @@ def create_schema_structure(recommendations_file: str,
     # Get all FASTA paths in the FASTA folder
     fastas_files: Dict[str, str] = {
         os.path.basename(fasta_file).split('.')[0]: os.path.join(fastas_folder, fasta_file)
-        for fasta_file in os.listdir(fastas_folder)
+        for fasta_file in os.listdir(fastas_folder) if fasta_file.endswith('.fasta')
     }
     action_list: Dict[int, Dict[str, List[str]]] = {}
     action_id: int = 1
@@ -79,6 +79,12 @@ def create_schema_structure(recommendations_file: str,
                 continue
             # Split the line into the action and the IDs   
             id, recommendation = line.split('\t')
+            # If there still is a action Choice in the recommendation file
+            # If yes, then exit the module, that action is not accepted
+            if recommendation == "Choice":
+                pf.print_message('The input recommendation file still has loci labeled "Choice".', 'warning')
+                pf.print_message('Please change these into Add, Join or Drop.', 'warning')
+                sys.exit()
             # Check if the recommendation is different from the preivous one
             # If so, start a new set of IDs
             if recommendation != last_rec:
@@ -90,19 +96,27 @@ def create_schema_structure(recommendations_file: str,
             action_list.setdefault(action_id, {}).update({recommendation: ids_list})
 
     processed_files: List[str] = []
+    total_join: int = 0
+    total_groups: int = 0
+    total_drop: int = 0
+    total_add: int = 0
     # For each action in the action_list dictionary
-    # Recomendations can be 'Joined', 'Choice', 'Drop' or 'Add'
+    # Recomendations can be 'Join', 'Choice', 'Drop' or 'Add'
     for action_id, recommendations in action_list.items():
         # For each recommendation in the action dictionary
+        pf.print_message(f'Processing group {action_id}', 'info')
         for recommendation, ids_list in recommendations.items():
-            # If the recommendation is 'Joined'
+            pf.print_message(f'Involves the following loci: {ids_list} with action {recommendation}')
+            # If the recommendation is 'Join'
             if "Join" in recommendation:
+                pf.print_message(f'These loci will be joined under the locus name {ids_list[0]}')
                 output_file: str = os.path.join(temp_fasta_folder, f'{ids_list[0]}.fasta')
                 # Append the new FASTA file path to the new_fastas_path list
                 new_fastas_path.append(output_file)
                 # Write the new FASTA file with the desired outcome
+                allele_id: int = 1  # Initialize the allele_id
+                total_alleles: int = 0
                 with open(output_file, 'w') as out:
-                    allele_id: int = 1  # Initialize the allele_id
                     seen_fastas: List[str] = []  # Initialize the seen_fastas list that stores FASTA hashes
                     # For each ID in the ids_list
                     for id_ in ids_list:
@@ -110,8 +124,10 @@ def create_schema_structure(recommendations_file: str,
                             processed_files.append(id_) # Add the ID to the processed_files list
                             fasta_file: str = fastas_files[id_]  # Get the FASTA file path
                             fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(fasta_file, out)  # Fetch the FASTA dictionary
+                            total_join +=1 
                             # For each header and sequence in the FASTA dictionary
                             for header, seq in fasta_dict.items():
+                                total_alleles += 1
                                 fasta_hash: str = sf.hash_sequence(seq)  # Get the hash of the sequence
                                 # If the FASTA hash is not in the seen_fastas list
                                 if fasta_hash not in seen_fastas:
@@ -126,13 +142,8 @@ def create_schema_structure(recommendations_file: str,
                             pf.print_message(f'File {id_} added to {ids_list[0]} at {output_file}', "info")
                         else:
                             pf.print_message(f'File {id_} not found in the FASTA folder', "info")
-            # If the recommendation is 'Choice' system exits
-            # All Choice actions should be changed to one of the other 3 actions
-            elif "Choice" in recommendation:
-                pf.print_message('The recommendation file should have no loci with the action "Choice".', 'warning')
-                pf.print_message(f'{ids_list[0]} has the action "Choice". Change it to "Join", "Drop" or "Add".', 'warning')
-                sys.exit()
-            # If the recommendation is 'Add'
+                total_groups += 1
+                pf.print_message(f'In this group there were a total of {total_alleles} alleles, out of which {allele_id-1} were unique.')
             elif "Add" in recommendation:
                 for id_ in ids_list:
                     processed_files.append(id_) # Add the ID to the processed_files list
@@ -142,16 +153,34 @@ def create_schema_structure(recommendations_file: str,
                     fasta_file= fastas_files[id_]  # Get the FASTA file path
                     shutil.copy(fasta_file, output_file)
                     pf.print_message(f'File {id_} copied to {output_file}', "info")
+                    total_add += 1
             # If the recommendation is 'Drop'
-            else:
+            elif "Drop" in recommendation:
                 processed_files.extend(ids_list) # Add the IDS to the processed_files list
+                total_drop += len(ids_list)
                 pf.print_message(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action", "info")
+            else:
+                pf.print_message(f'The action of ids {ids_list} is not recognized. Chose beteen Add, Join and Drop.', 'warning')
+                sys.exit()
+
 
     # Create schema structure
     pf.print_message("Create Schema Structure...", "info")
     # Schema path
     schema_path = os.path.join(output_d, 'schema')
     AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, cpu, bsr, translation_table)
+
+    # Print final statistics
+    pf.print_message('')
+    pf.print_message(f'The input schema ({fastas_folder}) has {len(fastas_files)} loci.', 'info')
+    pf.print_message(f'\t{total_join} loci were joined into {total_groups} groups.', 'info')
+    pf.print_message(f'\t{total_drop} loci were dropped from the final schema.', 'info')
+    pf.print_message(f'\t{total_add} loci were directly added into the final schema.', 'info')
+
+    final_schema: List[str] = []
+    final_schema += [file for file in os.listdir(schema_path) if file.endswith('.fasta')]
+    pf.print_message(f'The final schema has a total of {len(final_schema)} loci.', 'info')
+    pf.print_message('')
 
     if not no_cleanup:
         pf.print_message("\nCleaning up temporary files...", "info")

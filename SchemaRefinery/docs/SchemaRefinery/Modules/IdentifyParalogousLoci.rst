@@ -166,7 +166,7 @@ columns description:
 
 .. csv-table:: **paralogous_loci_report_cluster_by_id.tsv**
    :header: "Joined_loci_id", "Clustered_loci_ids"
-   :widths: 10, 40
+   :widths: 10, 20
 
    x, "x,a,b,c"
    y, "y,d,e,f"
@@ -202,9 +202,11 @@ columns description:
     #: Separates each cluster of loci.
 
 
+This file can be used as the input of the `CreateSchemaStructure`. The annotated version of this file can not.
+
 .. csv-table:: **paralogous_annotations.tsv**
    :header: "Loci", "Action", "Locus_annotation", "Annotation"
-   :widths: 10, 20, 10, 40
+   :widths: 10, 15, 10, 20
 
    x, Join, x, annotation
    y, Join, y, annotation

@@ -313,6 +313,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	# Store query and subject loci that matched and were excluded
 	matched_queries = set()
 	matched_subjects = set()
+	total_matches = 0
 	# Find common keys (matching DNA hashes)
 	common_keys = set(query_hashes) & set(subject_hashes)
 	match_data = {}
@@ -347,11 +348,12 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		pf.print_message("Writting results to the output file...", "info")
 		best_blast_matches_file = write_best_matches_to_file(match_data, output_directory, 'hashes_dna')
 		results_files.append(best_blast_matches_file)
+		total_matches += len(match_data)
 	else:
 		pf.print_message("No matches found based on DNA hashes.", "info")
 
 	# Print out stats
-	pf.print_message(f"The DNA hash comparison found {len(common_keys)} matches.", "info")
+	pf.print_message(f"The DNA hash comparison found {len(common_keys)} matches between alleles.", "info")
 	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
 	pf.print_message(f"{len(subject_schema_data[1])} subject loci will continue to the next step.", "info")
 
@@ -412,11 +414,12 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		pf.print_message("Writting results to the output file...", "info")
 		best_blast_matches_file = write_best_matches_to_file(match_data, output_directory, 'hashes_prot')
 		results_files.append(best_blast_matches_file)
+		total_matches += len(match_data)
 	else:
 		pf.print_message("No matches found based on protein hashes.", "info")
 
 	# Print out stats
-	pf.print_message(f"The protein hash comparison found {len(common_keys)} matches.", "info")
+	pf.print_message(f"The protein hash comparison found {len(common_keys)} matches between alleles.", "info")
 	pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
 	pf.print_message(f"{len(subject_translated_paths)} subject loci will continue to the next step.", "info")
 
@@ -465,6 +468,7 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 		pf.print_message("Writting results to the output file...", "info")
 		best_blast_matches_file = write_best_matches_to_file(best_bsr_values, output_directory, 'reps_vs_reps')
 		results_files.append(best_blast_matches_file)
+		total_matches += len(best_bsr_values)
 	else:
 		pf.print_message("No matches found based on reps vs reps BLASTp.", "info")
 
@@ -514,6 +518,8 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 			pf.print_message("Writting results to the output file...", "info")
 			best_blast_matches_file = write_best_matches_to_file(best_bsr_values, output_directory, 'reps_vs_alleles')
 			results_files.append(best_blast_matches_file)
+			total_matches += len(best_bsr_values)
+
 		else:
 			pf.print_message("No matches found based on reps vs alleles BLASTp.", "info")
 
@@ -524,9 +530,6 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 
 		pf.print_message(f"The BLASTp reps vs alleles comparison found {len(best_bsr_values)} matches.", "info")
 		pf.print_message(f"{len(matched_subjects)} subject loci had matches and were excluded.", "info")
-
-	pf.print_message(f"{len(unmatched_queries)} query loci had no matches.", "info")
-	pf.print_message(f"{len(unmatched_subjects)} subject loci had no matches.", "info")
 
 	pf.print_message(f"Writing file with list of unmatched queries and subjects...", "info")
 	# Create file with list of queries and subjects that had no matches
@@ -548,6 +551,13 @@ def match_schemas(first_schema_directory: str, second_schema_directory: str, out
 	output_d= os.path.abspath(output_directory)
 	final_results_file = os.path.join(output_d, 'Match_Schemas_Results.tsv')
 	ff.concatenate_files(results_files, final_results_file, header='Query\tSubject\tBSR\tProcess\n')
+
+	# Print final statistics
+	pf.print_message('')
+	pf.print_message(f'A total of {total_matches} loci were matched from each schema.', 'info')
+	pf.print_message(f'\t {len(unmatched_queries)} Query loci were not matched.', 'info')
+	pf.print_message(f'\t {len(unmatched_subjects)} Subject loci were not matched.', 'info')
+	pf.print_message('')
 
 	# Clean up temporary files
 	if not no_cleanup:

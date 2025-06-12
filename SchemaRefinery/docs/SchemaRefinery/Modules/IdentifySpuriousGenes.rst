@@ -116,6 +116,9 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+
+The options `--schema-directory` and `--allelecall-directory` must have two paths each if the `run_mode` is `schema_vs_schema`. One path per schema and each schema must have a respective AlleleCall directory.
+
 .. Note::
     In `processing_mode` the option `reps_vs_reps` is the fastest and covers most of the cases.
     The option `all_vs_all` takes much more time and changes the recommendation of around more 1% of the total loci. 
@@ -160,10 +163,9 @@ Depending on the classification, each locus will have a specific action recommen
 
 Choice is a recommendation for the user to decide if the locus should just be added with no alteration ('Add'), dropped ('Drop') or joined to the cluster it is in ('Join'). 
 
-.. Note:: 
-    Before passing the recommendation file to the CSS module make sure there are no 'Choice' in the action column.
-
 The other loci will have the action 'Add' and will just be added, without alteration, to the new schema.
+
+The recommendation associated to each locus can change in the final output. For example, a locus that was part of a 1a cluster can be marked as 'Choice' if it does not pass certain thresholds of frequency.
 
 The column from the annotation file that has the highest number of matches between loci IDs with the schema fasta IDs will be chosen as the one to merge.
 
@@ -388,6 +390,12 @@ columns description:
     Locus: Name of the locus to be joined in the clustered.
     Action: Action to be taken (Join, Choice, Drop or Add).
     #: Separates each cluster of loci.
+
+This file can be used as the input of the `CreateSchemaStructure`. The annotated version of this file can not. 
+
+.. Note:: 
+    Before passing the recommendation file to the CSS module make sure there are no 'Choice' in the action column.
+
 
 
 .. csv-table:: **recommendations_annotations.tsv**
