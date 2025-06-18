@@ -356,8 +356,8 @@ def identify_paralogous_loci(schema_directory: str,
                     hypoteticals += 1
 
         
-        prf.print_message(f'A total of {annotations_count-1} loci were annotated.', 'info')
-        prf.print_message(f'From these {hypoteticals} loci where annotated as "hypothetical proteins".', 'info')
+        pf.print_message(f'A total of {annotations_count-1} loci were annotated.', 'info')
+        pf.print_message(f'From these {hypoteticals} loci where annotated as "hypothetical proteins".', 'info')
 
         pf.print_message('Annotation consolidation successfully completed.', 'info')
         pf.print_message('')

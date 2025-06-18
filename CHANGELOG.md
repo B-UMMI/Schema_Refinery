@@ -1,3 +1,6 @@
+## Version 0.3.3.1 - 2025-06-18
+### fix:
+    fixed PYPI
 ## Version 0.3.3 - 2025-06-18
 ### feat:
     Added to dependecies
