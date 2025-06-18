@@ -630,7 +630,7 @@ def adapt_loci() -> None:
 						'--input-fastas',
 						type=str,
 						required=True,
-						dest='input_file',
+						dest='input_fastas',
 						help='Path to the folder with the fasta files.')
 	
 	parser.add_argument('-o',
@@ -830,7 +830,7 @@ def identify_paralogous_loci() -> None:
                 
 	makeblastdb_path = ff.join_paths(args.output_directory, [ct.MAKEBLASTDB_ALIAS])
 	blastdbcmd_path = ff.join_paths(args.output_directory, [ct.BLASTDBCMD_ALIAS])
-	pdb_prefixes = IdentifyParalogousLoci.check_prefix_pdb(gene_list_paths, args.output_directory, makeblastdb_path, blastdbcmd_path)
+	pdb_prefixes = AdaptLoci.check_prefix_pdb(gene_list_paths, args.output_directory, makeblastdb_path, blastdbcmd_path)
 
 	pf.print_message('PREFIXES TRIAL OVER', 'info')
 
