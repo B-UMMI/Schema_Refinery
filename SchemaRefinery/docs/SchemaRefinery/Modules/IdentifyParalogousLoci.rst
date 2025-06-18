@@ -86,7 +86,7 @@ Algorithm Explanation
 
 Algorithm to identify paralogous loci in a schema is shown below:
 
-.. image:: source/paralogous_loci.png
+.. image:: source/IdentifyParalogousLoci.png
    :alt: IdentifyParalogousLoci Algorithm
    :width: 80%
    :align: center
