@@ -32,7 +32,7 @@ DEPENDENCIES = [
         "psutil",
         "tqdm",
         "networkx",
-        "chewbbaca"
+        "chewBBACA"
     ]
 
 # Dependencies version
@@ -47,7 +47,7 @@ DEPENDENCIES_VERSION = [
     "psutil >= 5.1.1",
     "tqdm >= 4.62.0",
     "networkx >= 2.6.0, <3.0.0",
-    "chewbbaca >= 3.3.10"  
+    "chewBBACA >= 3.3.10"
 ]
 
 # minimum Python version
