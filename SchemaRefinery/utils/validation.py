@@ -599,7 +599,7 @@ def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
     errors: List[str] = []
 
     # Verify if files or directories exist
-    verify_path_exists(args.input_file, 'file', errors)
+    verify_path_exists(args.input_fastas, 'file', errors)
     verify_path_exists(args.output_directory, 'directory', errors)
 
     if args.cpu <= 0:

@@ -86,7 +86,7 @@ Algorithm Explanation
 
 MatchSchemas Algorithm Flowchart:
 
-.. image:: source/match_schemas.png
+.. image:: source/MatchSchemas.png
    :alt: MatchSchemas Algorithm
    :width: 80%
    :align: center

@@ -19,7 +19,7 @@ REPOSITORY = 'https://github.com/B-UMMI/Schema_Refinery'
 CONTACTS = 'imm-bioinfo@medicina.ulisboa.pt'
 
 # Schema Refinery's version
-VERSION = '0.3.2.4'
+VERSION = '0.3.3'
 
 # Schema Refinery's Dependencies
 DEPENDENCIES = [
@@ -31,7 +31,8 @@ DEPENDENCIES = [
         "pandas",
         "psutil",
         "tqdm",
-        "networkx"
+        "networkx",
+        "chewbbaca"
     ]
 
 # Dependencies version
@@ -45,7 +46,8 @@ DEPENDENCIES_VERSION = [
     "pandas >= 1.5.1",
     "psutil >= 5.1.1",
     "tqdm >= 4.62.0",
-    "networkx >= 2.6.0, <3.0.0"
+    "networkx >= 2.6.0, <3.0.0",
+    "chewbbaca >= 3.3.10"  
 ]
 
 # minimum Python version
