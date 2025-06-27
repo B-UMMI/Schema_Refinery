@@ -1504,7 +1504,6 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     get_blastn_exec,
                                                     blast_db,
                                                     rep_paths_nuc,
-                                                    all_alleles,
                                                     blastn_results_folder,
                                                     total_reps,
                                                     max_id_length)

@@ -486,7 +486,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 	return self_score_dict
 
 def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc: Dict[str, str],
-						  all_alleles: Dict[str, List[str]], blastn_results_folder: str,
+						  blastn_results_folder: str,
 						  total_reps: int, max_id_length: int) -> List[str]:
 	"""
 	Run BLASTn in parallel for all the cluster representatives.
@@ -501,8 +501,6 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
 		Path to the BLAST database files.
 	rep_paths_nuc : Dict[str, str]
 		Dictionary with the paths to the nucleotide sequences.
-	all_alleles : Dict[str, List[str]]
-		Dictionary with the alleles for each locus.
 	blastn_results_folder : str
 		Path to the folder where to store the BLASTn results.
 	total_reps : int
@@ -517,13 +515,14 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
 	"""
 	blastn_results_files: List[str] = []  # List to store the results files
 	i: int = 1
+	ids_reps_list = list(rep_paths_nuc.keys())
 	rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blastdb_multiprocessing,
 								repeat(get_blastn_exec),
 								repeat(blast_db),
 								rep_paths_nuc_list,
-								all_alleles,
+								ids_reps_list,
 								repeat(blastn_results_folder)):
 			# Append the results file to the list
 			blastn_results_files.append(res[1])
