@@ -73,8 +73,8 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
 
     # Create BLAST processing directories
     blast_output: str = os.path.join(output_d, '2_BLAST_processing')
-    blastn_output: str = os.path.join(blast_output, '1_BLASTn_processing')
-    blast_db: str = os.path.join(blastn_output, 'blast_db_nucl')
+    blastn_output: str = os.path.join(blast_output, '1_BLASTp_processing')
+    blast_db: str = os.path.join(blastn_output, 'blast_db_prot')
     ff.create_directory(blast_db)
 
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
@@ -417,6 +417,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         (all_nucleotide_sequences,
         master_file_path,
         all_translation_dict,
+        trans_paths,
         to_blast_paths,
         all_alleles,
         group_reps_ids,
@@ -449,6 +450,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         (all_nucleotide_sequences,
         master_file_path,
         all_translation_dict,
+        trans_paths,
         to_blast_paths,
         all_alleles,
         group_reps_ids,
@@ -462,17 +464,19 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     # =============================================
 
     # Create BLAST db for the schema DNA sequences.
-    pf.print_message("Creating BLASTn database...", "info")
+    pf.print_message("Creating BLASTP database...", "info")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
-    blast_db_nuc: str = os.path.join(blast_db, 'Blast_db_nucleotide')
-    bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_nuc, 'nucl')
+    blast_db_prot: str = os.path.join(blast_db, 'Blast_db_proteins')
+    bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_prot, 'prot')
+
 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
-    representative_blast_results = cof.run_blasts(blast_db_nuc,
+    representative_blast_results = cof.run_blasts(blast_db_prot,
                         all_alleles,
                         all_translation_dict,
+                        trans_paths,
                         to_blast_paths,
                         blast_output,
                         constants,

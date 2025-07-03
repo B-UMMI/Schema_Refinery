@@ -530,8 +530,8 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
 			i += 1
 	return blastn_results_files
 
-def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blastp_exec: str,
-										  blastp_results_folder: str, rep_paths_prot, rep_matches_prot,
+def run_blastn_operations_based_on_blastp(cpu: int, blastp_runs_to_do, get_blastn_exec: str,
+										  blastn_results_folder: str, rep_paths_prot, rep_matches_prot,
 										  total_blasts: int, max_id_length: int) -> List[str]:
 	"""
 	Run BLASTp in parallel based on the BLASTn results.
@@ -560,21 +560,22 @@ def run_blastp_operations_based_on_blastn(cpu: int, blastp_runs_to_do, get_blast
 	blastp_results_files : List[str]
 		List containing the paths to the BLASTp results files.
 	"""
-	blastp_results_files: List[str] = []  # To store the results files
+##### confirmsr se é só usado 1x
+	blastn_results_files: List[str] = []  # To store the results files
 	i = 1
 	rep_matches_prot_list = list(rep_matches_prot.values())  # Convert dict_values to list
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blast_fastas_multiprocessing,
 								blastp_runs_to_do, 
-								repeat(get_blastp_exec),
-								repeat(blastp_results_folder),
+								repeat(get_blastn_exec),
+								repeat(blastn_results_folder),
 								repeat(rep_paths_prot),
 								rep_matches_prot_list):
 			# Append the results file to the list
-			blastp_results_files.append(res[1])
-			pf.print_message(f"Running BLASTp for {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
+			blastn_results_files.append(res[1])
+			pf.print_message(f"Running BLASTn for {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
 			i += 1
-	return blastp_results_files
+	return blastn_results_files
 
 def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths,
 						  blastp_results_folder: str, total_blasts: int, max_id_length: int) -> List[str]:
