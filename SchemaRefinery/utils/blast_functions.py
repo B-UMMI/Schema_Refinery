@@ -30,7 +30,7 @@ def make_blast_db(makeblastdb_path: str, input_fasta: str, output_path: str, db_
 		created. Database files will have the same basename as
 		the `input_fasta`.
 	db_type : str
-		Type of the database, nucleotide (nuc) or protein (prot).
+		Type of the database, nucleotide (nucl) or protein (prot).
 
 	Returns
 	-------

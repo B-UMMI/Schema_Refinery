@@ -5,6 +5,7 @@ import os
 import sys
 import subprocess
 import pandas as pd
+from itertools import islice
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 
@@ -73,8 +74,8 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
 
     # Create BLAST processing directories
     blast_output: str = os.path.join(output_d, '2_BLAST_processing')
-    blastn_output: str = os.path.join(blast_output, '1_BLASTp_processing')
-    blast_db: str = os.path.join(blastn_output, 'blast_db_prot')
+    blastp_output: str = os.path.join(blast_output, '1_BLASTp_processing')
+    blast_db: str = os.path.join(blastp_output, 'blast_db_prot')
     ff.create_directory(blast_db)
 
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
@@ -90,7 +91,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     blast_results: str = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
     
-    return initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results
+    return initial_processing_output, schema_folder, blast_output, blastp_output, blast_db, representatives_blastn_folder, results_output, blast_results
 
 
 def calculate_frequency(schema_folder: str, 
@@ -464,7 +465,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     # =============================================
 
     # Create BLAST db for the schema DNA sequences.
-    pf.print_message("Creating BLASTP database...", "info")
+    pf.print_message("Creating BLASTp database...", "info")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
     blast_db_prot: str = os.path.join(blast_db, 'Blast_db_proteins')
@@ -473,22 +474,29 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
-    representative_blast_results = cof.run_blasts(blast_db_prot,
-                        all_alleles,
-                        all_translation_dict,
-                        trans_paths,
-                        to_blast_paths,
-                        blast_output,
-                        constants,
-                        reps_kmers_sim if run_mode == 'unclassified_cds' else None,
-                        frequency_in_genomes,
-                        frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
-                        cpu)
+    representative_blastn_results: tp.BlastDict
+    not_matched: Set[str] = []
+    representative_blast_results, representative_blastn_results, not_matched = cof.run_blasts(blast_db_prot,
+                                                                all_alleles,
+                                                                all_translation_dict,
+                                                                trans_paths,
+                                                                to_blast_paths,
+                                                                blast_output,
+                                                                constants,
+                                                                reps_kmers_sim if run_mode == 'unclassified_cds' else None,
+                                                                frequency_in_genomes,
+                                                                frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
+                                                                cpu)
 
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
-    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results,
+    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
+    
+    dictp = dict(islice(representative_blast_results.items(), 7))
+    dictn = dict(islice(representative_blastn_results.items(), 7))
+    pf.print_message(f'P\n{dictp}', 'info')
+    pf.print_message(f'N\n{dictn}', 'info')
     
     pf.print_message("Processing classes...", "info")
     # Sort each entry based on their assigned classes
@@ -502,14 +510,17 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     drop_mark: List[str]
     all_relationships: tp.AllRelationships
     # Process and extract relevant information from the blast results
+    pf.print_message('Start process_classes function')
     (processed_results,
      count_results_by_class,
      count_results_by_class_with_inverse,
      reps_and_alleles_ids,
      drop_mark,
-     all_relationships) = cof.process_classes(sorted_blast_dict,
+     all_relationships) = cof.process_classes(sorted_blast_dict, representative_blastn_results, not_matched,
                                 classes_outcome,
                                 all_alleles)
+
+    pf.print_message(f'count by class\n {count_results_by_class}', 'info')
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to maintain and to display to user.
@@ -563,6 +574,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                             merged_all_classes,
                                                             dropped_loci_ids,
                                                             classes_outcome)
+    dictrec = dict(islice(recommendations.items(), 7))
+    pf.print_message(f'P\n{dictrec}', 'info')
 
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
@@ -594,10 +607,20 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     cof.alignment_dict_to_file(representative_blast_results,
                                report_file_path,
                                'w')
+    cof.alignment_dict_to_file(representative_blastn_results,
+                               report_file_path,
+                               'w')
     # Write the processed results to a file alignments by clusters and classes.
     cof.write_processed_results_to_file(merged_all_classes,
                                     representative_blast_results,
                                     classes_outcome,
+                                    all_alleles,
+                                    is_matched,
+                                    is_matched_alleles,
+                                    blast_results)
+    cof.write_processed_results_to_file(merged_all_classes,
+                                    representative_blastn_results,
+                                    ['6'],
                                     all_alleles,
                                     is_matched,
                                     is_matched_alleles,

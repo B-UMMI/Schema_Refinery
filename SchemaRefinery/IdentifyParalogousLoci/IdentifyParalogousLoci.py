@@ -91,14 +91,14 @@ def identify_paralogous_loci(schema_directory: str,
 
     # Identify all of the fastas in the schema directory
     fasta_files_dict: Dict[str, str] = {
-        loci.split('.')[0]: os.path.join(schema_directory, loci)
+        loci.rsplit('.', 1)[0]: os.path.join(schema_directory, loci)
         for loci in os.listdir(schema_directory)
         if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
     }
     # Identify all of the fastas short in the schema directory
     short_folder: str = os.path.join(schema_directory, 'short')
     fasta_files_short_dict: Dict[str, str] = {
-        loci.split('.')[0].rsplit('_', 1)[0]: os.path.join(short_folder, loci)
+        loci.rsplit('.', 1)[0].rsplit('_', 1)[0]: os.path.join(short_folder, loci)
         for loci in os.listdir(short_folder)
         if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
     }

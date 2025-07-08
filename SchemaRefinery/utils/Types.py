@@ -53,7 +53,8 @@ AllRelationships = Dict[str, List[List[str]]]
 
 RelatedClusters = Dict[str, Dict[int, List[str]]]
 
-Recomendations = Dict[str, Dict[int, Dict[str, Set[str]]]]
+#Recomendations = Dict[str, Dict[int, Dict[str, Set[str]]]]
+Recomendations = Dict[str, Dict[int, Dict[str, Dict[str, str]]]]
 
 class Metadata(TypedDict):
     total_count: int
