@@ -136,7 +136,7 @@ FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 
 # IdentifyingSpuriousLoci module
 
-CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5', '6', '7')
+CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1b', '2a', '3a', '2b', '1c', '3b', '4a', '4b', '4c', '5', '6')
 
 BLASTDBCMD_ALIAS = 'blastdbcmd.exe' if platform.system() == 'Windows' else shutil.which('blastdbcmd')
 

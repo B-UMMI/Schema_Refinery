@@ -480,25 +480,29 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     ----------
     representative_blast_results : tp.BlastDict
         A nested dictionary where the first level keys are query sequence IDs, the second level keys
-        are subject sequence IDs, and the third level keys are unique identifiers for each BLAST
-        result. Each BLAST result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
+        are subject sequence IDs, and the third level keys are unique identifiers for each BLASTp
+        result. Each BLASTp result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
+        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
+    representative_blastn_results : tp.BlastDict
+        A nested dictionary where the first level keys are query sequence IDs, the second level keys
+        are subject sequence IDs, and the third level keys are unique identifiers for each BLASTn
+        result. Each BLASTn result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
         'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
     constants : Tuple[Any, ...]
         A collection of constants used in the classification criteria. Specifically, `constants[1]`
         is used as a threshold for the percentage identity (pident) in one of the classification conditions.
-
     classes_outcome : List[str]
         A list of class identifiers indicating the order of priority for the classes.
 
     Returns
     -------
-    List[str]
+    Touple[str]
         A tuple of class identifiers indicating the order of priority for the classes.
 
     Notes
     -----
     - The function modifies `representative_blast_results` in place by adding a 'class' key to each
-      BLASTN result dictionary.
+      BLAST result dictionary.
     - The classification logic is based on a combination of alignment quality metrics and frequency
       ratios, with specific thresholds and conditions determining the class assignment.
     - The function assumes that `constants` provides necessary thresholds for classification and
@@ -519,6 +523,8 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
             The unique identifier for the BLAST result.
         class_name : str
             The class identifier to be added to the BLASTN result.
+        blast_type : str
+            Defines if it is a BLASTp or BLASTn
         """
         if blast_type == 'blastp':
             representative_blast_results[query][id_subject][id_]['classification'] = class_name
@@ -530,12 +536,11 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     bsr_threshold: float = constants[7]
     size_ratio_threshold: float = constants[8]
 
-    # Loop through the representative BLAST results
+    # Loop through the representative BLASTp results
     for query, rep_blast_result in representative_blast_results.items():
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
-                # Calculate the frequency ratio
-##### opção não tem ests coisas                
+                # Calculate the frequency ratio             
                 query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
                 subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
                 
@@ -572,10 +577,11 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
                 else:
                     add_class_to_dict(query, id_subject, id_, '5', 'blastp')
     
-    # Loop through the representative BLAST results
+    # Loop through the representative BLASTn results
     for query, rep_blast_result in representative_blastn_results.items():
         for id_subject, matches in rep_blast_result.items():
             for id_, blastn_entry in matches.items():
+                # All matches from the BLASTn will be categorized as class 6
                 add_class_to_dict(query, id_subject, id_, '6', 'blastn')
 
 
@@ -645,7 +651,6 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
 
 def process_classes(representative_blast_results: tp.BlastDict,
                     representative_blastn_results: tp.BlastDict,
-                    not_matched: Set[str],
                     classes_outcome: Tuple[str, ...],
                     all_alleles: Dict[str, List[str]]) -> Tuple[
                     tp.ProcessedResults,
@@ -665,7 +670,11 @@ def process_classes(representative_blast_results: tp.BlastDict,
     Parameters
     ----------
     representative_blast_results : tp.BlastDict
-        A nested dictionary where the first key is the query sequence ID, the second key is
+        A nested dictionary with the BLASTp results where the first key is the query sequence ID, the second key is
+        the subject sequence ID, and the value is another dictionary containing match details
+        including the class of the match.process_classes
+    representative_blastn_results : tp.BlastDict
+        A nested dictionary with the BLASTn results where the first key is the query sequence ID, the second key is
         the subject sequence ID, and the value is another dictionary containing match details
         including the class of the match.process_classes
     classes_outcome : Tuple[str, ...]
@@ -709,109 +718,114 @@ def process_classes(representative_blast_results: tp.BlastDict,
     all_relationships: tp.AllRelationships = {class_: [] for class_ in classes_outcome}
     drop_mark: List[str] = []
     inverse_match: List[str] = []
+    files: List[str] = [representative_blastn_results, representative_blast_results]
+    pattern: str = '_(\d+)'
 
-    # Process the CDS to find what CDS to retain while also adding the relationships between different CDS
-    for query, rep_blast_result in representative_blast_results.items():
-        for id_subject, matches in rep_blast_result.items():
-            class_: str = matches[1]['classification']
-            all_relationships[class_].append([query, id_subject])
-            ids_for_relationship: List[str] = [query, id_subject]
-            new_query: str = query
-            new_id_subject: str = id_subject
+    # Process the CDS to find what CDS to retain while also adding the relationships between different CDS with the BLASTp results
+    for file in files:
+        for query, rep_blast_result in file.items():
+            for id_subject, matches in rep_blast_result.items():
+                class_: str = matches[1]['classification']
+                all_relationships[class_].append([query, id_subject])
+                ids_for_relationship: List[str] = [query, id_subject]
+                query = itf.remove_by_regex(query, pattern)
+                id_subject = itf.remove_by_regex(id_subject, pattern)
+                new_query: str = query
+                new_id_subject: str = id_subject
 
-            strings: List[str] = [str(query), str(id_subject), class_]
-            replaced_query: Optional[str] = itf.identify_string_in_dict_get_key(query, all_alleles)
-            if replaced_query is not None:
-                new_query = replaced_query
-                strings[0] = new_query
-            replaced_id_subject: Optional[str] = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
-            if replaced_id_subject is not None:
-                new_id_subject = replaced_id_subject
-                strings[1] = new_id_subject
+                strings: List[str] = [str(query), str(id_subject), class_]
+                replaced_query: Optional[str] = itf.identify_string_in_dict_get_key(query, all_alleles)
+                if replaced_query is not None:
+                    new_query = replaced_query
+                    strings[0] = new_query
+                replaced_id_subject: Optional[str] = itf.identify_string_in_dict_get_key(id_subject, all_alleles)
+                if replaced_id_subject is not None:
+                    new_id_subject = replaced_id_subject
+                    strings[1] = new_id_subject
 
-            current_allele_class_index: int = classes_outcome.index(class_)
-            # Check if the current loci were already processed
-            if not processed_results.get(f"{new_query}|{new_id_subject}"):
-                run_next_step: bool = True
-            # If those loci/CDS were already processed, check if the current class is better than the previous one
-            elif current_allele_class_index < classes_outcome.index(processed_results[f"{new_query}|{new_id_subject}"][0]):
-                run_next_step = True
-            # If not then skip the current alleles
-            else:
-                run_next_step = False
-
-            count_results_by_class.setdefault(f"{new_query}|{new_id_subject}", {})
-            # Count the pairs in each class
-            # Get the class of that pair
-            if not count_results_by_class[f"{new_query}|{new_id_subject}"].get(class_):
-                # If the class has not yet be counted start the counter with 1
-                count_results_by_class[f"{new_query}|{new_id_subject}"].setdefault(class_, 1)
-            else:
-                # Else add 1 to the counter
-                count_results_by_class[f"{new_query}|{new_id_subject}"][class_] += 1
-            
-            # Count the inversed pairs in each class
-            if f"{new_query}|{new_id_subject}" not in inverse_match:
-                count_results_by_class_with_inverse.setdefault(f"{new_query}|{new_id_subject}", {})
-                inverse_match.append(f"{new_id_subject}|{new_query}")
-            if f"{new_query}|{new_id_subject}" in inverse_match:
-                # If the class of the inversed pair has not yet been counted
-                if not count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"].get(class_):
-                    count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"].setdefault(class_, ['-', 1])
-                elif count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] == '-':
-                    count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] = 1
+                current_allele_class_index: int = classes_outcome.index(class_)
+                # Check if the current loci were already processed
+                if not processed_results.get(f"{new_query}|{new_id_subject}"):
+                    run_next_step: bool = True
+                # If those loci/CDS were already processed, check if the current class is better than the previous one
+                elif current_allele_class_index < classes_outcome.index(processed_results[f"{new_query}|{new_id_subject}"][0]):
+                    run_next_step = True
+                # If not then skip the current alleles
                 else:
-                    count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] += 1
-            else:
-                if not count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"].get(class_):
-                    count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"].setdefault(class_, [1, '-'])
-                elif count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"][class_][0] == '-':
-                    count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"][class_][0] = 1
-                else:
-                    count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"][class_][0] += 1
-            # Get unique loci/CDS for each query and subject rep and allele.
-            reps_and_alleles_ids.setdefault(f"{new_query}|{new_id_subject}", (set(), set()))
-            if ids_for_relationship[0] not in reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][0]:
-                reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][0].add(ids_for_relationship[0])
-            if ids_for_relationship[1] not in reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][1]:
-                reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][1].add(ids_for_relationship[1])
-    
-            if run_next_step:
-                # Set all None to run newly for this query/subject combination
-                processed_results[f"{new_query}|{new_id_subject}"] = (None, [], [], (new_query, new_id_subject), [])
+                    run_next_step = False
 
-                if class_ in ['1b', '2a', '3a', '4a']:
-                    blastn_entry: Dict[str, Any] = matches[list(matches.keys())[0]]
-                    # Determine if the frequency of the query is greater than the subject.
-                    is_frequency_greater: bool = blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds']
-                    # Determine if the query or subject should be dropped.
-                    query_or_subject: List[str] = [new_id_subject] if is_frequency_greater else [new_query]
+                count_results_by_class.setdefault(f"{new_query}|{new_id_subject}", {})
+                # Count the pairs in each class
+                # Get the class of that pair
+                if not count_results_by_class[f"{new_query}|{new_id_subject}"].get(class_):
+                    # If the class has not yet be counted start the counter with 1
+                    count_results_by_class[f"{new_query}|{new_id_subject}"].setdefault(class_, 1)
                 else:
-                    query_or_subject = []
+                    # Else add 1 to the counter
+                    count_results_by_class[f"{new_query}|{new_id_subject}"][class_] += 1
+                
+                # Count the inversed pairs in each class
+                if f"{new_query}|{new_id_subject}" not in inverse_match:
+                    count_results_by_class_with_inverse.setdefault(f"{new_query}|{new_id_subject}", {})
+                    inverse_match.append(f"{new_id_subject}|{new_query}")
+                if f"{new_query}|{new_id_subject}" in inverse_match:
+                    # If the class of the inversed pair has not yet been counted
+                    if not count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"].get(class_):
+                        count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"].setdefault(class_, ['-', 1])
+                    elif count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] == '-':
+                        count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] = 1
+                    else:
+                        count_results_by_class_with_inverse[f"{new_id_subject}|{new_query}"][class_][1] += 1
+                else:
+                    if not count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"].get(class_):
+                        count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"].setdefault(class_, [1, '-'])
+                    elif count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"][class_][0] == '-':
+                        count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"][class_][0] = 1
+                    else:
+                        count_results_by_class_with_inverse[f"{new_query}|{new_id_subject}"][class_][0] += 1
+                # Get unique loci/CDS for each query and subject rep and allele.
+                reps_and_alleles_ids.setdefault(f"{new_query}|{new_id_subject}", (set(), set()))
+                if ids_for_relationship[0] not in reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][0]:
+                    reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][0].add(ids_for_relationship[0])
+                if ids_for_relationship[1] not in reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][1]:
+                    reps_and_alleles_ids[f"{new_query}|{new_id_subject}"][1].add(ids_for_relationship[1])
+        
+                if run_next_step:
+                    # Set all None to run newly for this query/subject combination
+                    processed_results[f"{new_query}|{new_id_subject}"] = (None, [], [], (new_query, new_id_subject), [])
 
-                # For the related_matches.tsv file.
-                if class_ not in ['4c','5']:
-                    # Add asterisk to the query or subject that was dropped.
                     if class_ in ['1b', '2a', '3a', '4a']:
-                        blastn_entry = matches[list(matches.keys())[0]]
+                        blastn_entry: Dict[str, Any] = matches[list(matches.keys())[0]]
                         # Determine if the frequency of the query is greater than the subject.
-                        is_frequency_greater = blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds']
+                        is_frequency_greater: bool = blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds']
                         # Determine if the query or subject should be dropped.
-                        dropped: str = new_id_subject if is_frequency_greater else new_query
-                        if new_query == dropped:
-                            drop_mark.append(new_query)
-                            strings[0] += '*' 
-                        else:
-                            drop_mark.append(new_id_subject)
-                            strings[1] += '*'
+                        query_or_subject: List[str] = [new_id_subject] if is_frequency_greater else [new_query]
+                    else:
+                        query_or_subject = []
 
-                processed_results[f"{new_query}|{new_id_subject}"] = (class_,
-                                                    ids_for_relationship,
-                                                    query_or_subject,
-                                                    (new_query, new_id_subject),
-                                                    strings)
-    prf.print_message('done with processing the blastp ones', 'info')
+                    # For the related_matches.tsv file.
+                    if class_ not in ['4c','5']:
+                        # Add asterisk to the query or subject that was dropped.
+                        if class_ in ['1b', '2a', '3a', '4a']:
+                            blastn_entry = matches[list(matches.keys())[0]]
+                            # Determine if the frequency of the query is greater than the subject.
+                            is_frequency_greater = blastn_entry['frequency_in_genomes_query_cds'] >= blastn_entry['frequency_in_genomes_subject_cds']
+                            # Determine if the query or subject should be dropped.
+                            dropped: str = new_id_subject if is_frequency_greater else new_query
+                            if new_query == dropped:
+                                drop_mark.append(new_query)
+                                strings[0] += '*' 
+                            else:
+                                drop_mark.append(new_id_subject)
+                                strings[1] += '*'
 
+                    processed_results[f"{new_query}|{new_id_subject}"] = (class_,
+                                                        ids_for_relationship,
+                                                        query_or_subject,
+                                                        (new_query, new_id_subject),
+                                                        strings)
+        prf.print_message('done with processing the blastp ones', 'info')
+    """
     for query, rep_blast_result in representative_blastn_results.items():
         for id_subject, matches in rep_blast_result.items():
             class_: str = matches[1]['classification']
@@ -895,6 +909,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
                                                     query_or_subject,
                                                     (new_query, new_id_subject),
                                                     strings)
+    """
 
 
     return processed_results, count_results_by_class, count_results_by_class_with_inverse, reps_and_alleles_ids, drop_mark, all_relationships
@@ -978,8 +993,6 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         key_extractor = lambda v: v[3]
         # Additional condition for the choice data (* means Dropped loci ID)
         additional_condition = lambda v: '*' in v[4][0] or '*' in v[4][1]
-
-#### add new classes
 
         return {i: cluster for i, cluster in enumerate(cf.cluster_by_ids([key_extractor(v) 
                                                                           for v in processed_results.values()
@@ -1197,8 +1210,6 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         joined_query_to_write: str = query_id
         joined_subject_to_write: str = subject_id
 
-#### add novas classes 
-
         # Check if the pair was not processed yet
         if [query_id, subject_id] not in processed_cases:
             if results[0] not in moved_recs:
@@ -1271,9 +1282,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                             written_down.append(subject_to_write)
                             moved_recs[results[0]][0].add(subject_to_write)
                         dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
-
-
-#####fiiiiinish this       
+      
     # Add cases where some ID matched with dropped ID, we need to add the ID that matched with the ID that made the other match
     # to be Dropped. e.g x and y matched with x dropping and x also matched with z, then we need to make a choice between x and z.
     # Not being used currently
@@ -1384,6 +1393,8 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                 r.insert(4, '-')
                 r.insert(5, '-')
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
+            #query = itf.remove_by_regex(query, pattern)
+            #subject = itf.remove_by_regex(subject, pattern)
             
             # Add the total count of the representatives and alleles
             representatives_count_query: str = f"{len(group_reps_ids[query])}"
@@ -1599,18 +1610,9 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         A dictionary containing the BLAST results for representative sequences.
     """
 
-#### Run blastp
     # Create directories.
     blastp_results: str = os.path.join(output_dir, '1_BLASTp_processing')
     ff.create_directory(blastp_results)
-    
-    #blastn_results_matches_translations: str = os.path.join(blastp_results,
-     #                                                  'blastn_results_matches_translations')
-    #ff.create_directory(blastn_results_matches_translations)
-
-    #representatives_blastp_folder: str = os.path.join(blastn_results_matches_translations,
-     #                                           'cluster_rep_translation')
-    #ff.create_directory(representatives_blastp_folder)
     
     blastp_results_folder: str = os.path.join(blastp_results,
                                          'BLASTp_results')
@@ -1620,14 +1622,13 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                             'BLASTp_results_self_score_results')
     ff.create_directory(blastp_results_ss_folder)
 
-    max_id_length: int = len(max(reps_translation_dict, key=len))
+    max_id_length: int = len(max(trans_paths, key=len))
 
     # Calculate BSR based on BLASTp.
     bsr_values: tp.BSRValues = {}
     representative_blast_results: tp.BlastDict = {}
 
     # Total number of runs
-    #total_blasts: int = len(blastp_runs_to_do)
     total_blasts: int = len(trans_paths)
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
@@ -1649,10 +1650,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     max_id_length)
     prf.print_message("", None)
 
-
     alleles_matches: Dict[str, List[str]] = {}
-    
-#### mudar os prf de sitio also isto demora algum tempo
     # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
         # Load only alignments above the pident threshold
@@ -1688,63 +1686,13 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                 frequency_in_genomes,
                                 frequency_in_genomes_second_schema,
                                 [True, True])
-
-#### matches para o ficheiro
         # Save the BLASTp results
         representative_blast_results.update(filtered_alignments_dict)
     prf.print_message(f"{len(representative_blast_results)} matches were found on the blastp.", "info")
 
-#### não matches para outro ficheiro
-
-    #blastn_reps_ids: List = set(rep_paths_nuc.keys()) - set(representative_blast_results.keys()) - set(representative_blast_results.values().keys())
-
-    blastn_dict_to_run: Dict = {key: val for key, val in all_alleles.items() if key in alleles_matches}
-
     prf.print_message("Running BLASTn based on BLASTp results matches...", "info")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
     # Based on BLASTn results get all alleles that matches by BLASTn.
-
-    """
-    # Write the protein FASTA files.
-    rep_paths_nucls: Dict[str, str] = {}
-    rep_matches_prot: Dict[str, str] = {}
-
-    blastp_runs_to_do: Dict[str, Set[str]] = {}
-    seen_entries: Dict[str, Set[str]] = {}
-    for query_id, subjects_ids in alleles_matches.items():
-        # Get the filename
-        filename: str = query_id.split('_')[0]
-        # First write the representative protein sequence.
-        rep_nucls_file: str = os.path.join(representatives_blastp_folder,
-                                            f"cluster_rep_nucls_{filename}.fasta")
-        
-        write_type: str = 'a' if os.path.exists(rep_nucls_file) else 'w'
-        # Write the query allele translation
-        rep_paths_nucls[filename] = rep_nucls_file
-        with open(rep_nucls_file, write_type) as nucls_fasta_rep:
-            nucls_fasta_rep.writelines(">"+query_id+"\n")
-            nucls_fasta_rep.writelines(str(reps_paths_nuc[query_id])+"\n")
-
-        # Then write in another file all of the matches for that protein sequence
-        rep_matches_nucls_file: str = os.path.join(blastn_results_matches_translations,
-                                                    f"cluster_matches_translation_{filename}.fasta")
-        # Write the matches protein sequences
-        rep_matches_prot[filename] = rep_matches_translation_file
-        seen_entries.setdefault(filename, set())
-        blastp_runs_to_do.setdefault(filename, set())
-        with open(rep_matches_translation_file, write_type) as trans_fasta:            
-            for subject_id in subjects_ids:
-                if subject_id in seen_entries[filename]:
-                    continue
-
-                trans_fasta.writelines(">"+subject_id+"\n")
-                trans_fasta.writelines(str(reps_translation_dict[subject_id])+"\n")
-
-                blastp_runs_to_do[filename].add(subject_id)
-
-            seen_entries[filename].update(subjects_ids)
-        """
-#### correr blastn com base no blastp non-matched
     prf.print_message("Running BLASTn...", "info")
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
@@ -1766,7 +1714,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     pattern: str = '_(\d+)'
     matched_loci_paths: Dict[str, str] = {}
     # Get all unique loci_ids from allele names
-    loci_ids_needed = set(itf.remove_by_regex(allele, pattern) for allele in alleles_matches.keys())
+    loci_ids_needed = set(all_alleles.keys()) - set(itf.remove_by_regex(allele, pattern) for allele in alleles_matches.keys())
     # Open the master file once in append mode
     with open(master_file_path_nucl, 'a') as master_file:
         for loci, loci_path in rep_paths_nuc.items():
@@ -1779,30 +1727,16 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
 
     bf.make_blast_db(makeblastdb_exec, master_file_path_nucl, blast_db_nucl, 'nucl')
 
-
     # Run BLASTn
     # Calculate max id length for print.
     max_id_length: int = len(max(all_alleles, key=len))
     total_reps: int = len(matched_loci_paths)
     representative_blastn_results: tp.BlastDict = {}
-    ids_to_run = list(blastn_dict_to_run.keys())
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
     # Run BLASTn
-###### correr com lista de ids dos que tiveram match no blastp
 
     prf.print_message('calculating blastn')
-
-    """
-    blastn_results_files = bf.run_blastn_operations_based_on_blastp(cpu,
-                                                                    ids_to_run,
-                                                                    get_blastn_exec,
-                                                                    blastn_results_folder,
-                                                                    blastn_dict_to_run,
-                                                                    all_alleles,
-                                                                    total_blasts,
-                                                                    max_id_length)
-    """
 
     # Get Path to the blastp executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
@@ -1819,15 +1753,6 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         prf.print_message("No blastn matches were found!", "warning")
     else:
         prf.print_message(f"{len(blastn_results_files)} matches were found in blastn", 'info')
-    
-
-    #blastn_results_files = bf.run_blastn_operations(cpu,
-     #                                               get_blastn_exec,
-      #                                              blast_db,
-       #                                             rep_paths_nuc,
-        #                                            blastn_results_folder,
-         #                                           total_reps,
-          #                                          max_id_length)
 
     prf.print_message("", None)
     # Process the obtained BLAST results files
@@ -1841,6 +1766,14 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         # Save the BLASTn results to get the matches.
         representative_blastn_results.update(filtered_alignments_dict)
 
+        alleles_matches_total = {
+            query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
+            for query, subjects in representative_blastn_results.items()
+        }
+
+        for query in alleles_matches_total:
+            bsr_values[query] = {}
+
         # Add filtered results to final containers
         add_items_to_results(filtered_alignments_dict,
                                 reps_kmers_sim,
@@ -1851,192 +1784,20 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                 frequency_in_genomes_second_schema,
                                 [True, True])
 
-#### matches para o ficheiro
         # Save the BLASTp results
         representative_blastn_results.update(filtered_alignments_dict)
-    
+    """
     alleles_matches_total = {
             query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
             for query, subjects in representative_blastn_results.items()
         }
-
-##### corre tudo até aqui !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    """
     not_matched: Set[str] = set()
 
     for allele in all_alleles:
         if allele not in alleles_matches_total:
             loci = itf.remove_by_regex(allele, pattern)
             not_matched.add(loci)
-
-               
-
-
-
-    """
-    prf.print_message("Running BLASTn...", "info")
-    # BLASTn folder
-    blastn_output: str = os.path.join(output_dir, '1_BLASTn_processing')
-    ff.create_directory(blastn_output)
-    # Create directory
-    blastn_results_folder: str = os.path.join(blastn_output, 'BLASTn_results')
-    ff.create_directory(blastn_results_folder)
-    # Run BLASTn
-    # Calculate max id length for print.
-    max_id_length: int = len(max(all_alleles, key=len))
-    total_reps: int = len(rep_paths_nuc)
-    representative_blast_results: tp.BlastDict = {}
-    # Get Path to the blastn executable
-    get_blastn_exec: str = lf.get_tool_path('blastn')
-    # Run BLASTn
-    blastn_results_files = bf.run_blastn_operations(cpu,
-                                                    get_blastn_exec,
-                                                    blast_db,
-                                                    rep_paths_nuc,
-                                                    blastn_results_folder,
-                                                    total_reps,
-                                                    max_id_length)
-
-    prf.print_message("", None)
-    # Process the obtained BLAST results files
-    for blast_result_file in blastn_results_files:
-
-        filtered_alignments_dict: Dict[str, Dict[str, Any]]
-        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(
-            blast_result_file, constants[1], False, False, True, True, False)
-
-        # Save the BLASTn results to get the matches.
-        representative_blast_results.update(filtered_alignments_dict)
-
-    prf.print_message("Running BLASTp based on BLASTn results matches...", "info")
-    # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
-    # Based on BLASTn results get all alleles that matches by BLASTn.
-    alleles_matches: Dict[str, List[str]] = {query: itf.flatten_list([[subject[1]['subject']
-                                            for subject in subjects.values()]]) 
-                         for query, subjects in representative_blast_results.items()}
-
-    representative_blast_results = {} # Reset the representative_blast_results
-    
-    # Create directories.
-    blastp_results: str = os.path.join(output_dir, '2_BLASTp_processing')
-    ff.create_directory(blastp_results)
-    
-    blastn_results_matches_translations: str = os.path.join(blastp_results,
-                                                       'blastn_results_matches_translations')
-    ff.create_directory(blastn_results_matches_translations)
-
-    representatives_blastp_folder: str = os.path.join(blastn_results_matches_translations,
-                                                'cluster_rep_translation')
-    ff.create_directory(representatives_blastp_folder)
-    
-    blastp_results_folder: str = os.path.join(blastp_results,
-                                         'BLASTp_results')
-    ff.create_directory(blastp_results_folder)
-    
-    blastp_results_ss_folder: str = os.path.join(blastp_results,
-                                            'BLASTp_results_self_score_results')
-    ff.create_directory(blastp_results_ss_folder)
-    # Write the protein FASTA files.
-    rep_paths_prot: Dict[str, str] = {}
-    rep_matches_prot: Dict[str, str] = {}
-
-    blastp_runs_to_do: Dict[str, Set[str]] = {}
-    seen_entries: Dict[str, Set[str]] = {}
-    for query_id, subjects_ids in alleles_matches.items():
-        # Get the filename
-        filename: str = query_id.split('_')[0]
-        # First write the representative protein sequence.
-        rep_translation_file: str = os.path.join(representatives_blastp_folder,
-                                            f"cluster_rep_translation_{filename}.fasta")
-        
-        write_type: str = 'a' if os.path.exists(rep_translation_file) else 'w'
-        # Write the query allele translation
-        rep_paths_prot[filename] = rep_translation_file
-        with open(rep_translation_file, write_type) as trans_fasta_rep:
-            trans_fasta_rep.writelines(">"+query_id+"\n")
-            trans_fasta_rep.writelines(str(reps_translation_dict[query_id])+"\n")
-
-        # Then write in another file all of the matches for that protein sequence
-        rep_matches_translation_file: str = os.path.join(blastn_results_matches_translations,
-                                                    f"cluster_matches_translation_{filename}.fasta")
-        # Write the matches protein sequences
-        rep_matches_prot[filename] = rep_matches_translation_file
-        seen_entries.setdefault(filename, set())
-        blastp_runs_to_do.setdefault(filename, set())
-        with open(rep_matches_translation_file, write_type) as trans_fasta:            
-            for subject_id in subjects_ids:
-                if subject_id in seen_entries[filename]:
-                    continue
-
-                trans_fasta.writelines(">"+subject_id+"\n")
-                trans_fasta.writelines(str(reps_translation_dict[subject_id])+"\n")
-
-                blastp_runs_to_do[filename].add(subject_id)
-
-            seen_entries[filename].update(subjects_ids)
-
-    # Calculate BSR based on BLASTp.
-    bsr_values: tp.BSRValues = {}
-    
-    # Create query entries
-    for query in alleles_matches.keys():
-        bsr_values[query] = {}
-    
-
-    # Total number of runs
-    total_blasts: int = len(blastp_runs_to_do)
-    # Get Path to the blastp executable
-    get_blastp_exec: str = lf.get_tool_path('blastp')
-    i = 1
-    # Calculate self-score
-    self_score_dict: Dict[str, float] = bf.calculate_self_score(rep_paths_prot,
-                                                                get_blastp_exec,
-                                                                blastp_results_ss_folder,
-                                                                max_id_length,
-                                                                cpu)
-    prf.print_message("Running BLASTp...", "info")
-    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
-    blastp_results_files = bf.run_blastp_operations_based_on_blastn(cpu,
-                                                                    blastp_runs_to_do,
-                                                                    get_blastp_exec,
-                                                                    blastp_results_folder,
-                                                                    rep_paths_prot,
-                                                                    rep_matches_prot,
-                                                                    total_blasts,
-                                                                    max_id_length)
-    
-    prf.print_message("", None)
-   # Process the obtained BLASTp results files
-    for blast_result_file in blastp_results_files:
-        filtered_alignments_dict
-        filtered_alignments_dict, _, _, _ = af.get_alignments_dict_from_blast_results(blast_result_file, 0, True, False, True, True, False)
-
-        # Since BLAST may find several local alignments, choose the largest one to calculate BSR.
-        for query, subjects_dict in filtered_alignments_dict.items():
-            for subject_id, results in subjects_dict.items():
-                # Highest score (First one)
-                subject_score: float = next(iter(results.values()))['score']
-                bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
-
-    # Read the BLASTn results files and append the relevant information to the results.
-    for blast_result_file in blastn_results_files:
-
-        alignment_coords_all: tp.RepresentativeBlastResultsCoords
-        alignment_coords_pident: tp.RepresentativeBlastResultsCoords
-        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-            blast_result_file, constants[1], True, False, True, True, False)
-        
-        add_items_to_results(filtered_alignments_dict,
-                        reps_kmers_sim,
-                        bsr_values,
-                        alignment_coords_all,
-                        alignment_coords_pident,
-                        frequency_in_genomes,
-                        frequency_in_genomes_second_schema,
-                        [True, True])
-
-        # Save the BLASTn results
-        representative_blast_results.update(filtered_alignments_dict)
-        """
 
     return representative_blast_results, representative_blastn_results, not_matched
 
@@ -2213,7 +1974,7 @@ def extract_clusters_to_keep(classes_outcome: Tuple[str], count_results_by_class
     for keep, class_ in temp_keep.items():
         if class_ == '1a':
             continue
-        if keep in drop_mark and class_ in ['1b', '2a', '3a', '4a', '6']:
+        if keep in drop_mark and class_ in ['1b', '2a', '3a', '4a']:
             drop_possible_loci.add(itf.try_convert_to_type(keep, int))
         else:
             clusters_to_keep.setdefault(class_, []).append(keep)
@@ -2461,8 +2222,6 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
             count_cases[class_] = len(itf.flatten_list(loci.values()))
         else:
             count_cases[class_] = len(loci)
-        
-    #count_cases['dropped'] = len(drop_possible_loci)
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
@@ -2676,7 +2435,7 @@ def prepare_loci(schema_folder: str,
                 master_file.write(f">{allele_id}\n{str(protseq)}\n")
 
 
-    for loci, loci_path in schema.items():
+    for loci, loci_path in to_blast_paths.items():
         loci_id = ff.file_basename(loci).split('.')[0]
         all_alleles.setdefault(loci_id, [])
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)

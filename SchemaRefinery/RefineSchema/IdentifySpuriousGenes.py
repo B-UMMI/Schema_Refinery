@@ -488,15 +488,13 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                 frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
                                                                 cpu)
 
+
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
     classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
-    
-    dictp = dict(islice(representative_blast_results.items(), 7))
-    dictn = dict(islice(representative_blastn_results.items(), 7))
-    pf.print_message(f'P\n{dictp}', 'info')
-    pf.print_message(f'N\n{dictn}', 'info')
+
+    pf.print_message(f'classes: {classes_outcome}', 'info')
     
     pf.print_message("Processing classes...", "info")
     # Sort each entry based on their assigned classes
@@ -516,17 +514,16 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
      count_results_by_class_with_inverse,
      reps_and_alleles_ids,
      drop_mark,
-     all_relationships) = cof.process_classes(sorted_blast_dict, representative_blastn_results, not_matched,
+     all_relationships) = cof.process_classes(sorted_blast_dict, representative_blastn_results,
                                 classes_outcome,
                                 all_alleles)
-
-    pf.print_message(f'count by class\n {count_results_by_class}', 'info')
 
     count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
     # Extract which clusters are to maintain and to display to user.
     clusters_to_keep: tp.MergedAllClasses
     dropped_loci_ids: Set[str]
     clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
+ 
     
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep_1a_renamed: Dict[str, List[str]] = {values[0]: values for key, values in clusters_to_keep_1a.items()}
@@ -574,8 +571,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                             merged_all_classes,
                                                             dropped_loci_ids,
                                                             classes_outcome)
-    dictrec = dict(islice(recommendations.items(), 7))
-    pf.print_message(f'P\n{dictrec}', 'info')
+
 
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
