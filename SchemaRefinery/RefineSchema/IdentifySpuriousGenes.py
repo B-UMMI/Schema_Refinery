@@ -5,7 +5,6 @@ import os
 import sys
 import subprocess
 import pandas as pd
-from itertools import islice
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 
@@ -422,7 +421,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         to_blast_paths,
         all_alleles,
         group_reps_ids,
-        group_alleles_ids) = cof.prepare_loci(schema_folder,
+        group_alleles_ids,
+        to_run_against) = cof.prepare_loci(schema_folder,
                                             constants,
                                             processing_mode,
                                             initial_processing_output)
@@ -455,7 +455,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         to_blast_paths,
         all_alleles,
         group_reps_ids,
-        group_alleles_ids) = cof.prepare_loci(schema_folder,
+        group_alleles_ids,
+        to_run_against) = cof.prepare_loci(schema_folder,
                                             constants,
                                             processing_mode,
                                             initial_processing_output)
@@ -481,6 +482,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                 all_translation_dict,
                                                                 trans_paths,
                                                                 to_blast_paths,
+                                                                to_run_against,
                                                                 blast_output,
                                                                 constants,
                                                                 reps_kmers_sim if run_mode == 'unclassified_cds' else None,
@@ -493,10 +495,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     # Separate results into different classes.
     classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
-
-    pf.print_message(f'classes: {classes_outcome}', 'info')
     
-    pf.print_message("Processing classes...", "info")
+    
     # Sort each entry based on their assigned classes
     sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
@@ -508,7 +508,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     drop_mark: List[str]
     all_relationships: tp.AllRelationships
     # Process and extract relevant information from the blast results
-    pf.print_message('Start process_classes function')
+    pf.print_message("Processing classes...", "info")
     (processed_results,
      count_results_by_class,
      count_results_by_class_with_inverse,
@@ -614,7 +614,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                     is_matched,
                                     is_matched_alleles,
                                     blast_results)
-    cof.write_processed_results_to_file(merged_all_classes,
+    merged_classes_6 = {k: merged_all_classes[k] for k in {'6'}}
+    cof.write_processed_results_to_file(merged_classes_6,
                                     representative_blastn_results,
                                     ['6'],
                                     all_alleles,
