@@ -730,8 +730,8 @@ def process_classes(representative_blast_results: tp.BlastDict,
                 class_: str = matches[1]['classification']
                 all_relationships[class_].append([query, id_subject])
                 ids_for_relationship: List[str] = [query, id_subject]
-                query = query.rsplit('_', 1)[0]
-                id_subject = id_subject.rsplit('_', 1)[0]
+                query = itf.remove_by_regex(query, pattern)
+                id_subject = itf.remove_by_regex(id_subject, pattern)
                 new_query: str = query
                 new_id_subject: str = id_subject
 
@@ -1230,7 +1230,7 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                                             recommendations: tp.Recomendations, 
                                             reverse_matches: bool,
                                             classes_outcome: Tuple[str, ...],
-                                            output_directory: str) -> Tuple[str, str, str]:
+                                            output_directory: str) -> Tuple[str, str, str, Dict[str, int]]:
     """
     Writes summary results of BLAST analysis to TSV files.
 
@@ -1282,6 +1282,7 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
 
     # Write loci groups by recommendation
     matched_loci: List[str] = []
+    count_classes_final: Dict[str, int] = {}
     with open(recommendations_file_path, 'w') as recommendations_report_file:
         recommendations_report_file.write("Locus\tAction\tClass\n")
         for key, recommendation in recommendations.items():
@@ -1291,6 +1292,10 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                 else:
                     category = category.split('_', 1)[0]
                 for locus, id_class in loci.items():
+                    if id_class not in count_classes_final.keys():
+                        count_classes_final.update({id_class: 1})
+                    else:
+                        count_classes_final[id_class] += 1
                     #Each gene can only have one action associated
                     if locus not in matched_loci:
                         recommendations_report_file.write(f"{locus}\t{category}\t{id_class}\n")
@@ -1416,7 +1421,7 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
 
             count_results_by_cluster_file.write('\t'.join(line_parts) + '\n')
 
-    return (related_matches_path, count_results_by_cluster_path, recommendations_file_path)
+    return (related_matches_path, count_results_by_cluster_path, recommendations_file_path, count_classes_final)
 
 
 def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.MergedAllClasses, 
@@ -1493,8 +1498,8 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
 
 
 def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], trans_paths: Dict[str, str], rep_paths_nuc: Dict[str, str], to_run_against: Dict[str, str],
-               output_dir: str, constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
-               frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int) -> Tuple[tp.BlastDict, tp.BlastDict, Set[str]]:
+               output_dir: str, new_max_hits: Dict[str, int], constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
+               frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int) -> Tuple[tp.BlastDict, tp.BlastDict]:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
 
@@ -1564,13 +1569,14 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     trans_paths,
                                                     blastp_results_folder,
                                                     total_blasts,
-                                                    max_id_length)
-    prf.print_message("", None)
+                                                    max_id_length,
+                                                    new_max_hits)
 
     alleles_matches: Dict[str, List[str]] = {}
     pattern: str = r'_(\d+)$'
     loci_matches: List[str] = []
     ##### log saying is doin bsr 
+    prf.print_message('Calculating BSR filtering alignemnts...')
     # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
         # Load only alignments above the pident threshold
@@ -1611,12 +1617,10 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         # Save the BLASTp results
         representative_blast_results.update(filtered_alignments_dict)
 
-    prf.print_message(f"{len(loci_matches)} matches were found on the blastp.", "info")
+    prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp.", "info")
 
-    prf.print_message("Running BLASTn based on BLASTp results matches...", "info")
     # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
     # Based on BLASTn results get all alleles that matches by BLASTn.
-    prf.print_message("Running BLASTn...", "info")
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1633,9 +1637,10 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     # Path to the master FASTA file
     master_file_path_nucl = os.path.join(blastn_output, 'master_nucl.fasta')
 
-    prf.print_message('Write master file for Blastn.', 'info')
+    prf.print_message('Writing master file for Blastn.', 'info')
     pattern: str = r'_(\d+)$'
     matched_loci_paths: Dict[str, str] = {}
+    
     # Get all unique loci_ids from allele names
     loci_ids_needed = set(all_alleles.keys()) - set(loci_matches)
     for loci_file, loci_path in rep_paths_nuc.items():
@@ -1656,6 +1661,8 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
 
     bf.make_blast_db(makeblastdb_exec, master_file_path_nucl, blast_db_nucl, 'nucl')
 
+    blastn_new_target_hits = {loci_id: new_max_hits[loci_id] for loci_id in loci_ids_needed}
+
     # Run BLASTn
     # Calculate max id length for print.
     max_id_length: int = len(max(all_alleles, key=len))
@@ -1665,7 +1672,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     get_blastn_exec: str = lf.get_tool_path('blastn')
     # Run BLASTn
 
-    prf.print_message('calculating blastn')
+    prf.print_message('Running BLASTn...', 'info')
 
     # Get Path to the blastp executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
@@ -1676,12 +1683,11 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     matched_loci_paths,
                                                     blastn_results_folder,
                                                     total_reps,
-                                                    max_id_length)
+                                                    max_id_length,
+                                                    blastn_new_target_hits)
 
     if len(blastn_results_files) == 0:
-        prf.print_message("No blastn matches were found!", "warning")
-    else:
-        prf.print_message(f"{len(blastn_results_files)} matches were found in blastn", 'info')
+        prf.print_message("No BLASTn matches were found", "warning")
 
     prf.print_message("", None)
     # Process the obtained BLAST results files
@@ -1695,12 +1701,12 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         # Save the BLASTn results to get the matches.
         representative_blastn_results.update(filtered_alignments_dict)
 
-        alleles_matches_total = {
+        alleles_matches_n = {
             query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
             for query, subjects in representative_blastn_results.items()
         }
 
-        for query in alleles_matches_total:
+        for query in alleles_matches_n:
             bsr_values[query] = {}
 
         # Add filtered results to final containers
@@ -1715,20 +1721,17 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
 
         # Save the BLASTp results
         representative_blastn_results.update(filtered_alignments_dict)
-    """
-    alleles_matches_total = {
-            query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
-            for query, subjects in representative_blastn_results.items()
-        }
+    
+    prf.print_message(f'{len(set(alleles_matches_n))}')
     """
     not_matched: Set[str] = set()
 
-    for allele in all_alleles:
-        if allele not in alleles_matches_total:
+    for loci in all_alleles:
+        if allele not in alleles_matches_n:
             loci = itf.remove_by_regex(allele, pattern)
             not_matched.add(loci)
-
-    return representative_blast_results, representative_blastn_results, not_matched
+    """
+    return representative_blast_results, representative_blastn_results
 
 
 def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses, 
@@ -2066,7 +2069,7 @@ def create_graphs(file_path: str, output_path: str, filename: str, other_plots: 
 
 
 def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_possible_loci: List[int], 
-                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any], moved_recs: Dict[str, List[Set[str]]]) -> None:
+                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any], count_classes_final: Dict[str, int], moved_recs: Dict[str, List[Set[str]]]) -> None:
     """
     Prints the classification results based on the provided parameters.
 
@@ -2137,7 +2140,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
             elif class_ in ['4c', '5']:
                 prf.print_message(f"\t\t{count} loci are classified as {class_}. These will be added to recommendations with 'Add'.", None)
             else:
-                prf.print_message(f"\t\t{len(moved_recs[class_][0]) + len(moved_recs[class_][1])} loci are classified as {class_}. {len(moved_recs[class_][0])} were retained and {len(moved_recs[class_][1])} were dropped or given a different recommendation.", None)
+                prf.print_message(f"\t\t{count} loci are classified as {class_}.", None)
 
     # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
     retained_not_matched_by_blastn: Optional[Any] = merged_all_classes.pop('Retained_not_matched_by_blastn', None)
@@ -2147,17 +2150,17 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     count_cases: Dict[str, int] = {}
 
     for class_, loci in merged_all_classes.items():
-        if class_ == '1a':
-            count_cases[class_] = len(itf.flatten_list(loci.values()))
-        else:
+        if class_ in ['4c', '5']:
             count_cases[class_] = len(loci)
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values())
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
     prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the schema DNA sequences.", None)
+    for class_, count in count_classes_final.items():
+        print_results(class_, count, merged_all_classes, moved_recs)
     for class_, count in count_cases.items():
         print_results(class_, count, merged_all_classes, moved_recs)
-    prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values())} didn't have any matches", None)
+    prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values()) - sum(count_classes_final.values())} didn't have any matches", None)
 
     if retained_not_matched_by_blastn:
         merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
@@ -2286,7 +2289,8 @@ def prepare_loci(schema_folder: str,
                      Dict[str, List[str]],  
                      Dict[str, List[str]], 
                      Dict[str, List[str]],
-                     Dict[str, str]]:
+                     Dict[str, str],
+                     Dict[str, int]]:
     """
     Process new loci by translating sequences, counting frequencies, and preparing files for BLAST.
 
@@ -2341,6 +2345,8 @@ def prepare_loci(schema_folder: str,
     temp_frequency_in_genomes: Dict[str, List[str]] = {}
     group_reps_ids: Dict[str, List[str]] = {} 
     group_alleles_ids: Dict[str, List[str]] = {} 
+    new_max_hits: Dict[str, int] = {}
+    blast_alleles: Dict[str, List[str]] = {}
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
@@ -2354,8 +2360,10 @@ def prepare_loci(schema_folder: str,
     prf.print_message('Write master file for Blastp.', 'info')
     for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
+        blast_alleles.setdefault(loci_id, [])
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
+            blast_alleles[loci_id].append(allele_id)
             group_alleles_ids.setdefault(loci_id, []).append(allele_id)
             all_nucleotide_sequences.setdefault(allele_id, str(sequence))
             protseq = sf.translate_sequence(str(sequence), constants[6])
@@ -2381,5 +2389,13 @@ def prepare_loci(schema_folder: str,
                                                         False)
         
         translation_dict.update(trans_dict)
+
+    for loci, alleles in blast_alleles.items():
+        new_max_target = round(len(alleles)*1.1)
+        if new_max_target < 50:
+            new_max_hits[loci] = 50
+        else:
+            new_max_hits[loci] = new_max_target
+
                 
-    return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against
+    return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits

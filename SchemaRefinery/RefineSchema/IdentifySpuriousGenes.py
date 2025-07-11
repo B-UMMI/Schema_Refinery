@@ -422,10 +422,13 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         all_alleles,
         group_reps_ids,
         group_alleles_ids,
-        to_run_against) = cof.prepare_loci(schema_folder,
+        to_run_against,
+        new_max_hits) = cof.prepare_loci(schema_folder,
                                             constants,
                                             processing_mode,
                                             initial_processing_output)
+        
+        pf.print_message(f'{new_max_hits}', 'info')
         
     if run_mode == 'schema_vs_schema':
 
@@ -456,7 +459,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         all_alleles,
         group_reps_ids,
         group_alleles_ids,
-        to_run_against) = cof.prepare_loci(schema_folder,
+        to_run_against,
+        new_max_hits) = cof.prepare_loci(schema_folder,
                                             constants,
                                             processing_mode,
                                             initial_processing_output)
@@ -476,14 +480,14 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
     representative_blastn_results: tp.BlastDict
-    not_matched: Set[str] = []
-    representative_blast_results, representative_blastn_results, not_matched = cof.run_blasts(blast_db_prot,
+    representative_blast_results, representative_blastn_results = cof.run_blasts(blast_db_prot,
                                                                 all_alleles,
                                                                 all_translation_dict,
                                                                 trans_paths,
                                                                 to_blast_paths,
                                                                 to_run_against,
                                                                 blast_output,
+                                                                new_max_hits,
                                                                 constants,
                                                                 reps_kmers_sim if run_mode == 'unclassified_cds' else None,
                                                                 frequency_in_genomes,
@@ -578,7 +582,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     reverse_matches: bool = True
     (related_matches_path,
      count_results_by_cluster_path,
-     recommendations_file_path) = cof.write_recommendations_summary_results(to_blast_paths,
+     recommendations_file_path,
+     count_classes_final) = cof.write_recommendations_summary_results(to_blast_paths,
                                                                             related_clusters,
                                                                             count_results_by_class_with_inverse,
                                                                             group_reps_ids,
@@ -646,6 +651,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                         dropped_loci_ids,
                                         to_blast_paths,
                                         all_alleles,
+                                        count_classes_final,
                                         moved_recs)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':

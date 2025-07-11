@@ -228,9 +228,9 @@ def run_blast_fastas_multiprocessing(id_: str, blast_exec: str, blast_results: s
 	return [id_, blast_results_file]
 
 
-def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str, id_: str, blast_output: str,
+def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str, id_: str, blast_output: str, max_targets: int,
 								max_hsps: Optional[int] = None, threads: int = 1, ids_file: Optional[str] = None,
-								blast_task: Optional[str] = None, max_targets: Optional[int] = None) -> List[str]:
+								blast_task: Optional[str] = None) -> List[str]:
 	"""
 	Execute BLAST.
 
@@ -487,7 +487,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 
 def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc: Dict[str, str],
 						  blastn_results_folder: str,
-						  total_reps: int, max_id_length: int) -> List[str]:
+						  total_reps: int, max_id_length: int, new_max_hits: Dict[str, int]) -> List[str]:
 	"""
 	Run BLASTn in parallel for all the cluster representatives.
 
@@ -517,13 +517,15 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
 	i: int = 1
 	ids_reps_list = list(rep_paths_nuc.keys())
 	rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
+	new_targets = list(new_max_hits.values())
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blastdb_multiprocessing,
 								repeat(get_blastn_exec),
 								repeat(blast_db),
 								rep_paths_nuc_list,
 								ids_reps_list,
-								repeat(blastn_results_folder)):
+								repeat(blastn_results_folder),
+								new_targets):
 			# Append the results file to the list
 			blastn_results_files.append(res[1])
 			pf.print_message(f"Running BLASTn for {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
@@ -578,7 +580,7 @@ def run_blastn_operations_based_on_blastp(cpu: int, blastp_runs_to_do, get_blast
 	return blastn_results_files
 
 def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths,
-						  blastp_results_folder: str, total_blasts: int, max_id_length: int) -> List[str]:
+						  blastp_results_folder: str, total_blasts: int, max_id_length: int, new_max_hits: Dict[str, int]) -> List[str]:
 	"""
 	Run BLASTp in parallel for all the cluster representatives.
 
@@ -608,6 +610,7 @@ def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, t
 	i: int = 1
 	translations_paths_values = list(translations_paths.values())  # Convert dict_values to list
 	translations_paths_keys = list(translations_paths.keys())  # Convert dict_keys to list
+	new_targets = list(new_max_hits.values())
 	
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blastdb_multiprocessing,
@@ -615,7 +618,8 @@ def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, t
 								repeat(blast_db_files),
 								translations_paths_values,
 								translations_paths_keys,
-								repeat(blastp_results_folder)):
+								repeat(blastp_results_folder),
+								new_targets):
 			# Save the path to the BLASTp results file
 			blastp_results_files.append(res[1])
 			pf.print_message(f"Running BLASTp for {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
