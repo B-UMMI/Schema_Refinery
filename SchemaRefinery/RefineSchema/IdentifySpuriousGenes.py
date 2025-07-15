@@ -10,7 +10,7 @@ from typing import Any, List, Dict, Optional, Set, Tuple
 
 try:
     from SchemaAnnotation import (consolidate as cs)
-    from utils import (core_functions as cof,
+    from utils import (core_functions_blastppn as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
                                         iterable_functions as itf,
@@ -25,7 +25,7 @@ try:
                                         globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
-    from SchemaRefinery.utils import (core_functions as cof,
+    from SchemaRefinery.utils import (core_functions_blastppn as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
                                         iterable_functions as itf,
@@ -100,7 +100,7 @@ def calculate_frequency(schema_folder: str,
                         temp_paths: List[str],
                         constants: List[Any], 
                         initial_processing_output: str,
-                        run_mode: str, results_output: str) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, List[str]], Dict[str, str]]:
+                        run_mode: str, results_output: str) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int], Dict[str, List[str]], Dict[str, str], Dict[str, str], Dict[str, int]]:
     """
     Calculates the frequency in the genomes in 3 different was depending in the run mode.
 
@@ -253,10 +253,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         Path to the output directory.
     allelecall_directory : str
         Path to the allele call directory.
-    possible_new_loci : str
-        Path to possible new loci.
-    input_genomes: str
-        Path to the file/folder with the fastas of the complete genomes.
+    annotation_paths:
+        Paths for the files with the annotations.
     constants : List[Any]
         List of constants used in the process.
     temp_paths : List[str]
@@ -267,6 +265,10 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         Mode of processing.
     cpu : int
         Number of CPUs to use.
+    bsr : int
+        Value of the threshold for the BSR.
+    translation_table : int
+        Number of the translation table to be used.
     no_cleanup : bool
         Flag to indicate whether to clean up temporary files.
 
@@ -428,8 +430,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                             processing_mode,
                                             initial_processing_output)
         
-        pf.print_message(f'{new_max_hits}', 'info')
-        
     if run_mode == 'schema_vs_schema':
 
         ff.copy_folder(schema_directory[0], schema_folder)
@@ -480,7 +480,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
     representative_blastn_results: tp.BlastDict
-    representative_blast_results, representative_blastn_results = cof.run_blasts(blast_db_prot,
+    representative_blast_results, representative_blastp_2_results, representative_blastn_results, loci_too_big = cof.run_blasts(blast_db_prot,
                                                                 all_alleles,
                                                                 all_translation_dict,
                                                                 trans_paths,
@@ -492,17 +492,18 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                 reps_kmers_sim if run_mode == 'unclassified_cds' else None,
                                                                 frequency_in_genomes,
                                                                 frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
-                                                                cpu)
+                                                                cpu,
+                                                                output_d)
 
 
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
-    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
+    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastp_2_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
     
     # Sort each entry based on their assigned classes
-    sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
+    sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results, representative_blastp_2_results,
                                                           classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
     processed_results: tp.ProcessedResults
@@ -568,7 +569,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     related_clusters: tp.RelatedClusters
     recommendations: tp.Recomendations
     # Extract the results from the processed results
-    related_clusters, recommendations, moved_recs = cof.extract_results(processed_results,
+    related_clusters, recommendations = cof.extract_results(processed_results,
                                                             count_results_by_class,
                                                             frequency_in_genomes,
                                                             frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None, 
@@ -651,8 +652,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                         dropped_loci_ids,
                                         to_blast_paths,
                                         all_alleles,
-                                        count_classes_final,
-                                        moved_recs)
+                                        count_classes_final)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
         pf.print_message("Writing temporary fastas to file...", "info")
