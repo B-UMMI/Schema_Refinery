@@ -1506,6 +1506,10 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         A dictionary containing the BLAST results for representative sequences.
     """
 
+    # ============================================
+    # First BLASTp
+    # ============================================
+
     # Create directories.
     blastp_results: str = os.path.join(output_dir, '1_BLASTp_processing')
     ff.create_directory(blastp_results)
@@ -1528,7 +1532,6 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     total_blasts: int = len(trans_paths)
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
-    i = 1
     # Calculate self-score
     self_score_dict: Dict[str, float] = bf.calculate_self_score(trans_paths,
                                                                 get_blastp_exec,
@@ -1555,7 +1558,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
 
-        # Check size of file --> is it limit of hits? --> does it have more than one loci?
+        # Check size of output file and find the loci with the limit of matches
         subjs: Set[str] = set()
         with open(blast_result_file, 'r') as file:
             file_lines = file.readlines()
@@ -1569,15 +1572,15 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                 subjs.add(subject_loci)
 
             # Now check if this file has exactly the expected number of hits
-            prf.print_message(f'{query_loci} : {len(file_lines)} : {new_max_hits[query_loci]}')
-            if len(file_lines) >= int(new_max_hits[query_loci]):  # Safely get the expected max
-            
+            if len(file_lines) >= int(new_max_hits[query_loci]):
+                # The ones with matches other than with themselves
                 if len(subjs) > 1:
-#### what to do with this --> new output file
                     loci_too_big.append(query_loci)
+                # The ones with only a self match
                 else:
                     careful_blastp_trans_paths[query_loci] = trans_paths[query_loci]
 
+            # The loci matched from BLASTp that doidnt reach the hit limit
             else:
                 # Load only alignments above the pident threshol
                 filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
@@ -1617,6 +1620,11 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                 # Save the BLASTp results
                 representative_blast_results.update(filtered_alignments_dict)
 
+
+    # ========================================================================================
+    # BLASTp for loci with a number of alleles that reaches the hit limit
+    # ========================================================================================
+
     # Create directories.
     blastp_results_folder_2: str = os.path.join(blastp_results,
                                          'BLASTp_results_high_alleles')
@@ -1631,15 +1639,13 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     loci_matches2: List[str] = []
     alleles_matches2: Dict[str, List[str]] = {}
 
-    # Total number of runs
-    total_blasts: int = len(careful_blastp_trans_paths)
+    
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
-    i = 1
-    prf.print_message("Running BLASTp...", "info")
+    prf.print_message("Running BLASTp for variable loci...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
 
-
+    # Each loci will have a different blast with a different DB
     for loci_big in careful_blastp_trans_paths.keys():
 
         blast_db: str = os.path.join(blastp_results, 'blast_db_prot2')
@@ -1652,30 +1658,31 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
 
         for loci, loci_path in to_run_against.items():
             loci_id = ff.file_basename(loci).split('.')[0]
+            # The query loci will not be included to avoid a self match with too many alleles
             if loci_id != loci_big:
-                #blast_alleles.setdefault(loci_id, [])
                 fasta_dict = sf.fetch_fasta_dict(loci_path, False)
                 for allele_id, sequence in fasta_dict.items():
-                    #blast_alleles[loci_id].append(allele_id)
-                    #group_alleles_ids.setdefault(loci_id, []).append(allele_id)
-                    #all_nucleotide_sequences.setdefault(allele_id, str(sequence))
                     protseq = sf.translate_sequence(str(sequence), constants[6])
                     # Write to master file
                     write_type = 'a' if os.path.exists(master_file_path_p2) else 'w'
                     with open(master_file_path_p2, write_type) as master_file:
                         master_file.write(f">{allele_id}\n{str(protseq)}\n")
         
-        prf.print_message("Creating BLASTp database...", "info")
+        prf.print_message("Creating new BLASTp database...", "info")
         # Get the path to the makeblastdb executable.
         makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
         blast_db_prot: str = os.path.join(blast_db, 'Blast_db_proteins')
         bf.make_blast_db(makeblastdb_exec, master_file_path_p2, blast_db_prot, 'prot')
+
         time.sleep(0.5)
         new_max_hit: Dict[str, int] = {}
-        careful_blastp_trans_path: Dict[str, str] = {}
         new_max_hit[loci_big] = new_max_hits[loci_big]
+        careful_blastp_trans_path: Dict[str, str] = {}
         careful_blastp_trans_path[loci_big] = careful_blastp_trans_paths[loci_big]
+        # Total number of runs
+        total_blasts: int = len(careful_blastp_trans_path)   
 
+        # Run Blastp for each loci
         blastp_2_results_file = bf.run_blastp_operations(cpu,
                                                         get_blastp_exec,
                                                         blast_db_prot,
@@ -1684,57 +1691,64 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                         total_blasts,
                                                         max_id_length,
                                                         new_max_hit)
+        prf.print_message(f"{blastp_2_results_file}")                                   
         
         blastp_2_results_files.append(blastp_2_results_file)
-        #shutil.rmtree(blast_db)
 
-    prf.print_message(f'{blastp_2_results_files}')
+    # Filter the second blastp data
     for blastp_result_file in blastp_2_results_files:
+        for blastp_file in blastp_result_file:
 
-        # Load only alignments above the pident threshol
-        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-            blast_result_file, constants[1], True, False, True, True, False
-        )
+            prf.print_message("Filter blast results and claculate BSR")
 
-        # Update main results dict
-        representative_blastp_2_results.update(filtered_alignments_dict)
+            # Load only alignments above the pident threshol
+            filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
+                blastp_file, constants[1], True, False, True, True, False
+            )
 
-        # Create flattened subject matches per query
-        alleles_matches2 = {
-            query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
-            for query, subjects in representative_blastp_2_results.items()
-        }
+            # Update main results dict
+            representative_blastp_2_results.update(filtered_alignments_dict)
+            prf.print_message(f'{representative_blastp_2_results.items()}')
 
-        for query in alleles_matches2:
-            bsr_values[query] = {}
-            loci = itf.remove_by_regex(query, pattern)
-            loci_matches2.append(loci)
+            # Create flattened subject matches per query
+            alleles_matches2 = {
+                query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
+                for query, subjects in representative_blastp_2_results.items()
+            }
 
-        # Compute BSRs from filtered hits only
-        for query, subjects_dict in filtered_alignments_dict.items():
-            for subject_id, results in subjects_dict.items():
-                # Use the first alignment's score
-                subject_score: float = next(iter(results.values()))['score']
-                bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
+            for query in alleles_matches2:
+                bsr_values[query] = {}
+                loci = itf.remove_by_regex(query, pattern)
+                loci_matches2.append(loci)
 
-        # Add filtered results to final containers
-        add_items_to_results(filtered_alignments_dict,
-                                reps_kmers_sim,
-                                bsr_values,
-                                alignment_coords_all,
-                                alignment_coords_pident,
-                                frequency_in_genomes,
-                                frequency_in_genomes_second_schema,
-                                [True, True])
-        # Save the BLASTp results
-        representative_blastp_2_results.update(filtered_alignments_dict) 
+            # Compute BSRs from filtered hits only
+            for query, subjects_dict in filtered_alignments_dict.items():
+                for subject_id, results in subjects_dict.items():
+                    # Use the first alignment's score
+                    subject_score: float = next(iter(results.values()))['score']
+                    bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
 
-    prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp.", "info")
+            # Add filtered results to final containers
+            add_items_to_results(filtered_alignments_dict,
+                                    reps_kmers_sim,
+                                    bsr_values,
+                                    alignment_coords_all,
+                                    alignment_coords_pident,
+                                    frequency_in_genomes,
+                                    frequency_in_genomes_second_schema,
+                                    [True, True])
+            # Save the BLASTp results
+            representative_blastp_2_results.update(filtered_alignments_dict) 
+
+    prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp first round.", "info")
     prf.print_message(f"{len(set(loci_matches2))} loci had matches through the blastp second round.", "info")
+    prf.print_message(f"{loci_matches2}")
     prf.print_message("")
 
-    # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
-    # Based on BLASTn results get all alleles that matches by BLASTn.
+    # ============================================
+    # Run BLASTn with loci not matched
+    # ============================================
+
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1761,14 +1775,11 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         loci_name = ff.file_basename(loci_file).rsplit('.', 1)[0]
         if loci_name in loci_ids_needed:
             matched_loci_paths[loci_name] = loci_path
-    #matched_loci_paths = {loci : all_alleles[loci] for loci in loci_ids_needed}
     # Open the master file once in append mode
     with open(master_file_path_nucl, 'a') as master_file:
         for loci, loci_path in to_run_against.items():
             loci_name = ff.file_basename(loci).rsplit('.', 1)[0]
             if loci_name in loci_ids_needed:
-                #if loci_name in loci_ids_needed:
-                    #matched_loci_paths[loci_name] = loci_path
                 fasta_dict = sf.fetch_fasta_dict(loci_path, False)
                 for allele_id, sequence in fasta_dict.items():
                     master_file.write(f">{allele_id}\n{str(sequence)}\n")
@@ -2506,7 +2517,7 @@ def prepare_loci(schema_folder: str,
         #if new_max_target < 5:
          #   new_max_hits[loci] = 500
         #else:
-        new_max_hits[loci] = 5000
+        new_max_hits[loci] = 20
 
                 
     return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits
