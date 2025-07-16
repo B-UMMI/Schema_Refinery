@@ -425,7 +425,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         group_reps_ids,
         group_alleles_ids,
         to_run_against,
-        new_max_hits) = cof.prepare_loci(schema_folder,
+        new_max_hits,
+        seqid_file_dict) = cof.prepare_loci(schema_folder,
                                             constants,
                                             processing_mode,
                                             initial_processing_output)
@@ -460,7 +461,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         group_reps_ids,
         group_alleles_ids,
         to_run_against,
-        new_max_hits) = cof.prepare_loci(schema_folder,
+        new_max_hits,
+        seqid_file_dict) = cof.prepare_loci(schema_folder,
                                             constants,
                                             processing_mode,
                                             initial_processing_output)
@@ -480,7 +482,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
     representative_blastn_results: tp.BlastDict
-    representative_blast_results, representative_blastp_2_results, representative_blastn_results, loci_too_big = cof.run_blasts(blast_db_prot,
+    representative_blast_results, representative_blastn_results, loci_too_big = cof.run_blasts(blast_db_prot,
                                                                 all_alleles,
                                                                 all_translation_dict,
                                                                 trans_paths,
@@ -488,6 +490,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                 to_run_against,
                                                                 blast_output,
                                                                 new_max_hits,
+                                                                seqid_file_dict,
                                                                 constants,
                                                                 reps_kmers_sim if run_mode == 'unclassified_cds' else None,
                                                                 frequency_in_genomes,
@@ -498,12 +501,12 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
-    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastp_2_results, representative_blastn_results,
+    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
     
     # Sort each entry based on their assigned classes
-    sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results, representative_blastp_2_results,
+    sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
     # Process the results_outcome dict and write individual classes to TSV file.
     processed_results: tp.ProcessedResults
@@ -647,6 +650,12 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                                         dropped_alleles,
                                                                         output_d)
+    # Write alot of alleles file
+    alot_of_alleles_file = os.path.join(output_d, 'alot_of_alleles.txt')
+    with open(alot_of_alleles_file, 'w') as alot_file:
+        for loci in loci_too_big:
+            alot_file.write(f"{loci}\n")
+
     # Print the classification results
     cof.print_classifications_results(merged_all_classes,
                                         dropped_loci_ids,

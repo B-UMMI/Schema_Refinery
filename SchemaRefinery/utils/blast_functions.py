@@ -228,8 +228,8 @@ def run_blast_fastas_multiprocessing(id_: str, blast_exec: str, blast_results: s
 	return [id_, blast_results_file]
 
 
-def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str, id_: str, blast_output: str, max_targets: int,
-								max_hsps: Optional[int] = None, threads: int = 1, ids_file: Optional[str] = None,
+def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str, id_: str, blast_output: str, max_targets: int, ids_file: str,
+								max_hsps: Optional[int] = None, threads: int = 1, 
 								blast_task: Optional[str] = None) -> List[str]:
 	"""
 	Execute BLAST.
@@ -274,12 +274,15 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
 							 '-out', blast_results_file,
 							 '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
 							 '-num_threads', str(threads),
-							 '-evalue', '0.001']
+							 '-evalue', '0.001',
+							 '-negative_seqidlist', ids_file]
+
+	####  -negative_seqidlist  --> ficheiro tem que ser modificado antes
 
 	if max_hsps is not None:
 		blast_args.extend(['-max_hsps', str(max_hsps)])
-	if ids_file is not None:
-		blast_args.extend(['-seqidlist', ids_file])
+	#if ids_file is not None:
+	#	blast_args.extend(['-seqidlist', ids_file])
 	if blast_task is not None:
 		blast_args.extend(['-task', blast_task])
 	if max_targets is not None:
@@ -487,7 +490,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 
 def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc: Dict[str, str],
 						  blastn_results_folder: str,
-						  total_reps: int, max_id_length: int, new_max_hits: Dict[str, int]) -> List[str]:
+						  total_reps: int, max_id_length: int, new_max_hits: List[int], seqid_files: List[str]) -> List[str]:
 	"""
 	Run BLASTn in parallel for all the cluster representatives.
 
@@ -517,7 +520,7 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
 	i: int = 1
 	ids_reps_list = list(rep_paths_nuc.keys())
 	rep_paths_nuc_list = list(rep_paths_nuc.values())  # Convert dict_values to list
-	new_targets = list(new_max_hits.values())
+	#new_targets = list(new_max_hits.values())
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blastdb_multiprocessing,
 								repeat(get_blastn_exec),
@@ -525,7 +528,8 @@ def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_pat
 								rep_paths_nuc_list,
 								ids_reps_list,
 								repeat(blastn_results_folder),
-								new_targets):
+								new_max_hits,
+								seqid_files):
 			# Append the results file to the list
 			blastn_results_files.append(res[1])
 			pf.print_message(f"Running BLASTn for {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
@@ -580,7 +584,7 @@ def run_blastn_operations_based_on_blastp(cpu: int, blastp_runs_to_do, get_blast
 	return blastn_results_files
 
 def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths,
-						  blastp_results_folder: str, total_blasts: int, max_id_length: int, new_max_hits: Dict[str, int]) -> List[str]:
+						  blastp_results_folder: str, total_blasts: int, max_id_length: int, new_max_hits: List[int], seqid_file_dict: List[str]) -> List[str]:
 	"""
 	Run BLASTp in parallel for all the cluster representatives.
 
@@ -610,7 +614,8 @@ def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, t
 	i: int = 1
 	translations_paths_values = list(translations_paths.values())  # Convert dict_values to list
 	translations_paths_keys = list(translations_paths.keys())  # Convert dict_keys to list
-	new_targets = list(new_max_hits.values())
+	#new_targets = list(new_max_hits.values())
+	#seqid_files = list(seqid_file_dict.values())
 	
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blastdb_multiprocessing,
@@ -619,7 +624,8 @@ def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, t
 								translations_paths_values,
 								translations_paths_keys,
 								repeat(blastp_results_folder),
-								new_targets):
+								new_max_hits,
+								seqid_file_dict):
 			# Save the path to the BLASTp results file
 			blastp_results_files.append(res[1])
 			pf.print_message(f"Running BLASTp for {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)

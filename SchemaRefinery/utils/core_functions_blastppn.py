@@ -467,7 +467,7 @@ def add_items_to_results(filtered_alignments_dict: tp.BlastDict,
             clean_up_results(filtered_alignments_dict, query, subject)
 
 
-def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, representative_blastp_2_results: tp.BlastDict, representative_blastn_results: tp.BlastDict,
+def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, representative_blastn_results: tp.BlastDict,
                                          constants: List[Any], classes_outcome: Tuple[str, ...] 
                                          ) -> Tuple[str]:
     """
@@ -537,50 +537,48 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     pident_threshold: float = constants[1]
     bsr_threshold: float = constants[7]
     size_ratio_threshold: float = constants[8]
-    files: List[str] = [representative_blast_results, representative_blastp_2_results]
 
     # Loop through the representative BLASTp results
-    for file in files:
-        for query, rep_blast_result in representative_blast_results.items():
-            for id_subject, matches in rep_blast_result.items():
-                for id_, blastn_entry in matches.items():
-                    # Calculate the frequency ratio             
-                    query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
-                    subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
-                    
-                    if query_freq == 0 or subject_freq == 0:
-                        freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
-                    else:
-                        freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
-                    
-                    # Extract relevant metrics
-                    global_palign_all_min: float = blastn_entry['global_palign_all_min']
-                    bsr_value: float = blastn_entry['bsr']
-                    pident_value: float = blastn_entry['pident']
-                    global_palign_all_max: float = blastn_entry['global_palign_all_max']
+    for query, rep_blast_result in representative_blast_results.items():
+        for id_subject, matches in rep_blast_result.items():
+            for id_, blastn_entry in matches.items():
+                # Calculate the frequency ratio             
+                query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
+                subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
+                
+                if query_freq == 0 or subject_freq == 0:
+                    freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
+                else:
+                    freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
+                
+                # Extract relevant metrics
+                global_palign_all_min: float = blastn_entry['global_palign_all_min']
+                bsr_value: float = blastn_entry['bsr']
+                pident_value: float = blastn_entry['pident']
+                global_palign_all_max: float = blastn_entry['global_palign_all_max']
 
-                    # Classify based on global_palign_all_min and bsr
-                    if global_palign_all_min >= size_ratio_threshold:
-                        if bsr_value >= bsr_threshold:
-                            add_class_to_dict(query, id_subject, id_, '1a', 'blastp')
-                        elif freq_ratio <= 0.1:
-                            add_class_to_dict(query, id_subject, id_, '1b', 'blastp')
-                        else:
-                            add_class_to_dict(query, id_subject, id_, '1c', 'blastp')
-                    elif 0.4 <= global_palign_all_min < size_ratio_threshold:
-                        if pident_value >= pident_threshold:
-                            if global_palign_all_max >= size_ratio_threshold:
-                                add_class_to_dict(query, id_subject, id_, '2a' if freq_ratio <= 0.1 else '2b', 'blastp')
-                            else:
-                                add_class_to_dict(query, id_subject, id_, '3a' if freq_ratio <= 0.1 else '3b', 'blastp')
-                        else:
-                            if global_palign_all_max >= size_ratio_threshold:
-                                add_class_to_dict(query, id_subject, id_, '4a' if freq_ratio <= 0.1 else '4b', 'blastp')
-                            else:
-                                add_class_to_dict(query, id_subject, id_, '4c', 'blastp')
+                # Classify based on global_palign_all_min and bsr
+                if global_palign_all_min >= size_ratio_threshold:
+                    if bsr_value >= bsr_threshold:
+                        add_class_to_dict(query, id_subject, id_, '1a', 'blastp')
+                    elif freq_ratio <= 0.1:
+                        add_class_to_dict(query, id_subject, id_, '1b', 'blastp')
                     else:
-                        add_class_to_dict(query, id_subject, id_, '5', 'blastp')
-        
+                        add_class_to_dict(query, id_subject, id_, '1c', 'blastp')
+                elif 0.4 <= global_palign_all_min < size_ratio_threshold:
+                    if pident_value >= pident_threshold:
+                        if global_palign_all_max >= size_ratio_threshold:
+                            add_class_to_dict(query, id_subject, id_, '2a' if freq_ratio <= 0.1 else '2b', 'blastp')
+                        else:
+                            add_class_to_dict(query, id_subject, id_, '3a' if freq_ratio <= 0.1 else '3b', 'blastp')
+                    else:
+                        if global_palign_all_max >= size_ratio_threshold:
+                            add_class_to_dict(query, id_subject, id_, '4a' if freq_ratio <= 0.1 else '4b', 'blastp')
+                        else:
+                            add_class_to_dict(query, id_subject, id_, '4c', 'blastp')
+                else:
+                    add_class_to_dict(query, id_subject, id_, '5', 'blastp')
+    
     # Loop through the representative BLASTn results
     for query, rep_blast_result in representative_blastn_results.items():
         for id_subject, matches in rep_blast_result.items():
@@ -592,7 +590,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     return classes_outcome
 
 
-def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict, representative_blastp_2_results: tp.BlastDict,
+def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
                                   classes_outcome: Tuple[str, ...]
                                   ) -> tp.BlastDict:
     """
@@ -633,16 +631,14 @@ def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict, re
     # Temporary dictionary to group results by class
     temp_dict: Dict[str, Dict[str, Dict[str, List[Dict[str, Any]]]]] = {class_: {} for class_ in classes_outcome}
 
-    files: List[str] = [representative_blast_results, representative_blastp_2_results]
     # Group results by class
-    for file in files:
-        for query, rep_blast_result in representative_blast_results.items():
-            for id_subject, matches in rep_blast_result.items():
-                # Get the class of the alignment with the highest score
-                class_ = matches[1]['classification']
-                if query not in temp_dict[class_]:
-                    temp_dict[class_][query] = {}
-                temp_dict[class_][query][id_subject] = matches
+    for query, rep_blast_result in representative_blast_results.items():
+        for id_subject, matches in rep_blast_result.items():
+            # Get the class of the alignment with the highest score
+            class_ = matches[1]['classification']
+            if query not in temp_dict[class_]:
+                temp_dict[class_][query] = {}
+            temp_dict[class_][query][id_subject] = matches
 
     # Consolidate the grouped results into the final sorted dictionary
     for class_ in classes_outcome:
@@ -1472,7 +1468,7 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
 
 
 def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], trans_paths: Dict[str, str], rep_paths_nuc: Dict[str, str], to_run_against: Dict[str, str],
-               output_dir: str, new_max_hits: Dict[str, int], constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
+               output_dir: str, new_max_hits: Dict[str, int], seqid_file_dict: Dict[str, str], constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
                frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int, output_d: str) -> Tuple[tp.BlastDict, tp.BlastDict]:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
@@ -1510,6 +1506,9 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     # First BLASTp
     # ============================================
 
+
+    ##### Blast recebe só allelos
+
     # Create directories.
     blastp_results: str = os.path.join(output_dir, '1_BLASTp_processing')
     ff.create_directory(blastp_results)
@@ -1538,6 +1537,26 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                                 blastp_results_ss_folder,
                                                                 max_id_length,
                                                                 cpu)
+
+    prf.print_message("Format the seqid files", "info")
+    get_aliastool_exec: str = lf.get_tool_path('blastdb_aliastool')
+    seqid_folder = os.path.join(output_dir, 'seqid_formated')
+    ff.create_directory(seqid_folder)
+    seqid_formated_file: Dict[str, str] = {}
+    for loci, file in seqid_file_dict.items():
+        new_file = os.path.join(seqid_folder, f'seqid_file_formated_{loci}.bsl')
+        seqid_formated_file.setdefault(loci, new_file)
+        bf.run_blastdb_aliastool(get_aliastool_exec, file, seqid_formated_file[loci])
+    
+    #prf.print_message(f'{seqid_formated_file}')
+
+    all_blast_info: Dict[str, Tuple[int, str]] = {}
+    for loci in trans_paths.keys():
+        all_blast_info.setdefault(loci, [new_max_hits[loci], seqid_formated_file[loci]])
+        
+    new_targets: List[int] = [v[0] for v in all_blast_info.values()]
+    seqid_files: List[str] = [v[1] for v in all_blast_info.values()]
+    
     prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     blastp_results_files = bf.run_blastp_operations(cpu,
@@ -1547,7 +1566,8 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     blastp_results_folder,
                                                     total_blasts,
                                                     max_id_length,
-                                                    new_max_hits)
+                                                    new_targets,
+                                                    seqid_files)
 
     alleles_matches: Dict[str, List[str]] = {}
     pattern: str = r'_(\d+)$'
@@ -1557,70 +1577,72 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     prf.print_message('Calculating BSR and filtering alignemnts...')
     # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
-
-        # Check size of output file and find the loci with the limit of matches
-        subjs: Set[str] = set()
-        with open(blast_result_file, 'r') as file:
-            file_lines = file.readlines()
+        if os.path.getsize(blast_result_file) > 0:
+            # Check size of output file and find the loci with the limit of matches
+            subjs: Set[str] = set()
             query_loci: str = ""
-            for line in file_lines:
-                cols: List[str] = line.strip().split("\t")
-                query: str = cols[0]
-                query_loci = itf.remove_by_regex(query, pattern)
-                subject: str = cols[1]
-                subject_loci = itf.remove_by_regex(subject, pattern)
-                subjs.add(subject_loci)
+            with open(blast_result_file, 'r') as file:
+                file_lines = file.readlines()
+                for line in file_lines:
+                    cols: List[str] = line.strip().split("\t")
+                    query: str = cols[0]
+                    query_loci = itf.remove_by_regex(query, pattern)
+                    subject: str = cols[1]
+                    subject_loci = itf.remove_by_regex(subject, pattern)
+                    subjs.add(subject_loci)
+                #prf.print_message(f'{query} : {query_loci} : {subjs}')
 
             # Now check if this file has exactly the expected number of hits
             if len(file_lines) >= int(new_max_hits[query_loci]):
                 # The ones with matches other than with themselves
+                #### manter esta parte
                 if len(subjs) > 1:
                     loci_too_big.append(query_loci)
                 # The ones with only a self match
-                else:
-                    careful_blastp_trans_paths[query_loci] = trans_paths[query_loci]
+                #else:
+                 #   careful_blastp_trans_paths[query_loci] = trans_paths[query_loci]
 
             # The loci matched from BLASTp that doidnt reach the hit limit
-            else:
-                # Load only alignments above the pident threshol
-                filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-                    blast_result_file, constants[1], True, False, True, True, False
-                )
+        
+        # Load only alignments above the pident threshol
+        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
+            blast_result_file, constants[1], True, False, True, True, False
+        )
 
-                # Update main results dict
-                representative_blast_results.update(filtered_alignments_dict)
+        # Update main results dict
+        representative_blast_results.update(filtered_alignments_dict)
 
-                # Create flattened subject matches per query
-                alleles_matches = {
-                    query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
-                    for query, subjects in representative_blast_results.items()
-                }
+        # Create flattened subject matches per query
+        alleles_matches = {
+            query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
+            for query, subjects in representative_blast_results.items()
+        }
 
-                for query in alleles_matches:
-                    bsr_values[query] = {}
-                    loci = itf.remove_by_regex(query, pattern)
-                    loci_matches.append(loci)
+        for query in alleles_matches:
+            bsr_values[query] = {}
+            loci = itf.remove_by_regex(query, pattern)
+            loci_matches.append(loci)
 
-                # Compute BSRs from filtered hits only
-                for query, subjects_dict in filtered_alignments_dict.items():
-                    for subject_id, results in subjects_dict.items():
-                        # Use the first alignment's score
-                        subject_score: float = next(iter(results.values()))['score']
-                        bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
+        # Compute BSRs from filtered hits only
+        for query, subjects_dict in filtered_alignments_dict.items():
+            for subject_id, results in subjects_dict.items():
+                # Use the first alignment's score
+                subject_score: float = next(iter(results.values()))['score']
+                bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
 
-                # Add filtered results to final containers
-                add_items_to_results(filtered_alignments_dict,
-                                        reps_kmers_sim,
-                                        bsr_values,
-                                        alignment_coords_all,
-                                        alignment_coords_pident,
-                                        frequency_in_genomes,
-                                        frequency_in_genomes_second_schema,
-                                        [True, True])
-                # Save the BLASTp results
-                representative_blast_results.update(filtered_alignments_dict)
+        # Add filtered results to final containers
+        add_items_to_results(filtered_alignments_dict,
+                                reps_kmers_sim,
+                                bsr_values,
+                                alignment_coords_all,
+                                alignment_coords_pident,
+                                frequency_in_genomes,
+                                frequency_in_genomes_second_schema,
+                                [True, True])
+        # Save the BLASTp results
+        representative_blast_results.update(filtered_alignments_dict)
 
-
+    """
     # ========================================================================================
     # BLASTp for loci with a number of alleles that reaches the hit limit
     # ========================================================================================
@@ -1739,15 +1761,17 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                     [True, True])
             # Save the BLASTp results
             representative_blastp_2_results.update(filtered_alignments_dict) 
-
+    """
     prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp first round.", "info")
-    prf.print_message(f"{len(set(loci_matches2))} loci had matches through the blastp second round.", "info")
-    prf.print_message(f"{loci_matches2}")
+    #prf.print_message(f"{len(set(loci_matches2))} loci had matches through the blastp second round.", "info")
+    #prf.print_message(f"{loci_matches2}")
     prf.print_message("")
 
     # ============================================
     # Run BLASTn with loci not matched
     # ============================================
+
+    #### refazer com nova base de dados
 
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
@@ -1770,7 +1794,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     matched_loci_paths: Dict[str, str] = {}
     
     # Get all unique loci_ids from allele names
-    loci_ids_needed = set(all_alleles.keys()) - set(loci_matches) - set(loci_matches2)
+    loci_ids_needed = set(all_alleles.keys()) - set(loci_matches)
     for loci_file, loci_path in rep_paths_nuc.items():
         loci_name = ff.file_basename(loci_file).rsplit('.', 1)[0]
         if loci_name in loci_ids_needed:
@@ -1787,6 +1811,9 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     bf.make_blast_db(makeblastdb_exec, master_file_path_nucl, blast_db_nucl, 'nucl')
 
     blastn_new_target_hits = {loci_id: new_max_hits[loci_id] for loci_id in loci_ids_needed}
+    all_blastn_info = {loci_id: all_blast_info[loci_id] for loci_id in loci_ids_needed}
+    blastn_new_targets: List[int] = [v[0] for v in all_blastn_info.values()]
+    blastn_seqid_files: List[str] = [v[1] for v in all_blastn_info.values()]
 
     # Run BLASTn
     # Calculate max id length for print.
@@ -1810,7 +1837,8 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     blastn_results_folder,
                                                     total_reps,
                                                     max_id_length,
-                                                    blastn_new_target_hits)
+                                                    blastn_new_targets,
+                                                    blastn_seqid_files)
 
     if len(blastn_results_files) == 0:
         prf.print_message("No BLASTn matches were found", "warning")
@@ -1852,7 +1880,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     prf.print_message(f'{len(set(loci_matches_blastn))} matches were found through BLASTn.', 'info')
     prf.print_message("")
     
-    return representative_blast_results, representative_blastp_2_results, representative_blastn_results, loci_too_big
+    return representative_blast_results, representative_blastn_results, loci_too_big
 
 
 def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses, 
@@ -2449,6 +2477,8 @@ def prepare_loci(schema_folder: str,
     
     # Path to the master FASTA file
     master_file_path = os.path.join(results_output, 'master_protein.fasta')
+    seqid_output = os.path.join(results_output, 'seqid_files')
+    ff.create_directory(seqid_output)
     
     # Create a directory for possible new loci translations
     possible_new_loci_translation_folder = os.path.join(results_output, 'schema_translation_folder')
@@ -2468,6 +2498,7 @@ def prepare_loci(schema_folder: str,
     group_alleles_ids: Dict[str, List[str]] = {} 
     new_max_hits: Dict[str, int] = {}
     blast_alleles: Dict[str, List[str]] = {}
+    seq_id_file_dict: Dict[str, str] = {}
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
@@ -2480,9 +2511,12 @@ def prepare_loci(schema_folder: str,
     # Write master file to run against, DNA sequences
     prf.print_message("")
     prf.print_message('Write master file for Blastp.', 'info')
+
     for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
+        negative_seqid_file = os.path.join(seqid_output, f'negative_seqid_{loci_id}.txt')
         blast_alleles.setdefault(loci_id, [])
+        seq_id_file_dict.setdefault(loci_id, negative_seqid_file)
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
             blast_alleles[loci_id].append(allele_id)
@@ -2493,6 +2527,10 @@ def prepare_loci(schema_folder: str,
             write_type = 'a' if os.path.exists(master_file_path) else 'w'
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(protseq)}\n")
+            write_type2 = 'a' if os.path.exists(negative_seqid_file) else 'w'
+            with open(negative_seqid_file, write_type2) as seqid_file:
+                seqid_file.write(f"{allele_id}\n")
+        
 
 
     for loci, loci_path in to_blast_paths.items():
@@ -2513,11 +2551,14 @@ def prepare_loci(schema_folder: str,
         translation_dict.update(trans_dict)
 
     for loci, alleles in blast_alleles.items():
-        #new_max_target = round(len(alleles)^3)
-        #if new_max_target < 5:
+    #### fazer com o tamanho da lista de allelos que vai correr (sem ser com ele mesmo)
+    #### --> sem o ficheiro dos alot loci?
+
+        #new_max_target = round(len(alleles)^2)
+        #if new_max_target < 500:
          #   new_max_hits[loci] = 500
         #else:
-        new_max_hits[loci] = 20
+        new_max_hits[loci] = 25
 
                 
-    return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits
+    return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits, seq_id_file_dict
