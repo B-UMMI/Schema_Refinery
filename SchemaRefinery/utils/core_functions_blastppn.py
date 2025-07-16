@@ -1579,7 +1579,6 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     for blast_result_file in blastp_results_files:
         if os.path.getsize(blast_result_file) > 0:
             # Check size of output file and find the loci with the limit of matches
-            subjs: Set[str] = set()
             query_loci: str = ""
             with open(blast_result_file, 'r') as file:
                 file_lines = file.readlines()
@@ -1587,17 +1586,13 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                     cols: List[str] = line.strip().split("\t")
                     query: str = cols[0]
                     query_loci = itf.remove_by_regex(query, pattern)
-                    subject: str = cols[1]
-                    subject_loci = itf.remove_by_regex(subject, pattern)
-                    subjs.add(subject_loci)
                 #prf.print_message(f'{query} : {query_loci} : {subjs}')
 
             # Now check if this file has exactly the expected number of hits
             if len(file_lines) >= int(new_max_hits[query_loci]):
                 # The ones with matches other than with themselves
                 #### manter esta parte
-                if len(subjs) > 1:
-                    loci_too_big.append(query_loci)
+                loci_too_big.append(query_loci)
                 # The ones with only a self match
                 #else:
                  #   careful_blastp_trans_paths[query_loci] = trans_paths[query_loci]
@@ -2558,7 +2553,7 @@ def prepare_loci(schema_folder: str,
         #if new_max_target < 500:
          #   new_max_hits[loci] = 500
         #else:
-        new_max_hits[loci] = 25
+        new_max_hits[loci] = 500
 
                 
     return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits, seq_id_file_dict
