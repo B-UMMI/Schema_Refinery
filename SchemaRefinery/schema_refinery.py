@@ -640,6 +640,14 @@ def adapt_loci() -> None:
 						dest='output_directory',
 						help='Path to the directory to which files will be stored.')
 	
+	parser.add_argument('-tf',
+						'--training-file',
+						type=str,
+						required=False,
+						dest='training_file',
+						default=None,
+						help='Path to the Prodigal training file that will be included in the directory of the adapted schema.')
+	
 	parser.add_argument('-c',
 						'--cpu',
 						type=int,
@@ -1011,6 +1019,14 @@ def create_schema_structure() -> None:
 						required=True,
 						dest='output_directory',
 						help='Path to the directory where the output files will be saved.')
+	
+	parser.add_argument('-tf',
+						'--training-file',
+						type=str,
+						required=False,
+						dest='training_file',
+						default=None,
+						help='Path to the Prodigal training file that will be included in the directory of the adapted schema.')
 	
 	parser.add_argument('-c',
 						'--cpu',

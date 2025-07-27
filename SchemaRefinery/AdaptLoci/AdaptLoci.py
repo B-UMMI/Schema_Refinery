@@ -100,7 +100,7 @@ def check_prefix_pdb(input_list, output_directory, makeblastdb_path, blastdbcmd_
 		sys.exit(ct.INPUTS_PDB_PREFIX.format('\n'.join(pdb_prefix)))
 
 
-def adapt_loci(input_fastas: str, output_directory: str, cpu: int, bsr: float, translation_table: int) -> None:
+def adapt_loci(input_fastas: str, output_directory: str, training_file: str, cpu: int, bsr: float, translation_table: int) -> None:
     """
 
     Adapts an external schema for usage by calling chewBBACA PrepExternalSchema. 
@@ -113,9 +113,11 @@ def adapt_loci(input_fastas: str, output_directory: str, cpu: int, bsr: float, t
         Path to the folder with the the fasta files. 
     output_directory: str
         Path to the directory where the final schema will be stored.
+    training_file: str
+        Path to the Prodigal training file that will be included in the directory of the adapted schema.
     cpu : int
         Number of CPU cores that will be used to run the process.
-    blast_score_ratio : float
+    bsr : float
         The BLAST Score Ratio value that will be used to evaluate
         allele similarity and select representative alleles.
     translation_table : int
@@ -140,6 +142,9 @@ def adapt_loci(input_fastas: str, output_directory: str, cpu: int, bsr: float, t
         "--cpu", str(cpu),
         "--bsr", str(bsr),
         "--t", str(translation_table)]
+
+    if training_file is not None:
+        cmd.extend(['--ptf', str(training_file)])
 
     # Run the PrepExternalSchema from chewie
     process = subprocess.Popen(
