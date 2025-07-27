@@ -4,14 +4,15 @@ IdentifySpuriousGenes - Identify spurious genes in a schema
 Description
 -----------
 
-The `IdentifySpuriousGenes` module parses command-line arguments and initiates the process to identify spurious genes in a schema. This module sets up an argument parser to handle various command-line options for identifying spurious genes and then calls the main function of the `IdentifySpuriousGenes` class with the parsed arguments.
+The `IdentifySpuriousGenes` module parses command-line arguments and initiates the process to identify spurious genes in a schema. This module sets up an argument parser to handle various command-line options for identifying spurious genes and then calls the main function of the `IdentifySpuriousGenes` class with the parsed arguments. This module is essential for researchers and bioinformaticians who need to detect and analyze spurious loci in order to create a more refined and concise final schema.
 
-This module takes unclassified CDS or schema loci and matches them against each other, providing a classification for each match. Based on the classification, the best class is chosen to represent the relationship between the two loci. Using these relationships, the user can select the appropriate loci or unclassified CDS group to be included in the schema removing those that are spurious.
+This module takes unclassified CDS or schema loci and matches them against each other, providing a classification for each match. Based on the classification, the best class is chosen to represent the relationship between the two loci. Using these relationships, the user can select the appropriate loci or unclassified CDS group to be included/joined in the final schema removing those that are spurious.
 
 Features
 --------
 
 - Identification of spurious genes in a schema.
+- Optional annotation of the recommendations.
 - Configurable parameters for the identification process.
 - Support for parallel processing using multiple CPUs.
 - Option to skip cleanup after running the module.
@@ -19,7 +20,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.9 or higher
+- Python between 3.9 and 3.11
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 - ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
 - Install requirements using the following command:
@@ -116,12 +117,13 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+The `--allelecall-directory` argument must be the folder obtained using the chewBBACA module AlleleCall with the arguments --no-cleanup and --output-unclassified. Without these arguments the needed files to run the `IdentifySpuriousGenes` module will not run.
 
 The options `--schema-directory` and `--allelecall-directory` must have two paths each if the `run_mode` is `schema_vs_schema`. One path per schema and each schema must have a respective AlleleCall directory.
 
 .. Note::
     In `processing_mode` the option `reps_vs_reps` is the fastest and covers most of the cases.
-    The option `all_vs_all` takes much more time and changes the recommendation of around more 1% of the total loci. 
+    The option `alleles_vs_alleles` takes much more time and changes the recommendation of around more 1% of the total loci. 
     Choose the processing mode according to your computer capabilities and research needs.
 
 Algorithm Explanation
@@ -141,7 +143,12 @@ Algorithm to indentify spurious loci based on schema inputs for run modes schema
    :width: 80%
    :align: center
 
-Each BLAST results is parsed and given a class based on the following rules:
+
+This classification algorithm goes through 2 rounds of BLAST. First a BLASTp is done, and the results filtered based on BSR and pident thresholds. The loci that are not matched are then passed to a BLASTn processing. By running the BLASTn after the BLASTp we ensure that valid CDS are still caught and matched regardless if they contain frameshifts or are pseudo or partial genes. In this way we obtain more complete results and matches. 
+
+The BLAST tool has a limit of hits written per loci in the output file. Using a value for this limit that will not overload the space alocated for our tool, it can happen that not all matches are written down if the loci have a high number of alleles. For that reason, all BLAST processes have the loci being aligned as a query, including all its alleles, removed from the databased used for that run. This is done to ensure that for all loci that will have a match, that match won't be with itself.
+
+Each BLAST results are parsed and given a class based on the following rules:
 
 .. image:: source/algorithm_classification.png
    :alt: Classification algorithm
@@ -152,22 +159,25 @@ Each BLAST results is parsed and given a class based on the following rules:
 
 Between the two loci, the best class is chosen based on the following order of the classes to represent the relationship between the two loci.
 
-classification order: 1a, 1b, 2a, 3a, 2b, 1c, 3b, 4a, 4b, 4c, 5
+classification order: 1a, 1b, 2a, 3a, 2b, 1c, 3b, 4a, 4b, 4c, 5, 6, 7
 
 Depending on the classification, each locus will have a specific action recommended:
 ::
     Join: 1a
-    Choice: 1c, 2b, 3b, 4b
+    Choice: 1c, 2b, 3b, 4b, 6
     Drop: 1b, 2a, 3a, 4a
-    Add: 4c and 5
+    Add: 4c, 5, 7
 
-Choice is a recommendation for the user to decide if the locus should just be added with no alteration ('Add'), dropped ('Drop') or joined to the cluster it is in ('Join'). 
 
-The other loci will have the action 'Add' and will just be added, without alteration, to the new schema.
+Choice is a recommendation for the user to decide if the locus should just be added with no alteration ("Add"), dropped ("Drop") or joined to the cluster it is in ("Join"). 
 
-The recommendation associated to each locus can change in the final output. For example, a locus that was part of a 1a cluster can be marked as 'Choice' if it does not pass certain thresholds of frequency.
+The other loci will have the action "Add" and will just be added, without alteration, to the new schema.
 
-The column from the annotation file that has the highest number of matches between loci IDs with the schema fasta IDs will be chosen as the one to merge.
+All matches resukting from the BLASTn will be classified as 6 which corresponds to the action "Choice". As a BLASTn does not involve BSR and frequency values it can not be classified as "Drop" or "Add" from the algorithm. However, for this file to be used in the `CreateSchemaStructure` module these "Choice" actions will have to be change into one of the other actions. This implies that the user must review and annotate the recommendations anc choose the action it finds best.
+
+The recommendation associated to each locus can change in the final output. For example, a locus that was part of a 1a cluster can be marked as "Drop" if it does not pass certain thresholds of frequency.
+
+The annotation option will use the `consolidate` mode from the `SchemaAnnoation` module, so the input format should comform with the rules set in the SchemaAnnotation documentation.
 
 
 Outputs
@@ -176,7 +186,7 @@ Folder and file structure for the output directory of the `IdentifySpuriousGenes
 
 Since there are two run modes, the output directory structure will vary based on the run mode selected.
 
-**For --run-mode schema:**
+**For --run-mode schema and schema_vs_schema:**
 
 ::
 
@@ -334,14 +344,11 @@ Report files description
     :widths: 15, 15, 20, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
 
     x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
-    #,
     x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
-    #,
     x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
     ...
 
-columns description:
-
+Columns description:
 ::
 
     Query: The query locus.
@@ -361,7 +368,7 @@ columns description:
     z, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     ...
 
-columns description:
+Columns description:
 
 ::
 
@@ -369,21 +376,21 @@ columns description:
     Drop_Reason: The reason for dropping the locus.
 
 .. csv-table:: **recommendations.tsv**
-    :header: "Locus", "Action"
+    :header: "Locus", "Action", "Class"
     :widths: 15, 20
 
-    x, Join
-    y, Join
-    z, Choice
+    x, Join, 1a
+    y, Join, 1a
+    z, Choice, 3b
     #
-    a, Choice
-    b, Choice
+    a, Choice, 1c
+    b, Choice, 1c
     #
-    c, Drop
+    c, Drop, 1b
     #
     ...
 
-columns description:
+Columns description:
 
 ::
 
@@ -391,10 +398,13 @@ columns description:
     Action: Action to be taken (Join, Choice, Drop or Add).
     #: Separates each cluster of loci.
 
-This file can be used as the input of the `CreateSchemaStructure`. The annotated version of this file can not. 
+This is the main output file as it can be used as the input of the `CreateSchemaStructure`.
+It is adviced to annotate this file usinf the argument `--annotations` in order to more easily review and confirm the resulting clusters and actions. For this process the user can consult the previews files as well as proteome and functional annotations.
+
+Some loci are in single clusters and with action "Drop". In these cases these loci were inserted in a cluster with one other loci both marked "Join" but due to low frequency this one will be dropped, and the other loci will be changed into "Add". To check the full cluster relationships consult the `related_matches.tsv` file.
 
 .. Note:: 
-    Before passing the recommendation file to the CSS module make sure there are no 'Choice' in the action column.
+    Before passing the recommendation file to the `CreateSchemaStructure` module make sure there are no "Choice" in the action column. After review the clusters the user should change these actions into "Join", "Drop" or "Add".
 
 
 
@@ -413,7 +423,7 @@ This file can be used as the input of the `CreateSchemaStructure`. The annotated
    #
    ...
 
-columns description:
+Columns description:
 
 ::
 
@@ -437,7 +447,7 @@ columns description:
     a, c, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
     ...
     
-columns description:
+Columns description:
 
 ::
     
@@ -452,6 +462,7 @@ columns description:
     alleles_used_to_blast_count: The count of alleles used to blast.
     alleles_blasted_against_count: The count of alleles blasted against.
 
+This file contains a simple overview of the clusters and the pairs within them alongside some important values for later consultation, such as the frquency of each locus. 
 
 Examples
 --------

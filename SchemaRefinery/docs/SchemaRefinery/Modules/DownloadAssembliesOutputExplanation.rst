@@ -6,7 +6,7 @@ Output files and folders description for the DownloadAssemblies module
         The folder where the output files are stored.
 
     **assemblies_ncbi.zip**
-        Zip file containing all the assemblies and extra information that the user wants downloaded from NCBI.
+        Zip file containing all the assemblies and extra information that the user wants to be downloaded from NCBI.
 
     **ena661k_assemblies**
         Folder containing the assemblies downloaded from ENA661K.

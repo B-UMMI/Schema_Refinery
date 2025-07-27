@@ -4,7 +4,10 @@ Overview
 Description
 -----------
 
-The `SchemaRefinery` is a comprehensive toolkit designed for refining and managing genomic schemas. It provides a suite of modules for various tasks such as identifying paralogous loci, downloading genomic assemblies, and adapting loci into standardized schemas.
+The `SchemaRefinery` is a comprehensive toolkit designed for refining and managing genomic schemas. It provides a suite of modules for various tasks such as identifying paralogous and spurious loci, downloading genomic assemblies, annotating shcemas and adapting loci into standardized schemas.
+
+This toolkit is suited for manage and processed schemas created using chewBBACA or other tools. Features like the annotation a refining modules are useful for better understand the information contained in the schema, which makes the creation of a more polish and useful schema for later reference.
+
 
 Dependencies
 ------------
@@ -81,6 +84,12 @@ Workflow for creating a schema using the `SchemaRefinery` modules and chewBBACA:
    :width: 80%
    :align: center
 
+
+`SchemaRefinery` does not have a specific sequence in which the modules most be used. The starting and ending points will depend on the objective of the user. It is recommended to run the `AdaptLoci` module as the first step as the tool works with the chewBBACA schema structure. 
+
+The modules can be used almost completely without a specific order. In the case of the `SchemaAnnotation` module with the match-schemas mode, the `MatchSchemas` module has to be run before. For the `CreateSchemaStructure` module, the input file has to be the output of either the `IdentifyParalogousLoci` or the `IdentifySpuriousGenes` modules.
+
+
 Troubleshooting
 ---------------
 
@@ -91,7 +100,7 @@ If you encounter issues while using the modules, consider the following troubles
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
 - Ensure that you have a stable internet connection.
 
-if the issue persists, please report it to the development team using github issues.
+If the issue persists, please report it to the development team using GitHub issues.
 
 Contributing
 ------------
@@ -111,4 +120,4 @@ This project is licensed under the GNU General Public License v3.0. See the `LIC
 Contact Information
 -------------------
 
-For support or to report issues, please contact the development team at github issues in `SchemaRefinery GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_.
+For support or to report issues, please contact the development team at GitHub issues in `SchemaRefinery GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_.
