@@ -571,7 +571,7 @@ def translate_schema_loci(schema_directory: str,
 	"""
 	# Create dictionaries of loci names and their corresponding file paths
 	fasta_files_dict: Dict[str, str] = {
-		loci.split('.')[0]: os.path.join(schema_directory, loci)
+		loci.rsplit('.', 1)[0]: os.path.join(schema_directory, loci)
 		for loci in os.listdir(schema_directory)
 		if os.path.isfile(os.path.join(schema_directory, loci)) and loci.endswith('.fasta')
 	}
@@ -579,7 +579,7 @@ def translate_schema_loci(schema_directory: str,
 	# Short folder
 	short_folder: str = os.path.join(schema_directory, 'short')
 	fasta_files_short_dict: Dict[str, str] = {
-		loci.split('.')[0].split('_')[0]: os.path.join(short_folder, loci)
+		loci.rsplit('.', 1)[0].rsplit('_short', 1)[0]: os.path.join(short_folder, loci)
 		for loci in os.listdir(short_folder)
 		if os.path.isfile(os.path.join(short_folder, loci)) and loci.endswith('.fasta')
 	}

@@ -686,17 +686,27 @@ def write_fasta_file(file_path: str, sequences: Dict[str, str]) -> None:
             fasta_file.write(f">{seq_id}\n{sequence}\n")
 
 
-def prepare_files_to_blast(representatives_blastn_folder: str, 
+def prepare_files_to_blast(translation_files_paths: str, 
+                       seqid_files_paths: str,
+                       representatives_blastn_folder: str, 
+                       representatives_blastn_folder_against: str,
                        all_alleles: Dict[str, List[str]], 
                        all_nucleotide_sequences: Dict[str, str], 
-                       processing_mode: str) -> Tuple[Dict[str, str], str]:
+                       processing_mode: str,
+                       constants: List[Union[int, float]]) -> Tuple[Dict[str, str], str]:
     """
     Writes representative and master FASTA files for BLAST.
 
     Parameters
     ----------
+    translation_files_paths : str
+        Path to the directory where the transaltion files will be stored.
+    seqid_files_paths: str
+        Path to the directory where the seqid files will be stored. 
     representatives_blastn_folder : str
         Path to the folder where BLAST files will be written.
+    representatives_blastn_folder_against: str
+         Path to the folder where BLAST database files will be written.
     all_alleles : Dict[str, List[str]]
         Dictionary with cluster representatives as keys and cluster members as values.
     all_nucleotide_sequences : Dict[str, str]
@@ -704,16 +714,32 @@ def prepare_files_to_blast(representatives_blastn_folder: str,
     processing_mode : str
         Mode of processing, which determines how sequences are handled. Four types: reps_vs_reps,
         reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
+    constants : List[Union[int, float]]
+        List of constants used for clustering.
 
     Returns
     -------
-    Tuple[Dict[str, str], str]
-        A tuple containing a dictionary with paths to the BLAST files and the path to the master FASTA file.
+    to_blast_paths : Dict[str, str]
+        Dictionary of paths to sequences to be used for BLAST.
+    to_run_against : Dict[str, str]
+        Dictionary of paths to sequences to be used for BLAST database.
+    master_file_path : str
+        Path to the file where the sequences for the BLAST database will be stored.
+    trans_paths : Dict[str, str]
+        Dictionary with the path of the translation file for each loci.
+    new_max_hits : Dict[str, int]
+        Dictionary with the number of max hits per loci for the BLAST.
+    seqid_file_dict : Dict[str, str]
+        Dictionary with the paths to the files with the seqid to ignore per loci for the BLAST.
     """
     # Create directory and files path where to write FASTAs.
-    master_file_path: str = os.path.join(representatives_blastn_folder, 'master.fasta')
-    
+    master_file_path: str = os.path.join(translation_files_paths, 'master.fasta')
+
     to_blast_paths: Dict[str, str] = {}
+    to_run_against: Dict[str, str] = {}
+    trans_paths: Dict[str, str] = {}
+    new_max_hits: Dict[str, int] = {}
+    seqid_file_dict: Dict[str, str] = {}
 
     queries: str = processing_mode.split('_')[0]
     subjects: str = processing_mode.split('_')[-1]
@@ -722,7 +748,12 @@ def prepare_files_to_blast(representatives_blastn_folder: str,
         cluster_rep_id: str = members[0]
         loci: str = cluster_rep_id.split('_')[0]
         fasta_file: str = os.path.join(representatives_blastn_folder, f"cluster_rep_{cluster_rep_id}.fasta")
+        against_fasta_file: str = os.path.join(representatives_blastn_folder_against, f"cluster_rep_{cluster_rep_id}_against.fasta")
+        seqid_file: str = os.path.join(seqid_files_paths, f"cluster_rep_{cluster_rep_id}_seqid.txt")
         to_blast_paths[loci] = fasta_file
+        to_run_against[loci] = against_fasta_file
+        seqid_file_dict[loci] = seqid_file
+        new_max_hits[loci] = 500
 
         if queries == 'reps':
             sequence: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
@@ -732,16 +763,47 @@ def prepare_files_to_blast(representatives_blastn_folder: str,
                 sequence[member] = str(all_nucleotide_sequences[member])
         
         write_fasta_file(fasta_file, sequence)
+        
 
         if subjects == 'reps':
-            master_sequences[cluster_rep_id] = str(all_nucleotide_sequences[members[0]])
+            master_sequences: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
         else:
+            master_sequences = {}
             for member in members:
                 master_sequences[member] = str(all_nucleotide_sequences[member])
+        
+        write_fasta_file(against_fasta_file, master_sequences)
 
-    write_fasta_file(master_file_path, master_sequences)
+        
+        write_type2 = 'a' if os.path.exists(seqid_file) else 'w'
+        with open(seqid_file, write_type2) as seqid_file:
+            for seq_id in master_sequences.keys():
+                seqid_file.write(f"{seq_id}\n")   
 
-    return to_blast_paths, master_file_path
+    for loci, loci_path in to_blast_paths.items():
+        loci_id = ff.file_basename(loci).split('.')[0]
+        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
+        # Translate sequences and update translation dictionary
+        trans_path_file = os.path.join(translation_files_paths, f"{loci_id}.fasta")
+        trans_paths[loci_id] = trans_path_file
+        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
+                                                        trans_path_file,
+                                                        constants[5],
+                                                        constants[6],
+                                                        False)
+
+    for loci, loci_path in to_run_against.items():
+        loci_id = ff.file_basename(loci).split('.')[0]
+        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
+        for allele_id, sequence in fasta_dict.items():
+            protseq = sf.translate_sequence(str(sequence), constants[6])
+            # Write to master file
+            write_type = 'a' if os.path.exists(master_file_path) else 'w'
+            with open(master_file_path, write_type) as master_file:
+                master_file.write(f">{allele_id}\n{str(protseq)}\n")
+        
+
+    return to_blast_paths, to_run_against, master_file_path, trans_paths, new_max_hits, seqid_file_dict
 
 
 def update_frequencies_in_genomes(clusters_to_keep_1a: Dict[str, List[str]], 

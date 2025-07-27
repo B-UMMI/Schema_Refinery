@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import shutil
+import time
 from typing import Dict, Any, List, Tuple, Union, Optional, Set
 
 try:
@@ -588,7 +590,7 @@ def separate_blast_results_into_classes(representative_blast_results: tp.BlastDi
     return classes_outcome
 
 
-def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict, 
+def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
                                   classes_outcome: Tuple[str, ...]
                                   ) -> tp.BlastDict:
     """
@@ -836,7 +838,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
-                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations, Dict[str, List[set[str]]]]:
+                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
 
@@ -1128,8 +1130,6 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
 
         # Check if the pair was not processed yet
         if [query_id, subject_id] not in processed_cases:
-            if results[0] not in moved_recs:
-                moved_recs[results[0]] = [set(), set()]
 
             # Process the joined cases
             if results[0] == '1a':
@@ -1184,7 +1184,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     sort_order: List[str] = ['Join', 'Choice', 'Drop']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
     
-    return related_clusters, recommendations, moved_recs
+    return related_clusters, recommendations
 
 
 def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
@@ -1232,8 +1232,14 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
     
     Returns
     -------
-    None
-        This function does not return any value but writes the summary results to the specified files.
+    related_matches_path : str
+        Path to the output file with the matches relationships. 
+    count_results_by_cluster_path : str
+        Path to the count by clusters output file. 
+    recommendations_file_path : str
+        Path to the output file with the recommendations to every locus.
+    count_classes_final : Dict[str, int]
+        Dictionary with the number of loci in each class in the final recommendations.
 
     Notes
     -----
@@ -1287,8 +1293,6 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                 r.insert(4, '-')
                 r.insert(5, '-')
             [query, subject] = [itf.remove_by_regex(i, r"\*") for i in r[:2]]
-            #query = itf.remove_by_regex(query, pattern)
-            #subject = itf.remove_by_regex(subject, pattern)
             
             # Add the total count of the representatives and alleles
             representatives_count_query: str = f"{len(group_reps_ids[query])}"
@@ -1467,9 +1471,9 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
     return is_matched, is_matched_alleles
 
 
-def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translation_dict: Dict[str, str], trans_paths: Dict[str, str], rep_paths_nuc: Dict[str, str], to_run_against: Dict[str, str],
-               output_dir: str, new_max_hits: Dict[str, int], constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
-               frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int) -> Tuple[tp.BlastDict, tp.BlastDict]:
+def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], trans_paths: Dict[str, str], to_blast_paths: Dict[str, str], to_run_against: Dict[str, str],
+               output_dir: str, new_max_hits: Dict[str, int], seqid_file_dict: Dict[str, str], constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
+               frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int, output_d: str) -> Tuple[tp.BlastDict, tp.BlastDict, List[str]]:
     """
     This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
 
@@ -1479,19 +1483,27 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         Path to the BLAST db folder.
     all_alleles : Dict[str, List[str]]
         A list of CDS IDs to be used for BLASTn against the BLAST db.
-    reps_translation_dict : Dict[str, str]
-        A dictionary mapping sequence IDs to their translations (amino acid sequences).
-    rep_paths_nuc : Dict[str, str]
-        A dictionary mapping CDS IDs to the path of their corresponding FASTA files.
+    trans_paths : Dict[str, str]
+        A dictionary with the paths to the translation files for each loci.
+    to_blast_paths : Dict[str, str]
+        A dictionary mapping CDS IDs of the query schema to the path of their corresponding FASTA files.
+    to_run_against : Dict[str, str]
+        A dictionary mapping CDS IDs of the subject schema to the path of their corresponding FASTA files.
     output_dir : str
         The directory path where output files will be saved.
+    new_max_hits : Dict[str, int], optional
+		A dictionary with the maximum number of targets sequences to align against per loci.
+    seqid_file_dict : Dict[str, str], optional
+		A dictionary with the paths to the filea with the identifiers of the sequences
+		to align against per loci. Used to specify the database sequences
+		we want to align against.
     constants : List[Any]
         A list of constants used within the function, such as thresholds for filtering BLAST results.
-    reps_kmers_sim : Dict[str, Dict[str, tuple[float, float]]]
+    reps_kmers_sim : Dict[str, Dict[str, tuple[float, float]]], optional
         A dictionary containing k-mer similarity values for representative sequences.
     frequency_in_genomes : Dict[str, int]
         A dictionary mapping sequence IDs to their frequency in genomes.
-    frequency_in_genomes_secong_schema : Dict[str, int]
+    frequency_in_genomes_second_schema : Dict[str, int]
         A dictionary mapping sequence IDs to their frequency in genomes in the second schema.
     cpu : int
         The number of CPU cores to use for parallel processing.
@@ -1499,8 +1511,19 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     Returns
     -------
     representative_blast_results : tp.BlastDict
-        A dictionary containing the BLAST results for representative sequences.
+        A dictionary containing the BLASTp results for representative sequences.
+    representative_blastn_results : tp.BlastDict
+        A dictionary containing the BLASTn results for representative sequences.
+    loci_too_big : List[str]
+        List of all the loci that reach the maximum of hits during the BLASTp.
     """
+
+    # ============================================
+    # First BLASTp
+    # ============================================
+
+
+    ##### Blast recebe só allelos
 
     # Create directories.
     blastp_results: str = os.path.join(output_dir, '1_BLASTp_processing')
@@ -1524,13 +1547,32 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     total_blasts: int = len(trans_paths)
     # Get Path to the blastp executable
     get_blastp_exec: str = lf.get_tool_path('blastp')
-    i = 1
     # Calculate self-score
     self_score_dict: Dict[str, float] = bf.calculate_self_score(trans_paths,
                                                                 get_blastp_exec,
                                                                 blastp_results_ss_folder,
                                                                 max_id_length,
                                                                 cpu)
+
+    prf.print_message("Formating the seqid files...", "info")
+    get_aliastool_exec: str = lf.get_tool_path('blastdb_aliastool')
+    seqid_folder = os.path.join(output_dir, 'seqid_formated')
+    ff.create_directory(seqid_folder)
+    seqid_formated_file: Dict[str, str] = {}
+    seqid_files_list = list(seqid_file_dict.values())
+    for loci, file in seqid_file_dict.items():
+        new_file = os.path.join(seqid_folder, f'seqid_file_formated_{loci}.bsl')
+        seqid_formated_file.setdefault(loci, new_file)
+    seqid_formated_output = list(seqid_formated_file.values())
+    bf.run_blastdb_aliastool(get_aliastool_exec, seqid_files_list, seqid_formated_output, cpu)
+
+    all_blast_info: Dict[str, Tuple[int, str]] = {}
+    for loci in trans_paths.keys():
+        all_blast_info.setdefault(loci, [new_max_hits[loci], seqid_formated_file[loci]])
+        
+    new_targets: List[int] = [v[0] for v in all_blast_info.values()]
+    seqid_files: List[str] = [v[1] for v in all_blast_info.values()]
+    
     prf.print_message("Running BLASTp...", "info")
     # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
     blastp_results_files = bf.run_blastp_operations(cpu,
@@ -1540,15 +1582,30 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     blastp_results_folder,
                                                     total_blasts,
                                                     max_id_length,
-                                                    new_max_hits)
+                                                    new_targets,
+                                                    seqid_files)
 
     alleles_matches: Dict[str, List[str]] = {}
     pattern: str = r'_(\d+)$'
     loci_matches: List[str] = []
-    ##### log saying is doin bsr 
+    careful_blastp_trans_paths: Dict[str, str] = {}
+    loci_too_big: List[str] = []
     prf.print_message('Calculating BSR and filtering alignemnts...')
     # Process the obtained BLASTp results files
     for blast_result_file in blastp_results_files:
+        if os.path.getsize(blast_result_file) > 0:
+            # Check size of output file and find the loci with the limit of matches
+            query_loci: str = ""
+            with open(blast_result_file, 'r') as file:
+                file_lines = file.readlines()
+                for line in file_lines:
+                    cols: List[str] = line.strip().split("\t")
+                    query: str = cols[0]
+                    query_loci = itf.remove_by_regex(query, pattern)
+
+            # Now check if this file has exactly the expected number of hits
+            if len(file_lines) >= int(new_max_hits[query_loci]):
+                loci_too_big.append(query_loci)
         # Load only alignments above the pident threshold
         filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
             blast_result_file, constants[1], True, False, True, True, False
@@ -1587,11 +1644,13 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
         # Save the BLASTp results
         representative_blast_results.update(filtered_alignments_dict)
 
-    prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp.", "info")
+    prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp first round.", "info")
     prf.print_message("")
 
-    # Obtain the list for what BLASTp runs to do, no need to do all vs all as previously.
-    # Based on BLASTn results get all alleles that matches by BLASTn.
+    # ============================================
+    # Run BLASTn with loci not matched
+    # ============================================
+    
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1608,24 +1667,22 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     # Path to the master FASTA file
     master_file_path_nucl = os.path.join(blastn_output, 'master_nucl.fasta')
 
+
     prf.print_message('Writing master file for Blastn...', 'info')
     pattern: str = r'_(\d+)$'
     matched_loci_paths: Dict[str, str] = {}
     
     # Get all unique loci_ids from allele names
     loci_ids_needed = set(all_alleles.keys()) - set(loci_matches)
-    for loci_file, loci_path in rep_paths_nuc.items():
+    for loci_file, loci_path in to_blast_paths.items():
         loci_name = ff.file_basename(loci_file).rsplit('.', 1)[0]
         if loci_name in loci_ids_needed:
             matched_loci_paths[loci_name] = loci_path
-    #matched_loci_paths = {loci : all_alleles[loci] for loci in loci_ids_needed}
     # Open the master file once in append mode
     with open(master_file_path_nucl, 'a') as master_file:
         for loci, loci_path in to_run_against.items():
             loci_name = ff.file_basename(loci).rsplit('.', 1)[0]
             if loci_name in loci_ids_needed:
-                #if loci_name in loci_ids_needed:
-                    #matched_loci_paths[loci_name] = loci_path
                 fasta_dict = sf.fetch_fasta_dict(loci_path, False)
                 for allele_id, sequence in fasta_dict.items():
                     master_file.write(f">{allele_id}\n{str(sequence)}\n")
@@ -1633,6 +1690,10 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     bf.make_blast_db(makeblastdb_exec, master_file_path_nucl, blast_db_nucl, 'nucl')
 
     blastn_new_target_hits = {loci_id: new_max_hits[loci_id] for loci_id in loci_ids_needed}
+    all_blastn_info = {loci_id: all_blast_info[loci_id] for loci_id in loci_ids_needed}
+    blastn_new_targets: List[int] = [v[0] for v in all_blastn_info.values()]
+    blastn_seqid_files: List[str] = [v[1] for v in all_blastn_info.values()]
+
 
     # Run BLASTn
     # Calculate max id length for print.
@@ -1642,13 +1703,9 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     loci_matches_blastn: List[str] = []
     # Get Path to the blastn executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
-    # Run BLASTn
-
     prf.print_message('Running BLASTn...', 'info')
-
     # Get Path to the blastp executable
     get_blastn_exec: str = lf.get_tool_path('blastn')
-
     blastn_results_files = bf.run_blastn_operations(cpu,
                                                     get_blastn_exec,
                                                     blast_db_nucl,
@@ -1656,7 +1713,8 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
                                                     blastn_results_folder,
                                                     total_reps,
                                                     max_id_length,
-                                                    blastn_new_target_hits)
+                                                    blastn_new_targets,
+                                                    blastn_seqid_files)
 
     if len(blastn_results_files) == 0:
         prf.print_message("No BLASTn matches were found", "warning")
@@ -1698,7 +1756,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], reps_translatio
     prf.print_message(f'{len(set(loci_matches_blastn))} matches were found through BLASTn.', 'info')
     prf.print_message("")
     
-    return representative_blast_results, representative_blastn_results
+    return representative_blast_results, representative_blastn_results, loci_too_big
 
 
 def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses, 
@@ -2036,7 +2094,7 @@ def create_graphs(file_path: str, output_path: str, filename: str, other_plots: 
 
 
 def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_possible_loci: List[int], 
-                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any], count_classes_final: Dict[str, int], moved_recs: Dict[str, List[Set[str]]]) -> None:
+                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any], count_classes_final: Dict[str, int]) -> None:
     """
     Prints the classification results based on the provided parameters.
 
@@ -2066,7 +2124,7 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
       any recommendations for verification.
     - If there are any retained groups not matched by BLASTn, it handles them separately.
     """
-    def print_results(class_: str, count: int, printout: Dict[str, Any], moved_recs: Dict[str, List[Set[str]]]) -> None:
+    def print_results(class_: str, count: int, printout: Dict[str, Any]) -> None:
         """
         Prints the classification results based on the class type.
 
@@ -2091,9 +2149,6 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
         - The function prints different messages based on the class type.
         - It provides recommendations for verification for certain classes.
         """
-
-#### atualizar novas classes
-
         if count > 0:
             if class_ in ['2b', '4b']:
                 prf.print_message(f"\t\t{count} loci are classified as {class_} and were retained"
@@ -2102,8 +2157,6 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
             elif class_ == '1a':
                 prf.print_message(f"\t\t{count} loci are classified as {class_}"
                             f" and are contained in {len(printout['1a'])} joined groups that were retained.", None)
-            #elif class_ == 'dropped':  #### 1b, 2a, 3a
-                #prf.print_message(f"\t\t{count} have been dropped due to frequency", None)
             elif class_ in ['4c', '5']:
                 prf.print_message(f"\t\t{count} loci are classified as {class_}. These will be added to recommendations with 'Add'.", None)
             else:
@@ -2124,9 +2177,9 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
     prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the schema DNA sequences.", None)
     for class_, count in count_classes_final.items():
-        print_results(class_, count, merged_all_classes, moved_recs)
+        print_results(class_, count, merged_all_classes)
     for class_, count in count_cases.items():
-        print_results(class_, count, merged_all_classes, moved_recs)
+        print_results(class_, count, merged_all_classes)
     prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values()) - sum(count_classes_final.values())} didn't have any matches", None)
 
     if retained_not_matched_by_blastn:
@@ -2251,12 +2304,12 @@ def prepare_loci(schema_folder: str,
                      Dict[str, str], 
                      str, 
                      Dict[str, str],
-                     Dict[str, str], 
-                     Dict[str, str], 
+                     Dict[str, str],  
                      Dict[str, List[str]],  
                      Dict[str, List[str]], 
                      Dict[str, List[str]],
                      Dict[str, str],
+                     Dict[str, int],
                      Dict[str, int]]:
     """
     Process new loci by translating sequences, counting frequencies, and preparing files for BLAST.
@@ -2279,12 +2332,14 @@ def prepare_loci(schema_folder: str,
         A tuple containing:
         - all_nucleotide_sequences (Dict[str, str]): Dictionary of nucleotide sequences.
         - master_file_path (str): Path to the master FASTA file.
-        - translation_dict (Dict[str, str]): Dictionary of translated sequences.
+        - trans_paths (Dict[str, str]): Dictionary with the path of the translation file for each loci.
         - to_blast_paths (Dict[str, str]): Dictionary of paths to sequences to be used for BLAST.
         - all_alleles (Dict[str, List[str]]): Dictionary of all alleles with loci IDs as keys.
-        - cds_present (str): Path to the CDS presence file.
         - group_reps_ids (Dict[str, List[str]]): Dictionary of group representative IDs.
         - group_alleles_ids (Dict[str, List[str]]): Dictionary of group allele IDs.
+        - to_run_against (Dict[str, str]): Dictionary of paths to sequences to be used for BLAST database.
+        - new_max_hits (Dict[str, int]): Dictionary with the number of max hits per loci for the BLAST.
+        - seqid_file_dict (Dict[str, int]): Dictionary with the paths to the files with the seqid to ignore per loci for the BLAST.
     """
     # Create a dictionary of schema FASTA files
     schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
@@ -2295,6 +2350,8 @@ def prepare_loci(schema_folder: str,
     
     # Path to the master FASTA file
     master_file_path = os.path.join(results_output, 'master_protein.fasta')
+    seqid_output = os.path.join(results_output, 'seqid_files')
+    ff.create_directory(seqid_output)
     
     # Create a directory for possible new loci translations
     possible_new_loci_translation_folder = os.path.join(results_output, 'schema_translation_folder')
@@ -2307,13 +2364,13 @@ def prepare_loci(schema_folder: str,
     # Initialize dictionaries for alleles, translations, and frequencies
     all_alleles: Dict[str, List[str]] = {}
     all_nucleotide_sequences: Dict[str, str] = {} 
-    translation_dict: Dict[str, str] = {} 
     trans_paths: Dict[str, str] = {}
     temp_frequency_in_genomes: Dict[str, List[str]] = {}
     group_reps_ids: Dict[str, List[str]] = {} 
     group_alleles_ids: Dict[str, List[str]] = {} 
     new_max_hits: Dict[str, int] = {}
     blast_alleles: Dict[str, List[str]] = {}
+    seqid_file_dict: Dict[str, str] = {}
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
@@ -2326,9 +2383,12 @@ def prepare_loci(schema_folder: str,
     # Write master file to run against, DNA sequences
     prf.print_message("")
     prf.print_message('Write master file for Blastp.', 'info')
+
     for loci, loci_path in to_run_against.items():
         loci_id = ff.file_basename(loci).split('.')[0]
+        negative_seqid_file = os.path.join(seqid_output, f'negative_seqid_{loci_id}.txt')
         blast_alleles.setdefault(loci_id, [])
+        seqid_file_dict.setdefault(loci_id, negative_seqid_file)
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
             blast_alleles[loci_id].append(allele_id)
@@ -2339,6 +2399,10 @@ def prepare_loci(schema_folder: str,
             write_type = 'a' if os.path.exists(master_file_path) else 'w'
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(protseq)}\n")
+            write_type2 = 'a' if os.path.exists(negative_seqid_file) else 'w'
+            with open(negative_seqid_file, write_type2) as seqid_file:
+                seqid_file.write(f"{allele_id}\n")
+        
 
 
     for loci, loci_path in to_blast_paths.items():
@@ -2355,15 +2419,17 @@ def prepare_loci(schema_folder: str,
                                                         constants[5],
                                                         constants[6],
                                                         False)
-        
-        translation_dict.update(trans_dict)
 
     for loci, alleles in blast_alleles.items():
-        new_max_target = round(len(alleles)^3)
+        """
+        For a hits max personalized for each loci
+
+        new_max_target = round(len(alleles)^2)
         if new_max_target < 500:
             new_max_hits[loci] = 500
         else:
-            new_max_hits[loci] = new_max_target
+        """
+        new_max_hits[loci] = 500
 
                 
-    return all_nucleotide_sequences, master_file_path, translation_dict, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits
+    return all_nucleotide_sequences, master_file_path, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits, seqid_file_dict

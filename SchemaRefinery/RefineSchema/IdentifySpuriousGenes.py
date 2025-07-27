@@ -5,12 +5,13 @@ import os
 import sys
 import subprocess
 import pandas as pd
+import shutil
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 
 try:
     from SchemaAnnotation import (consolidate as cs)
-    from utils import (core_functions_blastppn as cof,
+    from utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
                                         iterable_functions as itf,
@@ -25,7 +26,7 @@ try:
                                         globals as gb)
 except ModuleNotFoundError:
     from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
-    from SchemaRefinery.utils import (core_functions_blastppn as cof,
+    from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
                                         iterable_functions as itf,
@@ -39,7 +40,7 @@ except ModuleNotFoundError:
                                         time_functions as ti,
                                         globals as gb)
 
-def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
+def create_directories(output_directory: str, run_mode: str) -> Tuple[str, str, str, str, str, Optional[str], Optional[str], str, str]:
     """
     Create necessary directories for the processing pipeline.
 
@@ -64,15 +65,21 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     schema_folder: Optional[str]
     if run_mode == 'unclassified_cds':
         initial_processing_output = os.path.join(output_d, '1_CDS_processing')
+        if os.path.isdir(initial_processing_output):
+            shutil.rmtree(initial_processing_output)
         ff.create_directory(initial_processing_output)
         schema_folder = None
     else:
         initial_processing_output = os.path.join(output_d, '1_schema_processing')
+        if os.path.isdir(initial_processing_output):
+            shutil.rmtree(initial_processing_output)
         schema_folder = os.path.join(initial_processing_output, 'schema')
         ff.create_directory(schema_folder)
 
     # Create BLAST processing directories
     blast_output: str = os.path.join(output_d, '2_BLAST_processing')
+    if os.path.isdir(blast_output):
+            shutil.rmtree(blast_output)
     blastp_output: str = os.path.join(blast_output, '1_BLASTp_processing')
     blast_db: str = os.path.join(blastp_output, 'blast_db_prot')
     ff.create_directory(blast_db)
@@ -80,17 +87,25 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
     representatives_blastn_folder: Optional[str]
     if run_mode == 'unclassified_cds':
+        blastn_output: str = os.path.join(blast_output, '2_BLASTn_processing')
+        if os.path.isdir(blastn_output):
+            shutil.rmtree(blastn_output)
         representatives_blastn_folder = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
         ff.create_directory(representatives_blastn_folder)
+        representatives_blastn_folder_against = os.path.join(blastn_output, 'cluster_representatives_fastas_against')
+        ff.create_directory(representatives_blastn_folder_against)
     else:
         representatives_blastn_folder = None
+        representatives_blastn_folder_against = None
         
     # Create results output directories
     results_output: str = os.path.join(output_d, '3_processing_results')
+    if os.path.isdir(results_output):
+            shutil.rmtree(results_output)
     blast_results: str = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
     
-    return initial_processing_output, schema_folder, blast_output, blastp_output, blast_db, representatives_blastn_folder, results_output, blast_results
+    return initial_processing_output, schema_folder, blast_output, blastp_output, blast_db, representatives_blastn_folder, representatives_blastn_folder_against, results_output, blast_results
 
 
 def calculate_frequency(schema_folder: str, 
@@ -247,13 +262,13 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 
     Parameters
     ----------
-    schema_directory : str
+    schema_directory : List[str]
         Path to the schema directory.
     output_directory : str
         Path to the output directory.
-    allelecall_directory : str
+    allelecall_directory : List[str]
         Path to the allele call directory.
-    annotation_paths:
+    annotation_paths : List[str]
         Paths for the files with the annotations.
     constants : List[Any]
         List of constants used in the process.
@@ -286,6 +301,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
      blastn_output,
      blast_db,
      representatives_blastn_folder,
+     representatives_blastn_folder_against,
      results_output,
      blast_results) = create_directories(output_d, run_mode)
     
@@ -398,10 +414,26 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 
         to_blast_paths: Dict[str, str]
         master_file_path: str
-        to_blast_paths, master_file_path = ccf.prepare_files_to_blast(representatives_blastn_folder,
-                                                                  all_alleles,
-                                                                  all_nucleotide_sequences,
-                                                                  processing_mode)
+        trans_paths: Dict[str, str]
+        translation_files_paths = os.path.join(initial_processing_output, "cluster_rep_translations")
+        ff.create_directory(translation_files_paths)
+        seqid_files_paths = os.path.join(initial_processing_output, "cluster_rep_seqid")
+        ff.create_directory(seqid_files_paths)
+        # Prepare the schema to run blasts (similar to prepare_loci)
+        pf.print_message("Prepare the CDS for runing blasts.", "info")
+        (to_blast_paths,
+        to_run_against, 
+        master_file_path, 
+        trans_paths, 
+        new_max_hits, 
+        seqid_file_dict) = ccf.prepare_files_to_blast(translation_files_paths,
+                                                        seqid_files_paths,
+                                                        representatives_blastn_folder,
+                                                        representatives_blastn_folder_against,
+                                                        all_alleles,
+                                                        all_nucleotide_sequences,
+                                                        processing_mode,
+                                                        constants)
 
 
     if run_mode == 'schema':
@@ -418,7 +450,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
         (all_nucleotide_sequences,
         master_file_path,
-        all_translation_dict,
         trans_paths,
         to_blast_paths,
         all_alleles,
@@ -454,7 +485,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
         (all_nucleotide_sequences,
         master_file_path,
-        all_translation_dict,
         trans_paths,
         to_blast_paths,
         all_alleles,
@@ -483,20 +513,19 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     representative_blast_results: tp.BlastDict
     representative_blastn_results: tp.BlastDict
     representative_blast_results, representative_blastn_results, loci_too_big = cof.run_blasts(blast_db_prot,
-                                                                all_alleles,
-                                                                all_translation_dict,
-                                                                trans_paths,
-                                                                to_blast_paths,
-                                                                to_run_against,
-                                                                blast_output,
-                                                                new_max_hits,
-                                                                seqid_file_dict,
-                                                                constants,
-                                                                reps_kmers_sim if run_mode == 'unclassified_cds' else None,
-                                                                frequency_in_genomes,
-                                                                frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
-                                                                cpu,
-                                                                output_d)
+                                                                                                all_alleles,
+                                                                                                trans_paths,
+                                                                                                to_blast_paths,
+                                                                                                to_run_against,
+                                                                                                blast_output,
+                                                                                                new_max_hits,
+                                                                                                seqid_file_dict,
+                                                                                                constants,
+                                                                                                reps_kmers_sim if run_mode == 'unclassified_cds' else None,
+                                                                                                frequency_in_genomes,
+                                                                                                frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
+                                                                                                cpu,
+                                                                                                output_d)
 
 
     pf.print_message("Filtering BLAST results into classes...", "info")
@@ -702,12 +731,13 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
         ff.cleanup(output_d, [related_matches_path,
-                                    count_results_by_cluster_path,
-                                    recommendations_file_path,
-                                    consolidated_annotations if annotation_paths else None,
-                                    drop_possible_loci_output,
-                                    temp_fastas_folder if run_mode == 'unclassified_cds' else None,
-                                    logf.get_log_file_path(gb.LOGGER)])
+                                alot_of_alleles_file,
+                                count_results_by_cluster_path,
+                                recommendations_file_path,
+                                consolidated_annotations if annotation_paths else None,
+                                drop_possible_loci_output,
+                                temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                logf.get_log_file_path(gb.LOGGER)])
 
 
 def main(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
@@ -728,10 +758,8 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
         Path to the output directory.
     allelecall_directory : List[str]
         Path to the allele call directory.
-    possible_new_loci : str
-        Path to the file with possible new loci.
-    input_genomes: str
-        Path to the file/folder with the fastas of the complete genomes.
+    annotation_paths : List[str]
+        Paths for the files with the annotations.
     alignment_ratio_threshold : float
         Threshold for alignment ratio.
     pident_threshold : float
