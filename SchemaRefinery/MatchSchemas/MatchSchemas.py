@@ -120,7 +120,8 @@ def run_blasts_match_schemas(query_translations_paths: Dict[str, str], blast_db_
 
 
 def write_best_matches_to_file(match_data, output_directory, match_type):
-	"""Write the best matches to a file.
+	"""
+	Write the best matches to a file.
 
 	Parameters
 	----------

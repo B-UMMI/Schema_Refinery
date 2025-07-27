@@ -152,7 +152,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
 		# Since BLAST may find several local alignments, choose the largest one to calculate BSR.
 		for query, subjects_dict in filtered_alignments_dict.items():
 			# Get the loci name
-			loci: str = query.split('_')[0]
+			loci: str = query.rsplit('_', 1)[0]
 			# Create the dict of the query
 			bsr_values.setdefault(query, {})
 			for subject_id, results in subjects_dict.items():
