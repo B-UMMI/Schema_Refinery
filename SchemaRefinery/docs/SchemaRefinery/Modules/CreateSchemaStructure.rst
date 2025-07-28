@@ -1,17 +1,17 @@
-CreateSchemaStructure - Create a new schema based on 
-=====================================================
+CreateSchemaStructure - Create a new schema based on recommendations
+=====================================================================
 
 Description
 ------------
 The `CreateSchemaStructure` module is a module designed to facilitate the creation of a schema structure from a given schema or fasta files based on user recommendation file from the `IdentifyParalogousLoci` and `IdentifySpuriousGenes` modules. This module parses command-line arguments to initiate the schema creation process, allowing users to efficiently generate a schema structure from a provided schema file. The generated schema structure is stored in the specified output directory.
 
-Overview
---------
-Process user recommendation file to create a schema structure from a given schema or fasta files.
+This is a final step in the `SchemaRefinery` algorithm as the output is a costume schema that follows the recommended and reviewed changes given by the user.
+
 
 Features
 --------
 - Creation of a schema structure from a given schema or fasta files.
+- Takes recommendation files, annotated or not, as guidelines for the new schema.
 - Support for parallel processing using multiple CPUs.
 - Option to skip cleanup after running the module.
 
@@ -40,10 +40,10 @@ Command-Line Arguments
 ::
 
     -rf, --recommendations-file
-        (Required) Path to the file containing the recommendations. Cannot be the annotated file, must only contain 2 columns with headers 'Locus' and 'Action'.
+        (Required) Path to the file containing the recommendations.
 
     -ff, --fastas-folder
-        (Required) Path to the folder containing the FASTA files (Just Fastas or schema).
+        (Required) Path to the folder containing the FASTA files (Just fastas or schema).
 
     -o, --output-directory
         (Required) Path to the directory where the output files will be saved.
@@ -72,6 +72,9 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+The input recommendation file must have the columns "Locus" and "Action". Additionally, if from the `IdentifySpuriousGenes` module, the file can also have the column "Class". These columns must be the 1st, 2nd and 3rd columns in the file, respectively. This input can have more columns, such as annotations, but these will be ignored.
+
+
 Algorithm Explanation
 ---------------------
 
@@ -83,13 +86,16 @@ The `CreateSchemaStructure` module uses the following algorithm to create a sche
    :align: center
 
 
-Make sure that before running this module the input file `recommendations` has been check and that  you agree with all the changes proposed. **No action should have the option 'Choice'.** These should be changed into one of the other three actions.
+.. Note::
+    Make sure that before running this module the input file `recommendations` has been check and that you agree with all the changes proposed. **No action should have the option 'Choice'.** These should be changed into one of the other three actions.
 
 The action **'Join'** will move all the alleles of that cluster of loci into the fasta file of the first locus of the cluster. The other Loci files will be removed from the final schema.
 
 The action **'Drop'** will remove that locus fasta file from the final schema.
 
 The action **'Add'** will just copy the fasta file of that locus from the input schema into the final schema with no alterations.
+
+If the locus is within the class 6, the algorithm will check what the action is. If the action is "Join" the run will end and the user will be asked to change it, as this pairing is not allowed. The same will happen if an action "Choice" is found.
 
 Since this module uses the AdaptLoci module to format the schema in the end, the schema created will conform with the structure of the schemas used by chewBBACA.
 
@@ -146,6 +152,10 @@ Columns description:
     Valid_alleles: The number of alleles chosen to be in the final schema.
     Number_representatives: The number of alleles chosen to be the representatives of that loci.
 
+This file will have the main statistics of the final schema. It gives the number of alleles in each locus and how many of those are representatives.
+
+`schema_invalid_alleles.txt` and `schema_invalid_loci.txt` will have a list of the alleles/loci that did not pass validation thresholds. If these are empty then all alleles/loci were correctly moved into the new schema and validated.
+
 
 Examples
 --------
@@ -170,5 +180,5 @@ If you encounter issues while using the `CreateSchemaStructure` module, consider
 
 - Verify that the paths to the schema, output, and recommendations directories are correct.
 - Check the output directory for any error logs or messages.
-- Check if the dependecies versions are all compatible. 
+- Check if the dependencies versions are all compatible. 
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.

@@ -24,10 +24,11 @@ except ModuleNotFoundError:
 def create_schema_structure(recommendations_file: str, 
                             fastas_folder: str,
                             output_directory: str,
+                            training_file: str,
                             cpu: int,
                             bsr: float,
                             translation_table: int,
-                            no_cleanup:bool,) -> None:
+                            no_cleanup:bool) -> None:
     """
     Creates a schema structure based on the recommendations provided in the recommendations file.
 
@@ -37,10 +38,19 @@ def create_schema_structure(recommendations_file: str,
         Path to the file containing the recommendations.
     fastas_folder : str
         Path to the folder containing the FASTA files.
-    skip_choices : bool
-        Whether to skip recommendations with 'Choice'.
-    output_directory : str
-        Path to the directory where the output files will be saved.
+    output_directory: str
+        Path to the directory where the final schema will be stored.
+    training_file: str
+        Path to the Prodigal training file that will be included in the directory of the adapted schema.
+    cpu : int
+        Number of CPU cores that will be used to run the process.
+    bsr : float
+        The BLAST Score Ratio value that will be used to evaluate
+        allele similarity and select representative alleles.
+    translation_table : int
+        Genetic code used to translate alleles.
+    no_cleanup : bool
+        Flag to indicate whether to clean up temporary files.
 
     Returns
     -------
@@ -77,13 +87,21 @@ def create_schema_structure(recommendations_file: str,
                 action_id += 1
                 ids_list = []
                 continue
-            # Split the line into the action and the IDs   
-            id, recommendation = line.split('\t')
+            # Split the line into the action and the IDs
+            if len(line.split('\t')) == 3:
+                locus, recommendation, class_id = line.split('\t', 2)
+            else:
+                locus, recommendation, class_id, other = line.split('\t', 3)
             # If there still is a action Choice in the recommendation file
             # If yes, then exit the module, that action is not accepted
             if recommendation == "Choice":
                 pf.print_message('The input recommendation file still has loci labeled "Choice".', 'warning')
                 pf.print_message('Please change these into Add, Join or Drop.', 'warning')
+                sys.exit()
+            # Check if the actions make sense for the class
+            if class_id == '6' and recommendation == "Join":
+                pf.print_message('A locus with classification 6 can not have the recommendation Join.', 'warning')
+                pf.print_message(f'Please change the recommendation of the locus {locus}.', 'warning')
                 sys.exit()
             # Check if the recommendation is different from the preivous one
             # If so, start a new set of IDs
@@ -92,7 +110,7 @@ def create_schema_structure(recommendations_file: str,
                 ids_list = []
                 last_rec = recommendation
             # Save the action and the IDs in the action_list dictionary
-            ids_list.append(id)
+            ids_list.append(locus)
             action_list.setdefault(action_id, {}).update({recommendation: ids_list})
 
     processed_files: List[str] = []
@@ -109,6 +127,10 @@ def create_schema_structure(recommendations_file: str,
             pf.print_message(f'Involves the following loci: {ids_list} with action {recommendation}')
             # If the recommendation is 'Join'
             if "Join" in recommendation:
+                if len(ids_list) < 2:
+                    pf.print_message('There should be at least 2 locus in a row with the Join recommendation.', 'warning')
+                    pf.print_message(f'Reorder the cluster or change the recommendation of the locus {locus}.', 'warning')
+                    sys.exit()
                 pf.print_message(f'These loci will be joined under the locus name {ids_list[0]}')
                 output_file: str = os.path.join(temp_fasta_folder, f'{ids_list[0]}.fasta')
                 # Append the new FASTA file path to the new_fastas_path list
@@ -143,7 +165,7 @@ def create_schema_structure(recommendations_file: str,
                         else:
                             pf.print_message(f'File {id_} not found in the FASTA folder', "info")
                 total_groups += 1
-                pf.print_message(f'In this group there were a total of {total_alleles} alleles, out of which {allele_id-1} were unique.')
+                pf.print_message(f'In this group there were a total of {total_alleles} alleles, out of which {allele_id-1} were unique.', 'info')
             elif "Add" in recommendation:
                 for id_ in ids_list:
                     processed_files.append(id_) # Add the ID to the processed_files list
@@ -168,7 +190,7 @@ def create_schema_structure(recommendations_file: str,
     pf.print_message("Create Schema Structure...", "info")
     # Schema path
     schema_path = os.path.join(output_d, 'schema')
-    AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, cpu, bsr, translation_table)
+    AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, training_file, cpu, bsr, translation_table)
 
     # Print final statistics
     pf.print_message('')

@@ -3,21 +3,23 @@ AdaptLoci - Adapt fastas into a chewBBACA schema
 
 Description
 -----------
-The `AdaptLoci` module is designed to adapt loci from FASTA files into a chewBBACA-compatible schema. This is teh schema structure that is assumed all throughout the tool. This module processes input loci and runs the module PrepExternalSchema from chewBBACA.
+The `AdaptLoci` module is designed to adapt loci from FASTA files into a chewBBACA-compatible schema. This is the schema structure that is assumed all throughout the tool. This module processes input loci and runs the module PrepExternalSchema from chewBBACA. It also checks the name format of the loci in order to find names that can cause complications when running BLAST.
 
 This module is essential for researchers and bioinformaticians working on genomic schema refinement, providing a robust and flexible tool for adapting loci into a standardized schema format.
+
 
 Features
 --------
 
-- Adapting loci in a schema.
+- Adapting loci in a chewBBACA schema.
+- Checks possible problematic loci names.
 - Configurable parameters for the adaptation process.
 - Support for parallel processing using multiple CPUs.
 
 Dependencies
 ------------
 
-- Python 3.9 or higher
+- Python between 3.9 and 3.11
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 - ChewBBACA (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda)
 - Install requirements using the following command:
@@ -71,6 +73,10 @@ Algorithm Explanation
 ---------------------
 This module calls on the PrepExternalSchema module from chewBBACA with a simplified list of arguments.
 For more clarification check the PrepExternalSchema documentation (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html <https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#>`_)
+
+In `AdaptLoci` the fasta files of the schema loci are restructured into a chewBBACA schema structure, which includes a folder with the fastas containing the representative alleles of each locus.
+
+The input should be a folder with a fasta file per loci.
 
 
 Outputs

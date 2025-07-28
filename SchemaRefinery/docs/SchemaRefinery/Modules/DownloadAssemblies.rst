@@ -4,13 +4,10 @@ DownloadAssemblies - Download assemblies and their metadata from specified datab
 Description
 -----------
 
-The `DownloadAssemblies` module is a module designed to facilitate the download of genomic assemblies from specified databases. This module parses command-line arguments to initiate the download process, allowing users to efficiently retrieve assemblies from either the NCBI or ENA661 databases. The downloaded assemblies are stored in the specified output directory.
+The `DownloadAssemblies` module is a module designed to facilitate the download of genomic assemblies from specified databases. This module parses command-line arguments to initiate the download process, allowing users to efficiently retrieve assemblies from either the NCBI or ENA661 databases. The downloaded assemblies are stored in the specified output directory. It supports parallel downloads, filtering based on user-defined criteria, and the retrieval of associated metadata.
 
-Overview
---------
+`SchemaRefinery` has modules that depend on outputs from the chewBBACA modules `AlleleCall` and `SchemaCreate` or `PrepExternalSchema`. To run the first two the assemblies of the genomes are needed. This module should be used to obtain these assemblies in an easier and faster way. 
 
-The `DownloadAssemblies` module is designed to facilitate the download of genomic assemblies from specified databases.
-It supports parallel downloads, filtering based on user-defined criteria, and the retrieval of associated metadata.
 
 Features
 --------
@@ -24,7 +21,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.9 or higher
+- Python between 3.9 and 3.11
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
 - Install requirements using the following command:
 
@@ -98,12 +95,14 @@ Workflow for downloading assemblies from NCBI:
    :align: center
 
 
+
 Workflow for downloading assemblies from ENA661K:
 
 .. image:: source/DownloadAssemblies_ena661k.png
    :alt: SchemaAnnotation Flowchart
    :width: 80%
    :align: center
+
 
 
 Workflow for downloading metadata:
@@ -113,6 +112,13 @@ Workflow for downloading metadata:
    :width: 80%
    :align: center
 
+
+
+For both databases the first step is to download the metadata of the assemblies in the chosen database. For the `NCBI` database, the entire metadata is downloaded and then filtering according to the input criteria. For the `ENA661K` database, a precompiled metadata table is used and filtered. 
+
+After the metadata is filtered, the assemblies that pass the filtering are downloaded alongside their matedata.
+
+If the --nocleanup argument is not used the final output is the log file and the assemblies zip folder, where the assemblies and metadata will be stored. For an output with more complete metadata of the assemblies use the option --fetch-metadata, which will store in the output the biosamples IDs and metadata.
 
 Filtering criteria example
 --------------------------
@@ -134,9 +140,12 @@ Filtering criteria file should be a TSV file with the following columns:
 * **verify_status:** Verify status (NCBI) (True, False, None)
 * **exclude_atypical:** Exclude atypical (NCBI) (True, False, None)
 
-The filtering criteria file is only applicable to certain databases e.g ST_list_path to ENA661K since it is known at the ENA661K table.
+The filtering criteria file is only applicable to certain databases e.g. ST_list_path to ENA661K since it is known at the ENA661K table.
 When None or empty value is provided, the filtering criteria will not be applied.
 The file can only contain either the taxon or input_table row, not both.
+
+An example of this file exists in the `DownloadAssemblies` folder. Use it as a template alongside the criteria explanation.
+
 
 Outputs
 -------

@@ -115,7 +115,7 @@ def get_alignments_dict_from_blast_results(
     alignments_dict: tp.BlastDict = {}
     alignment_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     alignment_coords_all: tp.RepresentativeBlastResultsCoords = {}
-    pattern: str = '_(\d+)'
+    pattern: str = r'_(\d+)$'
     self_scores: Union[int, Dict[str, int]] = 0 if not multiple_reps else {}
 
     with open(blast_results_file, "r") as f:

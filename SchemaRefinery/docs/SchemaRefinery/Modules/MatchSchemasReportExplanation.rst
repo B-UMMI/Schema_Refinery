@@ -82,7 +82,7 @@ Output files and folders description for the MatchSchemas module
                 TSV file containing the BLASTp results for the locus z.
             
             ...
-                All of the other TSV BLASTp results files.
+                All the other TSV BLASTp results files.
 
         Query_Translation
             Folder containing the query translation files.
@@ -97,7 +97,7 @@ Output files and folders description for the MatchSchemas module
                 FASTA file containing the translation for the locus z.
             
             ...
-                All of the other translation files.
+                All the other translation files.
         
         Query_Translation_Rep
             Folder containing the representative query translation files.
@@ -112,7 +112,7 @@ Output files and folders description for the MatchSchemas module
                 FASTA file containing the translation for the locus z.
             
             ...
-                All of the other translation files.
+                All the other translation files.
 
         Subject_Translation
             Folder containing the subject translation files.
@@ -127,7 +127,7 @@ Output files and folders description for the MatchSchemas module
                 FASTA file containing the translation for the locus z.
             
             ...
-                All of the other translation files.
+                All the other translation files.
 
         Subject_Translation_Rep
             Folder containing the representative subject translation files.
@@ -142,7 +142,7 @@ Output files and folders description for the MatchSchemas module
                 FASTA file containing the translation for the locus z.
             
             ...
-                All of the other translation files.
+                All the other translation files.
 
         self_score_folder
             Folder containing the self-score BLAST results.
@@ -157,7 +157,7 @@ Output files and folders description for the MatchSchemas module
                 TSV file containing the BLASTp results for the locus z.
             
             ...
-                All of the other TSV BLASTp for self-score results files.
+                All the other TSV BLASTp for self-score results files.
 
     **hashes_dna_matches.tsv**
         TSV file with the matches from the DNA hashes analysis.
@@ -175,4 +175,4 @@ Output files and folders description for the MatchSchemas module
         TSV file with the loci that were not matched analysis.
 
     **Match_Schemas_Results.tsv**
-        TSV file containing the best BLAST matches for the query and subject schemas sorted by locus name. Also contains the final non matched locus from both Query and Subject.
+        TSV file containing the best BLAST matches for the query and subject schemas sorted by locus name. Also contains the final non-matched locus from both Query and Subject.

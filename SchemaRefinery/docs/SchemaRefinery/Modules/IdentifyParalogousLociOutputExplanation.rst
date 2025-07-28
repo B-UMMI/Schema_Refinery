@@ -52,10 +52,10 @@ Output files and folders description IdentifyParalogousLoci module
                 TSV file containing the BLASTp results for the locus z.
             
             ...
-                All of the other TSV BLASTp results files.
+                All the other TSV BLASTp results files.
 
         master_file.fasta
-            FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
+            FASTA file containing all the protein sequences used in the analysis (used to create BLAST DB).
 
         self_score_folder
             Folder containing the self-score BLAST results.
@@ -70,7 +70,7 @@ Output files and folders description IdentifyParalogousLoci module
                 TSV file containing the BLASTp results for self-score for the locus z.
             
             ...
-                All of the other TSV BLASTp for self-score results files.
+                All the other TSV BLASTp for self-score results files.
 
         Translation
             Folder containing the translation files.
@@ -85,7 +85,7 @@ Output files and folders description IdentifyParalogousLoci module
                 FASTA file containing the translation for the locus z.
             
             ...
-                All of the other translation files.
+                All the other translation files.
 
     **paralogous_annotations.tsv**
         TSV file with the clusters that should be joined as well as the annotations for each locus.
