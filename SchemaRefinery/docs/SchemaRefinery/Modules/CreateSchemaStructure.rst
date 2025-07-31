@@ -47,6 +47,9 @@ Command-Line Arguments
 
     -o, --output-directory
         (Required) Path to the directory where the output files will be saved.
+    
+    -tf, --training-file
+        (Optional) Path to the Prodigal training file that will be included in the directory of the adapted schema.
 
     -c, --cpu
         (Optional) Number of CPU cores for multiprocessing.
@@ -72,7 +75,10 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
-The input recommendation file must have the columns "Locus" and "Action". Additionally, if from the `IdentifySpuriousGenes` module, the file can also have the column "Class". These columns must be the 1st, 2nd and 3rd columns in the file, respectively. This input can have more columns, such as annotations, but these will be ignored.
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
+The input recommendation file must have the columns "Locus" and "Action". Additionally, if from the `IdentifySpuriousGenes` module, the file can also have the column "Class". These columns must be the 1st, 2nd and 3rd columns in the file, respectively. This input can have more columns, such as annotations, but these will be ignored. This file needs to have all the loci that are meant to be in the final schema. If a locus is missing from this file it won't be included in the final version of the schema
 
 
 Algorithm Explanation
@@ -170,8 +176,8 @@ Here are some example commands to use the `CreateSchemaStructure` module:
     # Create schema structure from a folder containing FASTA files
     SR CreateSchemaStructure -ff /path/to/fastas -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
 
-    # Create schema structure with custom BSR value and translation table
-    SR CreateSchemaStructure -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --t 4 -bsr 0.8 --nocleanup
+    # Create schema structure with custom BSR value and translation table and training file
+    SR CreateSchemaStructure -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -tf /path/to/file/training-file.trn -c 4 --t 4 -bsr 0.8 --nocleanup
 
 Troubleshooting
 ---------------

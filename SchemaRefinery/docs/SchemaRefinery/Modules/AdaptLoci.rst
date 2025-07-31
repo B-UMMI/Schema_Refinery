@@ -11,7 +11,7 @@ This module is essential for researchers and bioinformaticians working on genomi
 Features
 --------
 
-- Adapting loci in a chewBBACA schema.
+- Adapting loci into a chewBBACA schema.
 - Checks possible problematic loci names.
 - Configurable parameters for the adaptation process.
 - Support for parallel processing using multiple CPUs.
@@ -20,8 +20,7 @@ Dependencies
 ------------
 
 - Python between 3.9 and 3.11
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
-- ChewBBACA (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda)
+- `ChewBBACA install page <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -47,6 +46,9 @@ Command-Line Arguments
 
     -o, --output-directory
         (Required) Path to the directory to which files will be stored.
+    
+    -tf, --training-file
+        (Optional) Path to the Prodigal training file that will be included in the directory of the adapted schema.
 
     -c, --cpu
         (Optional) Number of CPUs to run BLAST instances.
@@ -68,13 +70,15 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
 
 Algorithm Explanation
 ---------------------
-This module calls on the PrepExternalSchema module from chewBBACA with a simplified list of arguments.
-For more clarification check the PrepExternalSchema documentation (`https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html <https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#>`_)
 
-In `AdaptLoci` the fasta files of the schema loci are restructured into a chewBBACA schema structure, which includes a folder with the fastas containing the representative alleles of each locus.
+In `AdaptLoci` the fasta files of the schema loci are restructured into a chewBBACA schema structure, which includes a folder with the fastas containing the representative alleles of each locus. For that, the module calls on the PrepExternalSchema module from chewBBACA with a simplified list of arguments.
+For more clarification check the `PrepExternalSchema documentation <https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#>`_.
 
 The input should be a folder with a fasta file per loci.
 
@@ -112,7 +116,7 @@ Here are some example commands to use the `AdaptLoci` module:
     SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output
 
     # Adapt loci with custom parameters
-    SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output -c 4 -b 0.7 -tt 4
+    SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output -tf /path/to/file/training-file.trn -c 4 -b 0.7 -tt 4
 
 Troubleshooting
 ---------------

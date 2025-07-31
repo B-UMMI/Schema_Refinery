@@ -9,9 +9,7 @@ This tutorial will show you how to download assemblies from NCBI and ENA661K usi
 Prerequisites
 -------------
 - SchemaRefinery installed
-- Python 3.9 or higher
-- Requests library (`pip install requests`)
-- Biopython library (`pip install biopython`)
+- Python between 3.9 and 3.11
 - NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
 
 Procedure
@@ -23,7 +21,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR DownloadAssemblies -db NCBI -th 3 --download -fm -o 'path/to/files/DownloadAssemblies_Results' -f '/path/to/Schema_Refinery/SchemaRefinery/DownloadAssemblies/input_table_example.tsv' -e your_email@email.com
+    SR DownloadAssemblies -db NCBI -th 3 --download -fm -o 'path/to/files/DownloadAssemblies_Results' -f '/path/input_table_example.tsv' -e your_email@email.com
 
 - The input table used is in the DownloadAssemblies folder.
 - Replace `path/to/files/` with the actual path to the files.

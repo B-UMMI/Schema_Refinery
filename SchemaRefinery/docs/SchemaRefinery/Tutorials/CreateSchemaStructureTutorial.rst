@@ -10,8 +10,7 @@ Prerequisites
 -------------
 
 - SchemaRefinery installed
-- Python 3.9 or higher
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
+- Python between 3.9 and 3.11
 - ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
 - Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
@@ -27,6 +26,7 @@ Procedure
     SR CreateSchemaStructure -rf '/path/to/recommendations.tsv' -ff '/path/to/tutorial_schema/schema_seed' -o '/path/to/CreateSchemaStructure_output' -c 6 --nocleanup
 
 - Replace `/path/to/files/` with the actual path to the files.
+- Use the recommendation.tsv example file in the `CreateSchemaStructure` folder. This file was created using the `IdentifySpuriousGenes` module and the "Choice" actions were altered randomly.
 
 3. Press Enter to execute the command.
 
