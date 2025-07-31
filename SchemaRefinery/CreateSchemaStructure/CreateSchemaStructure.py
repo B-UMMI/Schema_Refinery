@@ -111,9 +111,14 @@ def create_schema_structure(recommendations_file: str,
                 last_rec = recommendation
             # Save the action and the IDs in the action_list dictionary
             ids_list.append(locus)
-            action_list.setdefault(action_id, {}).update({recommendation: ids_list})
+            if recommendation in action_list.get(action_id, {}) and len(ids_list)==1 :
+                action_id += 1
+                action_list.setdefault(action_id, {}).update({recommendation: ids_list})
+            else:
+                action_list.setdefault(action_id, {}).update({recommendation: ids_list})
 
     processed_files: List[str] = []
+    all_ids: List[str] = []
     total_join: int = 0
     total_groups: int = 0
     total_drop: int = 0
@@ -147,6 +152,7 @@ def create_schema_structure(recommendations_file: str,
                             fasta_file: str = fastas_files[id_]  # Get the FASTA file path
                             fasta_dict: Dict[str, str] = sf.fetch_fasta_dict(fasta_file, out)  # Fetch the FASTA dictionary
                             total_join +=1 
+                            all_ids.append(id_)
                             # For each header and sequence in the FASTA dictionary
                             for header, seq in fasta_dict.items():
                                 total_alleles += 1
@@ -176,10 +182,13 @@ def create_schema_structure(recommendations_file: str,
                     shutil.copy(fasta_file, output_file)
                     pf.print_message(f'File {id_} copied to {output_file}', "info")
                     total_add += 1
+                    all_ids.append(id_)
             # If the recommendation is 'Drop'
             elif "Drop" in recommendation:
                 processed_files.extend(ids_list) # Add the IDS to the processed_files list
                 total_drop += len(ids_list)
+                for id_ in ids_list:
+                    all_ids.append(id_)
                 pf.print_message(f"The following IDs: {', '.join(ids_list)} have been removed due to drop action", "info")
             else:
                 pf.print_message(f'The action of ids {ids_list} is not recognized. Chose beteen Add, Join and Drop.', 'warning')
@@ -189,8 +198,15 @@ def create_schema_structure(recommendations_file: str,
     # Create schema structure
     pf.print_message("Create Schema Structure...", "info")
     # Schema path
-    schema_path = os.path.join(output_d, 'schema')
-    AdaptLoci.adapt_loci(temp_fasta_folder, schema_path, training_file, cpu, bsr, translation_table)
+    schema_folder = os.path.join(output_d, 'schema')
+    schema_path = os.path.join(schema_folder, 'adapted_schema')
+    AdaptLoci.adapt_loci(temp_fasta_folder, schema_folder, training_file, cpu, bsr, translation_table)
+
+    extra_schema_ids: List[str] = []
+    for id_ in fastas_files:
+        if id_ not in all_ids:
+            extra_schema_ids.append(id_)
+    pf.print_message(extra_schema_ids)
 
     # Print final statistics
     pf.print_message('')
@@ -198,6 +214,10 @@ def create_schema_structure(recommendations_file: str,
     pf.print_message(f'\t{total_join} loci were joined into {total_groups} groups.', 'info')
     pf.print_message(f'\t{total_drop} loci were dropped from the final schema.', 'info')
     pf.print_message(f'\t{total_add} loci were directly added into the final schema.', 'info')
+    if len(extra_schema_ids) != 0:
+        pf.print_message(f'The original schema has loci that were not present in the recommendation file and were then not moved into the finl schema.', 'info')
+        pf.print_message(f'These loci were:\n' + "\n".join(extra_schema_ids), 'info')
+
 
     final_schema: List[str] = []
     final_schema += [file for file in os.listdir(schema_path) if file.endswith('.fasta')]
@@ -206,4 +226,4 @@ def create_schema_structure(recommendations_file: str,
 
     if not no_cleanup:
         pf.print_message("\nCleaning up temporary files...", "info")
-        ff.cleanup(output_d, [schema_path, logf.get_log_file_path(gb.LOGGER)])
+        ff.cleanup(output_d, [schema_folder, logf.get_log_file_path(gb.LOGGER)])
