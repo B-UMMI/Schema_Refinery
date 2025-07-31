@@ -361,7 +361,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         multi_cds_clusters: int = total_number_clusters - singleton_clusters
         pf.print_message(f"Out of those clusters, {multi_cds_clusters} have more than one CDS.", "info")
         
-        pf.print_message("\nFiltering clusters...", "info")
+        pf.print_message("Filtering clusters...", "info")
         # Calculate the frequency of each cluster in the genomes.
         frequency_in_genomes: Dict[str, int] = {
             rep: sum(frequency_cds[entry] for entry in cluster_members)
@@ -428,6 +428,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                         all_alleles,
                                                         all_nucleotide_sequences,
                                                         constants)
+        pf.print_message("")
 
 
     if run_mode == 'schema':
@@ -590,14 +591,15 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     pf.print_message("Extracting results...", "info")
     related_clusters: tp.RelatedClusters
     recommendations: tp.Recomendations
+    low_freq_recommendations: tp.Recomendations
     # Extract the results from the processed results
-    related_clusters, recommendations = cof.extract_results(processed_results,
-                                                            count_results_by_class,
-                                                            frequency_in_genomes,
-                                                            frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None, 
-                                                            merged_all_classes,
-                                                            dropped_loci_ids,
-                                                            classes_outcome)
+    related_clusters, recommendations, low_freq_recommendations = cof.extract_results(processed_results,
+                                                                                        count_results_by_class,
+                                                                                        frequency_in_genomes,
+                                                                                        frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None, 
+                                                                                        merged_all_classes,
+                                                                                        dropped_loci_ids,
+                                                                                        classes_outcome)
 
 
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
@@ -614,6 +616,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                             frequency_in_genomes,
                                                                             frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
                                                                             recommendations,
+                                                                            low_freq_recommendations,
                                                                             reverse_matches,
                                                                             classes_outcome,
                                                                             output_d)
