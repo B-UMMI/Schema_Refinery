@@ -256,7 +256,7 @@ def calculate_frequency(schema_folder: str,
 
 def identify_spurious_genes(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
                             annotation_paths: List[str], constants: List[Any], temp_paths: List[str],
-                            run_mode: str, processing_mode: str, cpu: int, bsr: float, translation_table: int, no_cleanup: bool) -> None:
+                            run_mode: str, cpu: int, bsr: float, translation_table: int, no_cleanup: bool) -> None:
     """
     Identify spurious genes in the given schema.
 
@@ -276,8 +276,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         List of temporary paths.
     run_mode : str
         Mode of running the process.
-    processing_mode : str
-        Mode of processing.
     cpu : int
         Number of CPUs to use.
     bsr : int
@@ -392,10 +390,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         pf.print_message("Retrieving kmers similarity and coverage between representatives...", "info")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
         # Choose which translation dict to use as representative
-        if processing_mode.split('_')[0] == 'alleles':
-            trans_dict = all_translation_dict
-        else:
-            trans_dict = reps_translation_dict
+        trans_dict = reps_translation_dict
         # Calculate kmers similarity
         reps_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(trans_dict, reps_groups, prot_len_dict)
 
@@ -432,7 +427,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                         representatives_blastn_folder_against,
                                                         all_alleles,
                                                         all_nucleotide_sequences,
-                                                        processing_mode,
                                                         constants)
 
 
@@ -459,7 +453,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         new_max_hits,
         seqid_file_dict) = cof.prepare_loci(schema_folder,
                                             constants,
-                                            processing_mode,
                                             initial_processing_output)
         
     if run_mode == 'schema_vs_schema':
@@ -494,7 +487,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         new_max_hits,
         seqid_file_dict) = cof.prepare_loci(schema_folder,
                                             constants,
-                                            processing_mode,
                                             initial_processing_output)
 
 
@@ -560,7 +552,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     clusters_to_keep: tp.MergedAllClasses
     dropped_loci_ids: Set[str]
     clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
- 
     
     # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
     clusters_to_keep_1a_renamed: Dict[str, List[str]] = {values[0]: values for key, values in clusters_to_keep_1a.items()}
@@ -576,7 +567,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
         group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
         group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
-                                                                                processing_mode,
                                                                                 all_alleles,
                                                                                 dropped_loci_ids,
                                                                                 group_reps_ids,
@@ -643,7 +633,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                'w')
     cof.alignment_dict_to_file(representative_blastn_results,
                                report_file_path,
-                               'w')
+                               'a')
     # Write the processed results to a file alignments by clusters and classes.
     cof.write_processed_results_to_file(merged_all_classes,
                                     representative_blast_results,
@@ -745,7 +735,7 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
         alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
-        bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
+        bsr: float, size_ratio: float, run_mode: str, cpu: int,
         no_cleanup: bool) -> None:
     """
     Main function to identify spurious genes in a schema.
@@ -780,8 +770,6 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
         Size ratio threshold.
     run_mode : str
         Mode of running the process.
-    processing_mode : str
-        Mode of processing.
     cpu : int
         Number of CPU cores to use.
     no_cleanup : bool
@@ -818,7 +806,6 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
                 constants,
                 temp_paths if run_mode == 'unclassified_cds' else [],
                 run_mode,
-                processing_mode,
                 cpu,
                 bsr,
                 translation_table,

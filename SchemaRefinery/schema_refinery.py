@@ -543,15 +543,6 @@ def identify_spurious_genes() -> None:
 						choices=ct.IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES,
 						help='Run mode for identifying spurious loci.')
 
-	parser.add_argument('-pm',
-						'--processing-mode',
-						type=str,
-						required=False,
-						dest='processing_mode',
-						default='reps_vs_alleles',
-						choices=ct.PROCESSING_MODE_CHOICES,
-						help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-
 	parser.add_argument('-c',
 						'--cpu',
 						type=int,
@@ -578,6 +569,17 @@ def identify_spurious_genes() -> None:
 						default=None,
 						dest='logger',
 						help='Path to the logger file.')
+	
+	"""
+	parser.add_argument('-pm',
+						'--processing-mode',
+						type=str,
+						required=False,
+						dest='processing_mode',
+						default='reps_vs_alleles',
+						choices=ct.PROCESSING_MODE_CHOICES,
+						help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
+	"""
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
@@ -825,22 +827,6 @@ def identify_paralogous_loci() -> None:
 
 	# Validate the arguments
 	val.validate_identify_paralogous_loci_arguments(args)
-
-	# Validate schema fasta names
-	pf.print_message('PREFIXES TRIAL START', 'info')
-	gene_list_paths: str = os.path.join(args.output_directory, 'gene_list_paths.txt')
-	with open(gene_list_paths, 'w') as gene_list:
-		dir_list = os.listdir(args.schema_directory)
-		for file in dir_list:
-			if file.endswith(".fasta"):
-				path = os.path.abspath(file)
-				gene_list.write(f'{path}\n')
-                
-	makeblastdb_path = ff.join_paths(args.output_directory, [ct.MAKEBLASTDB_ALIAS])
-	blastdbcmd_path = ff.join_paths(args.output_directory, [ct.BLASTDBCMD_ALIAS])
-	pdb_prefixes = AdaptLoci.check_prefix_pdb(gene_list_paths, args.output_directory, makeblastdb_path, blastdbcmd_path)
-
-	pf.print_message('PREFIXES TRIAL OVER', 'info')
 
 	# Print the validated input arguments if debug
 	if gb.DEBUG:

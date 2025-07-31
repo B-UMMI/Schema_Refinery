@@ -691,8 +691,7 @@ def prepare_files_to_blast(translation_files_paths: str,
                        representatives_blastn_folder: str, 
                        representatives_blastn_folder_against: str,
                        all_alleles: Dict[str, List[str]], 
-                       all_nucleotide_sequences: Dict[str, str], 
-                       processing_mode: str,
+                       all_nucleotide_sequences: Dict[str, str],
                        constants: List[Union[int, float]]) -> Tuple[Dict[str, str], str]:
     """
     Writes representative and master FASTA files for BLAST.
@@ -711,9 +710,6 @@ def prepare_files_to_blast(translation_files_paths: str,
         Dictionary with cluster representatives as keys and cluster members as values.
     all_nucleotide_sequences : Dict[str, str]
         Dictionary with CDS IDs as keys and sequences as values.
-    processing_mode : str
-        Mode of processing, which determines how sequences are handled. Four types: reps_vs_reps,
-        reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
     constants : List[Union[int, float]]
         List of constants used for clustering.
 
@@ -741,8 +737,6 @@ def prepare_files_to_blast(translation_files_paths: str,
     new_max_hits: Dict[str, int] = {}
     seqid_file_dict: Dict[str, str] = {}
 
-    queries: str = processing_mode.split('_')[0]
-    subjects: str = processing_mode.split('_')[-1]
     master_sequences: Dict[str, str] = {}
     for members in all_alleles.values():
         cluster_rep_id: str = members[0]
@@ -755,23 +749,10 @@ def prepare_files_to_blast(translation_files_paths: str,
         seqid_file_dict[loci] = seqid_file
         new_max_hits[loci] = 500
 
-        if queries == 'reps':
-            sequence: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
-        else:
-            sequence = {}
-            for member in members:
-                sequence[member] = str(all_nucleotide_sequences[member])
-        
+        sequence: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
         write_fasta_file(fasta_file, sequence)
-        
 
-        if subjects == 'reps':
-            master_sequences: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
-        else:
-            master_sequences = {}
-            for member in members:
-                master_sequences[member] = str(all_nucleotide_sequences[member])
-        
+        master_sequences: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
         write_fasta_file(against_fasta_file, master_sequences)
 
         
