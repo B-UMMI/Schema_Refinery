@@ -9,8 +9,7 @@ This tutorial will show you how to identify paralogous loci in a schema using th
 Prerequisites
 -------------
 - SchemaRefinery installed
-- Python 3.9 or higher
-- Biopython library (`pip install biopython`)
+- Python between 3.9 and 3.11
 - Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure

@@ -838,7 +838,7 @@ def process_classes(representative_blast_results: tp.BlastDict,
 
 def extract_results(processed_results: tp.ProcessedResults, count_results_by_class: tp.CountResultsByClass, 
                     frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], merged_all_classes: tp.MergedAllClasses, 
-                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations]:
+                    dropped_loci_ids: Set[str], classes_outcome: Tuple[str]) -> Tuple[tp.RelatedClusters, tp.Recomendations, tp.Recomendations]:
     """
     Extracts and organizes results from process_classes.
 
@@ -861,10 +861,11 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
 
     Returns
     -------
-    Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]]]
+    Tuple[Dict[str, List[Any]], Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]
         A tuple containing:
-        - all_relationships: All relationships between loci and CDS.
-        - related_clusters: Dict that groups CDS/loci by ID and that contains strings to write in output file.
+        - related_clusters: All relationships between loci and CDS.
+        - recommendations: Dict that groups CDS/loci by ID and that contains strings to write in output file.
+        - low_freq_recommendations: Dict that groups CDS/loci classified with 4c and 5 by ID and that contains strings to write in output file.
     
     Notes
     -----
@@ -1074,7 +1075,6 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     related_clusters: tp.RelatedClusters = {}  # To keep track of the related clusters
     recommendations: tp.Recomendations = {}  # To keep track of the recommendations
     dropped_match: Dict[str, List[List[str]]] = {}  # To keep track of the dropped matches
-    processed_cases: List[List[str]] = []  # To keep track of the processed cases
 
     # Filter the processed results by the order of classes
     processed_results = order_dict_by_first_value(processed_results, classes_outcome)
@@ -1084,6 +1084,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
     choice: Dict[int, List[str]] = choice_data(processed_results, to_cluster_list)  # All of the possible cases of choice.
 
     for results in processed_results.values():
+        
         if results[0] in ['4c', '5', 'Retained_not_matched_by_blastn']:
             continue
         # Get the IDs and check if they are present in the to_cluster_list
@@ -1091,7 +1092,7 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         subject_id, subject_present, joined_subject_id = process_id(results[3][1], to_cluster_list, merged_all_classes)
         
         key: str = query_present if query_present else subject_present
-
+        
         direct_match_info = f"{count_results_by_class[f'{results[3][0]}|{results[3][1]}'][results[0]]}/{sum(count_results_by_class[f'{results[3][0]}|{results[3][1]}'].values())}"
         if frequency_in_genomes_second_schema is not None:
             related_clusters.setdefault(key, []).append(results[4]
@@ -1108,7 +1109,6 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                                                         + [str(frequency_in_genomes[results[3][1]])]
                                                         )
 
-
         recommendations.setdefault(key, {})
         # Checks to make, so that we can add the ID to the right recommendations.
         if_same_joined: bool = (joined_query_id == joined_subject_id) if joined_query_id and joined_subject_id else False
@@ -1124,51 +1124,48 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
         # What IDs to add to the Keep, Drop and Choice.
         query_to_write: str = joined_query_id or query_id
         subject_to_write: str = joined_subject_id or subject_id
-        
+
         joined_query_to_write: str = query_id
         joined_subject_to_write: str = subject_id
 
-        # Check if the pair was not processed yet
-        if [query_id, subject_id] not in processed_cases:
+        # Process the joined cases
+        if results[0] == '1a':
+            # If it is part of a joined cluster, add to the recommendations
+            if joined_query_id is not None:
+                add_to_recommendations('Join', joined_query_to_write, key, recommendations, results[0], joined_query_id)
+            if joined_subject_id is not None:
+                add_to_recommendations('Join', joined_subject_to_write, key, recommendations, results[0], joined_subject_id)
+        # Process the choice cases
+        elif results[0] in ['1c', '2b', '3b', '4b', '6']:
+            # If it is not dropped and not the same joined cluster, add to the choice recommendations
+            if not if_query_dropped and not if_subject_dropped and not if_same_joined:
+                # If not already reported (other Joined elements already reported with Joined ID)
+                if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
+                    add_to_recommendations(f'Choice', query_to_write, key, recommendations, results[0], choice_id)
+                    add_to_recommendations(f'Choice', subject_to_write, key, recommendations, results[0], choice_id)
 
-            # Process the joined cases
-            if results[0] == '1a':
-                # If it is part of a joined cluster, add to the recommendations
-                if joined_query_id is not None:
-                    add_to_recommendations('Join', joined_query_to_write, key, recommendations, results[0], joined_query_id)
-                if joined_subject_id is not None:
-                    add_to_recommendations('Join', joined_subject_to_write, key, recommendations, results[0], joined_subject_id)
-            # Process the choice cases
-            elif results[0] in ['1c', '2b', '3b', '4b', '6']:
-                # If it is not dropped and not the same joined cluster, add to the choice recommendations
-                if not if_query_dropped and not if_subject_dropped and not if_same_joined:
-                    # If not already reported (other Joined elements already reported with Joined ID)
-                    if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
-                        add_to_recommendations(f'Choice', query_to_write, key, recommendations, results[0], choice_id)
-                        add_to_recommendations(f'Choice', subject_to_write, key, recommendations, results[0], choice_id)
+        # Process cases where some ID is dropped
+        elif results[0] in ['1b', '2a', '3a', '4a']:
+            # If it is part of a joined cluster and it gets dropped, add to the recommendations
+            if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]) and not if_same_joined:
+                # If not already reported (other Joined elements already reported with Joined ID)
+                if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
+                    add_to_recommendations(f'Choice', query_to_write, key, recommendations, results[0], choice_id)
+                    add_to_recommendations(f'Choice', subject_to_write, key, recommendations, results[0], choice_id)
 
-            # Process cases where some ID is dropped
-            elif results[0] in ['1b', '2a', '3a', '4a']:
-                # If it is part of a joined cluster and it gets dropped, add to the recommendations
-                if (joined_query_id and '*' in results[4][0]) or (joined_subject_id and '*' in results[4][1]) and not if_same_joined:
-                    # If not already reported (other Joined elements already reported with Joined ID)
-                    if not find_both_values_in_dict_list(query_to_write, subject_to_write, recommendations[key]):
-                        add_to_recommendations(f'Choice', query_to_write, key, recommendations, results[0], choice_id)
-                        add_to_recommendations(f'Choice', subject_to_write, key, recommendations, results[0], choice_id)
+            # If it is not part of a joined cluster and it gets dropped, add to the recommendations
+            if if_query_dropped:
+                # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
+                if not if_joined_query and not if_query_in_choice:
+                    add_to_recommendations('Drop', query_to_write, key, recommendations, results[0])
+                    dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
+            # If it is not part of a joined cluster and it gets dropped, add to the recommendations
+            elif if_subject_dropped:
+                # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
+                if not if_joined_subject and not if_subject_in_choice:
+                    add_to_recommendations('Drop', subject_to_write, key, recommendations, results[0])
+                    dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
 
-                # If it is not part of a joined cluster and it gets dropped, add to the recommendations
-                if if_query_dropped:
-                    # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
-                    if not if_joined_query and not if_query_in_choice:
-                        add_to_recommendations('Drop', query_to_write, key, recommendations, results[0])
-                        dropped_match.setdefault(key, []).append([query_to_write, subject_to_write, subject_to_write])
-                # If it is not part of a joined cluster and it gets dropped, add to the recommendations
-                elif if_subject_dropped:
-                    # If it is not part of a joined cluster and it gets dropped, add to the recommendations as Dropped
-                    if not if_joined_subject and not if_subject_in_choice:
-                        add_to_recommendations('Drop', subject_to_write, key, recommendations, results[0])
-                        dropped_match.setdefault(key, []).append([subject_to_write, query_to_write, query_to_write])
-      
     # Add cases where some ID matched with dropped ID, we need to add the ID that matched with the ID that made the other match
     # to be Dropped. e.g x and y matched with x dropping and x also matched with z, then we need to make a choice between x and z.
     # Not being used currently
@@ -1181,10 +1178,30 @@ def extract_results(processed_results: tp.ProcessedResults, count_results_by_cla
                         add_to_recommendations('Choice', dropped[2], key, recommendations, match_[3])
     """
 
-    sort_order: List[str] = ['Join', 'Choice', 'Drop']
+    sort_order: List[str] = ['Join', 'Choice', 'Drop', 'Add']
     recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in recommendations.items()}
-    
-    return related_clusters, recommendations
+
+    low_freq_recommendations: tp.Recomendations = {}
+    for results in processed_results.values():
+        if results[0] in ['4c', '5']:
+            query_id = results[3][0]
+            subject_id = results[3][1]
+
+            if query_id not in recommendations.keys():
+                key: str = query_id
+            elif subject_id not in recommendations.keys():
+                key: str = subject_id
+            low_freq_recommendations.setdefault(key, {})
+
+            if query_id not in recommendations.keys():
+                add_to_recommendations('Add', query_id, key, low_freq_recommendations, results[0])
+            if subject_id not in recommendations.keys():
+                add_to_recommendations('Add', subject_id, key, low_freq_recommendations, results[0])
+
+    sort_order: List[str] = ['Join', 'Choice', 'Drop', 'Add']
+    low_freq_recommendations = {k: {l[0]: l[1] for l in sorted(v.items(), key=lambda x: sort_order.index(x[0].split('_')[0]))} for k, v in low_freq_recommendations.items()}
+
+    return related_clusters, recommendations, low_freq_recommendations
 
 
 def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
@@ -1195,6 +1212,7 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                                             frequency_in_genomes: Dict[str, int],
                                             frequency_in_genomes_second_schema: Dict[str, int],
                                             recommendations: tp.Recomendations, 
+                                            low_freq_recommendations: tp.Recomendations,
                                             reverse_matches: bool,
                                             classes_outcome: Tuple[str, ...],
                                             output_directory: str) -> Tuple[str, str, str, Dict[str, int]]:
@@ -1223,6 +1241,8 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
         A dictionary mapping sequence identifiers to their frequency in genomes in the second schema.
     recommendations : tp.Recommendations
         A dictionary containing recommendations for each cluster based on the classification of the results.
+    low_freq_recommendations : tp.Recommendations
+        A dictionary containing recommendations for each cluster based on the classification, of 4c and 5, of the results.
     reverse_matches : bool
         A flag indicating whether there are reverse matches.
     classes_outcome : Tuple[str, ...]
@@ -1276,6 +1296,19 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                     else:
                         continue
             recommendations_report_file.write("#\n")
+        for key, recommendation in low_freq_recommendations.items():
+            for category, loci in recommendation.items():
+                for locus, id_class in loci.items():
+                    # Each gene can only have one action associated
+                    if locus not in matched_loci:
+                        recommendations_report_file.write(f"{locus}\t{category}\t{id_class}\n")
+                        matched_loci.append(locus)
+                        if id_class not in count_classes.keys():
+                            count_classes.update({id_class: 1})
+                        else:
+                            count_classes[id_class] += 1
+                    else:
+                        continue
         # Add the loci that had no action needed to the output file with the action 'Add' and class '7'
         for loci, loci_path in to_blast_paths.items():
             loci_id = ff.file_basename(loci).split('.')[0]
@@ -1943,7 +1976,7 @@ def extract_clusters_to_keep(classes_outcome: Tuple[str], count_results_by_class
 
 
 def count_number_of_reps_and_alleles(merged_all_classes: tp.MergedAllClasses, 
-                                    processing_mode: str, clusters: Dict[str, List[str]], 
+                                    clusters: Dict[str, List[str]], 
                                     drop_possible_loci: Set[str], group_reps_ids: Dict[str, List[str]], 
                                     group_alleles_ids: Dict[str, List[str]]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
     """
@@ -1984,19 +2017,8 @@ def count_number_of_reps_and_alleles(merged_all_classes: tp.MergedAllClasses,
         """
         Helper function to add representative and allele IDs to the respective dictionaries.
         """
-        if processing_mode[0] == 'alleles':
-            # If processing mode is 'alleles', update group_reps_ids with all members of the cluster
-            group_reps_ids.setdefault(cds, set()).update(clusters[cds])
-        else:
-            # Otherwise, add the CDS itself as a representative
-            group_reps_ids.setdefault(cds, set()).add(cds)
-        
-        if processing_mode[1] == 'alleles':
-            # If processing mode is 'alleles', update group_alleles_ids with all members of the cluster
-            group_alleles_ids.setdefault(cds, set()).update(clusters[cds])
-        else:
-            # Otherwise, add the CDS itself as an allele
-            group_alleles_ids.setdefault(cds, set()).add(cds)
+        group_reps_ids.setdefault(cds, set()).add(cds)
+        group_alleles_ids.setdefault(cds, set()).add(cds)
 
     # Iterate over each class in merged_all_classes
     for class_, cds_group in merged_all_classes.items():
@@ -2168,10 +2190,6 @@ def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_
     # Display info about the results obtained from processing the classes.
     # Get the total number of CDS reps considered for classification.
     count_cases: Dict[str, int] = {}
-
-    for class_, loci in merged_all_classes.items():
-        if class_ in ['4c', '5']:
-            count_cases[class_] = len(loci)
     # Check if loci is not empty
     total_loci: int = sum(count_cases.values()) + sum(count_classes_final.values())
     prf.print_message(f"Out of {len(to_blast_paths)}:", None)
@@ -2298,8 +2316,7 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     return drop_possible_loci_output
 
 def prepare_loci(schema_folder: str,
-                 constants: List[Any], 
-                 processing_mode: str, 
+                 constants: List[Any],
                  results_output: str) -> Tuple[
                      Dict[str, str], 
                      str, 
@@ -2320,9 +2337,6 @@ def prepare_loci(schema_folder: str,
         Path to the folder containing schema FASTA files.
     constants : list
         A list of constants used for processing.
-    processing_mode : str
-        Mode of processing, which determines how sequences are handled, four types, reps_vs_reps
-        reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
     results_output : str
         Path to the directory where results will be saved.
 
@@ -2358,8 +2372,8 @@ def prepare_loci(schema_folder: str,
     ff.create_directory(possible_new_loci_translation_folder)
 
     # Determine paths to sequences to be used for BLAST
-    to_blast_paths = schema if processing_mode.split('_')[0] == 'alleles' else schema_short
-    to_run_against = schema_short if processing_mode.split('_')[-1] == 'reps' else schema
+    to_blast_paths = schema_short
+    to_run_against = schema_short
 
     # Initialize dictionaries for alleles, translations, and frequencies
     all_alleles: Dict[str, List[str]] = {}

@@ -6,7 +6,7 @@ Description
 
 The `IdentifyParalogousLoci` module is a comprehensive tool designed to identify paralogous loci within a cg/wgMLST schema. This module is essential for researchers and bioinformaticians who need to detect and analyze paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions. Joining these paralogous loci under one locus in the final schema makes it more concise and leads to less confusion in later uses of the schema for reference.
 
-`IdentifyParalogousLoci` will identify these genes through alignment results and threshold filtering. The final clusters of loci will be written to the output recommendation file with the action "Add".
+`IdentifyParalogousLoci` will identify these genes through alignment results and threshold filtering. The final clusters of loci will be written to the output recommendation file with the action "Join".
 
 Features
 --------
@@ -21,7 +21,7 @@ Dependencies
 ------------
 
 - Python between 3.9 and 3.11
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
+- `BLAST <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -35,7 +35,7 @@ The `IdentifyParalogousLoci` module can be used as follows:
 
 .. code-block:: bash
 
-    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output -c 4 -b 0.6 -tt 11 -st 0.2 -pm alleles_vs_alleles --nocleanup
+    SR IdentifyParalogousLoci -s /path/to/schema -o /path/to/output -c 4 -b 0.6 -tt 11 -st 0.2 -pm reps_vs_reps --nocleanup
 
 Command-Line Arguments
 ----------------------
@@ -83,21 +83,33 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
 
 Algorithm Explanation
 ---------------------
 
 Algorithm to identify paralogous loci in a schema is shown below:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/IdentifyParalogousLoci.png
    :alt: IdentifyParalogousLoci Algorithm
    :width: 80%
    :align: center
+::
 
 
-The `IdentifyParalogousLoci` algorithm works by aligning the protein sequences of the loci using the BLASTp tool. These results are then filtered using BSR values, coordinate interception. The loci that were found to match and are in intercepting coordinates in the gene or are within a close interval will be written as final clusters. These clusters will be then recommended being joined when ran on the `CreateSchemaStructure` module.
+The `IdentifyParalogousLoci` algorithm works by aligning the protein sequences of the loci using the BLASTp tool. These results are then filtered using BSR values and coordinate interception. If the coordinates of the beginnig and end of the loci don't intercept, they are checked to see if they are still within the size threshold. This value can be set with the argument `--size-threshold`.
 
-It is advised that the user annotates these recommendations using the `--annotations` argument and then reviews the clusters to ensure that the clusters make biological sense. If there is a locus the user wishes to not join, they can change the action value to "Add".
+The BLAST output will have the personalized format 6 with columns:
+::
+    qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+::
+
+The loci that were found to match and are in intercepting coordinates in the gene or are within a close interval will be written as final clusters. These clusters will be then recommended being joined when ran on the `CreateSchemaStructure` module.
+
+It is advised that the user annotates these recommendations using the `--annotations` argument and then reviews the clusters to ensure that these make biological sense. If there is a locus the user wishes to not join, they can change the action value to "Add". The annotation option will use the `consolidate` mode from the `SchemaAnnoation` module, so the input format should comform with the rules set in the SchemaAnnotation documentation.
 
 Outputs
 -------
@@ -213,8 +225,6 @@ This is the main output file. The clusters here have passed all the filtering an
 
 It is recommended to still annotate this file and check the annotations in order to confirm if these clusters are correct when tanslated into genetic and proteome data.
 
-The annotation option will use the `consolidate` mode from the `SchemaAnnoation` module, so the input format should comform with the rules set in the SchemaAnnotation documentation.
-
 .. Note::
     This file can be used as the input of the `CreateSchemaStructure`.
 
@@ -264,3 +274,4 @@ If you encounter issues while using the `IdentifyParalogousLoci` module, conside
 - Verify that the paths to the schema and output directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- If it is a BLAST database related error, try deleting the BLAST folders in the output and run the command again and run the schema through the `AdaptLoci` as it checks for loci name conflicts.

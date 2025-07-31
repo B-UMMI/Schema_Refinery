@@ -125,6 +125,8 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
 
 The `proteome-table` argument should be a TSV file with the selected proteomes, from TrEMBL and swissprot, that can be downloaded directly from `UniProt <https://www.uniprot.org/proteomes?query=*>`_ . Have in mind that the downloaded folder will be zipped. Before putting it as an input unzip it and select only the TSV file.
 
@@ -156,6 +158,11 @@ The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the f
 
 
 For this process, the annoatations are first separated into swiss-prot and TrEMBL and then processed. From there, a BLASTp is done in order to align and macth the protein sequences from the input schema and the proteomes from UniProt.
+
+The BLAST output will have the personalized format 6 with columns:
+::
+    qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+::
 
 From the output, the `uniprot_annotations.tsv` file is the ine that compiles all the final annotations from swiss-prot and TrEMBL.
 
@@ -378,3 +385,4 @@ If you encounter issues while using the `SchemaAnnotation` module, consider the 
 - Verify that the paths to the schema and output directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- If it is a BLAST database related error, try deleting the BLAST folders in the output and run the command again and run the schema through the `AdaptLoci` as it checks for loci name conflicts.

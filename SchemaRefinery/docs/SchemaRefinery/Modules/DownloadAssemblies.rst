@@ -4,9 +4,11 @@ DownloadAssemblies - Download assemblies and their metadata from specified datab
 Description
 -----------
 
-The `DownloadAssemblies` module is a module designed to facilitate the download of genomic assemblies from specified databases. This module parses command-line arguments to initiate the download process, allowing users to efficiently retrieve assemblies from either the NCBI or ENA661 databases. The downloaded assemblies are stored in the specified output directory. It supports parallel downloads, filtering based on user-defined criteria, and the retrieval of associated metadata.
+The `DownloadAssemblies` module is a module designed to facilitate the download of genomic assemblies from specified databases. 
 
-`SchemaRefinery` has modules that depend on outputs from the chewBBACA modules `AlleleCall` and `SchemaCreate` or `PrepExternalSchema`. To run the first two the assemblies of the genomes are needed. This module should be used to obtain these assemblies in an easier and faster way. 
+`SchemaRefinery` has modules that depend on outputs from the chewBBACA modules `AlleleCall`, `SchemaCreate` and `PrepExternalSchema`. To run the first two the assemblies of the genomes are needed. This module should be used to obtain these assemblies in an easier and faster way.
+
+This module parses command-line arguments to initiate the download process, allowing users to efficiently retrieve assemblies from either the NCBI or ENA661 databases. The downloaded assemblies are stored in the specified output directory. It supports parallel downloads, filtering based on user-defined criteria, and the retrieval of associated metadata.
 
 
 Features
@@ -22,7 +24,7 @@ Dependencies
 ------------
 
 - Python between 3.9 and 3.11
-- NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+- `NCBI datasets <https://www.ncbi.nlm.nih.gov/datasets/>`_
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -74,6 +76,9 @@ Command-Line Arguments
     --download
         (Optional) If the assemblies that passed the filtering criteria should be downloaded.
 
+    --nocleanup
+        (Optional) Flag to indicate whether to skip cleanup after running the module.
+
     --debug
         (Optional) Flag to indicate whether to run the module in debug mode.
         Default: False
@@ -88,33 +93,35 @@ Algorithm Explanation
 The `DownloadAssemblies` Workflow is shown in the flowchart below:
 
 Workflow for downloading assemblies from NCBI:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/DownloadAssemblies_ncbi.png
    :alt: SchemaAnnotation Flowchart
    :width: 80%
    :align: center
-
+::
 
 
 Workflow for downloading assemblies from ENA661K:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/DownloadAssemblies_ena661k.png
    :alt: SchemaAnnotation Flowchart
    :width: 80%
    :align: center
-
-
+::
 
 Workflow for downloading metadata:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/DownloadAssemblies_fetch_metadata.png
    :alt: SchemaAnnotation Flowchart
    :width: 80%
    :align: center
+::
 
 
-
-For both databases the first step is to download the metadata of the assemblies in the chosen database. For the `NCBI` database, the entire metadata is downloaded and then filtering according to the input criteria. For the `ENA661K` database, a precompiled metadata table is used and filtered. 
+For both databases the first step is to download the metadata of the assemblies in the chosen database. For the `NCBI` database, the entire metadata is downloaded and then filtering according to the input criteria. For the `ENA661K` database, a precompiled metadata table is used and filtered. Thsi precompiled table is based on an online database that might not have specific taxons. In that case we suggest using the NCBI database.
 
 After the metadata is filtered, the assemblies that pass the filtering are downloaded alongside their matedata.
 

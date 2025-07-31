@@ -10,8 +10,7 @@ Prerequisites
 -------------
 
 - SchemaRefinery installed
-- Python 3.9 or higher
-- Biopython library (`pip install biopython`)
+- Python between 3.9 and 3.11
 - Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure
@@ -23,7 +22,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR IdentifySpuriousGenes -s '/path/to/tutorial_schema/schema_seed' -a '/path/to/Allele_calling' -o '/path/to/files/output_folder/IdentifySpuriousGenesUnclassifiedCDS' -m unclassified_cds -pm alleles_vs_alleles --t 11 -c 6
+    SR IdentifySpuriousGenes -s '/path/to/tutorial_schema/schema_seed' -a '/path/to/Allele_calling' -o '/path/to/files/output_folder/IdentifySpuriousGenesUnclassifiedCDS' -m unclassified_cds --t 11 -c 6
 
 - Replace `/path/to/files/` with the actual path to the files.
 
@@ -35,15 +34,20 @@ Procedure
     The first lines of the final clusters file should look like:
 ::
     
-    Loci_id	Action
-    GCA-001275545-protein1163	Join
-    GCA-000831145-protein1681	Join
-    GCA-000007265-protein582	Join
-    GCA-000012705-protein568	Join
-    GCA-000730215-protein582	Join
-    GCA-000831105-protein622	Join
-    GCA-000730255-protein607	Choice
+    Locus	Action	Class
+    GCA-000831145-protein1681	Join	1a
+    GCA-000831105-protein622	Join	1a
+    GCA-000012705-protein568	Join	1a
+    GCA-001275545-protein1163	Join	1a
+    GCA-000007265-protein582	Join	1a
+    GCA-000730215-protein582	Join	1a
+    GCA-000730255-protein607	Join	1a
+    GCA-000427075-protein661	Choice	3b
     #
+    GCA-000427055-protein712	Join	1a
+    GCA-000730255-protein664	Join	1a
+    #
+
 
 Example Output Structure
 ------------------------

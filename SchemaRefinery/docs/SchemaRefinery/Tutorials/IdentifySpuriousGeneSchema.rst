@@ -10,8 +10,7 @@ Prerequisites
 -------------
 
 - SchemaRefinery installed
-- Python 3.9 or higher
-- Biopython library (`pip install biopython`)
+- Python between 3.9 and 3.11
 - Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure
@@ -35,14 +34,21 @@ Procedure
     The first lines of the final clusters file should look like:
 ::
     
-    Loci_id	Action
-    GCA-000007265-protein1932	Join
-    GCA-000730215-protein1962	Join
-    GCA-001448985-protein1872	Choice
+   Locus	Action	Class
+    GCA-000730255-protein547	Join	1a
+    GCA-000427055-protein583	Join	1a
+    GCA-000730215-protein2131	Choice	4b
+    GCA-000196055-protein1223	Choice	1c
+    GCA-000007265-protein1233	Choice	1c
+    GCA-000007265-protein534	Choice	1c
+    GCA-000012705-protein1877	Choice	4b
     #
-    GCA-000427035-protein1421	Join
-    GCA-000427055-protein1391	Join
-    GCA-000782855-protein1355	Join
+    GCA-000730215-protein1962	Join	1a
+    GCA-000007265-protein1932	Join	1a
+    GCA-000196055-protein485	Choice	1c
+    GCA-000196055-protein1146	Choice	1c
+    GCA-000196055-protein398	Choice	1c
+    GCA-000427075-protein1286	Choice	1c
     #
 
 

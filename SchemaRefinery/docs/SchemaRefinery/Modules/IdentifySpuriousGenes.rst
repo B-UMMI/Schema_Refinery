@@ -21,8 +21,8 @@ Dependencies
 ------------
 
 - Python between 3.9 and 3.11
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
-- ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
+- `BLAST <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_
+- `ChewBBACA install page <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -97,11 +97,6 @@ Command-Line Arguments
         Choices: unclassified_cds, schema, schema_vs_schema
         Default: schema
 
-    -pm, --processing-mode
-        (Optional) Mode to run the module.
-        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-        Default: reps_vs_alleles
-
     -c, --cpu
         (Optional) Number of CPUs to run BLAST instances.
         Default: 1
@@ -117,38 +112,52 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
-The `--allelecall-directory` argument must be the folder obtained using the chewBBACA module AlleleCall with the arguments --no-cleanup and --output-unclassified. Without these arguments the needed files to run the `IdentifySpuriousGenes` module will not run.
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
+The `--allelecall-directory` argument must be the folder obtained using the chewBBACA module AlleleCall with the arguments --no-cleanup and --output-unclassified. Without these arguments the needed files to run the `IdentifySpuriousGenes` module will not be saved in the output folder. 
 
 The options `--schema-directory` and `--allelecall-directory` must have two paths each if the `run_mode` is `schema_vs_schema`. One path per schema and each schema must have a respective AlleleCall directory.
-
-.. Note::
-    In `processing_mode` the option `reps_vs_reps` is the fastest and covers most of the cases.
-    The option `alleles_vs_alleles` takes much more time and changes the recommendation of around more 1% of the total loci. 
-    Choose the processing mode according to your computer capabilities and research needs.
 
 Algorithm Explanation
 ---------------------
 
-Algorithm to identify new loci based on the CDS that are not in the schema:
-
-.. image:: source/IdentifySpuriousGenes_unclassifiedCDS.png
-   :alt: Algorithm for unclassified CDS
-   :width: 80%
-   :align: center
-
 Algorithm to indentify spurious loci based on schema inputs for run modes schema and schema_vs_schema:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/IdentifySpuriousGenes_schema.png
    :alt: Algorithm to identify spurious loci
    :width: 80%
    :align: center
+::
 
+The module will only use the representatives of the schema. Working with all the alleles is not an option as it would take too much computational power for very little new information.
 
 This classification algorithm goes through 2 rounds of BLAST. First a BLASTp is done, and the results filtered based on BSR and pident thresholds. The loci that are not matched are then passed to a BLASTn processing. By running the BLASTn after the BLASTp we ensure that valid CDS are still caught and matched regardless if they contain frameshifts or are pseudo or partial genes. In this way we obtain more complete results and matches. 
 
-The BLAST tool has a limit of hits written per loci in the output file. Using a value for this limit that will not overload the space alocated for our tool, it can happen that not all matches are written down if the loci have a high number of alleles. For that reason, all BLAST processes have the loci being aligned as a query, including all its alleles, removed from the databased used for that run. This is done to ensure that for all loci that will have a match, that match won't be with itself.
+The BLAST tool has a limit of hits written per loci in the output file. Using a value for this limit that will not overload the space alocated for our tool, it can happen that not all matches are written down if the loci have a high number of alleles. For that reason, all BLAST processes have the locus being aligned as a query, including all its alleles, removed from the databased used for that run. This is done to ensure that for all loci that will have a match, that match won't be with itself.
+
+The BLAST output will have the personalized format 6 with columns:
+::
+    qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+::
+
+Algorithm to identify new loci based on the CDS that are not in the schema:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: source/IdentifySpuriousGenes_unclassifiedCDS.png
+   :alt: Algorithm for unclassified CDS
+   :width: 80%
+   :align: center
+::
+
+This running mode has an extra step after the frequency has been calculated. The unclassified CDS are not in the structure of loci with alleles. The CDS will be clustered into proto loci based on similarity and size of sequences. The clustering thresholds used can be set with the arguments. 
+
+The ID of the representative CDS will be used as the ID for all the CDSs in that cluster, which are now the alleles of the proto loci.
+
 
 Each BLAST results are parsed and given a class based on the following rules:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/algorithm_classification.png
    :alt: Classification algorithm
@@ -368,8 +377,7 @@ Columns description:
     z, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     ...
 
-Columns description:
-
+Columns description
 ::
 
     Possible_new_loci_ID: The identifier for the possible new locus.
@@ -377,7 +385,7 @@ Columns description:
 
 .. csv-table:: **recommendations.tsv**
     :header: "Locus", "Action", "Class"
-    :widths: 15, 20
+    :widths: 15, 20, 5
 
     x, Join, 1a
     y, Join, 1a
@@ -391,17 +399,20 @@ Columns description:
     ...
 
 Columns description:
-
 ::
 
     Locus: Name of the locus to be joined in the clustered.
     Action: Action to be taken (Join, Choice, Drop or Add).
+    Class: Class that the loci was classified with.
     #: Separates each cluster of loci.
 
 This is the main output file as it can be used as the input of the `CreateSchemaStructure`.
 It is adviced to annotate this file usinf the argument `--annotations` in order to more easily review and confirm the resulting clusters and actions. For this process the user can consult the previews files as well as proteome and functional annotations.
 
 Some loci are in single clusters and with action "Drop". In these cases these loci were inserted in a cluster with one other loci both marked "Join" but due to low frequency this one will be dropped, and the other loci will be changed into "Add". To check the full cluster relationships consult the `related_matches.tsv` file.
+
+.. Note::
+    Subgroups can be created out of bigger clusters by adding a new line with only "#". It can be useful for making analysing big clusters easier or to join only specific loci in that group.
 
 .. Note:: 
     Before passing the recommendation file to the `CreateSchemaStructure` module make sure there are no "Choice" in the action column. After review the clusters the user should change these actions into "Join", "Drop" or "Add".
@@ -485,3 +496,4 @@ If you encounter issues while using the `IdentifySpuriousGenes` module, consider
 - Verify that the paths to the schema, output, and allele call directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- If it is a BLAST database related error, try deleting the BLAST folders in the output and run the command again and run the schema through the `AdaptLoci` as it checks for loci name conflicts.

@@ -163,7 +163,7 @@ def main(args: Namespace) -> None:
 
     # Check if 'consolidate' is in the annotation options
     if 'consolidate' in args.annotation_options:
-        prf.print_message("Consolidating annoations...", "info")
+        prf.print_message("Consolidating annotations...", "info")
         merged_file_path = os.path.join(output_d, "consolidated_annotations.tsv")
         consolidated_annotations = None
         consolidated_annotations: str = cs.consolidate_annotations(args.consolidate_annotations,
