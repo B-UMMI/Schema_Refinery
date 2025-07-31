@@ -11,7 +11,7 @@ Output files and folders description for IdentifySpuriousGenes module
     1_schema_processing
         Folder containing schema processing results.
 
-        master.fasta
+        master_nucleotide.fasta
             Master FASTA file.
 
         schema
@@ -26,17 +26,17 @@ Output files and folders description for IdentifySpuriousGenes module
             ...
                 Other loci files.
 
-        short
-            Folder containing short loci files.
+            short
+                Folder containing short loci files.
 
-            loci_x.fasta
-                Short FASTA file for locus x.
+                loci_x.fasta
+                    Short FASTA file for locus x.
 
-            new_loci_y.fasta
-                Short FASTA file for new locus y.
+                new_loci_y.fasta
+                    Short FASTA file for new locus y.
 
-            ...
-                Other short loci files.
+                ...
+                    Other short loci files.
 
         schema_translation_folder
             Folder containing schema translations.
@@ -104,6 +104,18 @@ Output files and folders description for IdentifySpuriousGenes module
             blastn_results_matches_translations
                 Folder containing BLASTn results matches translations.
 
+                cluster_rep_translation
+                    Folder containing BLASTn results of representative matches translations.
+
+                    cluster_matches_translation_x.tsv
+                        Cluster representatives matches translation for x.
+
+                    cluster_matches_translation_y.tsv
+                        Cluster representatives matches translation for y.
+
+                    ...
+                        Other cluster representatives matches translations.
+
                 cluster_matches_translation_x.tsv
                     Cluster matches translation for x.
 
@@ -149,10 +161,10 @@ Output files and folders description for IdentifySpuriousGenes module
             blast_by_cluster
                 Folder containing BLAST results by cluster.
 
-                cluster_x.tsv
+                blast_joined_cluster_x.tsv
                     BLAST results for cluster x.
 
-                cluster_y.tsv
+                blast_retained_y.tsv
                     BLAST results for cluster y.
 
                 ...
@@ -161,32 +173,14 @@ Output files and folders description for IdentifySpuriousGenes module
             blast_results_by_class
                 Folder containing BLAST results by class.
 
-                class_1.tsv
+                class_1a.tsv
                     BLAST results for class 1.
 
-                class_2.tsv
+                class_2a.tsv
                     BLAST results for class 2.
 
                 ...
                     Other class results.
-
-        cds_id_changes.tsv
-            TSV file containing changes in CDS IDs.
-
-        dropped_cds.tsv
-            TSV file containing dropped CDS.
-
-        Graph_folder
-            Folder containing graphs.
-
-            All_of_CDS_graphs.html
-                HTML file containing all CDS graphs.
-
-            graphs_class_1a.html
-                HTML file containing class 1a graphs.
-
-            ...
-                Other graph files.
 
         **count_results_by_cluster.tsv**
             TSV file containing count results by cluster.
@@ -196,6 +190,9 @@ Output files and folders description for IdentifySpuriousGenes module
 
         **recommendations.tsv**
             TSV file containing recommendations.
+
+        **recommendations_annotations.tsv**
+            TSV file containing the annotations of the recommendations loci.
 
         **related_matches.tsv**
             TSV file containing related matches.
@@ -270,6 +267,18 @@ Output files and folders description for IdentifySpuriousGenes module
             blastn_results_matches_translations
                 Folder containing BLASTn results matches translations.
 
+                cluster_rep_translation
+                    Folder containing BLASTn results of representative matches translations.
+
+                    cluster_matches_translation_x.tsv
+                        Cluster representatives matches translation for x.
+
+                    cluster_matches_translation_y.tsv
+                        Cluster representatives matches translation for y.
+
+                    ...
+                        Other cluster representatives matches translations.
+
                 cluster_matches_translation_x.tsv
                     Cluster matches translation for x.
 
@@ -315,10 +324,10 @@ Output files and folders description for IdentifySpuriousGenes module
             blast_by_cluster
                 Folder containing BLAST results by cluster.
 
-                cluster_x.tsv
+                blast_joined_cluster_x.tsv
                     BLAST results for cluster x.
 
-                cluster_y.tsv
+                blast_retained_y.tsv
                     BLAST results for cluster y.
 
                 ...
@@ -327,10 +336,10 @@ Output files and folders description for IdentifySpuriousGenes module
             blast_results_by_class
                 Folder containing BLAST results by class.
 
-                class_1.tsv
+                class_1a.tsv
                     BLAST results for class 1.
 
-                class_2.tsv
+                class_2a.tsv
                     BLAST results for class 2.
 
                 ...
@@ -363,6 +372,9 @@ Output files and folders description for IdentifySpuriousGenes module
         **recommendations.tsv**
             TSV file containing recommendations.
 
+        **recommendations_annoations.tsv**
+            TSV file containing the annotations of the recommendations loci.
+
         **related_matches.tsv**
             TSV file containing related matches.
 
@@ -377,6 +389,3 @@ Output files and folders description for IdentifySpuriousGenes module
 
             **...**
                 Other temporary FASTA files.
-
-        **temp_fastas_path.txt**
-            Text file containing paths to temporary FASTA files.

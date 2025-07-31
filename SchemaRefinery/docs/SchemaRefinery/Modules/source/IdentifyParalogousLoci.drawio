@@ -1,0 +1,104 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" scale="1" border="0" version="27.1.4">
+  <diagram name="Page-1" id="Sayjuu3OWUjIjzeAwM1c">
+    <mxGraphModel dx="1464" dy="663" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-1" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-2" target="a3z0yzDK9rBx7ZHJhSU1-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3z0yzDK9rBx7ZHJhSU1-2" value="Translate Schema" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="82" y="150" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="a3z0yzDK9rBx7ZHJhSU1-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-3" target="a3z0yzDK9rBx7ZHJhSU1-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3z0yzDK9rBx7ZHJhSU1-3" value="Schema" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="88" y="60" width="88" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-3" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-9" target="FBvoDg1qIf4s0K6SP8YV-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3z0yzDK9rBx7ZHJhSU1-9" value="Run BLASTp" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="220" y="270" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="a3z0yzDK9rBx7ZHJhSU1-11" value="Write results" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="530" y="270" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="a3z0yzDK9rBx7ZHJhSU1-24" value="Blast_output" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.multi-document;whiteSpace=wrap;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+          <mxGeometry x="226" y="420" width="88" height="60" as="geometry" />
+        </mxCell>
+        <UserObject label="paralogous_loci_&lt;div&gt;report.tsv&lt;/div&gt;" link="master_file.fasta" id="a3z0yzDK9rBx7ZHJhSU1-26">
+          <mxCell style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+            <mxGeometry x="560" y="420" width="100" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="paralogous_loci_&lt;div&gt;report_cluster_&lt;span style=&quot;background-color: initial;&quot;&gt;by_&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;id.&lt;/span&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;tsv&lt;/span&gt;&lt;/div&gt;" link="master_file.fasta" id="a3z0yzDK9rBx7ZHJhSU1-29">
+          <mxCell style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+            <mxGeometry x="680" y="420" width="100" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-10" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;exitX=0.52;exitY=0.827;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-30" target="Y8GRaA81SCZ0m-ySaU3--1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="paralogous_&lt;div&gt;loci_final_&lt;/div&gt;&lt;div&gt;recommendations&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;.tsv&lt;/span&gt;&lt;/div&gt;" link="master_file.fasta" id="a3z0yzDK9rBx7ZHJhSU1-30">
+          <mxCell style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+            <mxGeometry x="400" y="420" width="136" height="80" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="xqS-gfhVwGy7xidowy4n-13" value="Processes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="660" y="90" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="xqS-gfhVwGy7xidowy4n-14" value="Temporary files" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+          <mxGeometry x="530" y="160" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="xqS-gfhVwGy7xidowy4n-15" value="Input files" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="530" y="90" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="xqS-gfhVwGy7xidowy4n-16" value="Output files" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+          <mxGeometry x="660" y="160" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="xqS-gfhVwGy7xidowy4n-17" value="Color description:" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="430" y="60" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xqS-gfhVwGy7xidowy4n-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-9" target="a3z0yzDK9rBx7ZHJhSU1-24" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Y8GRaA81SCZ0m-ySaU3--1" value="Annotation using consolidate" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="420" y="540" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-11" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1" source="Y8GRaA81SCZ0m-ySaU3--2" target="Y8GRaA81SCZ0m-ySaU3--1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="Annotation file" link="master_file.fasta" id="Y8GRaA81SCZ0m-ySaU3--2">
+          <mxCell style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#E1D5E7;strokeColor=#9673A6;" parent="1" vertex="1">
+            <mxGeometry x="260" y="560" width="100" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-4" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1" source="FBvoDg1qIf4s0K6SP8YV-2" target="a3z0yzDK9rBx7ZHJhSU1-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-2" value="Filter results on BSR and coordinates" style="rounded=1;whiteSpace=wrap;html=1;absoluteArcSize=1;arcSize=14;strokeWidth=2;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="375" y="270" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-7" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-11" target="a3z0yzDK9rBx7ZHJhSU1-30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-8" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-11" target="a3z0yzDK9rBx7ZHJhSU1-26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-9" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="a3z0yzDK9rBx7ZHJhSU1-11" target="a3z0yzDK9rBx7ZHJhSU1-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="paralogous_&lt;div&gt;annotations.tsv&lt;/div&gt;" link="master_file.fasta" id="FBvoDg1qIf4s0K6SP8YV-12">
+          <mxCell style="strokeWidth=2;html=1;shape=mxgraph.flowchart.document2;whiteSpace=wrap;size=0.25;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+            <mxGeometry x="560" y="560" width="136" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="FBvoDg1qIf4s0K6SP8YV-13" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;" edge="1" parent="1" source="Y8GRaA81SCZ0m-ySaU3--1" target="FBvoDg1qIf4s0K6SP8YV-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

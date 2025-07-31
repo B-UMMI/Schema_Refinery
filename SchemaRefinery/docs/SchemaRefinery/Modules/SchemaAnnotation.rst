@@ -5,10 +5,14 @@ Description
 -----------
 
 The `SchemaAnnotation` module is a versatile tool designed to facilitate the annotation of genomic schemas. This module parses command-line arguments and initiates the schema annotation process, providing a flexible and user-friendly interface for researchers and bioinformaticians.
+
+This module should be used as aid for reviewing the outputs of the other modules, as the annotations can make reviewing clusters and matches easier. It can also be used to simply annotated the final schema, or the schema being used for easier consultation later. 
+
 Features
 --------
 
 - Annotating schemas in a directory.
+- Join different annotation files.
 - Configurable parameters for the annotation process.
 - Support for parallel processing using multiple CPUs.
 - Option to skip cleanup after running the module.
@@ -16,7 +20,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.9 or higher
+- Python between 3.9 and 3.11
 - BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 - Install requirements using the following command:
 
@@ -46,7 +50,7 @@ Command-Line Arguments
 
     -ao, --annotation-options
         (Required) Annotation options to run.
-        Choices: uniprot-proteomes, genbank-files, match-schemas, consolidate.
+        Choices: uniprot-proteomes, genbank, match-schemas, consolidate.
 
     -pt, --proteome-table
         (Optional) TSV file downloaded from UniProt that contains the list of proteomes.
@@ -54,6 +58,7 @@ Command-Line Arguments
 
     -gf, --genbank-files
         (Optional) Path to the directory that contains Genbank files with annotations to extract.
+        Each genbank file in this folder should be named after the ID it represents.
         Should be used with --annotation-options genbank.
 
     -ca, --chewie-annotations
@@ -63,11 +68,17 @@ Command-Line Arguments
         (Optional) Path to the tsv output file from the MatchSchemas module (Match_Schemas_Results.tsv).
 
     -ma, --match-annotations
-        (Optional) Path to the subject schema annotations file. This argument is needed by the Match Schemas sub-module.
-		Should be used with --annotation-options match_schema and --matched-schema. TSV file should contain following columns: Locus, Protein_ID, Protein_product, Protein_short_name, Protein_BSR.
+        (Optional) Path to the annotations file of one of the schemas used in the match schema module. This argument is needed by the Match Schemas submodule.
+		Should be used with --annotation-options match_schema and --matched-schema.
+    
+    -cn, --consolidate-annotations
+        (Optional) 2 or more paths to the files with the annotations that are to be consolidated.
+    
+    -cc, --consolidate-cleanup
+        (Optional) For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.
 
     --bsr
-        (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus. This argument is optional for the Match Schemas sub-module.
+        (Optional) Minimum BSR value to consider aligned alleles as alleles for the same locus. This argument is optional for the Match Schemas submodule.
         Default: 0.6
 
     -t, --threads
@@ -103,12 +114,6 @@ Command-Line Arguments
         (Optional) List of Proteome IDs to add to final results.
         Default: []
     
-    -cn, --consolidate-annotations
-        (Optional) 2 or more paths to the files with the annotations that are to be consolidated.
-    
-    -cc, --consolidate-cleanup
-        (Optional) For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.
-
     --nocleanup
         (Optional) Flag to indicate whether to skip cleanup after running the module.
 
@@ -119,6 +124,16 @@ Command-Line Arguments
     --logger
         (Optional) Path to the logger file.
         Default: None
+
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
+The `proteome-table` argument should be a TSV file with the selected proteomes, from TrEMBL and swissprot, that can be downloaded directly from `UniProt <https://www.uniprot.org/proteomes?query=*>`_ . Have in mind that the downloaded folder will be zipped. Before putting it as an input unzip it and select only the TSV file.
+
+The `genbank-files` argument should be a folder with gbff files named after each genome. This implies some file manipulation so that the names are correct and under a singular folder.
+
+For the annotation files from the option "consolidate" and "match_schemas" it is important to ensure that the loci names match between files. If not, the algorithm will not be able to match the annotations to the loci.
+
 
 Algorithm Explanation
 ---------------------
@@ -131,12 +146,25 @@ The following is the flowchart for the `SchemaAnnotation` module:
    :width: 80%
    :align: center
 
+
+After each annotation files are processed, the annotations are match to their locus based on the locus name or alignment of sequences.
+
 The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the following Flowchart:
 
 .. image:: source/uniprot_proteomes_annotation.png
    :alt: SchemaAnnotation UniProt Proteomes Flowchart
    :width: 80%
    :align: center
+
+
+For this process, the annoatations are first separated into swiss-prot and TrEMBL and then processed. From there, a BLASTp is done in order to align and macth the protein sequences from the input schema and the proteomes from UniProt.
+
+The BLAST output will have the personalized format 6 with columns:
+::
+    qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+::
+
+From the output, the `uniprot_annotations.tsv` file is the ine that compiles all the final annotations from swiss-prot and TrEMBL.
 
 The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
 
@@ -146,7 +174,10 @@ The `SchemaAnnotation` module annotates using `GenBank files` based on the follo
    :align: center
 
 
-For the options `Match Schemas` and `Consolidate` the process is the merging of the given files based on the Locus columns that are the same between files.
+For this algorithm, the annotations are also matched through a BLASTp alignment. The final output file will have the annotations given to the best match of all the loci.
+
+For the options `Match Schemas` and `Consolidate` the process is the merging of the given files based on the locus columns that are the have the highest amount of matches between files. For these modes it is not necessary to give an inout schema as an input argument. Be aware that the loci names should match in between the annotations files and the loci column to be merged should be one of the first two columns in the files. 
+
 
 Outputs
 -------
@@ -299,7 +330,7 @@ Report files description
     z, c, 1.0, hashes_dna, tr|A0AAE9TM16|A0AAE9TM16_STRAG, PTS fructose transporter subunit IIC, NCTC8184_00378, 1.0, , , , 
     ...
 
-columns description:
+Columns description:
 
 ::
 
@@ -321,14 +352,16 @@ columns description:
     BSR: The BSR value for the best loci matches.
     Process: Process where that match was found in MatchSchemas.
 
-Note: The consolidated_annotations.tsv' contains all of the annotations that user chose to annotate with in input arguments.
+.. Note::
+    The `consolidated_annotations.tsv` contains all the annotations that user chose to annotate given in the "-cn" argument.
+
 Consolidate column suffixes:
-::
-    _file_x 
-        x being the number of the file that column comes from.
-        Which file corresponds to which number is specified in the output log file.
-    None
-        The columns that have a unique header or are the first instance of that header will not have any suffix.
+
+- _file_x 
+    x being the number of the file that column comes from.
+    Which file corresponds to which number is specified in the output log file.
+- None
+    The columns that have a unique header or are the first instance of that header will not have any suffix.
     
 
 Examples
@@ -352,3 +385,4 @@ If you encounter issues while using the `SchemaAnnotation` module, consider the 
 - Verify that the paths to the schema and output directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- If it is a BLAST database related error, try deleting the BLAST folders in the output and run the command again and run the schema through the `AdaptLoci` as it checks for loci name conflicts.

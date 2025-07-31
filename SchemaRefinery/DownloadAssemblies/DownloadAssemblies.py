@@ -99,6 +99,9 @@ def main(args: Any) -> None:
     args : Any
         Command-line arguments passed to the script.
     """
+
+    output_d= os.path.abspath(args.output_directory)
+
     # Create criteria dictionary
     if args.input_file:
         criteria: Dict[str, Any] = args.input_file
@@ -107,8 +110,8 @@ def main(args: Any) -> None:
         pf.print_message("No criteria provided. Fetching all assemblies.", "info")
 
     # Create output directory if it does not exist
-    if not os.path.isdir(args.output_directory):
-        os.mkdir(args.output_directory)
+    if not os.path.isdir(output_d):
+        os.mkdir(output_d)
 
     pf.print_message(f"Fetching assemblies from {args.database} datasets.", "info")
     if 'NCBI' in args.database:
@@ -117,7 +120,7 @@ def main(args: Any) -> None:
          assemblies_zip] = ncbi_datasets.main(args.input_table,
                                                     args.taxon,
                                                     criteria,
-                                                    args.output_directory,
+                                                    output_d,
                                                     args.download,
                                                     args.api_key)
     else:
@@ -132,7 +135,7 @@ def main(args: Any) -> None:
             sr_path: str = find_local_conda_env()
         except:
             # If not using conda, use output directory instead
-            sr_path = os.path.join(args.output_directory, 'ena661k_files')
+            sr_path = os.path.join(output_d, 'ena661k_files')
 
         [failed_to_download,
          ena_metadata_directory,
@@ -140,7 +143,7 @@ def main(args: Any) -> None:
          assemblies_directory,
          selected_file_ena661k] = ena661k_assembly_fetcher.main(sr_path,
                                                             args.taxon,
-                                                            args.output_directory,
+                                                            output_d,
                                                             args.download,
                                                             criteria,
                                                             args.retry,
@@ -153,7 +156,7 @@ def main(args: Any) -> None:
         selected_file_ena661k = None
 
     if args.fetch_metadata:
-        all_metadata_directory: str = os.path.join(args.output_directory, 'metadata_all')
+        all_metadata_directory: str = os.path.join(output_d, 'metadata_all')
         if not os.path.exists(all_metadata_directory):
             ff.create_directory(all_metadata_directory)
         linked_ids_file: str = os.path.join(all_metadata_directory, 'id_matches.tsv')
@@ -216,7 +219,7 @@ def main(args: Any) -> None:
     if not args.no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
-        ff.cleanup(args.output_directory, [all_metadata_directory,
+        ff.cleanup(output_d, [all_metadata_directory,
                                            assemblies_directory,
                                            assemblies_zip,
                                            selected_file_ena661k,

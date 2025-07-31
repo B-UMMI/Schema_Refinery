@@ -3,10 +3,14 @@
 
 import os
 import sys
+import subprocess
+import pandas as pd
+import shutil
 from typing import Any, List, Dict, Optional, Set, Tuple
 
 
 try:
+    from SchemaAnnotation import (consolidate as cs)
     from utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
@@ -18,8 +22,10 @@ try:
                                         Types as tp,
                                         print_functions as pf,
                                         logger_functions as logf,
+                                        time_functions as ti,
                                         globals as gb)
 except ModuleNotFoundError:
+    from SchemaRefinery.SchemaAnnotation import (consolidate as cs)
     from SchemaRefinery.utils import (core_functions as cof,
                                         file_functions as ff,
                                         sequence_functions as sf,
@@ -31,9 +37,10 @@ except ModuleNotFoundError:
                                         Types as tp,
                                         print_functions as pf,
                                         logger_functions as logf,
+                                        time_functions as ti,
                                         globals as gb)
 
-def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optional[str], str, str, str, Optional[str], str, str]:
+def create_directories(output_directory: str, run_mode: str) -> Tuple[str, str, str, str, str, Optional[str], Optional[str], str, str]:
     """
     Create necessary directories for the processing pipeline.
 
@@ -51,87 +58,169 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, Optio
     """
     # Create base output directory
     ff.create_directory(output_directory)
+    output_d= os.path.abspath(output_directory)
     
     # Create initial processing output directory based on run mode
     initial_processing_output: str
     schema_folder: Optional[str]
     if run_mode == 'unclassified_cds':
-        initial_processing_output = os.path.join(output_directory, '1_CDS_processing')
+        initial_processing_output = os.path.join(output_d, '1_CDS_processing')
+        if os.path.isdir(initial_processing_output):
+            shutil.rmtree(initial_processing_output)
         ff.create_directory(initial_processing_output)
         schema_folder = None
     else:
-        initial_processing_output = os.path.join(output_directory, '1_schema_processing')
+        initial_processing_output = os.path.join(output_d, '1_schema_processing')
+        if os.path.isdir(initial_processing_output):
+            shutil.rmtree(initial_processing_output)
         schema_folder = os.path.join(initial_processing_output, 'schema')
         ff.create_directory(schema_folder)
 
     # Create BLAST processing directories
-    blast_output: str = os.path.join(output_directory, '2_BLAST_processing')
-    blastn_output: str = os.path.join(blast_output, '1_BLASTn_processing')
-    blast_db: str = os.path.join(blastn_output, 'blast_db_nucl')
+    blast_output: str = os.path.join(output_d, '2_BLAST_processing')
+    if os.path.isdir(blast_output):
+            shutil.rmtree(blast_output)
+    blastp_output: str = os.path.join(blast_output, '1_BLASTp_processing')
+    blast_db: str = os.path.join(blastp_output, 'blast_db_prot')
     ff.create_directory(blast_db)
 
     # Create representatives BLASTn folder if run mode is 'unclassified_cds'
     representatives_blastn_folder: Optional[str]
     if run_mode == 'unclassified_cds':
+        blastn_output: str = os.path.join(blast_output, '2_BLASTn_processing')
+        if os.path.isdir(blastn_output):
+            shutil.rmtree(blastn_output)
         representatives_blastn_folder = os.path.join(blastn_output, 'cluster_representatives_fastas_dna')
         ff.create_directory(representatives_blastn_folder)
+        representatives_blastn_folder_against = os.path.join(blastn_output, 'cluster_representatives_fastas_against')
+        ff.create_directory(representatives_blastn_folder_against)
     else:
         representatives_blastn_folder = None
+        representatives_blastn_folder_against = None
         
     # Create results output directories
-    results_output: str = os.path.join(output_directory, '3_processing_results')
+    results_output: str = os.path.join(output_d, '3_processing_results')
+    if os.path.isdir(results_output):
+            shutil.rmtree(results_output)
     blast_results: str = os.path.join(results_output, 'blast_results')
     ff.create_directory(blast_results)
     
-    return initial_processing_output, schema_folder, blast_output, blastn_output, blast_db, representatives_blastn_folder, results_output, blast_results
+    return initial_processing_output, schema_folder, blast_output, blastp_output, blast_db, representatives_blastn_folder, representatives_blastn_folder_against, results_output, blast_results
 
 
-def identify_spurious_genes(schema_directory: str, output_directory: str, allelecall_directory: str,
-                            possible_new_loci: str, constants: List[Any], temp_paths: List[str],
-                            run_mode: str, processing_mode: str, cpu: int, no_cleanup: bool) -> None:
+def calculate_frequency(schema_folder: str, 
+                        allelecall_directory: str,
+                        second_schema_folder: str, 
+                        second_allelecall_directory: str,
+                        temp_paths: List[str],
+                        constants: List[Any], 
+                        initial_processing_output: str,
+                        run_mode: str, results_output: str) -> Tuple[Dict[str, int], Dict[str, int], Dict[str, int], Dict[str, List[str]], Dict[str, str], Dict[str, str], Dict[str, int]]:
     """
-    Identify spurious genes in the given schema.
+    Calculates the frequency in the genomes in 3 different was depending in the run mode.
 
     Parameters
     ----------
-    schema_directory : str
-        Path to the schema directory.
-    output_directory : str
-        Path to the output directory.
+    schema_folder : str
+        Path to the folder containing schema FASTA files.
     allelecall_directory : str
-        Path to the allele call directory.
-    possible_new_loci : str
-        Path to possible new loci.
-    constants : List[Any]
-        List of constants used in the process.
+        Path to the directory containing allele call results.
+    second_schema_folder : str
+        Path to the folder containing schema FASTA files of the second schema.
+    second_allelecall_directory : str
+        Path to the directory containing allele call results for the second schema.
     temp_paths : List[str]
         List of temporary paths.
+    constants : List[Any]
+        List of constants used in the process.
+    initial_processing_output: str
+        initial processing output directory based on run mode.
     run_mode : str
-        Mode of running the process.
-    processing_mode : str
-        Mode of processing.
-    cpu : int
-        Number of CPUs to use.
-    no_cleanup : bool
-        Flag to indicate whether to clean up temporary files.
+        Mode for running the module.
+        schema, unclassified_cds, schema_vs_schema
+    results_output : str
+        Path to the directory where results will be saved.
 
     Returns
     -------
-    None
+    Tuple
+        - frequency_in_genomes (Dict[str, int]): Dictionary of loci frequencies in genomes.
+        - frequency_in_genomes_second_schema (Dict[str, int]): Dictionary of loci frequencies in genomes from the second given schema.
+        - frequency_cds (Dict[str, int]): Dictionary of cds frequencies in genomes.
+        - cds_presence_in_genomes (Dict[str, List[str]]): Dictionary of the presence of the cds in the genomes.
+        - all_nucleotide_sequences (Dict[str, str]): Dictionary with CDS IDs as keys and sequences as values.
+        - dropped_alleles (Dict[str, str]): Dropped CDS dictionary.
+        - cds_size (Dict[str, int]): Dictionary of the size of the cds.
     """
-    
-    # Create directories structure.
-    (initial_processing_output,
-     schema_folder,
-     blast_output,
-     blastn_output,
-     blast_db,
-     representatives_blastn_folder,
-     results_output,
-     blast_results) = create_directories(output_directory, run_mode)
-    
-    # Process unclassified CDS, retrieving and clustering
+
+    # Initialize the output dictionary
+    frequency_in_genomes: Dict[str, int] = {}
+    frequency_in_genomes_second_schema: Dict[str, int] = {}
+    cds_present: str = ""
+    cds_presence_in_genomes: Dict[str, List[str]] = {}
+    all_nucleotide_sequences: Dict[str, str] = {}
+    dropped_alleles: Dict[str, str] = {}
+    frequency_cds: Dict[str, int] = {}
+    cds_size: Dict[str, int] = {}
+
+    if run_mode == 'schema':
+
+        pf.print_message("Calculate frequencies in genomes for the schema run_mode.", 'info')
+        schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
+        cds_present = os.path.join(allelecall_directory, "results_alleles.tsv")
+        df = pd.read_csv(cds_present, sep = '\t', dtype = object)
+        allele_columns = df.columns[1:]
+
+        pf.print_message('Calculating frequencies of each locus in each genome...', 'info')
+        for loci, loci_path in schema.items():
+            loci_id = ff.file_basename(loci).split('.')[0]
+            # For each locus count the frequency (don't count LNF, ASM or ALM)
+            matching_cols = [col for col in allele_columns if loci_id in col]
+            # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
+            presence_mask = df[matching_cols].applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
+            # Count the frequency of each locus in all genome
+            genome_presence = presence_mask.any(axis=1)
+            frequency_in_genomes[loci_id] = genome_presence.sum()
+
+    if run_mode == 'schema_vs_schema':
+
+        pf.print_message("Calculate frequencies in genomes of the first schema for the schema_vs_schema run_mode.")
+        schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
+        cds_present = os.path.join(allelecall_directory, "results_alleles.tsv")
+        df = pd.read_csv(cds_present, sep = '\t', dtype = object)
+        allele_columns = df.columns[1:]
+
+        pf.print_message('Calculating frequencies of each locus in each genome...', 'info')
+        for loci, loci_path in schema.items():
+            loci_id = ff.file_basename(loci).split('.')[0]
+            # For each locus count the frequency (don't count LNF, ASM or ALM)
+            matching_cols = [col for col in allele_columns if loci_id in col]
+            # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
+            presence_mask = df[matching_cols].applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
+            # Count the frequency of each locus in all genome
+            genome_presence = presence_mask.any(axis=1)
+            frequency_in_genomes[loci_id] = genome_presence.sum()
+        
+        pf.print_message("Calculate frequencies in genomes of the second schema for the schema_vs_schema run_mode.")
+        second_schema = {fastafile: os.path.join(second_schema_folder, fastafile) for fastafile in os.listdir(second_schema_folder) if fastafile.endswith('.fasta')}
+        cds_present_ss = os.path.join(second_allelecall_directory, "results_alleles.tsv")
+        df = pd.read_csv(cds_present_ss, sep = '\t', dtype = object)
+        allele_columns_ss = df.columns[1:]
+
+        pf.print_message('Calculating frequencies of each locus in each genome...', 'info')
+        for loci, loci_path in second_schema.items():
+            loci_id = ff.file_basename(loci).split('.')[0]
+            # For each locus count the frequency (don't count LNF, ASM or ALM)
+            matching_cols = [col for col in allele_columns_ss if loci_id in col]
+            # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
+            presence_mask = df[matching_cols].applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
+            # Count the frequency of each locus in all genome
+            genome_presence_ss = presence_mask.any(axis=1)
+            frequency_in_genomes_second_schema[loci_id] = genome_presence_ss.sum()
+        
     if run_mode == 'unclassified_cds':
+
+        pf.print_message("Calculate frequencies in genomes for the unclassified_cds run_mode.")
         temp_folder: str = temp_paths[0]
         file_path_cds: str = temp_paths[1]
 
@@ -142,27 +231,87 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         pf.print_message("Identifying CDS not present in the schema...", "info")
         # Get dict with CDS ids as key and sequence as values.
-        all_nucleotide_sequences: Dict[str, str] = sf.fetch_fasta_dict(file_path_cds, True)
+        all_nucleotide_sequences = sf.fetch_fasta_dict(file_path_cds, True)
         
         # Make IDS universally usable
         for key, value in list(all_nucleotide_sequences.items()):
             all_nucleotide_sequences[itf.replace_by_regex(key, '_', '-')] = all_nucleotide_sequences.pop(key)
 
         pf.print_message("Filtering missing CDS in the schema...", "info")
-        cds_size: Dict[str, int]
-        dropped_alleles: Dict[str, str] 
         cds_size, all_nucleotide_sequences, dropped_alleles = ccf.filter_cds_by_size(all_nucleotide_sequences, constants[5])
 
         # Count the number of CDS not present in the schema and write CDS sequence
         # into a FASTA file.
-        frequency_cds: Dict[str, int] = {}
-        cds_presence_in_genomes: Dict[str, List[str]] = {}
 
         pf.print_message("Identifying CDS present in the schema and counting frequency of missing CDSs in the genomes...", "info")
-        cds_present: str
         cds_present, frequency_cds, cds_presence_in_genomes = ccf.process_cds_not_present(initial_processing_output,
                                                                                           temp_folder,
                                                                                           all_nucleotide_sequences)
+
+    
+    return frequency_in_genomes, frequency_in_genomes_second_schema, frequency_cds, cds_presence_in_genomes, all_nucleotide_sequences, dropped_alleles, cds_size
+
+
+
+
+def identify_spurious_genes(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
+                            annotation_paths: List[str], constants: List[Any], temp_paths: List[str],
+                            run_mode: str, cpu: int, bsr: float, translation_table: int, no_cleanup: bool) -> None:
+    """
+    Identify spurious genes in the given schema.
+
+    Parameters
+    ----------
+    schema_directory : List[str]
+        Path to the schema directory.
+    output_directory : str
+        Path to the output directory.
+    allelecall_directory : List[str]
+        Path to the allele call directory.
+    annotation_paths : List[str]
+        Paths for the files with the annotations.
+    constants : List[Any]
+        List of constants used in the process.
+    temp_paths : List[str]
+        List of temporary paths.
+    run_mode : str
+        Mode of running the process.
+    cpu : int
+        Number of CPUs to use.
+    bsr : int
+        Value of the threshold for the BSR.
+    translation_table : int
+        Number of the translation table to be used.
+    no_cleanup : bool
+        Flag to indicate whether to clean up temporary files.
+
+    Returns
+    -------
+    None
+    """
+    
+    output_d= os.path.abspath(output_directory)
+
+    # Create directories structure.
+    (initial_processing_output,
+     schema_folder,
+     blast_output,
+     blastn_output,
+     blast_db,
+     representatives_blastn_folder,
+     representatives_blastn_folder_against,
+     results_output,
+     blast_results) = create_directories(output_d, run_mode)
+    
+    # Calculate the frequencies depending of the run mode
+    if run_mode == 'unclassified_cds':
+        
+        # Calculate the frequency of the cds in genomes, cds presence, nucleotide sequences and dropped alleles
+        _, _, frequency_cds, cds_presence_in_genomes, all_nucleotide_sequences, dropped_alleles, cds_size = calculate_frequency(None, None, None, None, 
+                                                                                                                        temp_paths, 
+                                                                                                                        constants, 
+                                                                                                                        initial_processing_output, 
+                                                                                                                        run_mode, results_output)
 
         pf.print_message("Translating and deduplicating CDS...", "info")
         all_translation_dict: Dict[str, str]
@@ -212,7 +361,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         multi_cds_clusters: int = total_number_clusters - singleton_clusters
         pf.print_message(f"Out of those clusters, {multi_cds_clusters} have more than one CDS.", "info")
         
-        pf.print_message("\nFiltering clusters...", "info")
+        pf.print_message("Filtering clusters...", "info")
         # Calculate the frequency of each cluster in the genomes.
         frequency_in_genomes: Dict[str, int] = {
             rep: sum(frequency_cds[entry] for entry in cluster_members)
@@ -241,10 +390,7 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         pf.print_message("Retrieving kmers similarity and coverage between representatives...", "info")
         reps_translation_dict: Dict[str, str] = ccf.get_representative_translation_dict(all_translation_dict, all_alleles)
         # Choose which translation dict to use as representative
-        if processing_mode.split('_')[0] == 'alleles':
-            trans_dict = all_translation_dict
-        else:
-            trans_dict = reps_translation_dict
+        trans_dict = reps_translation_dict
         # Calculate kmers similarity
         reps_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(trans_dict, reps_groups, prot_len_dict)
 
@@ -263,60 +409,124 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
 
         to_blast_paths: Dict[str, str]
         master_file_path: str
-        to_blast_paths, master_file_path = ccf.prepare_files_to_blast(representatives_blastn_folder,
-                                                                  all_alleles,
-                                                                  all_nucleotide_sequences,
-                                                                  processing_mode)
+        trans_paths: Dict[str, str]
+        translation_files_paths = os.path.join(initial_processing_output, "cluster_rep_translations")
+        ff.create_directory(translation_files_paths)
+        seqid_files_paths = os.path.join(initial_processing_output, "cluster_rep_seqid")
+        ff.create_directory(seqid_files_paths)
+        # Prepare the schema to run blasts (similar to prepare_loci)
+        pf.print_message("Prepare the CDS for runing blasts.", "info")
+        (to_blast_paths,
+        to_run_against, 
+        master_file_path, 
+        trans_paths, 
+        new_max_hits, 
+        seqid_file_dict) = ccf.prepare_files_to_blast(translation_files_paths,
+                                                        seqid_files_paths,
+                                                        representatives_blastn_folder,
+                                                        representatives_blastn_folder_against,
+                                                        all_alleles,
+                                                        all_nucleotide_sequences,
+                                                        constants)
+        pf.print_message("")
 
-    # Process loci
-    else:
-        # If we want to run with new possible loci, we merge everything together and run
-        if possible_new_loci:
-            ff.merge_folders(schema_directory, possible_new_loci, schema_folder, constants, cpu)
-        else:
-            ff.copy_folder(schema_directory, schema_folder)
 
-        dropped_alleles = {} # Empty dict to store dropped alleles
-        # Get all the relevant data
+    if run_mode == 'schema':
+
+        ff.copy_folder(schema_directory[0], schema_folder)
+
+        # Calculate the frequency of the cds in genomes
+        frequency_in_genomes, _, _, _, _, dropped_alleles, _ = calculate_frequency(schema_folder, allelecall_directory[0], None, None, 
+                                                None, 
+                                                None, 
+                                                None, 
+                                                run_mode, None)
+        
+        pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
         (all_nucleotide_sequences,
         master_file_path,
-        all_translation_dict,
-        frequency_in_genomes,
+        trans_paths,
         to_blast_paths,
         all_alleles,
-        cds_present,
         group_reps_ids,
-        group_alleles_ids) = cof.prepare_loci(schema_folder,
-                                            allelecall_directory,
+        group_alleles_ids,
+        to_run_against,
+        new_max_hits,
+        seqid_file_dict) = cof.prepare_loci(schema_folder,
                                             constants,
-                                            processing_mode,
+                                            initial_processing_output)
+        
+    if run_mode == 'schema_vs_schema':
+
+        ff.copy_folder(schema_directory[0], schema_folder)
+        second_schema_folder = os.path.join(initial_processing_output, 'second_schema')
+        ff.create_directory(second_schema_folder)
+        ff.copy_folder(schema_directory[1], second_schema_folder)
+
+        
+        pf.print_message(f'First schema: {schema_directory[0]}', 'info')
+        pf.print_message(f'Second schema: {schema_directory[1]}', 'info')
+
+        # Calculate the frequency of the cds in genomes for the first schema and second schema
+        frequency_in_genomes, frequency_in_genomes_second_schema, _, _, _, dropped_alleles, _ = calculate_frequency(schema_folder, allelecall_directory[0], second_schema_folder, allelecall_directory[1], 
+                                                None, 
+                                                None, 
+                                                None, 
+                                                run_mode, None)
+        
+        ff.merge_folders(schema_directory[0], schema_directory[1], schema_folder, cpu, bsr, translation_table)
+
+        pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
+        (all_nucleotide_sequences,
+        master_file_path,
+        trans_paths,
+        to_blast_paths,
+        all_alleles,
+        group_reps_ids,
+        group_alleles_ids,
+        to_run_against,
+        new_max_hits,
+        seqid_file_dict) = cof.prepare_loci(schema_folder,
+                                            constants,
                                             initial_processing_output)
 
+
+    # Main part that is the same for all run modes
+    # =============================================
+
     # Create BLAST db for the schema DNA sequences.
-    pf.print_message("Creating BLASTn database...", "info")
+    pf.print_message("Creating BLASTp database...", "info")
     # Get the path to the makeblastdb executable.
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
-    blast_db_nuc: str = os.path.join(blast_db, 'Blast_db_nucleotide')
-    bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_nuc, 'nucl')
+    blast_db_prot: str = os.path.join(blast_db, 'Blast_db_proteins')
+    bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_prot, 'prot')
+
 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
-    representative_blast_results = cof.run_blasts(blast_db_nuc,
-                        all_alleles,
-                        all_translation_dict,
-                        to_blast_paths,
-                        blast_output,
-                        constants,
-                        reps_kmers_sim if run_mode == 'unclassified_cds' else None,
-                        frequency_in_genomes,
-                        cpu)
+    representative_blastn_results: tp.BlastDict
+    representative_blast_results, representative_blastn_results, loci_too_big = cof.run_blasts(blast_db_prot,
+                                                                                                all_alleles,
+                                                                                                trans_paths,
+                                                                                                to_blast_paths,
+                                                                                                to_run_against,
+                                                                                                blast_output,
+                                                                                                new_max_hits,
+                                                                                                seqid_file_dict,
+                                                                                                constants,
+                                                                                                reps_kmers_sim if run_mode == 'unclassified_cds' else None,
+                                                                                                frequency_in_genomes,
+                                                                                                frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
+                                                                                                cpu,
+                                                                                                output_d)
+
 
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
-    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results,
+    classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
     
-    pf.print_message("Processing classes...", "info")
+    
     # Sort each entry based on their assigned classes
     sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
@@ -328,12 +538,13 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     drop_mark: List[str]
     all_relationships: tp.AllRelationships
     # Process and extract relevant information from the blast results
+    pf.print_message("Processing classes...", "info")
     (processed_results,
      count_results_by_class,
      count_results_by_class_with_inverse,
      reps_and_alleles_ids,
      drop_mark,
-     all_relationships) = cof.process_classes(sorted_blast_dict,
+     all_relationships) = cof.process_classes(sorted_blast_dict, representative_blastn_results,
                                 classes_outcome,
                                 all_alleles)
 
@@ -357,7 +568,6 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
         group_alleles_ids = {}
         # Count the number of reps and alleles again because clusters were joined
         group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
-                                                                                processing_mode,
                                                                                 all_alleles,
                                                                                 dropped_loci_ids,
                                                                                 group_reps_ids,
@@ -381,31 +591,37 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     pf.print_message("Extracting results...", "info")
     related_clusters: tp.RelatedClusters
     recommendations: tp.Recomendations
+    low_freq_recommendations: tp.Recomendations
     # Extract the results from the processed results
-    related_clusters, recommendations = cof.extract_results(processed_results,
-                                                            count_results_by_class,
-                                                            frequency_in_genomes,
-                                                            merged_all_classes,
-                                                            dropped_loci_ids,
-                                                            classes_outcome)
+    related_clusters, recommendations, low_freq_recommendations = cof.extract_results(processed_results,
+                                                                                        count_results_by_class,
+                                                                                        frequency_in_genomes,
+                                                                                        frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None, 
+                                                                                        merged_all_classes,
+                                                                                        dropped_loci_ids,
+                                                                                        classes_outcome)
+
 
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
     reverse_matches: bool = True
     (related_matches_path,
      count_results_by_cluster_path,
-     recommendations_file_path) = cof.write_recommendations_summary_results(related_clusters,
+     recommendations_file_path,
+     count_classes_final) = cof.write_recommendations_summary_results(to_blast_paths,
+                                                                            related_clusters,
                                                                             count_results_by_class_with_inverse,
                                                                             group_reps_ids,
                                                                             group_alleles_ids,
                                                                             frequency_in_genomes,
+                                                                            frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
                                                                             recommendations,
+                                                                            low_freq_recommendations,
                                                                             reverse_matches,
                                                                             classes_outcome,
-                                                                            output_directory)
+                                                                            output_d)
 
     # Get all of the CDS that matched with loci or loci matched with loci
-    #TODO fix this
     is_matched: Dict[str, Any]
     is_matched_alleles: Dict[str, Any]
     is_matched, is_matched_alleles = cof.get_matches(all_relationships,
@@ -418,10 +634,21 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     cof.alignment_dict_to_file(representative_blast_results,
                                report_file_path,
                                'w')
+    cof.alignment_dict_to_file(representative_blastn_results,
+                               report_file_path,
+                               'a')
     # Write the processed results to a file alignments by clusters and classes.
     cof.write_processed_results_to_file(merged_all_classes,
                                     representative_blast_results,
                                     classes_outcome,
+                                    all_alleles,
+                                    is_matched,
+                                    is_matched_alleles,
+                                    blast_results)
+    merged_classes_6 = {k: merged_all_classes[k] for k in {'6'}}
+    cof.write_processed_results_to_file(merged_classes_6,
+                                    representative_blastn_results,
+                                    ['6'],
                                     all_alleles,
                                     is_matched,
                                     is_matched_alleles,
@@ -444,16 +671,23 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
     # Write the dropped possible new loci to a file.
     drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
                                                                         dropped_alleles,
-                                                                        output_directory)
+                                                                        output_d)
+    # Write alot of alleles file
+    alot_of_alleles_file = os.path.join(output_d, 'alot_of_alleles.txt')
+    with open(alot_of_alleles_file, 'w') as alot_file:
+        for loci in loci_too_big:
+            alot_file.write(f"{loci}\n")
+
     # Print the classification results
     cof.print_classifications_results(merged_all_classes,
                                         dropped_loci_ids,
                                         to_blast_paths,
-                                        all_alleles)
+                                        all_alleles,
+                                        count_classes_final)
     # Graphs are only created for unclassified CDS (see if needed for schema)
     if run_mode == 'unclassified_cds':
         pf.print_message("Writing temporary fastas to file...", "info")
-        temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_directory)
+        temp_fastas_folder: str = ccf.write_fastas_to_files(all_alleles, all_nucleotide_sequences, output_d)
 
         pf.print_message("Creating graphs for the BLAST results...", "info")
         cds_size_dicts: Dict[str, Any] = {'IDs': cds_size.keys(),
@@ -470,37 +704,55 @@ def identify_spurious_genes(schema_directory: str, output_directory: str, allele
             cof.create_graphs(file,
                         results_output,
                         f"graphs_class_{os.path.basename(file).split('_')[-1].replace('.tsv', '')}")
+
+
+    # Annotate the recommendation outputs with the given annotation files using consolidate
+    pf.print_message("")
+    consolidated_annotations = os.path.join(output_d, "recommendations_annotations.tsv")
+    if annotation_paths:
+        files: List[str]
+        files = [recommendations_file_path] + annotation_paths
+        pf.print_message("Consolidating annoations...", "info")
+        consolidated_annotations: str = cs.consolidate_annotations(files,
+                                    False,
+                                    consolidated_annotations)
+        pf.print_message('Annotation consolidation successfully completed.', 'info')
+        pf.print_message('')
+
     # Clean up temporary files
     if not no_cleanup:
         pf.print_message("Cleaning up temporary files...", "info")
         # Remove temporary files
-        ff.cleanup(output_directory, [related_matches_path,
-                                      count_results_by_cluster_path,
-                                      recommendations_file_path,
-                                      drop_possible_loci_output,
-                                      temp_fastas_folder if run_mode == 'unclassified_cds' else None,
-                                      logf.get_log_file_path(gb.LOGGER)])
+        ff.cleanup(output_d, [related_matches_path,
+                                alot_of_alleles_file,
+                                count_results_by_cluster_path,
+                                recommendations_file_path,
+                                consolidated_annotations if annotation_paths else None,
+                                drop_possible_loci_output,
+                                temp_fastas_folder if run_mode == 'unclassified_cds' else None,
+                                logf.get_log_file_path(gb.LOGGER)])
 
 
-def main(schema_directory: str, output_directory: str, allelecall_directory: str,
-        possible_new_loci: str, alignment_ratio_threshold: float, 
+def main(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
+        annotation_paths: List[str],
+        alignment_ratio_threshold: float, 
         pident_threshold: float, clustering_sim_threshold: float, clustering_cov_threshold:float,
         genome_presence: int, absolute_size: int, translation_table: int,
-        bsr: float, size_ratio: float, run_mode: str, processing_mode: str, cpu: int,
+        bsr: float, size_ratio: float, run_mode: str, cpu: int,
         no_cleanup: bool) -> None:
     """
     Main function to identify spurious genes in a schema.
 
     Parameters
     ----------
-    schema_directory : str
+    schema_directory : List[str]
         Path to the schema directory.
     output_directory : str
         Path to the output directory.
-    allelecall_directory : str
+    allelecall_directory : List[str]
         Path to the allele call directory.
-    possible_new_loci : str
-        Path to the file with possible new loci.
+    annotation_paths : List[str]
+        Paths for the files with the annotations.
     alignment_ratio_threshold : float
         Threshold for alignment ratio.
     pident_threshold : float
@@ -521,8 +773,6 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
         Size ratio threshold.
     run_mode : str
         Mode of running the process.
-    processing_mode : str
-        Mode of processing.
     cpu : int
         Number of CPU cores to use.
     no_cleanup : bool
@@ -532,10 +782,13 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
     -------
     None
     """
+    if run_mode == 'unclassified_cds':
+        temp_paths: List[str] = [os.path.join(allelecall_directory[0], "temp"), 
+                                os.path.join(allelecall_directory[0], "unclassified_sequences.fasta")]
+        if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
+            sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
+                        "was run using --no-cleanup and --output-unclassified flag.")
     
-    temp_paths: List[str] = [os.path.join(allelecall_directory, "temp"), 
-                            os.path.join(allelecall_directory, "unclassified_sequences.fasta"),
-                            os.path.join(allelecall_directory, "missing_classes.fasta")]
     # Put all constants in one dict in order to decrease number of variables
     # used around.
     constants: List[Any] = [alignment_ratio_threshold, 
@@ -547,18 +800,16 @@ def main(schema_directory: str, output_directory: str, allelecall_directory: str
                 translation_table,
                 bsr,
                 size_ratio]
-    
-    if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
-        sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
-                    "was run using --no-cleanup and --output-unclassified flag.")
+
 
     identify_spurious_genes(schema_directory,
                 output_directory,
                 allelecall_directory,
-                possible_new_loci,
+                annotation_paths,
                 constants,
-                temp_paths,
+                temp_paths if run_mode == 'unclassified_cds' else [],
                 run_mode,
-                processing_mode,
                 cpu,
+                bsr,
+                translation_table,
                 no_cleanup)

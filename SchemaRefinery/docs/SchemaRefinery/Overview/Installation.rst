@@ -1,7 +1,80 @@
 Installation Guide
 ==================
 
-Follow these steps to install the `SchemaRefinery` package on your system.
+Follow these steps to install the `SchemaRefinery` package on your system. There are three ways to download the `SchemaRefinery` toolkit: Bioconda, PyPi or using Git. Choose the one best for your system or that you are more familiar with.
+
+For a better organization of the packages and dependencies, it is advised for you to create a new environment on Conda/Miniconda for this toolkit.
+
+Installation through Bioconda
+----------------------------
+
+1. **Install Conda**: Ensure that Conda is installed on your system. You can install Miniconda (a minimal Conda installer) using the following commands:
+
+    .. code-block:: bash
+
+        # For macOS and Linux
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        bash Miniconda3-latest-Linux-x86_64.sh
+
+2. **Install Bioconda**: Ensure that Bioconda is installed in your system.
+
+    .. code-block:: bash
+
+        conda config --add channels bioconda
+        conda config --add channels conda-forge
+        conda config --set channel_priority strict
+
+3. **Create a Conda Environment**: It is recommended to create a conda environment to manage dependencies:
+
+    .. code-block:: bash
+
+        conda create --name schema_refinery python=3.9
+        conda activate schema_refinery
+
+4. **Install the SchemaRefinery package**: Install the toolkit using the Bioconda command:
+
+    .. code-block:: bash
+
+        conda install bioconda::schemarefinery
+
+
+Installation through PyPi
+--------------------------
+
+1. **Install pip**: For Python 3.4 and up installed using Windows or macOS `pip` is installed as default. For Linux environments run:
+
+    .. code-block:: bash
+
+        #For Ubuntu and python3
+        sudo apt - get install python3 - pip
+
+        #For CentOS and python3
+        sudo yum install python3 - pip
+
+2. **Install Conda**: Ensure that Conda is installed on your system. You can install Miniconda (a minimal Conda installer) using the following commands:
+
+    .. code-block:: bash
+
+        # For macOS and Linux
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        bash Miniconda3-latest-Linux-x86_64.sh
+
+3. **Create a Conda Environment**: It is recommended to create a conda environment to manage dependencies:
+
+    .. code-block:: bash
+
+        conda create --name schema_refinery python=3.9
+        conda activate schema_refinery
+
+4. **Install the SchemaRefinery package**: Install the toolkit using the PyPi command:
+
+    .. code-block:: bash
+
+        pip install SchemaRefinery
+
+
+Installation through GitHub
+---------------------------
 
 1. **Install Git**: Ensure that Git is installed on your system. You can install Git using the following command:
 

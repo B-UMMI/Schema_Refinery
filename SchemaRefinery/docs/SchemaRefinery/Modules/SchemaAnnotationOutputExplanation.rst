@@ -7,38 +7,38 @@ Output files and folders description for the SchemaAnnotation module
         The folder where the output files are stored.
 
         **genebank_annotations.tsv**
-            Final tsv file with all the annotations from the Genbank and ids to add.
+            Final tsv file with all the annotations from the Genbank and IDs to add.
             What is left after the cleanup.
 
         genbank_annotations
-            Folder containing GenBank annotations.
+            Folder containing Genbank annotations.
 
-            genebank_annotations.tsv
-                tsv file with all the annotations from the Genbank and ids to add.
+            genebank_annotations.tsv 
+                file with all the annotations from the Genbank and IDs to add.
 
             best_annotations_all_genbank_files
-                Folder containing the best GenBank annotations.
+                Folder containing the best Genbank annotations.
 
                 best_genbank_annotations.tsv
-                    Best GenBank annotations.
+                    Best Genbank annotations.
 
             best_annotations_per_genbank_file
-                Folder containing the best GenBank annotations per file.
+                Folder containing the best Genbank annotations per file.
 
                 genbank_file_x_annotations.tsv
-                    GenBank file x annotations.
+                    Genbank file x annotations.
 
                 genbank_file_y_annotations.tsv
-                    GenBank file y annotations.
+                    Genbank file y annotations.
 
                 ...
-                    Other GenBank file annotations.
+                    Other Genbank file annotations.
 
             blast_processing
                 Folder containing BLASTp database, BLASTp output files, and translation files.
 
                 selected_genbank_proteins.fasta
-                    Selected GenBank proteins.
+                    Selected Genbank proteins.
 
                 blast_db
                     Folder containing the BLASTp database.
@@ -112,7 +112,7 @@ Output files and folders description for the SchemaAnnotation module
             What is left after cleanup.
 
         **uniprot_annotations.tsv**
-            Final file containing all the uniprot annotations.
+            Final file containing all the UniProt annotations.
             What is left after cleanup.
 
         uniprot_annotations
@@ -182,7 +182,7 @@ Output files and folders description for the SchemaAnnotation module
                     Folder containing Swiss-Prot processing results.
 
                     blast_processing
-                        Folder with the files of the Blast database and the Blastp results.
+                        Folder with the files of the Blast database and the BLASTp results.
                         
                         swiss_prots.fasta
                             Swiss-Prot protein sequences.
@@ -194,7 +194,7 @@ Output files and folders description for the SchemaAnnotation module
                     Folder containing TrEMBL processing results.
 
                     blast_processing
-                        Folder with the files of the Blast database and the Blastp results.
+                        Folder with the files of the Blast database and the BLASTp results.
 
                         trembl_prots.fasta
                             TrEMBL protein sequences.
@@ -206,7 +206,7 @@ Output files and folders description for the SchemaAnnotation module
                 Folder containing the zipped fasta files of each proteome.
                 
                 Proteome_x.fasta.gz
-                    Fasta file withe the sequence of the proteome x.
+                    Fasta file with the sequence of the proteome x.
             
             split_proteomes
                 folder with the files with all the sequences for each database.
@@ -215,10 +215,10 @@ Output files and folders description for the SchemaAnnotation module
                     File with the information of each sequence.
                 
                 swiss_prot.fasta
-                    File with all the proteome sequences that are from the swiss-prot database.
+                    File with all the proteome sequences that are from the Swiss-Prot database.
                 
                 trembl_prot.fasta
-                    File with all the proteome sequences that are from the trembl database.
+                    File with all the proteome sequences that are from the TrEMBL database.
         
         **consolidated_annotations**
             Final file containing all the annotations of the inputs in a single file.

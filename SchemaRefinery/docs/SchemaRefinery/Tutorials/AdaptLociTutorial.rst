@@ -10,8 +10,8 @@ Prerequisites
 -------------
 
 - SchemaRefinery installed
-- Python 3.9 or higher
-- Biopython library (`pip install biopython`)
+- Python between 3.9 and 3.11
+- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
 
 Procedure
 ---------
@@ -22,7 +22,7 @@ Procedure
 
 .. code-block:: bash
 
-    SR AdaptLoci -i 'path/to/files/zenodo/Data/fastas_path.txt'  -o 'path/to/files/AdaptLoci_Results' -tt 4 -c 6
+    SR AdaptLoci -i '/path/to/files/tutorial_schema/schema_seed'  -o 'path/to/files/AdaptLoci_Results' -tt 11 -c 6
 
 - Replace `path/to/files/` with the actual path to the files.
 
@@ -30,7 +30,7 @@ Procedure
 
 4. Wait for the adaptation process to complete.
 
-5. Check the output folder for the adapted loci.
+5. Check the output folder for the adapted schema, it should look like the original schema folder.
 
 Example Output Structure
 ------------------------

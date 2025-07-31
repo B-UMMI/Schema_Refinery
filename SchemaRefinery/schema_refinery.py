@@ -20,7 +20,7 @@ try:
 	from DownloadAssemblies import DownloadAssemblies
 	from SchemaAnnotation import SchemaAnnotation
 	from RefineSchema import IdentifySpuriousGenes
-	from IdentifyParalagousLoci import IdentifyParalogousLoci
+	from IdentifyParalogousLoci import IdentifyParalogousLoci
 	from AdaptLoci import AdaptLoci
 	from MatchSchemas import MatchSchemas
 	from CreateSchemaStructure import CreateSchemaStructure
@@ -36,7 +36,7 @@ except ModuleNotFoundError:
 	from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
 	from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
 	from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
-	from SchemaRefinery.IdentifyParalagousLoci import IdentifyParalogousLoci
+	from SchemaRefinery.IdentifyParalogousLoci import IdentifyParalogousLoci
 	from SchemaRefinery.AdaptLoci import AdaptLoci
 	from SchemaRefinery.MatchSchemas import MatchSchemas
 	from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
@@ -162,6 +162,11 @@ def download_assemblies() -> None:
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 	
 	# Transfer values from criteria file to the args namespace
 	args.taxon = args.input_file.pop('taxon', None)
@@ -346,9 +351,8 @@ def schema_annotation() -> None:
 
 	parser.add_argument('-cc',
 						'--consolidate-cleanup',
-						type=bool,
+						action='store_true',
 						required=False,
-						default=False,
 						dest='consolidate_cleanup',
 						help='For option consolidate the final files will or not have duplicates. Advised for the use of match schemas annotations.')
 
@@ -382,6 +386,11 @@ def schema_annotation() -> None:
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_schema_annotation_module_arguments(args)
@@ -425,6 +434,7 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-s',
 						'--schema-directory',
 						type=str,
+						nargs='+',
 						required=True,
 						dest='schema_directory',
 						help='Path to the created schema directory.')
@@ -439,16 +449,19 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-a',
 						'--allelecall-directory',
 						type=str,
+						nargs='+',
 						required=True,
 						dest='allelecall_directory',
-						help='Path to the directory that contains allele call directory that was run with --no-cleanup.')
-	
-	parser.add_argument('-pnl',
-						'--possible-new-loci',
+						help='Path to the directory that contains allele call directory from chewBBACA that was run with --no-cleanup and --output-unclassified.')
+
+	parser.add_argument('-ann',
+						'--annotations',
 						type=str,
+						nargs='+',
 						required=False,
-						dest='possible_new_loci',
-						help='Path to the directory that contains possible new loci.')
+						default=None,
+						dest='annotation_paths',
+						help='Path to the tsv file with the schema annotations.')
 
 	parser.add_argument('-at',
 						'--alignment-ratio-threshold',
@@ -530,15 +543,6 @@ def identify_spurious_genes() -> None:
 						choices=ct.IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES,
 						help='Run mode for identifying spurious loci.')
 
-	parser.add_argument('-pm',
-						'--processing-mode',
-						type=str,
-						required=False,
-						dest='processing_mode',
-						default='reps_vs_alleles',
-						choices=ct.PROCESSING_MODE_CHOICES,
-						help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-
 	parser.add_argument('-c',
 						'--cpu',
 						type=int,
@@ -565,9 +569,25 @@ def identify_spurious_genes() -> None:
 						default=None,
 						dest='logger',
 						help='Path to the logger file.')
+	
+	"""
+	parser.add_argument('-pm',
+						'--processing-mode',
+						type=str,
+						required=False,
+						dest='processing_mode',
+						default='reps_vs_alleles',
+						choices=ct.PROCESSING_MODE_CHOICES,
+						help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
+	"""
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_identify_spurious_genes_module_arguments(args)
@@ -609,11 +629,11 @@ def adapt_loci() -> None:
 
 	# Add arguments to the parser
 	parser.add_argument('-i',
-						'--input-file',
+						'--input-fastas',
 						type=str,
 						required=True,
-						dest='input_file',
-						help='TSV file with the loci path to be adapted.')
+						dest='input_fastas',
+						help='Path to the folder with the fasta files.')
 	
 	parser.add_argument('-o',
 						'--output-directory',
@@ -621,6 +641,14 @@ def adapt_loci() -> None:
 						required=True,
 						dest='output_directory',
 						help='Path to the directory to which files will be stored.')
+	
+	parser.add_argument('-tf',
+						'--training-file',
+						type=str,
+						required=False,
+						dest='training_file',
+						default=None,
+						help='Path to the Prodigal training file that will be included in the directory of the adapted schema.')
 	
 	parser.add_argument('-c',
 						'--cpu',
@@ -662,6 +690,11 @@ def adapt_loci() -> None:
 	# Parse the command-line arguments
 	args = parser.parse_args()
 
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
+
 	# Validate the arguments
 	val.validate_adapt_loci_module_arguments(args)
 
@@ -676,7 +709,7 @@ def adapt_loci() -> None:
 
 	# Call the main function of the AdaptLoci class with the parsed arguments
 	pf.print_message(f"Running AdaptLoci module...", message_type="info")
-	AdaptLoci.main(**vars(args))
+	AdaptLoci.adapt_loci(**vars(args))
 
 
 def identify_paralogous_loci() -> None:
@@ -714,6 +747,15 @@ def identify_paralogous_loci() -> None:
 						required=True,
 						dest='output_directory',
 						help='Path to the directory to which files will be stored.')
+
+	parser.add_argument('-ann',
+						'--annotations',
+						type=str,
+						nargs='+',
+						required=False,
+						default=None,
+						dest='annotation_paths',
+						help='Path to the tsv file with the schema annotations to be added to the recommendations file.')
 	
 	parser.add_argument('-c',
 						'--cpu',
@@ -777,6 +819,11 @@ def identify_paralogous_loci() -> None:
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_identify_paralogous_loci_arguments(args)
@@ -894,6 +941,11 @@ def match_schemas() -> None:
 
     # Parse the command-line arguments
     args = parser.parse_args()
+	
+    pf.print_message('Command line:', 'info')
+    for arg in vars(args):
+        pf.print_message(f'\t{arg}: {getattr(args, arg)}', 'info')
+    pf.print_message('')
 
     # Validate the arguments
     val.validate_match_schemas(args)
@@ -954,6 +1006,14 @@ def create_schema_structure() -> None:
 						dest='output_directory',
 						help='Path to the directory where the output files will be saved.')
 	
+	parser.add_argument('-tf',
+						'--training-file',
+						type=str,
+						required=False,
+						dest='training_file',
+						default=None,
+						help='Path to the Prodigal training file that will be included in the directory of the adapted schema.')
+	
 	parser.add_argument('-c',
 						'--cpu',
 						type=int,
@@ -978,7 +1038,7 @@ def create_schema_structure() -> None:
 						dest='translation_table',
 						help='Translation table to use for the CDS translation.')
 	
-	parser.add_argument('--no-cleanup',
+	parser.add_argument('--nocleanup',
 						action='store_true',
 						required=False,
 						dest='no_cleanup',
@@ -999,6 +1059,11 @@ def create_schema_structure() -> None:
 	
 	# Parse the command-line arguments
 	args = parser.parse_args()
+
+	pf.print_message('Command line:', 'info')
+	for arg in vars(args):
+		pf.print_message(f'{arg}: {getattr(args, arg)}', 'info')
+	pf.print_message('')
 
 	# Validate the arguments
 	val.validate_create_schema_structure(args)
@@ -1039,7 +1104,7 @@ module_info = {
 		'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based on alignment against Genbank files and other schemas.', schema_annotation],
 		'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against unclassified CDS to infer new loci and identify problematic genes.", identify_spurious_genes],
 		'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
-		'IdentifyParalagousLoci': ["Identifies paralagous loci based on schema input", identify_paralogous_loci],
+		'IdentifyParalogousLoci': ["Identifies paralogous loci based on schema input", identify_paralogous_loci],
 		'MatchSchemas': ["Match schemas to identify the best matches between two schemas.", match_schemas],
 		'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
 		'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
@@ -1086,7 +1151,7 @@ def entry_point():
 		elif argv[i] == '--logger' and i + 1 < len(argv):
 			logger = argv[i + 1]
 			i += 1
-		elif argv[i] == '--output' or argv[i] == '-o' and i + 1 < len(argv):
+		elif argv[i] == '--output-directory' or argv[i] == '-o' and i + 1 < len(argv):
 			output_folder = argv[i + 1]
 			i += 1
 		elif argv[i] == '--version':

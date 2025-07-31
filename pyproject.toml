@@ -12,12 +12,15 @@ dependencies = [
     "biopython >= 1.79",
     "plotly >= 5.8.0",
     "requests >= 2.27.1",
-    "pandas >= 1.5.1",
+    "pandas >= 1.5.1, <2.0.0",
     "psutil >= 5.1.1",
     "tqdm >= 4.62.0",
-    "networkx >= 2.6.0, <3.0.0"
+    "networkx >= 2.6.0, <3.0.0",
+    "chewBBACA >= 3.3.10"
 ]
 authors = [
+    {name = "Rita Andrade"},
+    {name = "Nuno Faria"},
     {name = "Mykyta Forofontov"},
     {name = "Rafael Mamede"},
     {name = "Mário Ramirez"},

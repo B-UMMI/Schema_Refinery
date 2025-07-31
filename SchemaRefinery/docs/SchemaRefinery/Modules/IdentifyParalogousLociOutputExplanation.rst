@@ -52,10 +52,10 @@ Output files and folders description IdentifyParalogousLoci module
                 TSV file containing the BLASTp results for the locus z.
             
             ...
-                All of the other TSV BLASTp results files.
+                All the other TSV BLASTp results files.
 
         master_file.fasta
-            FASTA file containing all of the protein sequences used in the analysis (used to create BLAST DB).
+            FASTA file containing all the protein sequences used in the analysis (used to create BLAST DB).
 
         self_score_folder
             Folder containing the self-score BLAST results.
@@ -70,7 +70,7 @@ Output files and folders description IdentifyParalogousLoci module
                 TSV file containing the BLASTp results for self-score for the locus z.
             
             ...
-                All of the other TSV BLASTp for self-score results files.
+                All the other TSV BLASTp for self-score results files.
 
         Translation
             Folder containing the translation files.
@@ -85,13 +85,19 @@ Output files and folders description IdentifyParalogousLoci module
                 FASTA file containing the translation for the locus z.
             
             ...
-                All of the other translation files.
+                All the other translation files.
+
+    **paralogous_annotations.tsv**
+        TSV file with the clusters that should be joined as well as the annotations for each locus.
+        Only with the -ann option.
+    
+    **paralogous_loci_final_recommendations.tsv**
+        TSV with the loci clusters (one locus per row) with the action to be taken (always 'Join'). The clusters are separated by a row with a '#'.
+        The clusters here differ from the ones in paralogous_loci_report_cluster_by_id.tsv because it consists of only the loci that passed certain checks.
 
     **paralogous_loci_report.tsv**
-        TSV file containing the report of the paralogous loci.
+        TSV file containing the report of the paralogous loci. Here we can see which loci pass the checks to be considered paralogs that can be joined.
 
     **paralogous_loci_report_cluster_by_id.tsv**
         TSV file containing the report of the paralogous loci clustered by ID.
-
-    **paralogous_loci_report_passed_all_checks.tsv**
-        TSV file containing the report of the paralogous loci clustered by ID that passed all checks.
+        Only with the --nocleanup option.

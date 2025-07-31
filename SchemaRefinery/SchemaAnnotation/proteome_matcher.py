@@ -152,7 +152,7 @@ def run_blast_for_proteomes(max_id_length: int, proteome_file_ids: Dict[str, Lis
 		# Since BLAST may find several local alignments, choose the largest one to calculate BSR.
 		for query, subjects_dict in filtered_alignments_dict.items():
 			# Get the loci name
-			loci: str = query.split('_')[0]
+			loci: str = query.rsplit('_', 1)[0]
 			# Create the dict of the query
 			bsr_values.setdefault(query, {})
 			for subject_id, results in subjects_dict.items():
@@ -294,9 +294,11 @@ def proteome_matcher(proteome_files: List[str], proteome_file_ids: Dict[str, Lis
 				bsr_value: float = subject_info[1]
 				desc: str = descriptions[subject_id]
 				lname: str = desc.split(subject_id + ' ')[1].split(' OS=')[0]
-				sname: str = desc.split('GN=')[1].split(' PE=')[0]
+				# Check if the protein has the needed information before writing short name
+				if 'GN=' in desc and ' PE=' in desc:
+					sname: str = desc.split('GN=')[1].split(' PE=')[0]
 				# If there is no short name, set it to 'NA'
-				if sname == '':
+				else:
 					sname = 'NA'
 				# Write the annotations to the file
 				at.write(f"{loci}\t{subject_id}\t{lname}\t{sname}\t{bsr_value}\n")

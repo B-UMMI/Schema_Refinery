@@ -2,22 +2,26 @@ MatchSchemas - Match schemas in a directory
 ===========================================
 
 Description
------------
+------------
 
-The `MatchSchemas` module parses command-line arguments and initiates the process to match schemas. This module sets up an argument parser to handle various command-line options for matching schemas and then calls the main function of the `MatchSchemas` class with the parsed arguments.
+The `MatchSchemas` module parses command-line arguments and initiates the process to match schemas. This module sets up an argument parser to handle various command-line options for matching two schemas and then calls the main function of the `MatchSchemas` class with the parsed arguments.
+
+This module can be used to compare versions of schemas of the same species for updating one of the versions or compare what new information was added. The comparison of the schemas of two different species can also be of use and can be done with this module. It identifies matching loci between the two schemas and can annotate them for a more complete comparison.
+
 
 Features
 --------
 
 - Configurable parameters for the matching process.
+- Optional annotation of the final matches.
 - Support for parallel processing using multiple CPUs.
 - Option to skip cleanup after running the module.
 
 Dependencies
 ------------
 
-- Python 3.9 or higher
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
+- Python between 3.9 and 3.11
+- `BLAST <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -74,21 +78,44 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
+.. Note::
+    The --rep_vs_alleles mode is a more indept comparison. It takes longer to process, however the number of extra matches found is small.
+    Should be used as an extra and more detailed comparison.
+
 Algorithm Explanation
 ---------------------
 
 MatchSchemas Algorithm Flowchart:
 
-.. image:: source/match_schemas.png
+.. image:: source/MatchSchemas.png
    :alt: MatchSchemas Algorithm
    :width: 80%
    :align: center
+::
 
-The algorithm goes throught three matching process and a fourth optional one.
-    - DNA hashes comparision
-    - Protein hashes comparision
+
+The module assignes the designation of Query to the schema with higher allele density per loci. For later validation this naming match will be written in the log file. These input schemas should be in the format of the chewBBACA schemas.
+
+The module goes throught three matching process and a fourth optional one.
+    - DNA hashes comparison
+    - Protein hashes comparison
     - Blast with reps vs reps
     - (optional) Blast with rep vs alleles
+
+The DNA hashes comparison is the less flexible method. The loci need to have an exact match between nucleotide sequence in order to be matched. The protein comparison will catch loci which have nucleotide sequences that don't have a strong similarity but have redundant codons that will be translated into the same proteins. Finally, a BLASTp is done, which allows for an alignment of the protein sequences and finds similar proteins. The first BLAST will only align and compare the representative alleles of each scheam. The optional BLAST aligns the representative alleles of the query schema with all the alleles from the Subject schema.
+
+The BLAST output will have the personalized format 6 with columns:
+::
+    qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+::
+
+The BLAST matches are dependent on the BSR value of that match. A Blast Score Ratio is a method for standardizing the genome comparison. A self-score, a comparison between the peptide sequence and the nucleotide sequence, is calculated to obtain the maximum BLAST score that could be obtained for a specific locus. The BLAST result is then divided by the self-score and if that value, between 0 and 1, is above a threshold, the result is written down as a match. The threshold can be set with the argument `--bsr`.
+
+Each matching process is followed by a process where the loci that were matched are written in the main output file. The loci from the subject whose match was not yet found are then moved into the next matching step to be matched against all the query loci. After the final BLAST step, the loci which have no match will be added to the output file with the corresponding Query or Subject as 'Not Matched'.
+
 
 Outputs
 -------
@@ -98,18 +125,26 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
 
     OutputFolderName
     ├── blast_processing # --nocleanup
-    |   ├── subject_master_file.fasta
-    |   ├── subject_master_rep_file.fasta
-    │   ├── Blast_db_prot
-    │   │   ├── Blast_db_protein.pdb
-    │   │   ├── Blast_db_protein.phr
-    │   │   ├── Blast_db_protein.pin
-    │   │   ├── Blast_db_protein.pog
-    │   │   ├── Blast_db_protein.pos
-    │   │   ├── Blast_db_protein.pot
-    │   │   ├── Blast_db_protein.psq
-    │   │   ├── Blast_db_protein.ptf
-    │   │   └── Blast_db_protein.pto
+    │   ├── subject_reps_vs_reps_blastdb
+    │   │   ├── subject_reps_vs_reps_blastdb.pdb
+    │   │   ├── subject_reps_vs_reps_blastdb.phr
+    │   │   ├── subject_reps_vs_reps_blastdb.pin
+    │   │   ├── subject_reps_vs_reps_blastdb.pog
+    │   │   ├── subject_reps_vs_reps_blastdb.pos
+    │   │   ├── subject_reps_vs_reps_blastdb.pot
+    │   │   ├── subject_reps_vs_reps_blastdb.psq
+    │   │   ├── subject_reps_vs_reps_blastdb.ptf
+    │   │   └── subject_reps_vs_reps_blastdb.pto
+    │   ├── subject_reps_vs_alleles_blastdb
+    │   │   ├── subject_reps_vs_alleles_blastdb.pdb
+    │   │   ├── subject_reps_vs_alleles_blastdb.phr
+    │   │   ├── subject_reps_vs_alleles_blastdb.pin
+    │   │   ├── subject_reps_vs_alleles_blastdb.pog
+    │   │   ├── subject_reps_vs_alleles_blastdb.pos
+    │   │   ├── subject_reps_vs_alleles_blastdb.pot
+    │   │   ├── subject_reps_vs_alleles_blastdb.psq
+    │   │   ├── subject_reps_vs_alleles_blastdb.ptf
+    │   │   └── subject_reps_vs_alleles_blastdb.pto
     │   ├── blastp_results
     │   │   ├── blast_results_x.tsv
     │   │   ├── blast_results_y.tsv
@@ -124,16 +159,6 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │   │   ├── x_rep_translation.fasta
     │   │   ├── y_rep_translation.fasta
     │   │   ├── z_rep_translation.fasta
-    │   │   └── ...
-    |   ├── Query_Not_Translated
-    │   │   ├── x_not_translated.fasta
-    │   │   ├── y_not_translated.fasta
-    │   │   ├── z_not_translated.fasta
-    │   │   └── ...
-    |   ├── Query_Not_Translated_Rep
-    │   │   ├── x_rep_not_translated.fasta
-    │   │   ├── y_rep_not_translated.fasta
-    │   │   ├── z_rep_not_translated.fasta
     │   │   └── ...
     │   ├── Subject_Translation
     │   │   ├── x_translation.fasta
@@ -150,7 +175,11 @@ Folder and file structure for the output directory of the `MatchSchemas` module 
     │       ├── blast_results_y.tsv
     │       ├── blast_results_z.tsv
     │       └── ...
-    ├── existing_matches.txt
+    ├── hashes_dna_matches.tsv
+    ├── hashes_prot_matches.tsv
+    ├── reps_vs_reps_matches.tsv
+    ├── reps_vs_alleles_matches.tsv
+    ├── unmatched.tsv
     └── Match_Schemas_Results.tsv
 
 .. toctree::
@@ -163,25 +192,28 @@ Report files description
 
 .. csv-table:: **Match_Schemas_Results.tsv**
     :header: "Query", "Subject", "BSR", "Process"
-    :widths: 30, 30, 10, 30
+    :widths: 20, 20, 10, 20
 
-    x, y, 0.8, hashes_vs_hashes
-    z, a, 1.0, hashes_vs_hashes
-    b, c, 0.965, rep_vs_rep
+    x, y, 1.0, hashes_dna
+    z, a, 1.0, hashes_prot
+    b, c, 0.765, rep_vs_rep
     d, Not Matched, NA, rep_vs_rep
     Not Matched, e, NA, rep_vs_alleles
     ...
 
-columns description:
-
+Columns description:
 ::
     
-    Query: The locus from the query schema.
-    Subject: The best match for the locus from the subject schema.
+    Query: The loci from the query schema.
+    Subject: The best loci matches from the subject schema.
     BSR: The BSR value for the best match.
-    Process: From which type of comparision is this match from.
+    Process: From which type of comparison is this match from.
 
-For the hashes comparisions the BSR value will always be set to 1.0 as this will be considered the same locus.
+This final file is the made up of the merge of the temporary files `hashes_dna_matches.tsv`, `hashes_prot_matches.tsv`, `reps_vs_reps_matches.tsv` and `reps_vs_alleles_matches.tsv` if these are not empty.
+
+For the hashes comparisons the BSR value will always be set to 1.0 as this will be considered the same locus. A locus from the Query schema can have more than one matches as the Subject loci are compared with the entire Query schema in each step. However, each Subject loci will only appear once with their best Query match.
+
+This file can be used as the input of the `SchemaAnnotation` module with the `match_schemas` option.
 
 Examples
 --------
@@ -204,3 +236,4 @@ If you encounter issues while using the `MatchSchemas` module, consider the foll
 - Verify that the paths to the query and subject schema directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- If it is a BLAST database related error, try deleting the BLAST folders in the output and run the command again and run the schema through the `AdaptLoci` as it checks for loci name conflicts.

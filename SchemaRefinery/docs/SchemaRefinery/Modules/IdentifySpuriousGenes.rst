@@ -4,14 +4,15 @@ IdentifySpuriousGenes - Identify spurious genes in a schema
 Description
 -----------
 
-The `IdentifySpuriousGenes` module parses command-line arguments and initiates the process to identify spurious genes in a schema. This module sets up an argument parser to handle various command-line options for identifying spurious genes and then calls the main function of the `IdentifySpuriousGenes` class with the parsed arguments.
+The `IdentifySpuriousGenes` module parses command-line arguments and initiates the process to identify spurious genes in a schema. This module sets up an argument parser to handle various command-line options for identifying spurious genes and then calls the main function of the `IdentifySpuriousGenes` class with the parsed arguments. This module is essential for researchers and bioinformaticians who need to detect and analyze spurious loci in order to create a more refined and concise final schema.
 
-This module takes unclassified CDS or schema loci and matches them against each other, providing a classification for each match. Based on the classification, the best class is chosen to represent the relationship between the two loci. Using these relationships, the user can select the appropriate loci or unclassified CDS group to be included in the schema removing those that are spurious.
+This module takes unclassified CDS or schema loci and matches them against each other, providing a classification for each match. Based on the classification, the best class is chosen to represent the relationship between the two loci. Using these relationships, the user can select the appropriate loci or unclassified CDS group to be included/joined in the final schema removing those that are spurious.
 
 Features
 --------
 
 - Identification of spurious genes in a schema.
+- Optional annotation of the recommendations.
 - Configurable parameters for the identification process.
 - Support for parallel processing using multiple CPUs.
 - Option to skip cleanup after running the module.
@@ -19,8 +20,9 @@ Features
 Dependencies
 ------------
 
-- Python 3.9 or higher
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
+- Python between 3.9 and 3.11
+- `BLAST <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_
+- `ChewBBACA install page <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda
 - Install requirements using the following command:
 
 .. code-block:: bash
@@ -34,7 +36,8 @@ The `IdentifySpuriousGenes` module can be used as follows:
 
 .. code-block:: bash
 
-    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
+    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall -tt 11 -b 0.6 -m schema -pm reps_vs_alleles -c 4 --nocleanup
+
 
 Command-Line Arguments
 ----------------------
@@ -50,8 +53,9 @@ Command-Line Arguments
     -a, --allelecall-directory
         (Required) Path to the directory that contains allele call directory from chewBBACA that was run with --no-cleanup and --output-unclassified.
 
-    -pnl, --possible-new-loci
-        (Optional) Path to the directory that contains possible new loci.
+    -ann, --annotations
+        (Optional) Path to the tsv file with the schema annotations.
+        This file needs to have one column with loci with the same IDs as the ones in the schema.
 
     -at, --alignment-ratio-threshold
         (Optional) Threshold value for alignment used to identify spurious CDS (float: 0-1).
@@ -90,13 +94,8 @@ Command-Line Arguments
 
     -m, --run-mode
         (Optional) Run mode for identifying spurious loci.
-        Choices: unclassified_cds, schema
+        Choices: unclassified_cds, schema, schema_vs_schema
         Default: schema
-
-    -pm, --processing-mode
-        (Optional) Mode to run the module.
-        Choices: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.
-        Default: reps_vs_alleles
 
     -c, --cpu
         (Optional) Number of CPUs to run BLAST instances.
@@ -113,24 +112,52 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
+.. Note::
+    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+
+The `--allelecall-directory` argument must be the folder obtained using the chewBBACA module AlleleCall with the arguments --no-cleanup and --output-unclassified. Without these arguments the needed files to run the `IdentifySpuriousGenes` module will not be saved in the output folder. 
+
+The options `--schema-directory` and `--allelecall-directory` must have two paths each if the `run_mode` is `schema_vs_schema`. One path per schema and each schema must have a respective AlleleCall directory.
+
 Algorithm Explanation
 ---------------------
 
-Algorithm to identify new loci based on the CDS that are not in the schema:
-
-.. image:: source/IdentifySpuriousGenes_unclassifiedCDS.png
-   :alt: Algorithm for unclassified CDS
-   :width: 80%
-   :align: center
-
-Algorithm to indentify spurious loci based on the schema input:
+Algorithm to indentify spurious loci based on schema inputs for run modes schema and schema_vs_schema:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/IdentifySpuriousGenes_schema.png
    :alt: Algorithm to identify spurious loci
    :width: 80%
    :align: center
+::
 
-Each BLAST results is parsed and given a class based on the following rules:
+The module will only use the representatives of the schema. Working with all the alleles is not an option as it would take too much computational power for very little new information.
+
+This classification algorithm goes through 2 rounds of BLAST. First a BLASTp is done, and the results filtered based on BSR and pident thresholds. The loci that are not matched are then passed to a BLASTn processing. By running the BLASTn after the BLASTp we ensure that valid CDS are still caught and matched regardless if they contain frameshifts or are pseudo or partial genes. In this way we obtain more complete results and matches. 
+
+The BLAST tool has a limit of hits written per loci in the output file. Using a value for this limit that will not overload the space alocated for our tool, it can happen that not all matches are written down if the loci have a high number of alleles. For that reason, all BLAST processes have the locus being aligned as a query, including all its alleles, removed from the databased used for that run. This is done to ensure that for all loci that will have a match, that match won't be with itself.
+
+The BLAST output will have the personalized format 6 with columns:
+::
+    qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+::
+
+Algorithm to identify new loci based on the CDS that are not in the schema:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: source/IdentifySpuriousGenes_unclassifiedCDS.png
+   :alt: Algorithm for unclassified CDS
+   :width: 80%
+   :align: center
+::
+
+This running mode has an extra step after the frequency has been calculated. The unclassified CDS are not in the structure of loci with alleles. The CDS will be clustered into proto loci based on similarity and size of sequences. The clustering thresholds used can be set with the arguments. 
+
+The ID of the representative CDS will be used as the ID for all the CDSs in that cluster, which are now the alleles of the proto loci.
+
+
+Each BLAST results are parsed and given a class based on the following rules:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: source/algorithm_classification.png
    :alt: Classification algorithm
@@ -141,7 +168,25 @@ Each BLAST results is parsed and given a class based on the following rules:
 
 Between the two loci, the best class is chosen based on the following order of the classes to represent the relationship between the two loci.
 
-classification order: 1a, 1b, 2a, 3a, 2b, 1c, 3b, 4a, 4b, 4c, 5
+classification order: 1a, 1b, 2a, 3a, 2b, 1c, 3b, 4a, 4b, 4c, 5, 6, 7
+
+Depending on the classification, each locus will have a specific action recommended:
+::
+    Join: 1a
+    Choice: 1c, 2b, 3b, 4b, 6
+    Drop: 1b, 2a, 3a, 4a
+    Add: 4c, 5, 7
+
+
+Choice is a recommendation for the user to decide if the locus should just be added with no alteration ("Add"), dropped ("Drop") or joined to the cluster it is in ("Join"). 
+
+The other loci will have the action "Add" and will just be added, without alteration, to the new schema.
+
+All matches resukting from the BLASTn will be classified as 6 which corresponds to the action "Choice". As a BLASTn does not involve BSR and frequency values it can not be classified as "Drop" or "Add" from the algorithm. However, for this file to be used in the `CreateSchemaStructure` module these "Choice" actions will have to be change into one of the other actions. This implies that the user must review and annotate the recommendations anc choose the action it finds best.
+
+The recommendation associated to each locus can change in the final output. For example, a locus that was part of a 1a cluster can be marked as "Drop" if it does not pass certain thresholds of frequency.
+
+The annotation option will use the `consolidate` mode from the `SchemaAnnoation` module, so the input format should comform with the rules set in the SchemaAnnotation documentation.
 
 
 Outputs
@@ -150,14 +195,16 @@ Folder and file structure for the output directory of the `IdentifySpuriousGenes
 
 Since there are two run modes, the output directory structure will vary based on the run mode selected.
 
-**For --run-mode schema:**
+**For --run-mode schema and schema_vs_schema:**
 
 ::
 
     OutputFolderName
     ├── 1_schema_processing # --nocleanup
-    │   ├── master.fasta
+    │   ├── master_nucleotide.fasta
     │   ├── schema
+    │   │   ├── .genes_list
+    │   │   ├── .schema_config
     │   │   ├── loci_x.fasta
     │   │   ├── new_loci_y.fasta
     │   │   ├── ...
@@ -187,6 +234,10 @@ Since there are two run modes, the output directory structure will vary based on
     │   │       └── ...
     │   └── 2_BLASTp_processing
     │       ├── blastn_results_matches_translations
+    │       │   │   └── cluster_rep_translation
+    │       │   │       ├── cluster_rep_translation_x.fasta
+    │       │   │       ├── cluster_rep_translation_y.fasta
+    │       │   │       └── ...
     │       │   ├── cluster_matches_translation_x.tsv
     │       │   ├── cluster_matches_translation_y.tsv
     │       │   └── ...
@@ -199,25 +250,20 @@ Since there are two run modes, the output directory structure will vary based on
     │           ├── blast_results_y.tsv
     │           └── ...
     ├── 3_processing_results # --nocleanup
-    │   ├── blast_results
-    │   │   ├── blast_all_matches.tsv
-    │   │   ├── blast_by_cluster
-    │   │   │   ├── cluster_x.tsv
-    │   │   │   ├── cluster_y.tsv
-    │   │   │   └── ...
-    │   │   └── blast_results_by_class
-    │   │       ├── class_1.tsv
-    │   │       ├── class_2.tsv
-    │   │       └── ...
-    │   ├── cds_id_changes.tsv
-    │   ├── dropped_cds.tsv
-    │   └── Graph_folder
-    │       ├── All_of_CDS_graphs.html
-    │       ├── graphs_class_1a.html
-    │       └── ...
+    │   └── blast_results
+    │       ├── blast_all_matches.tsv
+    │       ├── blast_by_cluster
+    │       │   ├── blast_joined_cluster_x.tsv
+    │       │   ├── blast_retained_y.tsv
+    │       │   └── ...
+    │       └── blast_results_by_class
+    │           ├── class_1a.tsv
+    │           ├── class_2a.tsv
+    │           └── ...
     ├── count_results_by_cluster.tsv
     ├── drop_loci_reason.tsv
     ├── recommendations.tsv
+    ├── recommendations_annotations.tsv # -ann
     └── related_matches.tsv
 
 **For --run-mode unclassified_cds:**
@@ -230,7 +276,11 @@ Since there are two run modes, the output directory structure will vary based on
     │   └── CDS_not_found_translation.fasta
     ├── 2_BLAST_processing # --nocleanup
     │   ├── 1_BLASTn_processing
-    │   │   ├── Blast_db_nucleotide
+    │   │   ├── cluster_representatives_fastas_dna
+    │   │   │   ├── cluster_rep_x.fasta
+    │   │   │   ├── cluster_rep_y.fasta
+    │   │   │   └── ...
+    │   │   ├── Blast_db_nucl
     │   │   │   ├── Blast_db_nucleotide.ndb
     │   │   │   ├── Blast_db_nucleotide.nhr
     │   │   │   ├── Blast_db_nucleotide.nin
@@ -246,6 +296,10 @@ Since there are two run modes, the output directory structure will vary based on
     │   │       └── ...
     │   └── 2_BLASTp_processing
     │       ├── blastn_results_matches_translations
+    │       │   │   └── cluster_rep_translation
+    │       │   │       ├── cluster_rep_translation_x.fasta
+    │       │   │       ├── cluster_rep_translation_y.fasta
+    │       │   │       └── ...
     │       │   ├── cluster_matches_translation_x.tsv
     │       │   ├── cluster_matches_translation_y.tsv
     │       │   └── ...
@@ -261,12 +315,12 @@ Since there are two run modes, the output directory structure will vary based on
     │   ├── blast_results
     │   │   ├── blast_all_matches.tsv
     │   │   ├── blast_by_cluster
-    │   │   │   ├── cluster_x.tsv
-    │   │   │   ├── cluster_y.tsv
+    │   |   │   ├── blast_joined_cluster_x.tsv
+    │   |   │   ├── blast_retained_y.tsv
     │   │   │   └── ...
     │   │   └── blast_results_by_class
-    │   │       ├── class_1.tsv
-    │   │       ├── class_2.tsv
+    │   │       ├── class_1a.tsv
+    │   │       ├── class_2a.tsv
     │   │       └── ...
     │   ├── cds_id_changes.tsv
     │   ├── dropped_cds.tsv
@@ -277,12 +331,13 @@ Since there are two run modes, the output directory structure will vary based on
     ├── count_results_by_cluster.tsv
     ├── drop_loci_reason.tsv
     ├── recommendations.tsv
+    ├── recommendations_annotations.tsv # -ann
     ├── related_matches.tsv
-    ├── temp_fastas
-    │   ├── cluster_x.fasta
-    │   ├── cluster_y.fasta
-    │   └── ...
-    └── temp_fastas_path.txt
+    └── temp_fastas
+        ├── x.fasta
+        ├── y.fasta
+        └── ...
+  
 
 .. toctree::
    :maxdepth: 1
@@ -298,14 +353,11 @@ Report files description
     :widths: 15, 15, 20, 5, 5, 5, 5, 15, 5, 5, 5, 5, 5, 20, 20, 25, 25
 
     x, y, 378|1024|-|1024, -, -, -, -, 646|1024|1024|1024, -, -, -, -, -, 16|64, 16|64, 223, 133
-    #,
     x, z, -, -, -, -, -, 128|128|128|128, -, -, -, -, -, 16|8, 16|8, 223, 99
-    #,
     x, w, 6|224|1|224, -, -, -, -, 218|224|223|224, -, -, -, -, -, 16|14, 16|14, 223, 221
     ...
 
-columns description:
-
+Columns description:
 ::
 
     Query: The query locus.
@@ -318,39 +370,81 @@ columns description:
 
 .. csv-table:: **drop_loci_reason.tsv**
     :header: "Possible_new_loci_ID", "Drop_Reason"
-    :widths: 40, 60
+    :widths: 30, 60
 
     x, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     y, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     z, Dropped_due_to_smaller_genome_presence_than_matched_cluster
     ...
 
-columns description:
-
+Columns description
 ::
 
     Possible_new_loci_ID: The identifier for the possible new locus.
     Drop_Reason: The reason for dropping the locus.
 
 .. csv-table:: **recommendations.tsv**
-    :header: "Recommendation", "IDs"
-    :widths: 20, 80
+    :header: "Locus", "Action", "Class"
+    :widths: 15, 20, 5
 
-    Joined_x, "x,y,z"
-    Choice, "x,u,t"
-    Drop, j
-    #,
-    Joined_a, "a,b,c"
-    #,
-    Drop, k
+    x, Join, 1a
+    y, Join, 1a
+    z, Choice, 3b
+    #
+    a, Choice, 1c
+    b, Choice, 1c
+    #
+    c, Drop, 1b
+    #
     ...
 
-columns description:
+Columns description:
+::
+
+    Locus: Name of the locus to be joined in the clustered.
+    Action: Action to be taken (Join, Choice, Drop or Add).
+    Class: Class that the loci was classified with.
+    #: Separates each cluster of loci.
+
+This is the main output file as it can be used as the input of the `CreateSchemaStructure`.
+It is adviced to annotate this file usinf the argument `--annotations` in order to more easily review and confirm the resulting clusters and actions. For this process the user can consult the previews files as well as proteome and functional annotations.
+
+Some loci are in single clusters and with action "Drop". In these cases these loci were inserted in a cluster with one other loci both marked "Join" but due to low frequency this one will be dropped, and the other loci will be changed into "Add". To check the full cluster relationships consult the `related_matches.tsv` file.
+
+.. Note::
+    Subgroups can be created out of bigger clusters by adding a new line with only "#". It can be useful for making analysing big clusters easier or to join only specific loci in that group.
+
+.. Note:: 
+    Before passing the recommendation file to the `CreateSchemaStructure` module make sure there are no "Choice" in the action column. After review the clusters the user should change these actions into "Join", "Drop" or "Add".
+
+
+
+.. csv-table:: **recommendations_annotations.tsv**
+   :header: "Loci", "Action", "Locus_annotation", "Annotation"
+   :widths: 15, 20, 15, 40
+
+   x, Join, x, annotation
+   y, Join, y, annotation
+   z, Choice, z, annotation
+   #
+   a, Choice, a, annotation
+   b, Choice, b, annotation
+   #
+   c, Drop, c, annotation
+   #
+   ...
+
+Columns description:
 
 ::
 
-    Recommendation: The type of recommendation (e.g., Joined, Choice, Drop).
-    IDs: A comma-separated list of identifiers for the loci that are recommended.
+    Loci: Name of the locus to be joined in the clustered.
+    Action: Action to be taken (Join, Choice, Drop or Add).
+    Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).
+    Annotation: Column with annotation from the annotation file.
+        (The name and numer of columns with annotations will depend on the file with the annotation, follows the structure of the output of the consolidate module).
+    #: Separates each cluster of loci.
+
 
 .. csv-table:: **related_matches.tsv**
     :header: "Query", "Subject", "Class", "Class_count", "Inverse_class", "Inverse_class_count", "Frequency_in_genomes_query", "Frequency_in_genomes_subject", "alleles_used_to_blast_count", "alleles_blasted_against_count"
@@ -364,7 +458,7 @@ columns description:
     a, c, 1c, 128/128, 1c, 128/128, 223, 99, 16|8, 16|8
     ...
     
-columns description:
+Columns description:
 
 ::
     
@@ -379,13 +473,7 @@ columns description:
     alleles_used_to_blast_count: The count of alleles used to blast.
     alleles_blasted_against_count: The count of alleles blasted against.
 
-**temp_fastas_path.txt**:
-::
-
-    /path/to/temp_fastas/cluster_x.fasta
-    /path/to/temp_fastas/cluster_y.fasta
-    /path/to/temp_fastas/cluster_z.fasta
-    ...
+This file contains a simple overview of the clusters and the pairs within them alongside some important values for later consultation, such as the frquency of each locus. 
 
 Examples
 --------
@@ -398,7 +486,7 @@ Here are some example commands to use the `IdentifySpuriousGenes` module:
     SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall
 
     # Identify spurious genes with custom parameters
-    SR IdentifySpuriousGenes -s /path/to/schema -o /path/to/output -a /path/to/allelecall -pnl /path/to/possible_new_loci -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema -pm reps_vs_alleles -c 4 --nocleanup
+    SR IdentifySpuriousGenes -s /path/to/schema /path/to/second_schema -o /path/to/output -a /path/to/allelecall /path/to/allelecall_second_schema  -ann /path/to/annotation-files -at 0.9 -pt 90 -cs 0.9 -cc 0.9 -gp 10 -as 201 -tt 11 -b 0.6 -sr 0.8 -m schema_vs_schema -pm reps_vs_alleles -c 4 --nocleanup
 
 Troubleshooting
 ---------------
@@ -408,3 +496,4 @@ If you encounter issues while using the `IdentifySpuriousGenes` module, consider
 - Verify that the paths to the schema, output, and allele call directories are correct.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.
+- If it is a BLAST database related error, try deleting the BLAST folders in the output and run the command again and run the schema through the `AdaptLoci` as it checks for loci name conflicts.
