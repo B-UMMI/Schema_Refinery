@@ -4,9 +4,9 @@ IdentifyParalogousLoci - Identify paralogous loci in a schema
 Description
 -----------
 
-The `IdentifyParalogousLoci` module is a comprehensive tool designed to identify paralogous loci within a cg/wgMLST schema. This module is essential for researchers and bioinformaticians who need to detect and analyze paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions. Joining these paralogous loci under one locus in the final schema makes it more concise and leads to less confusion in later uses of the schema for reference.
+The `IdentifyParalogousLoci` module is a comprehensive tool designed to identify paralogous loci within a cg/wgMLST schema. This module is essential for researchers and bioinformaticians who need to detect and analyze paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions. Desciding what to do at an early stage of schema use will avoid potential later problems. Joining paralogous loci occurring infrequently together in the same genome under one locus in the schema makes it more concise and may reflects the functional similarity of these genes. However, if closely related paralogous loci are found mostly in the same genomes, excluding these loci from the schema may be advisable since the allele caller may be unable to distinguishing the two loci and therefore to unambiguously assign the alleles to the correct locus.
 
-`IdentifyParalogousLoci` will identify these genes through alignment results and threshold filtering. The final clusters of loci will be written to the output recommendation file with the action "Join".
+`IdentifyParalogousLoci` will identify these loci through alignment results and threshold filtering. The final clusters of loci will be written to the output recommendation file with the action "Join" but, as indicated above, this file should be reviewed by the users to decide on the actual action to be performed.
 
 Features
 --------
