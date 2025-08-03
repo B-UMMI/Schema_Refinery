@@ -121,11 +121,11 @@ Workflow for downloading metadata:
 ::
 
 
-For both databases the first step is to download the metadata of the assemblies in the chosen database. For the `NCBI` database, the entire metadata is downloaded and then filtering according to the input criteria. For the `ENA661K` database, a precompiled metadata table is used and filtered. Thsi precompiled table is based on an online database that might not have specific taxons. In that case we suggest using the NCBI database.
+For both databases the first step is to download the metadata of the assemblies in the chosen database. For the `NCBI` database, the entire metadata is downloaded and then filtering according to the input criteria. For the `ENA661K` database, a precompiled metadata table is used and filtered. This precompiled table is based on an online database that might not have specific taxons. In that case we suggest using the NCBI database.
 
-After the metadata is filtered, the assemblies that pass the filtering are downloaded alongside their matedata.
+After the metadata is filtered, the assemblies that pass the filtering criteria are downloaded alongside their matadata.
 
-If the --nocleanup argument is not used the final output is the log file and the assemblies zip folder, where the assemblies and metadata will be stored. For an output with more complete metadata of the assemblies use the option --fetch-metadata, which will store in the output the biosamples IDs and metadata.
+If the --nocleanup argument is not used the final output is the log file and the assemblies zip folder, where the assemblies and metadata will be stored. For an output with more complete metadata of the assemblies use the option --fetch-metadata, which will store in the output the biosample IDs and metadata.
 
 Filtering criteria example
 --------------------------
