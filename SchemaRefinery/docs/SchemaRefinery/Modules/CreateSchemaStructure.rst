@@ -5,7 +5,7 @@ Description
 ------------
 The `CreateSchemaStructure` module is a module designed to facilitate the creation of a schema structure from a given schema or fasta files based on user recommendation file from the `IdentifyParalogousLoci` and `IdentifySpuriousGenes` modules. This module parses command-line arguments to initiate the schema creation process, allowing users to efficiently generate a schema structure from a provided schema file. The generated schema structure is stored in the specified output directory.
 
-This is a final step in the `SchemaRefinery` algorithm as the output is a costume schema that follows the recommended and reviewed changes given by the user.
+This is the final step in the `SchemaRefinery` workflow providing as output a schema reflecting the user reviewed changes that were recommended by other modules.
 
 
 Features
