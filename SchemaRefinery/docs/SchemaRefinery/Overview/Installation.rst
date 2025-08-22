@@ -1,9 +1,10 @@
 Installation Guide
 ==================
 
-Follow these steps to install the `SchemaRefinery` package on your system. There are three ways to download the `SchemaRefinery` toolkit: Bioconda, PyPi or using Git. Choose the one best for your system or that you are more familiar with.
+Follow these steps to install `SchemaRefinery`. There are three methods to install `SchemaRefinery`: Bioconda, PyPI or using Git. Choose the one that is most convenient based on your system and preferences. Schema Refinery requires Python 3.9 or higher, BLAST+ and NCBI datasets to be installed.
 
-For a better organization of the packages and dependencies, it is advised for you to create a new environment on Conda/Miniconda for this toolkit.
+.. important::
+	For a better organization of the packages and dependencies, it is advised to create a new conda environment to install Schema Refinery into.
 
 Installation through Bioconda
 ----------------------------
@@ -16,7 +17,7 @@ Installation through Bioconda
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh
 
-2. **Install Bioconda**: Ensure that Bioconda is installed in your system.
+2. **Add Bioconda and conda-forge channels**: Ensure that conda can search and install packages from the Bioconda and conda-forge channels.
 
     .. code-block:: bash
 
@@ -31,7 +32,7 @@ Installation through Bioconda
         conda create --name schema_refinery python=3.9
         conda activate schema_refinery
 
-4. **Install the SchemaRefinery package**: Install the toolkit using the Bioconda command:
+4. **Install Schema Refinery**:
 
     .. code-block:: bash
 
@@ -41,12 +42,12 @@ Installation through Bioconda
 Installation through PyPi
 --------------------------
 
-1. **Install pip**: For Python 3.4 and up installed using Windows or macOS `pip` is installed as default. For Linux environments run:
+1. **Install pip**: For Python 3.4 and higher installed using Windows or macOS `pip` is installed as default. For Linux environments run:
 
     .. code-block:: bash
 
         #For Ubuntu and python3
-        sudo apt - get install python3 - pip
+        sudo apt-get install python3 - pip
 
         #For CentOS and python3
         sudo yum install python3 - pip
@@ -59,14 +60,14 @@ Installation through PyPi
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh
 
-3. **Create a Conda Environment**: It is recommended to create a conda environment to manage dependencies:
+3. **Create a Conda Environment**: It is recommended to create a conda environment to install Schema Refinery and manage dependencies.
 
     .. code-block:: bash
 
         conda create --name schema_refinery python=3.9
         conda activate schema_refinery
 
-4. **Install the SchemaRefinery package**: Install the toolkit using the PyPi command:
+4. **Install SchemaRefinery using pip**:
 
     .. code-block:: bash
 
@@ -116,14 +117,14 @@ Installation through GitHub
         conda create --name schema_refinery python=3.9
         conda activate schema_refinery
 
-6. **Install Dependencies**: Install the required Python packages:
+6. **Install Dependencies**: Install BLAST and the required Python packages:
 
     .. code-block:: bash
 
         conda install blast
         pip install -r requirements.txt
 
-7. **Install the Package**: Install the `SchemaRefinery` package:
+7. **Install Schema Refinery**:
 
     .. code-block:: bash
 
@@ -135,16 +136,10 @@ Installation through GitHub
 
         SR --help
 
-9. **Deactivate the Conda Environment**: Once you are done, you can deactivate the conda environment:
-
-    .. code-block:: bash
-
-        conda deactivate
-
 Additional Information
 ----------------------
 
-- **Updating the Package**: To update the `SchemaRefinery` package, navigate to the repository directory and pull the latest changes:
+- **Updating the Package**: To update `SchemaRefinery`, navigate to the repository directory and pull the latest changes:
 
     .. code-block:: bash
 
@@ -152,10 +147,11 @@ Additional Information
         git pull
         python setup.py install
 
-- **Uninstalling the Package**: To uninstall the `SchemaRefinery` package, use the following command:
+- **Uninstalling the Package**: To uninstall `SchemaRefinery`, use the following command:
 
     .. code-block:: bash
 
         pip uninstall SchemaRefinery
 
-- **Troubleshooting**: If you encounter any issues during installation, ensure that all dependencies are installed and that you are using a compatible version of Python. You can also refer to the `GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_ for more information and support.
+.. important::
+	If you encounter any issues during installation, ensure that all dependencies are installed and that you are using a compatible version of Python. You can also refer to the `GitHub repository <https://github.com/B-UMMI/Schema_Refinery>`_ for more information and support.
