@@ -4,12 +4,12 @@ For a more detailed description of the functionalities available in Schema Refin
 
 ## Description
 
-Schema Refinery is a comprehensive toolkit designed for refining and managing MLST schemas. It provides a suite of modules for various tasks such as identifying paralogous and spurious loci, downloading genomic assemblies, annotating schemas and adapting loci into standardized schemas.
+Schema Refinery is a comprehensive toolkit designed for refining and managing MLST schemas. It provides a suite of modules for various tasks such as selecting and downloading genome assemblies for schema creation, identifying paralogous and spurious loci, annotating schema loci, and adapting loci sets into standardized schemas.
 
 ## News
 
-## Version 0.3.1 - 2025-01-28
-### feat: 
-    Added to PYPI
-### fix:
-    Fixed setup.py
+## Version 0.3.3.1 - 2025-06-20
+
+- Optimized all modules to improve efficiency and the accuracy of the results.
+- Restructured output files to improve readability and simplify parsing.
+- Fixed several issues.
