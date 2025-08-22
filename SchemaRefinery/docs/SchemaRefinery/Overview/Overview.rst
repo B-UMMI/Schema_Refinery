@@ -76,14 +76,15 @@ Workflow for creating a schema using `SchemaRefinery` and `chewBBACA`:
 
 The modules can be used almost completely without a specific order. In the case of the `SchemaAnnotation` module with the match-schemas mode, the `MatchSchemas` module has to be run before. For the `CreateSchemaStructure` module, the input file has to be the output of either the `IdentifyParalogousLoci` or the `IdentifySpuriousGenes` modules.
 
-User Cases
------------
+Use Cases
+---------
 
 Comparing an older version of a schema with its latest version:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In this case we want to compare and old and new version of the same schema to better understand the changes done. We will annotate it using information from the old schema to better understand what information was mantained.
 
 1. Use the `AdaptLoci` module to validate the schemas' structure (you can skip this step if the schemas are already in a format compatible with chewBBACA):
+
     .. code-block:: bash
         SR AdaptLoci -i path/to/old_schema -o path/to/old_schema_formatted -c 4
         SR AdaptLoci -i path/to/new_schema -o path/to/new_schema_formatted -c 4
