@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'SchemaRefinery'
-copyright = '2024, UMMI'
-author = 'Mykyta Forofontov'
+copyright = '2025, UMMI'
+author = 'UMMI'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.3'
+release = '0.4.0'
 
 # -- General configuration ---------------------------------------------------
 
