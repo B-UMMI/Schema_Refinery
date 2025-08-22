@@ -4,43 +4,30 @@ DownloadAssemblies - Tutorial
 Objective
 ---------
 
-This tutorial will show you how to download assemblies from NCBI and ENA661K using the `DownloadAssemblies` module.
+This tutorial will show you how to download assemblies from NCBI and ENA661K using the :doc:`DownloadAssemblies </SchemaRefinery/Modules/DownloadAssemblies>` module.
 
 Prerequisites
 -------------
-- SchemaRefinery installed
-- Python between 3.9 and 3.11
-- NCBI datasets (`https://www.ncbi.nlm.nih.gov/datasets/ <https://www.ncbi.nlm.nih.gov/datasets/>`_)
+
+- NCBI datasets command-line too installed (instructions `here <https://www.ncbi.nlm.nih.gov/datasets/docs/v2/command-line-tools/download-and-install/>`_).
 
 Procedure
 ---------
 
 1. Open a terminal window.
 
-2. Run the following command to download assemblies from NCBI and ENA661K:
+2. Modify the following command and run it to download assemblies from NCBI and ENA661K:
 
 .. code-block:: bash
 
     SR DownloadAssemblies -db NCBI -th 3 --download -fm -o 'path/to/files/DownloadAssemblies_Results' -f '/path/input_table_example.tsv' -e your_email@email.com
 
-- The input table used is in the DownloadAssemblies folder.
-- Replace `path/to/files/` with the actual path to the files.
-- Replace `your_email@email.com` with your email address.
+.. important::
+	The file passed to `-f` is available `here`. Do not forget to replace the paths in the command with the paths to the files in your system. Provide your email address to `-e`.
 
-3. Press Enter to execute the command.
-
-4. Wait for the download process to complete.
-
-5. Check the output directory for the downloaded assemblies.
+3. Check the output directory for the downloaded assemblies.
 
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the `DownloadAssemblies documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/DownloadAssemblies.html>`_.
-
-Conclusion
-----------
-
-You have successfully downloaded assemblies from NCBI and ENA661K using the `DownloadAssemblies` module.
-
-For more information on the `DownloadAssemblies` module, refer to the `DownloadAssemblies documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/DownloadAssemblies.html>`_.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`DownloadAssemblies documentation </SchemaRefinery/Modules/DownloadAssemblies>`.
