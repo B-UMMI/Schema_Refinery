@@ -1,4 +1,4 @@
-Contacts and Support
+Contact and Support
 ====================
 
 Schema Refinery is developed and maintained by the `Molecular Microbiology and Infection Unit (UMMI) <http://darwin.phyloviz.net/wiki/doku.php>`_, Lisbon, Portugal.
