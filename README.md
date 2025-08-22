@@ -4,7 +4,7 @@ For a more detailed description of the functionalities available in Schema Refin
 
 ## Description
 
-The `SchemaRefinery` is a comprehensive toolkit designed for refining and managing MLST schemas. It provides a suite of modules for various tasks such as identifying paralogous and spurious loci, downloading genomic assemblies, annotating schemas and adapting loci into standardized schemas.
+Schema Refinery is a comprehensive toolkit designed for refining and managing MLST schemas. It provides a suite of modules for various tasks such as identifying paralogous and spurious loci, downloading genomic assemblies, annotating schemas and adapting loci into standardized schemas.
 
 ## News
 
