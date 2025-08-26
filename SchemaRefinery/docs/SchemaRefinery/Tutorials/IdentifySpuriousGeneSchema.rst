@@ -4,34 +4,29 @@ IdentifySpuriousGeneSchema - Tutorial
 Objective
 ---------
 
-This tutorial will guide you through the process of using the `IdentifySpuriousGene` module for `Schema` to identify spurious genes in a genomic schema.
+This tutorial will guide you through the process of using the :doc:`IdentifySpuriousGene </SchemaRefinery/Modules/IdentifySpuriousGenes>` module to identify spurious genes in a schema.
 
 Prerequisites
 -------------
 
-- SchemaRefinery installed
-- Python between 3.9 and 3.11
-- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
+- Download the schema from `chewBBACA's tutorial <https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip>`_.
 
 Procedure
 ---------
 
 1. Open the terminal
 
-2. Run the following command to execute
+2. Modify and run the following command to identify spurious genes in the schema:
 
 .. code-block:: bash
 
     SR IdentifySpuriousGenes -s '/path/to/tutorial_schema/schema_seed' -a '/path/to/Allele_calling'  -o '/path/to/files/output_folder/IdentifySpuriousGenesSchema' -m schema -pm alleles_vs_alleles --t 11 -c 6
 
-- Replace `/path/to/files/` with the actual path to the files.
+.. important::
+	Replace `/path/to/files/` with the actual path to the files.
 
-3. Press Enter to execute the command.
+1. Check the output directory for the list of identified spurious genes. The first lines of the file containing the clusters of potential spurious loci should look like this:
 
-4. Wait for the process to complete.
-
-5. Check the output directory for the identified spurious genes.
-    The first lines of the final clusters file should look like:
 ::
     
    Locus	Action	Class
@@ -51,15 +46,12 @@ Procedure
     GCA-000427075-protein1286	Choice	1c
     #
 
-
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the `IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`_.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`IdentifySpuriousGenes documentation </SchemaRefinery/Modules/IdentifySpuriousGenesOutputDescription>`.
 
 Conclusion
 ----------
 
-You have successfully identified spurious genes in a genomic schema using the `IdentifySpuriousGenes` module for `Schema`.
-
-For more information on the `IdentifySpuriousGenes` module, refer to the `IdentifySpuriousGenes documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifySpuriousGenes.html>`_.
+You have successfully identified spurious genes in a schema using the :doc:`IdentifySpuriousGene </SchemaRefinery/Modules/IdentifySpuriousGenes>`.

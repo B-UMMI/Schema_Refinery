@@ -4,29 +4,23 @@ IdentifyParalogousLoci - Identify paralogous loci in a schema
 Description
 -----------
 
-The `IdentifyParalogousLoci` module is a comprehensive tool designed to identify paralogous loci within a cg/wgMLST schema. This module is essential for researchers and bioinformaticians who need to detect and analyze paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions. Desciding what to do at an early stage of schema use will avoid potential later problems. Joining paralogous loci occurring infrequently together in the same genome under one locus in the schema makes it more concise and may reflects the functional similarity of these genes. However, if closely related paralogous loci are found mostly in the same genomes, excluding these loci from the schema may be advisable since the allele caller may be unable to distinguishing the two loci and therefore to unambiguously assign the alleles to the correct locus.
+The `IdentifyParalogousLoci` module identifies paralogous loci, which are genes that have evolved by duplication within a genome and may have similar but not identical functions. Deciding what to do at an early stage of schema development will avoid potential problems in later stages when a schema is being actively used to classify strains. Merging highly similar loci occurring infrequently together and reported as paralogous into a single locus makes schemas more concise and may better reflect the functional similarity of the genes. However, if loci reported as paralogs are found mostly in the same genomes, excluding those loci from the schema may be advisable since the allele calling process may be unable to distinguish the two loci and therefore to unambiguously assign the alleles to the correct locus.
 
-`IdentifyParalogousLoci` will identify these loci through alignment results and threshold filtering. The final clusters of loci will be written to the output recommendation file with the action "Join" but, as indicated above, this file should be reviewed by the users to decide on the actual action to be performed.
+The `IdentifyParalogousLoci` module identifies paralogous loci through alignment with BLAST and a set of filtering criteria used to decide if loci should be considered paralogs. The groups of paralogous loci are written to an output file as a set of "Join" recommendations"Join". These recommendations should be reviewed by the users to decide on the actual action to be performed.
 
 Features
 --------
 
 - Identification of paralogous loci in a schema.
 - Optional annotation of the final recommendations.
-- Configurable parameters for the identification process.
+- Configurable parameters for the identification of paralogous loci.
 - Support for parallel processing using multiple CPUs.
-- Option to skip cleanup after running the module.
+- Option to skip intermediate file cleanup after running the module.
 
 Dependencies
 ------------
 
-- Python between 3.9 and 3.11
-- `BLAST <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_
-- Install requirements using the following command:
-
-.. code-block:: bash
-
-    pip install -r requirements.txt
+- BLAST (manual `here <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 
 Usage
 -----
@@ -97,23 +91,18 @@ Algorithm to identify paralogous loci in a schema is shown below:
    :alt: IdentifyParalogousLoci Algorithm
    :width: 80%
    :align: center
-::
 
+The `IdentifyParalogousLoci` module aligns the translated sequences of the loci using BLASTp. The BLASTp results are then filtered based on a BSR and sequence size thresholds. The coordinates of the loci are also checked to see if they intersect or are within a close distance.
 
-The `IdentifyParalogousLoci` algorithm works by aligning the protein sequences of the loci using the BLASTp tool. These results are then filtered using BSR values and coordinate interception. If the coordinates of the beginnig and end of the loci don't intercept, they are checked to see if they are still within the size threshold. This value can be set with the argument `--size-threshold`.
-
-The BLAST output will have the personalized format 6 with columns:
+The BLAST output is a TSV file, created by selecting BLAST's output format 6 with the following columns:
 ::
     qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
-::
 
-The loci that were found to match and are in intercepting coordinates in the gene or are within a close interval will be written as final clusters. These clusters will be then recommended being joined when ran on the `CreateSchemaStructure` module.
-
-It is advised that the user annotates these recommendations using the `--annotations` argument and then reviews the clusters to ensure that these make biological sense. If there is a locus the user wishes to not join, they can change the action value to "Add". The annotation option will use the `consolidate` mode from the `SchemaAnnoation` module, so the input format should comform with the rules set in the SchemaAnnotation documentation.
+The loci that were found to match and intercept or are in close proximity are grouped as potential paralogous loci and recommended to be merged into a single locus. It is advised to add loci annotations to the recommendations by passing a file with loci annotations to the `--annotations` parameter. Adding annotations can facilitate the decision process by easily checking if the annotations within groups of loci are similar, which may indicate that the loci have the same or similar functions. If there is a locus that should not be merged, the recommendation should be changed to **Add**. The annotation option will use the `consolidate` mode from the `SchemaAnnotation` module, so the input format should comform with the rules set in the :doc:`SchemaAnnotation documentation </SchemaRefinery/Modules/SchemaAnnotation>`.
 
 Outputs
 -------
-Folder and file structure for the output directory of the `IdentifyParalogousLoci` module is shown below. The output directory contains the following files and folders:
+The directory structure of the output directory created by the `IdentifyParalogousLoci` module is shown below.
 
 ::
 
@@ -167,6 +156,8 @@ Report files description
    x, c, 0.6523642732049036, True, True, 416.0|466.0, 544.0|547.0, 515.0|547.0, 476.75|512.5714285714286
    ...
 
+This is an intermediate file that includes summary statistics for each locus used in the filtering process to identify potential paralogous loci. Not every match found in this file will be in the final recommendations file. Only those with the value TRUE in the columns **if_loci_intersect** and/or **if_close distance** will be grouped.
+
 Columns description:
 
 ::
@@ -181,8 +172,6 @@ Columns description:
     Loci_mode_allele_size: The mode allele size of the loci, query and subject values are separated by '|'.
     Loci_mean_allele_size: The mean allele size of the loci, query and subject values are separated by '|'.
 
-This is an intermediate file that can be used for consultation of the filtering criteria. Not every match found here will be in the final recommendation file. Only those with the value TRUE in the columns "if_loci_intersect" and/or "if_close distance" will be joined in a final cluster.
-
 .. csv-table:: **paralogous_loci_report_cluster_by_id.tsv**
    :header: "Joined_loci_id", "Clustered_loci_ids"
    :widths: 10, 20
@@ -192,13 +181,13 @@ This is an intermediate file that can be used for consultation of the filtering 
    z, "z,g,h"
    ...
 
+This file shows the identified groups of similar loci. The groups in this file do not necessarily match the groups of loci added to the final output file with the groups of potential paralogous loci. Loci in this file are only added to the final output file if they pass all the thresholds of intersection or closeness.
+
 Columns description:
 ::
 
     Joined_loci_id: First Locus on the cluster.
     Clustered_loci_ids: List of all the loci that should be joined together.
-
-This file shows the possible clusters of paralogous loci. These are not all necessarily the final joined clusters. Only if they pass all the thresholds of intersection or closeness will they be written in the final recommendation file.
 
 .. csv-table:: **paralogous_loci_final_recommendations.tsv**
    :header: "Locus", "Action"
@@ -213,6 +202,8 @@ This file shows the possible clusters of paralogous loci. These are not all nece
    #
    ...
 
+This is the main output file. The groups reported in this file have passed all the filtering criteria and are therefore recognized as potential paraloguos loci. It is recommended to add annotations to this file through the `--annotations` parameter and check the annotations in order to confirm if the groups make sense from a functional perspective.
+
 Columns description:
 
 ::
@@ -221,12 +212,8 @@ Columns description:
     Action: Action to be taken, always 'Join' in this module.
     #: Separates each cluster of loci.
 
-This is the main output file. The clusters here have passed all the filtering and are therefore recognized as paraloguos by the algorithm.
-
-It is recommended to still annotate this file and check the annotations in order to confirm if these clusters are correct when tanslated into genetic and proteome data.
-
 .. Note::
-    This file can be used as the input of the `CreateSchemaStructure`.
+    This file can be used as input for the :doc:`CreateSchemaStructure </SchemaRefinery/Modules/CreateSchemaStructure>` module.
 
 .. csv-table:: **paralogous_annotations.tsv**
    :header: "Loci", "Action", "Locus_annotation", "Annotation"
@@ -249,8 +236,10 @@ Columns description:
     Action: Action to be taken, always 'Join' in this module.
     Locus_annotation: Name of the Locus in the annotation file (should be the same as Locus).
     Annotation: Column with annotation from the annotation file.
-        (The name and numer of columns with annotations will depend on the file with the annotation, follows the structure of the output of the consolidate module).
-    #: Separates each cluster of loci.
+	
+.. Important::
+	The name and number of columns with annotations depends on the structure  of the file with annotations.
+	The groups of paralogous loci are separated by **#**.
 
 
 Examples
@@ -269,7 +258,7 @@ Here are some example commands to use the `IdentifyParalogousLoci` module:
 Troubleshooting
 ---------------
 
-If you encounter issues while using the `IdentifyParalogousLoci` module, consider the following troubleshooting steps:
+If you encounter issues while using the `IdentifyParalogousLoci` module, consider the following troubleshooting tips:
 
 - Verify that the paths to the schema and output directories are correct.
 - Check the output directory for any error logs or messages.

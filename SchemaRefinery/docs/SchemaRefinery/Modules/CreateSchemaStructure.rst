@@ -3,28 +3,22 @@ CreateSchemaStructure - Create a new schema based on recommendations
 
 Description
 ------------
-The `CreateSchemaStructure` module is a module designed to facilitate the creation of a schema structure from a given schema or fasta files based on user recommendation file from the `IdentifyParalogousLoci` and `IdentifySpuriousGenes` modules. This module parses command-line arguments to initiate the schema creation process, allowing users to efficiently generate a schema structure from a provided schema file. The generated schema structure is stored in the specified output directory.
+The `CreateSchemaStructure` module facilitates the creation of a schema structure from a given schema or FASTA files based on a file with a set of recommendations from the :doc:`IdentifyParalogousLoci </SchemaRefinery/Modules/IdentifyParalogousLoci>` and :doc:`IdentifySpuriousGenes </SchemaRefinery/Modules/IdentifySpuriousGenes>` modules. 
 
-This is the final step in the `SchemaRefinery` workflow providing as output a schema reflecting the user reviewed changes that were recommended by other modules.
-
+This module is used in the final step of the `Schema Refinery` workflow to create a schema that reflects the recommendations obtained with other modules and reviewed by the users.
 
 Features
 --------
-- Creation of a schema structure from a given schema or fasta files.
-- Takes recommendation files, annotated or not, as guidelines for the new schema.
+- Creation of a schema structure from a given schema or set of FASTA files.
+- Accepts files with recommendations that serve as guidelines to create the new schema.
 - Support for parallel processing using multiple CPUs.
-- Option to skip cleanup after running the module.
+- Option to skip intermediate file cleanup after running the module.
 
 Dependencies
 ------------
-- Python 3.9 or higher
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
-- ChewBBACA (https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html or using bioconda)
-- Install requirements using the following command:
 
-.. code-block:: bash
-
-    pip install -r requirements.txt
+- BLAST (manual `here <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
+- chewBBACA 3.3.10 or higher (`chewBBACA's installation instructions <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_).
 
 Usage
 -----
@@ -76,9 +70,9 @@ Command-Line Arguments
         Default: None
 
 .. Note::
-    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+    Always verify it the translation table value passed to the `-tt` parameter is the correct one for the species.
 
-The input recommendation file must have the columns "Locus" and "Action". Additionally, if from the `IdentifySpuriousGenes` module, the file can also have the column "Class". These columns must be the 1st, 2nd and 3rd columns in the file, respectively. This input can have more columns, such as annotations, but these will be ignored. This file needs to have all the loci that are meant to be in the final schema. If a locus is missing from this file it won't be included in the final version of the schema
+The input files with recommendations must have the columns "Locus" and "Action". Additionally, if from the `IdentifySpuriousGenes` module, the file can also have the column "Class". These columns must be the 1st, 2nd and 3rd columns in the file, respectively. This input can have more columns, such as annotations, but these will be ignored. This file needs to have all the loci that are meant to be in the final schema. If a locus is missing from this file it won't be included in the final version of the schema
 
 
 Algorithm Explanation
@@ -93,21 +87,22 @@ The `CreateSchemaStructure` module uses the following algorithm to create a sche
 
 
 .. Note::
-    Make sure that before running this module the input file `recommendations` has been check and that you agree with all the changes proposed. **No action should have the option 'Choice'.** These should be changed into one of the other three actions.
+    Make sure to review the list of recommendations before running the module. The **Choice** recommendations should be carefully reviewed and changed into one of the other options. The module will perform no action for the loci for which the action is **Choice**.
 
-The action **'Join'** will move all the alleles of that cluster of loci into the fasta file of the first locus of the cluster. The other Loci files will be removed from the final schema.
+The action **Join** will merge all loci in a cluster with that action into a single FASTA file. The FASTA file will contain all the distinct alleles in the original loci FASTA files and be named based on the first locus in the cluster that was merged with the otehrs.
 
-The action **'Drop'** will remove that locus fasta file from the final schema.
+The action **Drop** will exclude a locus from the final schema.
 
-The action **'Add'** will just copy the fasta file of that locus from the input schema into the final schema with no alterations.
+The action **Add** will copy the FASTA file of a locus from the input schema into the final schema.
 
-If the locus is within the class 6, the algorithm will check what the action is. If the action is "Join" the run will end and the user will be asked to change it, as this pairing is not allowed. The same will happen if an action "Choice" is found.
+.. Important::
+	If class 6 is assigned to a locus and the action is **Join** or **Choice**, the process will halt and ask the user to change the action, as those actions are not allowed when class 6 is assigned.
 
-Since this module uses the AdaptLoci module to format the schema in the end, the schema created will conform with the structure of the schemas used by chewBBACA.
+Since this module uses the :doc:`AdaptLoci </SchemaRefinery/Modules/AdaptLoci>` module to format the schema in the end, the schema created will conform with the structure of the schemas used by chewBBACA.
 
 Outputs
 -------
-Folder and file structure for the output directory of the `CreateSchemaStructure` module is shown below. The output directory contains the following files and folders:
+The structure of the output directory created by the `CreateSchemaStructure` module is shown below.
 
 ::
 
@@ -139,6 +134,8 @@ Folder and file structure for the output directory of the `CreateSchemaStructure
 Report files description
 ------------------------
 
+This file includes summary statistics for the final schema.
+
 .. csv-table:: **schema_summary_stats.tsv**
    :header: "Gene", "Total_alleles", "Valid_alleles", "Number_representatives"
    :widths: 10, 10, 10, 10
@@ -158,9 +155,7 @@ Columns description:
     Valid_alleles: The number of alleles chosen to be in the final schema.
     Number_representatives: The number of alleles chosen to be the representatives of that loci.
 
-This file will have the main statistics of the final schema. It gives the number of alleles in each locus and how many of those are representatives.
-
-`schema_invalid_alleles.txt` and `schema_invalid_loci.txt` will have a list of the alleles/loci that did not pass validation thresholds. If these are empty then all alleles/loci were correctly moved into the new schema and validated.
+Additionally, the process creates the `schema_invalid_alleles.txt` and `schema_invalid_loci.txt` files, which include the list of the alleles and loci that did not pass the validation thresholds, respectively. If these are empty then all alleles/loci were valid and moved into the new schema.
 
 
 Examples
@@ -182,9 +177,9 @@ Here are some example commands to use the `CreateSchemaStructure` module:
 Troubleshooting
 ---------------
 
-If you encounter issues while using the `CreateSchemaStructure` module, consider the following troubleshooting steps:
+If you encounter issues while using the `CreateSchemaStructure` module, consider the following troubleshooting tips:
 
-- Verify that the paths to the schema, output, and recommendations directories are correct.
+- Verify that the paths to the schema, output directory, and file with recommendations are valid.
 - Check the output directory for any error logs or messages.
-- Check if the dependencies versions are all compatible. 
+- Check if the versions fo the dependencies used by the module are all compatible.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.

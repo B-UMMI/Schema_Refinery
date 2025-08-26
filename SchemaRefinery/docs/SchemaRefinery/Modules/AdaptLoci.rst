@@ -3,29 +3,21 @@ AdaptLoci - Adapt fastas into a chewBBACA schema
 
 Description
 -----------
-The `AdaptLoci` module is designed to adapt loci from FASTA files into a chewBBACA-compatible schema. This is the schema structure that is assumed all throughout the tool. This module processes input loci and runs the module PrepExternalSchema from chewBBACA. It also checks the name format of the loci in order to find names that can cause complications when running BLAST.
-
-This module is essential for researchers and bioinformaticians working on genomic schema refinement, providing a robust and flexible tool for adapting loci into a standardized schema format.
+The `AdaptLoci` module is designed to adapt a set of loci in FASTA format into a chewBBACA-compatible schema. This is the schema structure that is used by Schema Refinery. This module uses chewBBACA's PrepExternalSchema module to validate and create schemas. It also checks the format of the loci names to find names that can lead to issues when running BLAST.
 
 
 Features
 --------
 
-- Adapting loci into a chewBBACA schema.
-- Checks possible problematic loci names.
+- Adapting sets of loci into a chewBBACA-compatible schemas.
+- Checks and warns users about loci names that can lead to issues when running BLAST processes.
 - Configurable parameters for the adaptation process.
 - Support for parallel processing using multiple CPUs.
 
 Dependencies
 ------------
 
-- Python between 3.9 and 3.11
-- `ChewBBACA install page <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_ or using bioconda
-- Install requirements using the following command:
-
-.. code-block:: bash
-
-    pip install -r requirements.txt
+- chewBBACA 3.3.10 or higher (`chewBBACA's installation instructions <https://chewbbaca.readthedocs.io/en/latest/user/getting_started/installation.html>`_).
 
 Usage
 -----
@@ -70,22 +62,22 @@ Command-Line Arguments
         (Optional) Path to the logger file.
         Default: None
 
-.. Note::
-    Always verify it the translation table (argument -tt) being used is the correct one for the species.
+.. Important::
+    Always verify it the translation table value passed to the `-tt` parameter is the correct one for the species.
 
 
 Algorithm Explanation
 ---------------------
 
-In `AdaptLoci` the fasta files of the schema loci are restructured into a chewBBACA schema structure, which includes a folder with the fastas containing the representative alleles of each locus. For that, the module calls on the PrepExternalSchema module from chewBBACA with a simplified list of arguments.
-For more clarification check the `PrepExternalSchema documentation <https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#>`_.
+The `AdaptLoci` module adapts a set of loci in FASTA format into a chewBBACA-compatible schema, which includes a folder names `short` with FASTA files containing the representative alleles of each locus. To adapt the loci files, the module calls chewBBACA's PrepExternalSchema module with a simplified list of arguments.
+For further details about the adaptation process, visit the `PrepExternalSchema documentation <https://chewbbaca.readthedocs.io/en/latest/user/modules/PrepExternalSchema.html#>`_.
 
 The input should be a folder with a fasta file per loci.
 
 
 Outputs
 -------
-Folder and file structure for the output directory of the `AdaptLoci` module is shown below. The output directory contains the following files and folders:
+The structure of the output directory is shown below.
 
 ::
 
@@ -108,21 +100,21 @@ Folder and file structure for the output directory of the `AdaptLoci` module is 
 Examples
 --------
 
-Here are some example commands to use the `AdaptLoci` module:
+Simple usage commands to run the `AdaptLoci` module:
 
 .. code-block:: bash
 
-    # Adapt loci using default parameters
+    # Adapt loci using the default parameters
     SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output
 
-    # Adapt loci with custom parameters
+    # Adapt loci using custom parameters
     SR AdaptLoci -i /path/to/input_file.tsv -o /path/to/output -tf /path/to/file/training-file.trn -c 4 -b 0.7 -tt 4
 
 Troubleshooting
 ---------------
 
-If you encounter issues while using the `AdaptLoci` module, consider the following troubleshooting steps:
+If you encounter issues while using the `AdaptLoci` module, consider the following troubleshooting tips:
 
-- Verify that the paths to the input file and output directory are correct.
+- Verify that the paths to the input files and output directory are valid.
 - Check the output directory for any error logs or messages.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.

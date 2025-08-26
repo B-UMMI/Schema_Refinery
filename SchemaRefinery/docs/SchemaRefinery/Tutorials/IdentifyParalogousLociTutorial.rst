@@ -4,33 +4,28 @@ IdentifyParalogousLoci - Tutorial
 Objective
 ---------
 
-This tutorial will show you how to identify paralogous loci in a schema using the `IdentifyParalogousLoci` module.
+This tutorial will show you how to identify paralogous loci in a schema using the :doc:`IdentifyParalogousLoci </SchemaRefinery/Modules/IdentifyParalogousLoci>` module.
 
 Prerequisites
 -------------
-- SchemaRefinery installed
-- Python between 3.9 and 3.11
-- Download the schema file from the `ChewBACCA tutorial https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip`_
+- Download the schema from `chewBBACA's tutorial <https://github.com/B-UMMI/chewBBACA_tutorial/blob/master/expected_results/Schema_creation/tutorial_schema.zip>`_.
 
 Procedure
 ---------
 
 1. Open a terminal window.
 
-2. Run the following command to identify paralogous loci in a schema:
+2. Modify the following command and run it to identify paralogous loci in a schema:
 
 .. code-block:: bash
 
     SR IdentifyParalogousLoci -s 'path/to/tutorial_schema/schema_seed' -o 'path/to/files/output_folder/IdentifyParalogousLoci_Results' -tt 11 -c 6 -pm alleles_vs_alleles
 
-- Replace `path/to/files/` with the actual path to the files.
+.. important::
+	Replace `path/to/files/` with the actual path to the files.
 
-3. Press Enter to execute the command.
+1. Check the output directory for the list of identified paralogous loci. The first lines of the file containing the list of clusters of paralogous loci that were identified should look like:
 
-4. Wait for the process to complete.
-
-5. Check the output directory for the identified paralogous loci.
-    The first lines of the final clusters file should look like:
 ::
     
     Loci_id	Action
@@ -48,11 +43,9 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`IdentifyParalogousLoci documentation </SchemaRefinery/Modules/IdentifyParalogousLoci>`.
 
 Conclusion
 ----------
 
-You have successfully identified paralogous loci in a schema using the `IdentifyParalogousLoci` module.
-
-For more information on the `IdentifyParalogousLoci` module, refer to the `IdentifyParalogousLoci documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/IdentifyParalogousLoci.html>`_.
+You have successfully identified paralogous loci in a schema using the :doc:`IdentifyParalogousLoci documentation </SchemaRefinery/Modules/IdentifyParalogousLoci>` module.

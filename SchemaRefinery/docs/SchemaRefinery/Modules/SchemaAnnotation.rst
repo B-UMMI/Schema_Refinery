@@ -4,29 +4,21 @@ SchemaAnnotation - Annotate schemas
 Description
 -----------
 
-The `SchemaAnnotation` module is a versatile tool designed to facilitate the annotation of genomic schemas. This module parses command-line arguments and initiates the schema annotation process, providing a flexible and user-friendly interface for researchers and bioinformaticians.
-
-This module should be used as aid for reviewing the outputs of the other modules, as the annotations can make reviewing clusters and matches easier. It can also be used to simply annotated the final schema, or the schema being used for easier consultation later. 
+The `SchemaAnnotation` module annotates the loci in a schema. It allows to obtain relevant annotation data, providing functional context when evaluating a schema and reviewing the recommendations made by other modules.
 
 Features
 --------
 
-- Annotating schemas in a directory.
+- Annotate schemas.
 - Join different annotation files.
 - Configurable parameters for the annotation process.
 - Support for parallel processing using multiple CPUs.
-- Option to skip cleanup after running the module.
+- Option to skip intermediate file cleanup after running the module.
 
 Dependencies
 ------------
 
-- Python between 3.9 and 3.11
-- BLAST (`https://www.ncbi.nlm.nih.gov/books/NBK279690/ <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
-- Install requirements using the following command:
-
-.. code-block:: bash
-
-    pip install -r requirements.txt
+- BLAST (manual `here <https://www.ncbi.nlm.nih.gov/books/NBK279690/>`_)
 
 Usage
 -----
@@ -128,17 +120,17 @@ Command-Line Arguments
 .. Note::
     Always verify it the translation table (argument -tt) being used is the correct one for the species.
 
-The `proteome-table` argument should be a TSV file with the selected proteomes, from TrEMBL and swissprot, that can be downloaded directly from `UniProt <https://www.uniprot.org/proteomes?query=*>`_ . Have in mind that the downloaded folder will be zipped. Before putting it as an input unzip it and select only the TSV file.
+The `proteome-table` argument should be a TSV file with IDs for UniProt proteomes. The proteomes can be downloaded directly from `UniProt <https://www.uniprot.org/proteomes?query=*>`_ . The downloaded ZIP archive should be unzipped before passing it as input to the `SchemaAnnotation` module.
+The `genbank-files` argument should be a folder with `gbff` files.
 
-The `genbank-files` argument should be a folder with gbff files named after each genome. This implies some file manipulation so that the names are correct and under a singular folder.
-
-For the annotation files from the option "consolidate" and "match_schemas" it is important to ensure that the loci names match between files. If not, the algorithm will not be able to match the annotations to the loci.
+.. Important::
+	With the `consolidate` option it is important to make sure that the loci names in the different files match. Otherwise, the algorithm will not be able to link the annotations in the various files.
 
 
 Algorithm Explanation
 ---------------------
 
-The `SchemaAnnotation` module annotates using three different options: `GenBank files`, `UniProt proteomes`, `Match Schemas`, and `Consolidate`.
+The `SchemaAnnotation` module has three different annotation options: `GenBank files`, `UniProt proteomes`, `Match Schemas`, and `Consolidate`.
 The following is the flowchart for the `SchemaAnnotation` module:
 
 .. image:: source/SchemaAnnotation.png
@@ -146,27 +138,22 @@ The following is the flowchart for the `SchemaAnnotation` module:
    :width: 80%
    :align: center
 
-
-After each annotation files are processed, the annotations are match to their locus based on the locus name or alignment of sequences.
-
-The `SchemaAnnotation` module annotates using `UniProt proteomes` based on the following Flowchart:
+The `SchemaAnnotation` module can annotate by comparing the schema against `UniProt proteomes`:
 
 .. image:: source/uniprot_proteomes_annotation.png
    :alt: SchemaAnnotation UniProt Proteomes Flowchart
    :width: 80%
    :align: center
 
+For this process, the annotations are first separated into swiss-prot and TrEMBL records and then processed. From there, BLASTp is used to macth the protein sequences from the input schema and the proteomes from UniProt.
 
-For this process, the annoatations are first separated into swiss-prot and TrEMBL and then processed. From there, a BLASTp is done in order to align and macth the protein sequences from the input schema and the proteomes from UniProt.
-
-The BLAST output will have the personalized format 6 with columns:
+The format of the BLASTp output files is as follows:
 ::
     qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
-::
 
-From the output, the `uniprot_annotations.tsv` file is the ine that compiles all the final annotations from swiss-prot and TrEMBL.
+The `uniprot_annotations.tsv` file includes the annotations determined based on the swiss-prot and TrEMBL records.
 
-The `SchemaAnnotation` module annotates using `GenBank files` based on the following Flowchart:
+The `SchemaAnnotation` module can also annotate based on the annotations in `GenBank` files:
 
 .. image:: source/genbank_annotation.png
    :alt: SchemaAnnotation GenBank Flowchart
@@ -174,14 +161,13 @@ The `SchemaAnnotation` module annotates using `GenBank files` based on the follo
    :align: center
 
 
-For this algorithm, the annotations are also matched through a BLASTp alignment. The final output file will have the annotations given to the best match of all the loci.
+BLASTp is used to compare the schema loci against the records extracted from the GenBank files. The final output file includes the best match found for each locus.
 
-For the options `Match Schemas` and `Consolidate` the process is the merging of the given files based on the locus columns that are the have the highest amount of matches between files. For these modes it is not necessary to give an inout schema as an input argument. Be aware that the loci names should match in between the annotations files and the loci column to be merged should be one of the first two columns in the files. 
-
+For the options `Match Schemas` and `Consolidate`, the process merges the input files based on the IDs in the locus columns. For these modes it is not necessary to pass the path to a schema. The IDs of the loci should be in one of the first two columns of the input files.
 
 Outputs
 -------
-Folder and file structure for the output directory of the `SchemaAnnotation` module is shown below. The output directory contains the following files and folders:
+The directory structure of the output directory created by the `SchemaAnnotation` module is shown below.
 
 ::
 
@@ -353,7 +339,7 @@ Columns description:
     Process: Process where that match was found in MatchSchemas.
 
 .. Note::
-    The `consolidated_annotations.tsv` contains all the annotations that user chose to annotate given in the "-cn" argument.
+    The `consolidated_annotations.tsv` file contains all the annotations in the files provided by the user.
 
 Consolidate column suffixes:
 
@@ -380,7 +366,7 @@ Here are some example commands to use the `SchemaAnnotation` module:
 Troubleshooting
 ---------------
 
-If you encounter issues while using the `SchemaAnnotation` module, consider the following troubleshooting steps:
+If you encounter issues while using the `SchemaAnnotation` module, consider the following troubleshooting tips:
 
 - Verify that the paths to the schema and output directories are correct.
 - Check the output directory for any error logs or messages.
