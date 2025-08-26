@@ -39,7 +39,7 @@ Installation through Bioconda
         conda install bioconda::schemarefinery
 
 
-Installation through PyPi
+Installation through PyPI
 --------------------------
 
 1. **Install pip**: For Python 3.4 and higher installed using Windows or macOS `pip` is installed as default. For Linux environments run:
