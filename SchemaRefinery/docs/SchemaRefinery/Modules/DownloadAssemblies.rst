@@ -123,7 +123,7 @@ The filtering criteria are provided through a TSV file with the following column
 * **ST_list_path:** Path to the sequence type list (ENA661K) (path, None)
 * **assembly_level:** Assembly level (NCBI, ENA661K) (chromosome,complete,contig,scaffold)
 * **reference:** If reference genome (NCBI) (True, False, None)
-* **assembly_source:** Assembly source (NCBI) (all, refseq, genbank)
+* **assembly_source:** Assembly source (NCBI) (all, RefSeq, GenBank)
 * **file_to_include:** files to include (NCBI) (genome, rna, protein, cds, gff3, gtf, gbff, seq-report, none)
 * **verify_status:** Verify status (NCBI) (True, False, None)
 * **exclude_atypical:** Exclude atypical (NCBI) (True, False, None)
