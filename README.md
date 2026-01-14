@@ -8,8 +8,7 @@ Schema Refinery is a comprehensive toolkit designed for refining and managing ML
 
 ## News
 
-## Version 0.4.0 - 2025-07-31
+## Version 0.5.0 - 2026-01-14
 
-- Optimized all modules to improve efficiency and the accuracy of the results.
-- Restructured output files to improve readability and simplify parsing.
-- Fixed several issues.
+- Optimize and fix issues in the CreateSchemaStructure module.
+- Changed name of the CreateSchemaStructure module to ApplyRecommendations.

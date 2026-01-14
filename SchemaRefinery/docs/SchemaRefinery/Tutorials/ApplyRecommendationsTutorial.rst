@@ -1,10 +1,10 @@
-CreateSchemaStructure - Tutorial
-================================
+ApplyRecommendations - Tutorial
+===============================
 
 Objective
 ---------
 
-This tutorial will guide you through the process of using the :doc:`CreateSchemaStructure </SchemaRefinery/Modules/CreateSchemaStructure>` module to create a new schema given a schema and a set of recommendations.
+This tutorial will guide you through the process of using the :doc:`ApplyRecommendations </SchemaRefinery/Modules/ApplyRecommendations>` module to create a new schema given a schema and a set of recommendations.
 
 Prerequisites
 -------------
@@ -16,11 +16,11 @@ Procedure
 ---------
 
 1. Open the terminal.
-2. Modify the following command and run it to execute the `CreateSchemaStructure` module:
+2. Modify the following command and run it to execute the `ApplyRecommendations` module:
 
 .. code-block:: bash
 
-    SR CreateSchemaStructure -rf /path/to/recommendations.tsv -ff /path/to/tutorial_schema/schema_seed -o /path/to/CreateSchemaStructure_output -c 6 --nocleanup
+    SR ApplyRecommendations -rf /path/to/recommendations.tsv -ff /path/to/tutorial_schema/schema_seed -o /path/to/ApplyRecommendations_output -c 6 --nocleanup
 
 .. important::
 	Do not forget to replace the paths in the command with the paths to the files in your system. The file passed to the `-rf` argument should be the `recommendation.tsv` file available `here`. This file was created using the `IdentifySpuriousGenes` module and the "Choice" actions were altered randomly just for demonstration purposes.
@@ -30,4 +30,4 @@ Procedure
 Example Output Structure
 ------------------------
 
-To see the expected output structure, refer to the "Outputs" section in the :doc:`CreateSchemaStructure documentation</SchemaRefinery/Modules/CreateSchemaStructure>`.
+To see the expected output structure, refer to the "Outputs" section in the :doc:`ApplyRecommendations documentation</SchemaRefinery/Modules/ApplyRecommendations>`.

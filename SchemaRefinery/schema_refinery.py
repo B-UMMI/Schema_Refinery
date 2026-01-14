@@ -23,7 +23,7 @@ try:
 	from IdentifyParalogousLoci import IdentifyParalogousLoci
 	from AdaptLoci import AdaptLoci
 	from MatchSchemas import MatchSchemas
-	from CreateSchemaStructure import CreateSchemaStructure
+	from ApplyRecommendations import ApplyRecommendations
 	from utils import (constants as ct,
 					   validation as val,
 					   print_functions as pf,
@@ -39,7 +39,7 @@ except ModuleNotFoundError:
 	from SchemaRefinery.IdentifyParalogousLoci import IdentifyParalogousLoci
 	from SchemaRefinery.AdaptLoci import AdaptLoci
 	from SchemaRefinery.MatchSchemas import MatchSchemas
-	from SchemaRefinery.CreateSchemaStructure import CreateSchemaStructure
+	from SchemaRefinery.ApplyRecommendations import ApplyRecommendations
 	from SchemaRefinery.utils import (constants as ct,
 									  validation as val,
 									  print_functions as pf,
@@ -841,6 +841,7 @@ def identify_paralogous_loci() -> None:
 	pf.print_message(f"Running IdentifyParalogousLoci module...", message_type="info")
 	IdentifyParalogousLoci.identify_paralogous_loci(**vars(args))
 
+
 def match_schemas() -> None:
 
     """
@@ -963,7 +964,8 @@ def match_schemas() -> None:
     pf.print_message("Running MatchSchemas module...", message_type="info")
     MatchSchemas.match_schemas(**vars(args))
 
-def create_schema_structure() -> None:
+
+def apply_recommendations() -> None:
 	"""
 	Parse command-line arguments and initiate the process to create schema structure.
 
@@ -1077,9 +1079,10 @@ def create_schema_structure() -> None:
 	del args.debug
 	del args.logger
 
-	# Call the main function of the CreateSchemaStructure class with the parsed arguments
-	pf.print_message(f"Running CreateSchemaStructure module...", message_type="info")
-	CreateSchemaStructure.create_schema_structure(**vars(args))
+	# Call the main function of the ApplyRecommendations module
+	pf.print_message(f"Running ApplyRecommendations module...", message_type="info")
+	ApplyRecommendations.process_recommendations(**vars(args))
+
 
 def open_docs() -> None:
 	"""
@@ -1106,9 +1109,10 @@ module_info = {
 		'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
 		'IdentifyParalogousLoci': ["Identifies paralogous loci based on schema input", identify_paralogous_loci],
 		'MatchSchemas': ["Match schemas to identify the best matches between two schemas.", match_schemas],
-		'CreateSchemaStructure': ["Creates a schema structure based on the recommendations provided in the recommendations file.", create_schema_structure],
+		'ApplyRecommendations': ["Applies recommendations to refine a schema.", apply_recommendations],
 		'Docs': ["Opens the SchemaRefinery documentation in a web browser.", open_docs]
 	}
+
 
 def main():
 	# Print the SchemaRefinery logo
@@ -1127,6 +1131,7 @@ def main():
 	pf.print_module_currently_running(module)
 	# Call the function of the selected module
 	module_info[module][1]()
+
 
 def entry_point():
 	# Extract arguments using sys.argv
@@ -1208,6 +1213,7 @@ def entry_point():
 		pf.print_system_info() # Print system information
 		pf.print_schema_refinery_info() # Print SchemaRefinery information
 		pf.print_dependencies_info(ct.DEPENDENCIES) # Print dependencies information
+
 
 if __name__ == "__main__":
 	entry_point()

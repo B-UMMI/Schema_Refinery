@@ -1,3 +1,8 @@
+## Version 0.5.0 - 2026-01-14
+
+- Optimize and fix issues in the CreateSchemaStructure module.
+- Changed name of the CreateSchemaStructure module to ApplyRecommendations.
+
 ## Version 0.4.0 - 2025-07-31
 
 - Optimized all modules to improve efficiency and the accuracy of the results.

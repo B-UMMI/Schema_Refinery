@@ -1,9 +1,9 @@
-CreateSchemaStructure - Create a new schema based on recommendations
-=====================================================================
+ApplyRecommendations - Create a new schema based on recommendations
+===================================================================
 
 Description
 ------------
-The `CreateSchemaStructure` module facilitates the creation of a schema structure from a given schema or FASTA files based on a file with a set of recommendations from the :doc:`IdentifyParalogousLoci </SchemaRefinery/Modules/IdentifyParalogousLoci>` and :doc:`IdentifySpuriousGenes </SchemaRefinery/Modules/IdentifySpuriousGenes>` modules. 
+The `ApplyRecommendations` module facilitates the creation of a schema structure from a given schema or FASTA files based on a file with a set of recommendations from the :doc:`IdentifyParalogousLoci </SchemaRefinery/Modules/IdentifyParalogousLoci>` and :doc:`IdentifySpuriousGenes </SchemaRefinery/Modules/IdentifySpuriousGenes>` modules. 
 
 This module is used in the final step of the `Schema Refinery` workflow to create a schema that reflects the recommendations obtained with other modules and reviewed by the users.
 
@@ -22,11 +22,11 @@ Dependencies
 
 Usage
 -----
-The `CreateSchemaStructure` module can be used as follows:
+The `ApplyRecommendations` module can be used as follows:
 
 .. code-block:: bash
 
-    SR CreateSchemaStructure -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
+    SR ApplyRecommendations -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
 
 Command-Line Arguments
 ----------------------
@@ -78,9 +78,9 @@ The input files with recommendations must have the columns "Locus" and "Action".
 Algorithm Explanation
 ---------------------
 
-The `CreateSchemaStructure` module uses the following algorithm to create a schema structure from a given schema or fasta files:
+The `ApplyRecommendations` module uses the following algorithm to create a schema structure from a given schema or fasta files:
 
-.. image:: source/CreateSchemaStructure.png
+.. image:: source/ApplyRecommendations.png
    :alt: Algorithm for creating and restructure a schema
    :width: 80%
    :align: center
@@ -102,7 +102,7 @@ Since this module uses the :doc:`AdaptLoci </SchemaRefinery/Modules/AdaptLoci>` 
 
 Outputs
 -------
-The structure of the output directory created by the `CreateSchemaStructure` module is shown below.
+The structure of the output directory created by the `ApplyRecommendations` module is shown below.
 
 ::
 
@@ -128,8 +128,8 @@ The structure of the output directory created by the `CreateSchemaStructure` mod
 
 .. toctree::
     :maxdepth: 1
-    
-    CreateSchemaStructureOutputDescription
+
+    ApplyRecommendationsOutputDescription
 
 Report files description
 ------------------------
@@ -161,25 +161,25 @@ Additionally, the process creates the `schema_invalid_alleles.txt` and `schema_i
 Examples
 --------
 
-Here are some example commands to use the `CreateSchemaStructure` module:
+Here are some example commands to use the `ApplyRecommendations` module:
 
 .. code-block:: bash
 
-    # Create schema structure from a given schema file
-    SR CreateSchemaStructure -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
+    # Apply recommendations to a given schema file
+    SR ApplyRecommendations -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
 
     # Create schema structure from a folder containing FASTA files
-    SR CreateSchemaStructure -ff /path/to/fastas -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
+    SR ApplyRecommendations -ff /path/to/fastas -o /path/to/output -rf /path/to/recommendation.tsv -c 4 --nocleanup
 
     # Create schema structure with custom BSR value and translation table and training file
-    SR CreateSchemaStructure -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -tf /path/to/file/training-file.trn -c 4 --t 4 -bsr 0.8 --nocleanup
+    SR ApplyRecommendations -s /path/to/schema -o /path/to/output -rf /path/to/recommendation.tsv -tf /path/to/file/training-file.trn -c 4 --t 4 -bsr 0.8 --nocleanup
 
 Troubleshooting
 ---------------
 
-If you encounter issues while using the `CreateSchemaStructure` module, consider the following troubleshooting tips:
+If you encounter issues while using the `ApplyRecommendations` module, consider the following troubleshooting tips:
 
 - Verify that the paths to the schema, output directory, and file with recommendations are valid.
 - Check the output directory for any error logs or messages.
-- Check if the versions fo the dependencies used by the module are all compatible.
+- Check if the versions of the dependencies used by the module are all compatible.
 - Increase the number of CPUs using the `-c` or `--cpu` option if the process is slow.

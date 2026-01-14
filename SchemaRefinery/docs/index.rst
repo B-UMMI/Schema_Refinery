@@ -19,7 +19,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Modules/IdentifyParalogousLoci
    SchemaRefinery/Modules/IdentifySpuriousGenes
    SchemaRefinery/Modules/SchemaAnnotation
-   SchemaRefinery/Modules/CreateSchemaStructure
+   SchemaRefinery/Modules/ApplyRecommendations
 
 .. toctree::
    :maxdepth: 1
@@ -33,7 +33,7 @@ Welcome to SchemaRefinery's documentation!
    SchemaRefinery/Tutorials/IdentifySpuriousGeneSchema
    SchemaRefinery/Tutorials/IdentifySpuriousGenesUnclassifiedCDS
    SchemaRefinery/Tutorials/SchemaAnnotationTutorial
-   SchemaRefinery/Tutorials/CreateSchemaStructureTutorial
+   SchemaRefinery/Tutorials/ApplyRecommendationsTutorial
 
 
 External Links:

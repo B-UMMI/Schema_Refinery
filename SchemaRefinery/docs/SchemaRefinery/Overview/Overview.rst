@@ -19,6 +19,7 @@ Schema Refinery includes the following modules:
 4. **MatchSchemas**: Matches two schemas to find shared loci.
 5. **DownloadAssemblies**: Downloads genome assemblies from multiple databases.
 6. **AdaptLoci**: Creates a schema from loci in fasta format.
+7. **ApplyRecommendations**: Refine a schema based on a set of recommendations.
 
 Modules Usage
 -------------
@@ -61,6 +62,12 @@ Each module can be used independently by running the corresponding script with t
 
     SR AdaptLoci --help
 
+`ApplyRecommendations documentation <https://schema-refinery.readthedocs.io/en/latest/SchemaRefinery/Modules/ApplyRecommendations.html>`_
+
+.. code-block:: bash
+
+    SR ApplyRecommendations --help
+
 Schema Creation Workflow
 ------------------------
 
@@ -74,7 +81,7 @@ Workflow for creating a schema using `SchemaRefinery` and `chewBBACA`:
 
 `SchemaRefinery` does not have a specific sequence in which the modules must be used. The starting and ending points will depend on the objectives of the user. However, it is recommended to run the `AdaptLoci` module as the first step if the starting schema is not compatible with chewBBACA's latest version as the tool works with the chewBBACA schema structure.
 
-The modules can be used almost completely without a specific order. In the case of the `SchemaAnnotation` module with the match-schemas mode, the `MatchSchemas` module has to be run before. For the `CreateSchemaStructure` module, the input file has to be the output of either the `IdentifyParalogousLoci` or the `IdentifySpuriousGenes` modules.
+The modules can be used almost completely without a specific order. In the case of the `SchemaAnnotation` module with the match-schemas mode, the `MatchSchemas` module has to be run before. For the `ApplyRecommendations` module, the input file has to be the output of either the `IdentifyParalogousLoci` or the `IdentifySpuriousGenes` modules.
 
 Use Cases
 ---------
