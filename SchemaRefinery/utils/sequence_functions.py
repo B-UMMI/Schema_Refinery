@@ -452,7 +452,7 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str],
 
 def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
 	"""
-	Fetches FASTAs from a file and adds them to a dict.
+	Read a FASTA file.
 
 	Parameters
 	----------
@@ -466,11 +466,10 @@ def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
 	dict
 		Returns dict with key as fasta header and value as fasta sequence.
 	"""
-	fasta_dict = {}
 	i = 1
+	fasta_dict = {}
 	for rec in read_fasta_file_iterator(file_path):
 		if count_seq:
-			# pf.print_message(f"Processed {i} CDS", "info", end='\r', flush=True)
 			i += 1
 		fasta_dict[rec.id] = str(rec.seq)
 	return fasta_dict

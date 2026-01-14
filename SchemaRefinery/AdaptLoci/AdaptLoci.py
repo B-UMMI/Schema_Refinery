@@ -128,10 +128,7 @@ def adapt_loci(input_fastas: str, output_directory: str, training_file: str, cpu
     None
         The function writes the output files to the specified directory.
     """
-
-    pf.print_message("")
-    pf.print_message("Starting External Schema Prep from chewBBACA...", "info")
-
+    pf.print_message("Calling chewBBACA's PrepExternalSchema module to create a schema from the FASTA files created based on the recommendations...", "info")
     output_path = os.path.join(output_directory, "adapted_schema")
 
     cmd = [
@@ -160,26 +157,5 @@ def adapt_loci(input_fastas: str, output_directory: str, training_file: str, cpu
     process.stdout.close()
     exit_code = process.wait()
 
-    if exit_code == 0:
-        pf.print_message("")
-        pf.print_message("Schema creation completed", "info")
-    else:
-        pf.print_message("")
+    if exit_code != 0:
         pf.print_message(f"Schema creation failed with exit code {exit_code}", "error")
-
-    # Validate schema fasta names
-    pf.print_message('PREFIXES TRIAL START', 'info')
-    gene_list_paths: str = os.path.join(output_directory, 'gene_list_paths.txt')
-    with open(gene_list_paths, 'w') as gene_list:
-        dir_list = os.listdir(input_fastas)
-        for file in dir_list:
-            if file.endswith(".fasta"):
-                path = os.path.abspath(file)
-                gene_list.write(f'{path}\n')
-                
-    makeblastdb_path = ff.join_paths(output_directory, [ct.MAKEBLASTDB_ALIAS])
-    blastdbcmd_path = ff.join_paths(output_directory, [ct.BLASTDBCMD_ALIAS])
-    pdb_prefixes = check_prefix_pdb(gene_list_paths, output_directory, makeblastdb_path, blastdbcmd_path)
-    
-    pf.print_message('PREFIXES TRIAL OVER', 'info')
-

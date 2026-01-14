@@ -92,7 +92,7 @@ def print_module_currently_running(module: str) -> None:
     print_message(border_line, None)
 
 
-def print_message(message: str, message_type: Optional[str] = "info", end = '\n', flush: bool = False) -> None:
+def print_message(message: str, message_type: Optional[str] = "info", end = '\n', flush: bool = False, stdout: bool = True) -> None:
     """
     Print a formatted message with the current time and message type.
 
@@ -144,8 +144,10 @@ def print_message(message: str, message_type: Optional[str] = "info", end = '\n'
             logger.debug(message)
         else:
             logger.info(message)
-    
-    print(formatted_message, end = end, flush = flush)
+
+    if stdout:
+        print(formatted_message, end=end, flush=flush)
+
 
 def print_system_info() -> None:
     """
