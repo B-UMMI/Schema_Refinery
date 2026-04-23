@@ -2388,7 +2388,7 @@ def prepare_loci(schema_folder: str,
     
     # Process alleles to run, DNA sequences
     for loci, loci_path in to_blast_paths.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
+        loci_id = ff.file_basename(loci, False)
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
             group_reps_ids.setdefault(loci_id, []).append(allele_id)
@@ -2399,7 +2399,7 @@ def prepare_loci(schema_folder: str,
     prf.print_message('Write master file for Blastp.', 'info')
 
     for loci, loci_path in to_run_against.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
+        loci_id = ff.file_basename(loci, False)
         negative_seqid_file = os.path.join(seqid_output, f'negative_seqid_{loci_id}.txt')
         blast_alleles.setdefault(loci_id, [])
         seqid_file_dict.setdefault(loci_id, negative_seqid_file)
@@ -2416,11 +2416,9 @@ def prepare_loci(schema_folder: str,
             write_type2 = 'a' if os.path.exists(negative_seqid_file) else 'w'
             with open(negative_seqid_file, write_type2) as seqid_file:
                 seqid_file.write(f"{allele_id}\n")
-        
-
 
     for loci, loci_path in to_blast_paths.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
+        loci_id = ff.file_basename(loci, False)
         all_alleles.setdefault(loci_id, [])
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():  

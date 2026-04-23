@@ -59,7 +59,7 @@ def create_directories(output_directory: str, run_mode: str) -> Tuple[str, str, 
     # Create base output directory
     ff.create_directory(output_directory)
     output_d= os.path.abspath(output_directory)
-    
+
     # Create initial processing output directory based on run mode
     initial_processing_output: str
     schema_folder: Optional[str]
@@ -173,7 +173,7 @@ def calculate_frequency(schema_folder: str,
 
         pf.print_message('Calculating frequencies of each locus in each genome...', 'info')
         for loci, loci_path in schema.items():
-            loci_id = ff.file_basename(loci).split('.')[0]
+            loci_id = ff.file_basename(loci, False)
             # For each locus count the frequency (don't count LNF, ASM or ALM)
             matching_cols = [col for col in allele_columns if loci_id in col]
             # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
@@ -192,7 +192,7 @@ def calculate_frequency(schema_folder: str,
 
         pf.print_message('Calculating frequencies of each locus in each genome...', 'info')
         for loci, loci_path in schema.items():
-            loci_id = ff.file_basename(loci).split('.')[0]
+            loci_id = ff.file_basename(loci, False)
             # For each locus count the frequency (don't count LNF, ASM or ALM)
             matching_cols = [col for col in allele_columns if loci_id in col]
             # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
@@ -209,7 +209,7 @@ def calculate_frequency(schema_folder: str,
 
         pf.print_message('Calculating frequencies of each locus in each genome...', 'info')
         for loci, loci_path in second_schema.items():
-            loci_id = ff.file_basename(loci).split('.')[0]
+            loci_id = ff.file_basename(loci, False)
             # For each locus count the frequency (don't count LNF, ASM or ALM)
             matching_cols = [col for col in allele_columns_ss if loci_id in col]
             # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
@@ -290,7 +290,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     None
     """
     
-    output_d= os.path.abspath(output_directory)
+    output_d = os.path.abspath(output_directory)
 
     # Create directories structure.
     (initial_processing_output,
@@ -305,7 +305,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     
     # Calculate the frequencies depending of the run mode
     if run_mode == 'unclassified_cds':
-        
         # Calculate the frequency of the cds in genomes, cds presence, nucleotide sequences and dropped alleles
         _, _, frequency_cds, cds_presence_in_genomes, all_nucleotide_sequences, dropped_alleles, cds_size = calculate_frequency(None, None, None, None, 
                                                                                                                         temp_paths, 
@@ -430,7 +429,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                         constants)
         pf.print_message("")
 
-
     if run_mode == 'schema':
 
         ff.copy_folder(schema_directory[0], schema_folder)
@@ -490,7 +488,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                             constants,
                                             initial_processing_output)
 
-
     # Main part that is the same for all run modes
     # =============================================
 
@@ -500,7 +497,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
     makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
     blast_db_prot: str = os.path.join(blast_db, 'Blast_db_proteins')
     bf.make_blast_db(makeblastdb_exec, master_file_path, blast_db_prot, 'prot')
-
 
     # Run the BLASTn and BLASTp
     representative_blast_results: tp.BlastDict
@@ -520,13 +516,11 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                                                 cpu,
                                                                                                 output_d)
 
-
     pf.print_message("Filtering BLAST results into classes...", "info")
     # Separate results into different classes.
     classes_outcome: Tuple[str] = cof.separate_blast_results_into_classes(representative_blast_results, representative_blastn_results,
                                                            constants, ct.CLASSES_OUTCOMES)
-    
-    
+
     # Sort each entry based on their assigned classes
     sorted_blast_dict: tp.BlastDict = cof.sort_blast_results_by_classes(representative_blast_results,
                                                           classes_outcome)
@@ -789,8 +783,7 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
             sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
                         "was run using --no-cleanup and --output-unclassified flag.")
     
-    # Put all constants in one dict in order to decrease number of variables
-    # used around.
+    # Put all constants in one dict in order to decrease number of variables used around
     constants: List[Any] = [alignment_ratio_threshold, 
                 pident_threshold,
                 genome_presence,
@@ -800,7 +793,6 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
                 translation_table,
                 bsr,
                 size_ratio]
-
 
     identify_spurious_genes(schema_directory,
                 output_directory,

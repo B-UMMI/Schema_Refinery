@@ -166,7 +166,7 @@ def file_basename(file_path: str, file_extension: bool = True) -> str:
 		The file name extracted from the file path.
 	"""
 	if not file_extension:
-		return os.path.basename(file_path).split('.')[0]
+		return os.path.basename(file_path).rsplit('.', 1)[0]
 	else:
 		return os.path.basename(file_path)
 
