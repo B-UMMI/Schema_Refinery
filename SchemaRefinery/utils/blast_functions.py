@@ -228,9 +228,8 @@ def run_blast_fastas_multiprocessing(id_: str, blast_exec: str, blast_results: s
 	return [id_, blast_results_file]
 
 
-def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str, id_: str, blast_output: str, max_targets: Optional[int] = None, ids_file: Optional[str] = None,
-								max_hsps: Optional[int] = None, threads: int = 1, 
-								blast_task: Optional[str] = None) -> List[str]:
+def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str, input_id: str, blast_output: str, ids_file: Optional[str] = None, max_targets: Optional[int] = None,
+								max_hsps: Optional[int] = None, threads: int = 1, blast_task: Optional[str] = None) -> List[str]:
 	"""
 	Execute BLAST.
 
@@ -243,7 +242,7 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
 	fasta_file : str
 		Path to the Fasta file that contains the sequences
 		to align against the database.
-	id_ : str
+	input_id : str
 		Identifier of the sequence.
 	blast_output : str
 		Path to the output file.
@@ -253,8 +252,8 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
 		Number of threads passed to BLAST.
 	ids_file : str, optional
 		Path to a file with the identifiers of the sequences
-		to align against. Used to specify the database sequences
-		we want to align against.
+		to not align against. Used to specify the database 
+		sequences we do not want to align against.
 	blast_task : str, optional
 		BLAST task. Allows to set default parameters for a specific
 		type of search.
@@ -266,7 +265,7 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
 	list
 		List containing the sequence identifier and the path to the BLAST results file.
 	"""
-	blast_results_file: str = os.path.join(blast_output, f"blast_results_{id_}.tsv")
+	blast_results_file: str = os.path.join(blast_output, f"blast_results_{input_id}.tsv")
 
 	blast_args: List[str] = [blast_exec,
 							 '-db', blast_db,
@@ -287,17 +286,17 @@ def run_blastdb_multiprocessing(blast_exec: str, blast_db: str, fasta_file: str,
 
 	run_blast_with_args_only(blast_args)
 
-	return [id_, blast_results_file]
+	return [input_id, blast_results_file]
 
 
-def run_self_score_multiprocessing(id_: str, blast_exec: str, file_path: str, output: str) -> List[str]:
+def run_self_score_multiprocessing(input_file: str, blast_exec: str, output: str) -> List[str]:
 	"""
 	Execute BLAST to calculate self-score.
 
 	Parameters
 	----------
-	id_ : str
-		Identifier of the sequence.
+	input_file : str
+		Path to the input file.
 	blast_exec : str
 		Path to the BLAST executable.
 	file_path : str
@@ -310,11 +309,11 @@ def run_self_score_multiprocessing(id_: str, blast_exec: str, file_path: str, ou
 	list
 		List containing the sequence identifier and the path to the BLAST results file.
 	"""
-	blast_results_file: str = os.path.join(output, f"blast_results_{id_}.tsv")
+	blast_results_file: str = os.path.join(output, f"{input_file[0]}.tsv")
 
 	blast_args: List[str] = [blast_exec,
-							 '-query', file_path,
-							 '-subject', file_path,
+							 '-query', input_file[1],
+							 '-subject', input_file[1],
 							 '-out', blast_results_file,
 							 '-outfmt', '6 qseqid sseqid qlen slen qstart qend sstart send length score gaps pident',
 							 '-task', 'blastp-fast',
@@ -329,7 +328,7 @@ def run_self_score_multiprocessing(id_: str, blast_exec: str, file_path: str, ou
 
 	run_blast_with_args_only(blast_args)
 
-	return [id_, blast_results_file]
+	return [input_file[0], blast_results_file]
 
 
 def compute_bsr(subject_score: float, query_score: float) -> float:
@@ -461,7 +460,7 @@ def run_blastdb_aliastool(blastdb_aliastool_path: str, seqid_infile: List[str], 
 	return stdout, stderr
 
 
-def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_folder: str, max_id_length: int, cpu: int) -> Dict[str, int]:
+def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_folder: str, cpu: int) -> Dict[str, int]:
 	"""
 	Calculate self-score for each loci using BLASTp.
 
@@ -473,8 +472,6 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 		Path to the BLASTp executable.
 	output_folder : str
 		Path to the output folder where results will be stored.
-	max_id_length : int
-		Maximum length of the loci identifiers.
 	cpu : int
 		Number of CPU cores to use for multiprocessing.
 
@@ -483,209 +480,77 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 	dict
 		Dictionary with loci identifiers as keys and their self-scores as values.
 	"""
-	
-	# Self-score folder
-	self_score_folder: str = os.path.join(output_folder, 'self_score_folder')
-	ff.create_directory(self_score_folder)
-
-	self_score_dict: Dict[str, Any] = {}
-	self_score_results_files: List[str] = [] # List to store paths to BLAST results
+	blast_results: List[str] = [] # List to store paths to BLAST results
 	i: int = 1
 	# Calculate self-score
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_self_score_multiprocessing,
-								paths_dict.keys(),
+								paths_dict.items(),
 								repeat(blast_exec),
-								paths_dict.values(),
-								repeat(self_score_folder)):
-				self_score_results_files.append(res[1])
-
+								repeat(output_folder)):
+				blast_results.append(res)
 				# Print progress
-				pf.print_message(f"Running BLASTp to calculate self-score for {res[0]: <{max_id_length}}...", "info", end='\r', flush=True)
+				pf.print_message(f"Running BLAST to calculate self-score for {res[0]}...", "info", end='\r', flush=True)
 				i += 1    
 
-	for blast_results_file in self_score_results_files:
+	# Print to avoid printing next message in the same line as last progress message
+	pf.print_message(f"", "info")
+
+	self_scores: Dict[str, int] = {}
+	for r in blast_results:
 		# Extract self-score from BLAST results
-		_, self_score, _, _ = af.get_alignments_dict_from_blast_results(blast_results_file, 0, False, True, True, True, True)
+		self_scores.update(af.get_self_scores(r[1]))
 
-		# Save self-score
-		self_score_dict.update(self_score)
+	return self_scores
 
-	# Add new line after progress message 
-	print()
 
-	return self_score_dict
-
-def run_blastn_operations(cpu: int, get_blastn_exec: str, blast_db: str, rep_paths_nuc: Dict[str, str],
-						  blastn_results_folder: str,
-						  total_reps: int, max_id_length: int, new_max_hits: Optional[List[int]] = None, seqid_files: Optional[List[str]] = None) -> List[str]:
-	"""
-	Run BLASTn in parallel for all the cluster representatives.
-
-	Parameters
-	----------
-	cpu : int
-		Number of CPU cores to use for multiprocessing.
-	get_blastn_exec : str
-		Path to the BLASTn executable.
-	blast_db : str
-		Path to the BLAST database files.
-	rep_paths_nuc : Dict[str, str]
-		Dictionary with the paths to the nucleotide sequences.
-	blastn_results_folder : str
-		Path to the folder where to store the BLASTn results.
-	total_reps : int
-		Total number of BLASTn runs to perform.
-	seqid_files : int
-		Maximum length of the cluster identifiers.
-	seqid_files : List[str], optional
-		Path to a file with the identifiers of the sequences
-		to align against. Used to specify the database sequences
-		we want to align against.
-	new_max_hits : List[int], optional
-		Maximum number of targets sequences to align against.
-	
-	Returns
-	-------
-	blastn_results_files : List[str]
-		List containing the paths to the BLASTn results files.
-	"""
-	blastn_results_files: List[str] = []
-	i: int = 1
-	ids_reps_list = list(rep_paths_nuc.keys())
-	rep_paths_nuc_list = list(rep_paths_nuc.values())
-	if new_max_hits is None:
-		new_max_hits = [None] * len(translations_paths_values)
-	if seqid_files is None:
-		seqid_files = [None] * len(translations_paths_values)
-
-	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-		for res in executor.map(run_blastdb_multiprocessing,
-								repeat(get_blastn_exec),
-								repeat(blast_db),
-								rep_paths_nuc_list,
-								ids_reps_list,
-								repeat(blastn_results_folder),
-								new_max_hits,
-								seqid_files):
-			# Append the results file to the list
-			blastn_results_files.append(res[1])
-			pf.print_message(f"Running BLASTn for {res[0]} - {i}/{total_reps: <{max_id_length}}", "info", end='\r', flush=True)
-			i += 1
-
-	# Add a new line after the progress message
-	print()
-
-	return blastn_results_files
-
-"""
-def run_blastn_operations_based_on_blastp(cpu: int, blastp_runs_to_do, get_blastn_exec: str,
-										  blastn_results_folder: str, rep_paths_prot, rep_matches_prot,
-										  total_blasts: int, max_id_length: int) -> List[str]:
-	
-	Run BLASTp in parallel based on the BLASTn results.
-
-	Parameters
-	----------
-	cpu : int
-		Number of CPU cores to use for multiprocessing.
-	blastp_runs_to_do : list
-		List with the BLASTp runs to perform.
-	get_blastp_exec : str
-		Path to the BLASTp executable.
-	blastp_results_folder : str
-		Path to the folder where to store the BLASTp results.
-	rep_paths_prot : dict
-		Dictionary with the paths to the protein sequences.
-	rep_matches_prot : dict
-		Dictionary with the protein sequences that match the nucleotide sequences.
-	total_blasts : int
-		Total number of BLASTp runs to perform.
-	max_id_length : int
-		Maximum length of the cluster identifiers.
-	
-	Returns
-	-------
-	blastp_results_files : List[str]
-		List containing the paths to the BLASTp results files.
-	
-
-	blastn_results_files: List[str] = []  # To store the results files
-	i = 1
-	rep_matches_prot_list = list(rep_matches_prot.values())  # Convert dict_values to list
-	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
-		for res in executor.map(run_blast_fastas_multiprocessing,
-								blastp_runs_to_do, 
-								repeat(get_blastn_exec),
-								repeat(blastn_results_folder),
-								repeat(rep_paths_prot),
-								rep_matches_prot_list):
-			# Append the results file to the list
-			blastn_results_files.append(res[1])
-			pf.print_message(f"Running BLASTn for {res[0]} - {i}/{total_blasts: <{max_id_length}}", "info", end='\r', flush=True)
-			i += 1
-	return blastn_results_files
-"""
-
-def run_blastp_operations(cpu: int, get_blastp_exec: str, blast_db_files: str, translations_paths,
-						  blastp_results_folder: str, total_blasts: int, max_id_length: int, new_max_hits: Optional[List[int]] = None, seqid_files: Optional[List[str]] = None) -> List[str]:
+def run_blast_operations(input_files: List[str], output_directory: str, blast_db: str, blast_exec: str, cpu: int) -> List[str]:
 	"""
 	Run BLASTp in parallel for all the cluster representatives.
 
 	Parameters
 	----------
+	input_files : dict
+		Dictionary with the paths to the translated sequences.
+	output_directory : str
+		Path to the folder where to store the BLASTp results.
+	blast_db : str
+		Path to the BLAST database files.
+	blast_exec : str
+		Path to either the BLASTn or BLASTp executable.
 	cpu : int
 		Number of CPU cores to use for multiprocessing.
-	get_blastp_exec : str
-		Path to the BLASTp executable.
-	blast_db_files : str
-		Path to the BLAST database files.
-	translations_paths : dict
-		Dictionary with the paths to the translated sequences.
-	blastp_results_folder : str
-		Path to the folder where to store the BLASTp results.
-	total_blasts : int
-		Total number of BLASTp runs to perform.
-	max_id_length : int
-		Maximum length of the cluster identifiers.
-	seqid_files : List[str], optional
-		Path to a file with the identifiers of the sequences
-		to align against. Used to specify the database sequences
-		we want to align against.
-	new_max_hits : List[int], optional
-		Maximum number of targets sequences to align against.
 	
 	Returns
 	-------
-	blastp_results_files : List[str]
+	blast_results_files : List[str]
 		List containing the paths to the BLASTp results files.
 	"""
 
-	blastp_results_files: List[str] = []
+	blast_results_files: List[str] = []
 	i: int = 1
-	translations_paths_values = list(translations_paths.values())
-	translations_paths_keys = list(translations_paths.keys())
 
-	if new_max_hits is None:
-		new_max_hits = [None] * len(translations_paths_values)
-	if seqid_files is None:
-		seqid_files = [None] * len(translations_paths_values)
-	
+	input_ids = list(input_files.keys())
+	fasta_files = list([paths[0] for paths in input_files.values()])
+	seqids_files = list([paths[1] for paths in input_files.values()])
+	# Define the total number of BLASTs for progress message
+	total_blasts = len(fasta_files)
+	# Determine maximum ID length to print fixed length message (avoids partial ID overlap when previous ID was longer)
+	max_id_length = max([len(i) for i in input_ids])
 	with concurrent.futures.ProcessPoolExecutor(max_workers=cpu) as executor:
 		for res in executor.map(run_blastdb_multiprocessing,
-								repeat(get_blastp_exec),
-								repeat(blast_db_files),
-								translations_paths_values,
-								translations_paths_keys,
-								repeat(blastp_results_folder),
-								new_max_hits,
-								seqid_files):
+								repeat(blast_exec),
+								repeat(blast_db),
+								fasta_files,
+								input_ids,
+								repeat(output_directory),
+								seqids_files):
 			# Save the path to the BLASTp results file
-			blastp_results_files.append(res[1])
-			pf.print_message(f"Running BLASTp for {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
+			blast_results_files.append(res[1])
+			pf.print_message(f"Running BLAST for {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
 			i += 1
 
-	# Add a new line after the progress message
-	print()
+	# Print to avoid printing next message in the same line as last progress message
+	pf.print_message(f"", "info")
 
-	return blastp_results_files
+	return blast_results_files

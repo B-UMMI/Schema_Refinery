@@ -99,556 +99,65 @@ def alignment_dict_to_file(blast_results_dict: Dict[str, Dict[str, Dict[str, Dic
                     report_file.write('\t'.join(map(str, alignment_data.values())) + '\n')
 
 
-def add_items_to_results(filtered_alignments_dict: tp.BlastDict, 
-                         reps_kmers_sim: Optional[Dict[str, Dict[str, Tuple[float, float]]]], 
-                         bsr_values: tp.BSRValues,
-                         alignment_coords_all: tp.RepresentativeBlastResultsCoords,
-                         alignment_coords_pident: tp.RepresentativeBlastResultsCoords,
-                         frequency_in_genomes: Dict[str, int],
-                         frequency_in_genomes_second_schema: Optional[Dict[str, int]], 
-                         allele_ids: List[bool]) -> None:
-    """
-    Enhances BLAST results with additional metrics and frequencies.
+# def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
+#                                   classes_outcome: Tuple[str, ...]
+#                                   ) -> tp.BlastDict:
+#     """
+#     Sorts BLAST results by classes based on the alignment score.
 
-    This function enriches the given BLAST results dictionary with several key metrics and frequencies
-    to provide a more comprehensive analysis of the BLAST hits. It adds metrics such as Blast
-    Score Ratio (BSR), k-mer similarities and coverage, and frequencies of query and subject CDS in
-    schema genomes. It also includes global and local pairwise alignment scores, both in terms of
-    coverage and percentage identity, with the ability to focus on specific percentage identity thresholds.
+#     This function organizes BLAST results into a sorted structure according to predefined classes.
+#     It ensures that for each query, the results are grouped by the class of the alignment, prioritizing
+#     the classes as specified in the `classes_outcome` list.
 
-    Parameters
-    ----------
-    filtered_alignments_dict : tp.BlastDict
-        A dictionary containing BLAST results. Each entry is expected to represent a unique BLAST hit with
-        various metrics.
-    reps_kmers_sim : Dict[str, Dict[str, Tuple[float, float]]]
-        A dictionary mapping pairs of CDS to their k-mer similarity scores.
-    bsr_values : tp.BSRValues
-        A dictionary mapping pairs of CDS to their Blast Score Ratio (BSR) values. Can be None if BSR values
-        are not available.
-    alignment_coords_all : tp.RepresentativeBlastResultsCoords
-        A dictionary containing the coordinates for all BLAST entries, used for calculating global alignment metrics.
-    alignment_coords_pident : tp.RepresentativeBlastResultsCoords
-        A dictionary containing the coordinates for BLAST entries above a certain percentage identity threshold,
-        used for calculating specific global alignment metrics.
-    frequency_in_genomes : Dict[str, int]
-        A dictionary summarizing the frequency of each representative cluster within the genomes of the schema,
-        enhancing the context of BLAST results.
-    frequency_in_genomes_second_schema : [Dict[str, int]
-        A dictionary summarizing the frequency of each representative cluster within the genomes of the second schema,
-        enhancing the context of BLAST results.
-        Only not None with the scheam_vs_schema run mode.
-    allele_ids : List[bool]
-        Indicates whether the IDs of loci representatives are included in the `frequency_in_genomes`. If true,
-        IDs follow the format `loci1_x`.
+#     Parameters
+#     ----------
+#     representative_blast_results : Dict[str, Dict[str, List[Dict[str, Any]]]]
+#         A dictionary where each key is a query identifier and each value is another dictionary.
+#         The inner dictionary's keys are subject identifiers, and values are lists containing
+#         details of the match, where the second element is a dictionary with the key 'class'
+#         indicating the class of the alignment.
+#     classes_outcome : Tuple[str, ...]
+#         A list of possible classes outcomes to sort the BLAST results into. The order in this list
+#         determines the priority of the classes when organizing the results.
 
-    Returns
-    -------
-    None
-        Modifies the representative_blast_results dict inside the main function.
+#     Returns
+#     -------
+#     tp.BlastDict
+#         A dictionary structured similarly to `representative_blast_results`, but sorted such that
+#         all results for a given query are grouped by their class as determined by the highest
+#         scoring alignment.
 
-    Notes
-    -----
-    - The function is designed to work with detailed BLAST results and requires several pre-computed metrics
-    and frequencies as input.
-    - It is crucial for enhancing the analysis of BLAST results, especially in comparative genomics and
-    schema development projects.
-    """
-    
-    def get_kmer_values(reps_kmers_sim: Optional[Dict[str, Dict[str, Tuple[float, float]]]], 
-                        query: str, subject: str) -> Tuple[Union[float, str], Union[float, str]]:
-        """
-        Retrieves k-mer similarity and coverage values for a specified query and subject pair.
+#     Notes
+#     -----
+#     - The function assumes that each match list in the values of `representative_blast_results`
+#       contains at least one element, which is a dictionary with a 'class' key.
+#     - It creates a temporary dictionary to first group results by class, then consolidates these
+#       into the final sorted dictionary to be returned.
+#     """
+#     # Initialize the sorted dictionary
+#     sorted_blast_dict: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
 
-        Parameters
-        ----------
-        reps_kmers_sim : Dict[str, Dict[str, Tuple[float, float]]]
-            A dictionary where keys are query sequence IDs and values are dictionaries with subject
-            sequence IDs as keys. Each inner dictionary's values are tuples containing the k-mer
-            similarity and coverage values.
-        query : str
-            The identifier for the query sequence.
-        subject : str
-            The identifier for the subject sequence.
+#     # Temporary dictionary to group results by class
+#     temp_dict: Dict[str, Dict[str, Dict[str, List[Dict[str, Any]]]]] = {class_: {} for class_ in classes_outcome}
 
-        Returns
-        -------
-        sim : float or str
-            The k-mer similarity value between the query and subject sequences. Returns 0 if no value is
-            found, or '-' if the `reps_kmers_sim` dictionary is empty or not provided.
-        cov : float or str
-            The coverage value indicating the extent to which the k-mers of the query sequence are present
-            in the subject sequence. Returns 0 if no value is found, or '-' if the `reps_kmers_sim` dictionary
-            is empty or not provided.
-        """
-        if reps_kmers_sim:
-            if subject in reps_kmers_sim[query]:
-                sim: Union[float, str]
-                cov: Union[float, str]
-                sim, cov = reps_kmers_sim[query][subject]
-                sim = round(sim, 2)
-                cov = round(cov, 2)
-            else:
-                sim = 0
-                cov = 0
-        else:
-            sim = '-'
-            cov = '-'
-        return sim, cov
+#     # Group results by class
+#     for query, rep_blast_result in representative_blast_results.items():
+#         for id_subject, matches in rep_blast_result.items():
+#             # Get the class of the alignment with the highest score
+#             class_ = matches[1]['classification']
+#             if query not in temp_dict[class_]:
+#                 temp_dict[class_][query] = {}
+#             temp_dict[class_][query][id_subject] = matches
 
-    def get_bsr_value(bsr_values: tp.BSRValues, 
-                      query: str, subject: str) -> float:
-        """
-        Fetches the BLAST Score Ratio (BSR) for a specified pair of sequences.
+#     # Consolidate the grouped results into the final sorted dictionary
+#     for class_ in classes_outcome:
+#         for query, rep_blast_result in temp_dict[class_].items():
+#             if query not in sorted_blast_dict:
+#                 sorted_blast_dict[query] = {}
+#             for id_subject, matches in rep_blast_result.items():
+#                 sorted_blast_dict[query][id_subject] = matches
 
-        Parameters
-        ----------
-        bsr_values : tp.BSRValues
-            A dictionary where keys are query sequence IDs and values are dictionaries with subject sequence
-            IDs as keys. Each inner dictionary's values are the BSR values.
-        query : str
-            The identifier for the query sequence.
-        subject : str
-            The identifier for the subject sequence.
-
-        Returns
-        -------
-        bsr : float
-            The BSR value between the query and subject sequences. Returns 0 if no BSR value is found for the
-            given pair. If the BSR value is greater than 1, it is rounded to the nearest whole number. The BSR
-            value is rounded by 4 decimal places for consistency.
-        """
-        bsr: float = bsr_values[query].get(subject, 0)
-        if bsr > 1.0:
-            bsr = float(round(bsr))
-        return round(bsr, 4)
-
-    def calculate_total_length(representative_blast_results_coords: tp.RepresentativeBlastResultsCoords, 
-                               query: str, subject: str) -> Dict[str, int]:
-        """
-        Calculates the total aligned length for each reference sequence in a given query-subject pair.
-
-        Parameters
-        ----------
-        representative_blast_results_coords : tp.RepresentativeBlastResultsCoords
-            A nested dictionary where the first level keys are query sequence IDs, the second level keys are
-            subject sequence IDs, and the values are dictionaries mapping reference sequence IDs to lists of
-            alignment intervals.
-        query : str
-            The identifier for the query sequence.
-        subject : str
-            The identifier for the subject sequence.
-
-        Returns
-        -------
-        total_length : Dict[str, int]
-            A dictionary where keys are reference sequence IDs and values are the total aligned length for that
-            reference sequence.
-        """
-        total_length: Dict[str, int] = {}
-        for ref, intervals in representative_blast_results_coords[query][subject].items():
-            if intervals:
-                sorted_intervals: List[Tuple[int, int]] = sorted(intervals, key=lambda x: x[0])
-                length: int = sum(interval[1] - interval[0] + 1 for interval in af.merge_intervals(sorted_intervals))
-                total_length[ref] = length
-            else:
-                total_length[ref] = 0
-        return total_length
-
-    def calculate_global_palign(total_length: Dict[str, int], 
-                                result: Dict[str, Union[int, float]]) -> Tuple[float, float]:
-        """
-        Calculates the minimum and maximum global pairwise alignment percentages.
-
-        Parameters
-        ----------
-        total_length : Dict[str, int]
-            A dictionary where keys are 'query' and 'subject', and values are the total aligned lengths for the
-            query and subject sequences, respectively.
-        result : Dict[str, Union[int, float]]
-            A dictionary containing the lengths of the query and subject sequences under the keys 'query_length'
-            and 'subject_length'.
-
-        Returns
-        -------
-        global_palign_min : float
-            The minimum global pairwise alignment percentage.
-        global_palign_max : float
-            The maximum global pairwise alignment percentage.
-        """
-        global_palign_min: float = min(total_length['query'] / result['query_length'],
-                                       total_length['subject'] / result['subject_length'])
-        global_palign_max: float = max(total_length['query'] / result['query_length'],
-                                       total_length['subject'] / result['subject_length'])
-        return round(global_palign_min, 4), round(global_palign_max, 4)
-
-    def calculate_local_palign(result: Dict[str, Union[int, float]]) -> float:
-        """
-        Calculates the minimum local pairwise alignment percentage.
-
-        Parameters
-        ----------
-        result : Dict[str, Union[int, float]]
-            A dictionary containing the result of a BLAST search, including the start and end positions of the alignment
-            on both the query and subject sequences, as well as their total lengths.
-
-        Returns
-        -------
-        local_palign_min : float
-            The minimum local pairwise alignment percentage.
-        """
-        local_palign_min: float = min((result['query_end'] - result['query_start'] + 1) / result['query_length'],
-                                      (result['subject_end'] - result['subject_start'] + 1) / result['subject_length'])
-        return round(local_palign_min, 4)
-
-    def update_results(representative_blast_results: tp.BlastDict, 
-                       query: str, subject: str, entry_id: str, bsr: float, sim: Union[float, str], 
-                       cov: Union[float, str], frequency_in_genomes: Dict[str, int], 
-                       frequency_in_genomes_second_schema: Optional[Dict[str, int]],
-                       global_palign_all_min: float, global_palign_all_max: float, 
-                       global_palign_pident_min: float, global_palign_pident_max: float,
-                       local_palign_min: float, allele_ids: List[bool]) -> None:
-        """
-        Updates the BLAST results for a specific query and subject pair with new data.
-
-        Parameters
-        ----------
-        representative_blast_results : tp.BlastDict
-            A dictionary containing BLAST results where keys are query IDs, values are dictionaries with subject
-            IDs as keys, and each subject dictionary contains dictionaries of entry IDs with their respective data.
-        query : str
-            The query sequence ID.
-        subject : str
-            The subject sequence ID.
-        entry_id : str
-            The ID of the entry to update within the BLAST results.
-        bsr : float
-            The BSR value to update.
-        sim : Union[float, str]
-            The similarity value to update.
-        cov : Union[float, str]
-            The coverage value to update.
-        frequency_in_genomes : Dict[str, int]
-            A dictionary containing the frequency of the query and subject in genomes.
-        frequency_in_genomes_second_schema : Dict[str, int]
-            A dictionary containing the frequency of the query and subject in genomes of the second schema.
-        global_palign_all_min : float
-            The minimum global pairwise alignment percentage.
-        global_palign_all_max : float
-            The maximum global pairwise alignment percentage.
-        global_palign_pident_min : float
-            The minimum global pairwise alignment percentage based on Pident threshold.
-        global_palign_pident_max : float
-            The maximum global pairwise alignment percentage based on Pident threshold.
-        local_palign_min : float
-            The minimum local pairwise alignment percentage.
-        allele_ids : List[bool]
-            A list indicating whether to modify the query and/or subject IDs based on loci information.
-
-        Returns
-        -------
-        None
-            This function does not return any value but modifies the `representative_blast_results` dictionary in place.
-        """
-        pattern = r'_(\d+)$'
-        if allele_ids[0]:
-            query_before: str = query
-            query = itf.remove_by_regex(query, pattern)
-        if allele_ids[1]:
-            subject_before: str = subject
-            subject = itf.remove_by_regex(subject, pattern)
-        # For run_mode == schema_vs_schema
-        if frequency_in_genomes_second_schema is not None:
-            update_dict: Dict[str, Union[float, str, int]] = {
-                'bsr': bsr,
-                'kmers_sim': sim,
-                'kmers_cov': cov,
-                'frequency_in_genomes_query_cds': frequency_in_genomes[query],
-                'frequency_in_genomes_subject_cds': frequency_in_genomes[subject],
-                'frequency_in_genomes_second_schema_query_cds': frequency_in_genomes_second_schema[query],
-                'frequency_in_genomes_second_schema_subject_cds': frequency_in_genomes_second_schema[subject],
-                'global_palign_all_min' : global_palign_all_min,
-                'global_palign_all_max': global_palign_all_max,
-                'global_palign_pident_min': global_palign_pident_min,
-                'global_palign_pident_max': global_palign_pident_max,
-                'local_palign_min': local_palign_min
-            }
-        else:
-            update_dict: Dict[str, Union[float, str, int]] = {
-                'bsr': bsr,
-                'kmers_sim': sim,
-                'kmers_cov': cov,
-                'frequency_in_genomes_query_cds': frequency_in_genomes[query],
-                'frequency_in_genomes_subject_cds': frequency_in_genomes[subject],
-                'global_palign_all_min' : global_palign_all_min,
-                'global_palign_all_max': global_palign_all_max,
-                'global_palign_pident_min': global_palign_pident_min,
-                'global_palign_pident_max': global_palign_pident_max,
-                'local_palign_min': local_palign_min
-            }
-        if allele_ids[0]:
-            query = query_before
-        if allele_ids[1]:
-            subject = subject_before
-        representative_blast_results[query][subject][entry_id].update(update_dict)
-
-    def remove_results(representative_blast_results: tp.BlastDict, 
-                       query: str, subject: str, entry_id: str) -> None:
-        """
-        Removes a specific entry from the BLAST results for a given query and subject pair.
-
-        Parameters
-        ----------
-        representative_blast_results : tp.BlastDict
-            A dictionary containing BLAST results, structured with query IDs as keys, each mapping to a dictionary
-            of subject IDs, which in turn map to dictionaries of entry IDs and their associated data.
-        query : str
-            The identifier for the query sequence.
-        subject : str
-            The identifier for the subject sequence.
-        entry_id : str
-            The identifier of the specific entry to be removed from the results.
-
-        Returns
-        -------
-        None
-            This function does not return any value. It modifies the `representative_blast_results` dictionary in
-            place, removing the specified entry.
-        """
-        del representative_blast_results[query][subject][entry_id]
-
-    def clean_up_results(representative_blast_results: tp.BlastDict, 
-                         query: str, subject: str) -> None:
-        """
-        Cleans up BLAST results for a specific query and subject by removing empty entries.
-
-        Parameters
-        ----------
-        representative_blast_results : tp.BlastDict
-            A dictionary containing BLAST results, where keys are query IDs, and values are dictionaries with
-            subject IDs as keys, each mapping to their respective result entries.
-        query : str
-            The identifier for the query sequence.
-        subject : str
-            The identifier for the subject sequence.
-        
-        Returns
-        -------
-        None
-            This function does not return any value. It modifies the `representative_blast_results` dictionary in
-            place, removing the specified entry.
-        """
-        if not representative_blast_results[query][subject]:
-            del representative_blast_results[query][subject]
-        if not representative_blast_results[query]:
-            del representative_blast_results[query]
-
-    # Iterate over the representative_blast_results dictionary
-    for query, subjects_dict in list(filtered_alignments_dict.items()):
-        for subject, blastn_results in list(subjects_dict.items()):
-            sim, cov = get_kmer_values(reps_kmers_sim, query, subject)
-            bsr = get_bsr_value(bsr_values, query, subject)
-
-            total_length = calculate_total_length(alignment_coords_all, query, subject)
-            global_palign_all_min, global_palign_all_max = calculate_global_palign(total_length, blastn_results[1])
-
-            total_length = calculate_total_length(alignment_coords_pident, query, subject)
-            global_palign_pident_min, global_palign_pident_max = calculate_global_palign(total_length, blastn_results[1])
-            
-            # Iterate over the blastn_results dictionary
-            for entry_id, result in list(blastn_results.items()):
-                local_palign_min = calculate_local_palign(result)
-                # Remove entries with negative local palign values meaning that they are inverse alignments.
-                if local_palign_min >= 0:
-                    update_results(filtered_alignments_dict, query, subject, entry_id, bsr, sim, cov, frequency_in_genomes, frequency_in_genomes_second_schema, global_palign_all_min, global_palign_all_max, global_palign_pident_min, global_palign_pident_max, local_palign_min, allele_ids)
-                else:
-                    remove_results(filtered_alignments_dict, query, subject, entry_id)
-
-            clean_up_results(filtered_alignments_dict, query, subject)
-
-
-def separate_blast_results_into_classes(representative_blast_results: tp.BlastDict, representative_blastn_results: tp.BlastDict,
-                                         constants: List[Any], classes_outcome: Tuple[str, ...] 
-                                         ) -> Tuple[str]:
-    """
-    Separates BLAST results into predefined classes based on specific criteria.
-
-    This function iterates through BLAST results and classifies each result into a specific class
-    based on criteria such as global alignment percentage, bit score ratio (bsr), and frequency ratios
-    between query and subject CDS in genomes. The classification is done by updating the results
-    dictionary with a new key-value pair indicating the class of each BLAST result.
-
-    Parameters
-    ----------
-    representative_blast_results : tp.BlastDict
-        A nested dictionary where the first level keys are query sequence IDs, the second level keys
-        are subject sequence IDs, and the third level keys are unique identifiers for each BLASTp
-        result. Each BLASTp result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
-        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
-    representative_blastn_results : tp.BlastDict
-        A nested dictionary where the first level keys are query sequence IDs, the second level keys
-        are subject sequence IDs, and the third level keys are unique identifiers for each BLASTn
-        result. Each BLASTn result is a dictionary containing keys such as 'frequency_in_genomes_query_cds',
-        'frequency_in_genomes_subject_cds', 'global_palign_all_min', 'bsr', and 'pident'.
-    constants : Tuple[Any, ...]
-        A collection of constants used in the classification criteria. Specifically, `constants[1]`
-        is used as a threshold for the percentage identity (pident) in one of the classification conditions.
-    classes_outcome : List[str]
-        A list of class identifiers indicating the order of priority for the classes.
-
-    Returns
-    -------
-    Touple[str]
-        A tuple of class identifiers indicating the order of priority for the classes.
-
-    Notes
-    -----
-    - The function modifies `representative_blast_results` in place by adding a 'class' key to each
-      BLAST result dictionary.
-    - The classification logic is based on a combination of alignment quality metrics and frequency
-      ratios, with specific thresholds and conditions determining the class assignment.
-    - The function assumes that `constants` provides necessary thresholds for classification and
-      that its elements are accessed by index.
-    """
-    
-    def add_class_to_dict(query: str, id_subject: str, id_: str, class_name: str, blast_type: str) -> None:
-        """
-        Adds a class identifier to a BLAST result within the representative_blast_results dictionary.
-
-        Parameters
-        ----------
-        query : str
-            The query sequence ID.
-        id_subject : str
-            The subject sequence ID.
-        id_ : str
-            The unique identifier for the BLAST result.
-        class_name : str
-            The class identifier to be added to the BLASTN result.
-        blast_type : str
-            Defines if it is a BLASTp or BLASTn
-        """
-        if blast_type == 'blastp':
-            representative_blast_results[query][id_subject][id_]['classification'] = class_name
-        else:
-            representative_blastn_results[query][id_subject][id_]['classification'] = class_name
-
-
-    pident_threshold: float = constants[1]
-    bsr_threshold: float = constants[7]
-    size_ratio_threshold: float = constants[8]
-
-    # Loop through the representative BLASTp results
-    for query, rep_blast_result in representative_blast_results.items():
-        for id_subject, matches in rep_blast_result.items():
-            for id_, blastn_entry in matches.items():
-                # Calculate the frequency ratio             
-                query_freq: int = blastn_entry['frequency_in_genomes_query_cds']
-                subject_freq: int = blastn_entry['frequency_in_genomes_subject_cds']
-                
-                if query_freq == 0 or subject_freq == 0:
-                    freq_ratio: float = 0.1 if query_freq > 10 or subject_freq > 10 else 1
-                else:
-                    freq_ratio = min(query_freq / subject_freq, subject_freq / query_freq)
-                
-                # Extract relevant metrics
-                global_palign_all_min: float = blastn_entry['global_palign_all_min']
-                bsr_value: float = blastn_entry['bsr']
-                pident_value: float = blastn_entry['pident']
-                global_palign_all_max: float = blastn_entry['global_palign_all_max']
-
-                # Classify based on global_palign_all_min and bsr
-                if global_palign_all_min >= size_ratio_threshold:
-                    if bsr_value >= bsr_threshold:
-                        add_class_to_dict(query, id_subject, id_, '1a', 'blastp')
-                    elif freq_ratio <= 0.1:
-                        add_class_to_dict(query, id_subject, id_, '1b', 'blastp')
-                    else:
-                        add_class_to_dict(query, id_subject, id_, '1c', 'blastp')
-                elif 0.4 <= global_palign_all_min < size_ratio_threshold:
-                    if pident_value >= pident_threshold:
-                        if global_palign_all_max >= size_ratio_threshold:
-                            add_class_to_dict(query, id_subject, id_, '2a' if freq_ratio <= 0.1 else '2b', 'blastp')
-                        else:
-                            add_class_to_dict(query, id_subject, id_, '3a' if freq_ratio <= 0.1 else '3b', 'blastp')
-                    else:
-                        if global_palign_all_max >= size_ratio_threshold:
-                            add_class_to_dict(query, id_subject, id_, '4a' if freq_ratio <= 0.1 else '4b', 'blastp')
-                        else:
-                            add_class_to_dict(query, id_subject, id_, '4c', 'blastp')
-                else:
-                    add_class_to_dict(query, id_subject, id_, '5', 'blastp')
-    
-    # Loop through the representative BLASTn results
-    for query, rep_blast_result in representative_blastn_results.items():
-        for id_subject, matches in rep_blast_result.items():
-            for id_, blastn_entry in matches.items():
-                # All matches from the BLASTn will be categorized as class 6
-                add_class_to_dict(query, id_subject, id_, '6', 'blastn')
-
-
-    return classes_outcome
-
-
-def sort_blast_results_by_classes(representative_blast_results: tp.BlastDict,
-                                  classes_outcome: Tuple[str, ...]
-                                  ) -> tp.BlastDict:
-    """
-    Sorts BLAST results by classes based on the alignment score.
-    
-    This function organizes BLAST results into a sorted structure according to predefined classes.
-    It ensures that for each query, the results are grouped by the class of the alignment, prioritizing
-    the classes as specified in the `classes_outcome` list.
-
-    Parameters
-    ----------
-    representative_blast_results : Dict[str, Dict[str, List[Dict[str, Any]]]]
-        A dictionary where each key is a query identifier and each value is another dictionary.
-        The inner dictionary's keys are subject identifiers, and values are lists containing
-        details of the match, where the second element is a dictionary with the key 'class'
-        indicating the class of the alignment.
-    classes_outcome : Tuple[str, ...]
-        A list of possible classes outcomes to sort the BLAST results into. The order in this list
-        determines the priority of the classes when organizing the results.
-
-    Returns
-    -------
-    tp.BlastDict
-        A dictionary structured similarly to `representative_blast_results`, but sorted such that
-        all results for a given query are grouped by their class as determined by the highest
-        scoring alignment.
-
-    Notes
-    -----
-    - The function assumes that each match list in the values of `representative_blast_results`
-      contains at least one element, which is a dictionary with a 'class' key.
-    - It creates a temporary dictionary to first group results by class, then consolidates these
-      into the final sorted dictionary to be returned.
-    """
-    # Initialize the sorted dictionary
-    sorted_blast_dict: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
-
-    # Temporary dictionary to group results by class
-    temp_dict: Dict[str, Dict[str, Dict[str, List[Dict[str, Any]]]]] = {class_: {} for class_ in classes_outcome}
-
-    # Group results by class
-    for query, rep_blast_result in representative_blast_results.items():
-        for id_subject, matches in rep_blast_result.items():
-            # Get the class of the alignment with the highest score
-            class_ = matches[1]['classification']
-            if query not in temp_dict[class_]:
-                temp_dict[class_][query] = {}
-            temp_dict[class_][query][id_subject] = matches
-
-    # Consolidate the grouped results into the final sorted dictionary
-    for class_ in classes_outcome:
-        for query, rep_blast_result in temp_dict[class_].items():
-            if query not in sorted_blast_dict:
-                sorted_blast_dict[query] = {}
-            for id_subject, matches in rep_blast_result.items():
-                sorted_blast_dict[query][id_subject] = matches
-
-    return sorted_blast_dict
+#     return sorted_blast_dict
 
 
 def process_classes(representative_blast_results: tp.BlastDict,
@@ -1504,294 +1013,6 @@ def get_matches(all_relationships: tp.AllRelationships, merged_all_classes: tp.M
     return is_matched, is_matched_alleles
 
 
-def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], trans_paths: Dict[str, str], to_blast_paths: Dict[str, str], to_run_against: Dict[str, str],
-               output_dir: str, new_max_hits: Dict[str, int], seqid_file_dict: Dict[str, str], constants: List[Any], reps_kmers_sim: Optional[dict[str, float]],
-               frequency_in_genomes: Dict[str, int], frequency_in_genomes_second_schema: Dict[str, int], cpu: int, output_d: str) -> Tuple[tp.BlastDict, tp.BlastDict, List[str]]:
-    """
-    This function runs both BLASTn and subsequently BLASTp based on results of BLASTn.
-
-    Parameters
-    ----------
-    blast_db : str
-        Path to the BLAST db folder.
-    all_alleles : Dict[str, List[str]]
-        A list of CDS IDs to be used for BLASTn against the BLAST db.
-    trans_paths : Dict[str, str]
-        A dictionary with the paths to the translation files for each loci.
-    to_blast_paths : Dict[str, str]
-        A dictionary mapping CDS IDs of the query schema to the path of their corresponding FASTA files.
-    to_run_against : Dict[str, str]
-        A dictionary mapping CDS IDs of the subject schema to the path of their corresponding FASTA files.
-    output_dir : str
-        The directory path where output files will be saved.
-    new_max_hits : Dict[str, int], optional
-		A dictionary with the maximum number of targets sequences to align against per loci.
-    seqid_file_dict : Dict[str, str], optional
-		A dictionary with the paths to the filea with the identifiers of the sequences
-		to align against per loci. Used to specify the database sequences
-		we want to align against.
-    constants : List[Any]
-        A list of constants used within the function, such as thresholds for filtering BLAST results.
-    reps_kmers_sim : Dict[str, Dict[str, tuple[float, float]]], optional
-        A dictionary containing k-mer similarity values for representative sequences.
-    frequency_in_genomes : Dict[str, int]
-        A dictionary mapping sequence IDs to their frequency in genomes.
-    frequency_in_genomes_second_schema : Dict[str, int]
-        A dictionary mapping sequence IDs to their frequency in genomes in the second schema.
-    cpu : int
-        The number of CPU cores to use for parallel processing.
-
-    Returns
-    -------
-    representative_blast_results : tp.BlastDict
-        A dictionary containing the BLASTp results for representative sequences.
-    representative_blastn_results : tp.BlastDict
-        A dictionary containing the BLASTn results for representative sequences.
-    loci_too_big : List[str]
-        List of all the loci that reach the maximum of hits during the BLASTp.
-    """
-
-    # ============================================
-    # First BLASTp
-    # ============================================
-
-
-    ##### Blast recebe só allelos
-
-    # Create directories.
-    blastp_results: str = os.path.join(output_dir, '1_BLASTp_processing')
-    ff.create_directory(blastp_results)
-    
-    blastp_results_folder: str = os.path.join(blastp_results,
-                                         'BLASTp_results')
-    ff.create_directory(blastp_results_folder)
-    
-    blastp_results_ss_folder: str = os.path.join(blastp_results,
-                                            'BLASTp_results_self_score_results')
-    ff.create_directory(blastp_results_ss_folder)
-
-    max_id_length: int = len(max(trans_paths, key=len))
-
-    # Calculate BSR based on BLASTp.
-    bsr_values: tp.BSRValues = {}
-    representative_blast_results: tp.BlastDict = {}
-
-    # Total number of runs
-    total_blasts: int = len(trans_paths)
-    # Get Path to the blastp executable
-    get_blastp_exec: str = lf.get_tool_path('blastp')
-    # Calculate self-score
-    self_score_dict: Dict[str, float] = bf.calculate_self_score(trans_paths,
-                                                                get_blastp_exec,
-                                                                blastp_results_ss_folder,
-                                                                max_id_length,
-                                                                cpu)
-
-    prf.print_message("Formating the seqid files...", "info")
-    get_aliastool_exec: str = lf.get_tool_path('blastdb_aliastool')
-    seqid_folder = os.path.join(output_dir, 'seqid_formated')
-    ff.create_directory(seqid_folder)
-    seqid_formated_file: Dict[str, str] = {}
-    seqid_files_list = list(seqid_file_dict.values())
-    for loci, file in seqid_file_dict.items():
-        new_file = os.path.join(seqid_folder, f'seqid_file_formated_{loci}.bsl')
-        seqid_formated_file.setdefault(loci, new_file)
-    seqid_formated_output = list(seqid_formated_file.values())
-    bf.run_blastdb_aliastool(get_aliastool_exec, seqid_files_list, seqid_formated_output, cpu)
-
-    all_blast_info: Dict[str, Tuple[int, str]] = {}
-    for loci in trans_paths.keys():
-        all_blast_info.setdefault(loci, [new_max_hits[loci], seqid_formated_file[loci]])
-        
-    new_targets: List[int] = [v[0] for v in all_blast_info.values()]
-    seqid_files: List[str] = [v[1] for v in all_blast_info.values()]
-    
-    prf.print_message("Running BLASTp...", "info")
-    # Run BLASTp between all BLASTn matches (rep vs all its BLASTn matches).
-    blastp_results_files = bf.run_blastp_operations(cpu,
-                                                    get_blastp_exec,
-                                                    blast_db,
-                                                    trans_paths,
-                                                    blastp_results_folder,
-                                                    total_blasts,
-                                                    max_id_length,
-                                                    new_targets,
-                                                    seqid_files)
-
-    alleles_matches: Dict[str, List[str]] = {}
-    pattern: str = r'_(\d+)$'
-    loci_matches: List[str] = []
-    careful_blastp_trans_paths: Dict[str, str] = {}
-    loci_too_big: List[str] = []
-    prf.print_message('Calculating BSR and filtering alignemnts...')
-    # Process the obtained BLASTp results files
-    for blast_result_file in blastp_results_files:
-        if os.path.getsize(blast_result_file) > 0:
-            # Check size of output file and find the loci with the limit of matches
-            query_loci: str = ""
-            with open(blast_result_file, 'r') as file:
-                file_lines = file.readlines()
-                for line in file_lines:
-                    cols: List[str] = line.strip().split("\t")
-                    query: str = cols[0]
-                    query_loci = itf.remove_by_regex(query, pattern)
-
-            # Now check if this file has exactly the expected number of hits
-            if len(file_lines) >= int(new_max_hits[query_loci]):
-                loci_too_big.append(query_loci)
-        # Load only alignments above the pident threshold
-        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-            blast_result_file, constants[1], True, False, True, True, False
-        )
-
-        # Update main results dict
-        representative_blast_results.update(filtered_alignments_dict)
-
-        # Create flattened subject matches per query
-        alleles_matches = {
-            query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
-            for query, subjects in representative_blast_results.items()
-        }
-
-        for query in alleles_matches:
-            bsr_values[query] = {}
-            loci = itf.remove_by_regex(query, pattern)
-            loci_matches.append(loci)
-
-        # Compute BSRs from filtered hits only
-        for query, subjects_dict in filtered_alignments_dict.items():
-            for subject_id, results in subjects_dict.items():
-                # Use the first alignment's score
-                subject_score: float = next(iter(results.values()))['score']
-                bsr_values[query].update({subject_id: bf.compute_bsr(subject_score, self_score_dict[query])})
-
-        # Add filtered results to final containers
-        add_items_to_results(filtered_alignments_dict,
-                                reps_kmers_sim,
-                                bsr_values,
-                                alignment_coords_all,
-                                alignment_coords_pident,
-                                frequency_in_genomes,
-                                frequency_in_genomes_second_schema,
-                                [True, True])
-        # Save the BLASTp results
-        representative_blast_results.update(filtered_alignments_dict)
-
-    prf.print_message(f"{len(set(loci_matches))} loci had matches through the blastp first round.", "info")
-    prf.print_message("")
-
-    # ============================================
-    # Run BLASTn with loci not matched
-    # ============================================
-    
-    # BLASTn folder
-    blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
-    ff.create_directory(blastn_output)
-    blast_db: str = os.path.join(blastn_output, 'blast_db_nucl')
-    ff.create_directory(blast_db)
-    # Create directory
-    blastn_results_folder: str = os.path.join(blastn_output, 'BLASTn_results')
-    ff.create_directory(blastn_results_folder)
-
-    prf.print_message("Creating BLASTn database...", "info")
-    # Get the path to the makeblastdb executable.
-    makeblastdb_exec: str = lf.get_tool_path('makeblastdb')
-    blast_db_nucl: str = os.path.join(blast_db, 'Blast_db_nucl')
-    # Path to the master FASTA file
-    master_file_path_nucl = os.path.join(blastn_output, 'master_nucl.fasta')
-
-
-    prf.print_message('Writing master file for Blastn...', 'info')
-    pattern: str = r'_(\d+)$'
-    matched_loci_paths: Dict[str, str] = {}
-    
-    # Get all unique loci_ids from allele names
-    loci_ids_needed = set(all_alleles.keys()) - set(loci_matches)
-    for loci_file, loci_path in to_blast_paths.items():
-        loci_name = ff.file_basename(loci_file).rsplit('.', 1)[0]
-        if loci_name in loci_ids_needed:
-            matched_loci_paths[loci_name] = loci_path
-    # Open the master file once in append mode
-    with open(master_file_path_nucl, 'a') as master_file:
-        for loci, loci_path in to_run_against.items():
-            loci_name = ff.file_basename(loci).rsplit('.', 1)[0]
-            if loci_name in loci_ids_needed:
-                fasta_dict = sf.fetch_fasta_dict(loci_path, False)
-                for allele_id, sequence in fasta_dict.items():
-                    master_file.write(f">{allele_id}\n{str(sequence)}\n")
-
-    bf.make_blast_db(makeblastdb_exec, master_file_path_nucl, blast_db_nucl, 'nucl')
-
-    blastn_new_target_hits = {loci_id: new_max_hits[loci_id] for loci_id in loci_ids_needed}
-    all_blastn_info = {loci_id: all_blast_info[loci_id] for loci_id in loci_ids_needed}
-    blastn_new_targets: List[int] = [v[0] for v in all_blastn_info.values()]
-    blastn_seqid_files: List[str] = [v[1] for v in all_blastn_info.values()]
-
-
-    # Run BLASTn
-    # Calculate max id length for print.
-    max_id_length: int = len(max(all_alleles, key=len))
-    total_reps: int = len(matched_loci_paths)
-    representative_blastn_results: tp.BlastDict = {}
-    loci_matches_blastn: List[str] = []
-    # Get Path to the blastn executable
-    get_blastn_exec: str = lf.get_tool_path('blastn')
-    prf.print_message('Running BLASTn...', 'info')
-    # Get Path to the blastp executable
-    get_blastn_exec: str = lf.get_tool_path('blastn')
-    blastn_results_files = bf.run_blastn_operations(cpu,
-                                                    get_blastn_exec,
-                                                    blast_db_nucl,
-                                                    matched_loci_paths,
-                                                    blastn_results_folder,
-                                                    total_reps,
-                                                    max_id_length,
-                                                    blastn_new_targets,
-                                                    blastn_seqid_files)
-
-    if len(blastn_results_files) == 0:
-        prf.print_message("No BLASTn matches were found", "warning")
-
-    # Process the obtained BLAST results files
-    for blast_result_file in blastn_results_files:
-
-        filtered_alignments_dict: Dict[str, Dict[str, Any]]
-        filtered_alignments_dict, _, alignment_coords_all, alignment_coords_pident = af.get_alignments_dict_from_blast_results(
-            blast_result_file, constants[1], True, False, True, True, False
-        )
-
-        # Save the BLASTn results to get the matches.
-        representative_blastn_results.update(filtered_alignments_dict)
-
-        alleles_matches_n = {
-            query: itf.flatten_list([[subject[1]['subject'] for subject in subjects.values()]])
-            for query, subjects in representative_blastn_results.items()
-        }
-
-        for query in alleles_matches_n:
-            bsr_values[query] = {}
-            loci = itf.remove_by_regex(query, pattern)
-            loci_matches_blastn.append(loci)
-
-        # Add filtered results to final containers
-        add_items_to_results(filtered_alignments_dict,
-                                reps_kmers_sim,
-                                bsr_values,
-                                alignment_coords_all,
-                                alignment_coords_pident,
-                                frequency_in_genomes,
-                                frequency_in_genomes_second_schema,
-                                [True, True])
-
-        # Save the BLASTp results
-        representative_blastn_results.update(filtered_alignments_dict)
-    
-    prf.print_message(f'{len(set(loci_matches_blastn))} matches were found through BLASTn.', 'info')
-    prf.print_message("")
-    
-    return representative_blast_results, representative_blastn_results, loci_too_big
-
-
 def write_processed_results_to_file(merged_all_classes: tp.MergedAllClasses, 
                                     representative_blast_results: tp.BlastDict,
                                     classes_outcome: List[str], all_alleles: Dict[str, List[str]], 
@@ -2047,74 +1268,6 @@ def count_number_of_reps_and_alleles(merged_all_classes: tp.MergedAllClasses,
     return group_reps_ids, group_alleles_ids
 
 
-def create_graphs(file_path: str, output_path: str, filename: str, other_plots: Optional[List[str]] = None) -> None:
-    """
-    Create graphs based on representative_blast_results written inside a TSV file.
-
-    This function creates several plots related to palign and protein values, with
-    the option to create additional plots based on input values.
-
-    Parameters
-    ----------
-    file_path : str
-        Path to the TSV file.
-    output_path : str
-        Path to the output directory.
-    filename : str
-        Name of the output HTML file.
-    other_plots : Optional[List[Dict[str, Any]]], optional
-        List that contains additional data to create plots. Each dictionary in the list
-        should contain the data and metadata required for creating the plot.
-
-    Returns
-    -------
-    None
-        Creates an HTML file inside the output_path that contains all of the created graphs.
-
-    Notes
-    -----
-    - The function first creates a directory for storing the graphs.
-    - It then imports the BLAST results from the TSV file into a DataFrame.
-    - It creates violin plots for various palign and protein values.
-    - If additional plots are specified, it creates those as well.
-    - Finally, it saves all the plots to an HTML file.
-    """
-    # Create the output directory for the graphs
-    results_output: str = os.path.join(output_path, "Graph_folder")
-    ff.create_directory(results_output)
-    
-    # Import the BLAST results from the TSV file into a DataFrame
-    blast_results_df: pd.DataFrame = ff.import_df_from_file(file_path, '\t')
-    
-    # Create violin plots for palign values
-    traces: List[Any] = []
-    for column in ['Global_palign_all_min', 'Global_palign_all_max', 'Global_palign_pident_min', 'Global_palign_pident_max', 'Palign_local_min']:
-        traces.append(gf.create_violin_plot(y=blast_results_df[column], name=blast_results_df[column].name))
-    
-    violinplot1: Any = gf.generate_plot(traces, "Palign Values between BLAST results", "Column", "Palign")
-    
-    # Create violin plots for protein values
-    traces = []
-    for column in ['Prot_BSR', 'Prot_seq_Kmer_sim', 'Prot_seq_Kmer_cov']:
-        traces.append(gf.create_violin_plot(y=blast_results_df[column], name=blast_results_df[column].name))
-    
-    violinplot2: Any = gf.generate_plot(traces, "Protein values between BLAST results", "BLAST entries ID", "Columns")
-    
-    # Create additional plots if specified
-    extra_plot: List[Any] = []
-    if other_plots:
-        for plot in other_plots:
-            plot_df: pd.DataFrame = pf.dict_to_df(plot[0])
-            for column in plot_df.columns.tolist():
-                if plot[1] == 'histogram':
-                    trace: Any = gf.create_histogram(x=plot_df[column], name=plot_df[column].name)
-            
-            extra_plot.append(gf.generate_plot(trace, plot[2], plot[3], plot[4]))
-
-    # Save all the plots to an HTML file
-    gf.save_plots_to_html([violinplot1, violinplot2] + extra_plot, results_output, filename)
-
-
 def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_possible_loci: List[int], 
                                   to_blast_paths: Dict[str, str], clusters: Dict[str, Any], count_classes_final: Dict[str, int]) -> None:
     """
@@ -2315,6 +1468,7 @@ def write_dropped_possible_new_loci_to_file(drop_possible_loci: Set[str], droppe
     
     return drop_possible_loci_output
 
+
 def prepare_loci(schema_folder: str,
                  constants: List[Any],
                  results_output: str) -> Tuple[
@@ -2355,51 +1509,41 @@ def prepare_loci(schema_folder: str,
         - new_max_hits (Dict[str, int]): Dictionary with the number of max hits per loci for the BLAST.
         - seqid_file_dict (Dict[str, int]): Dictionary with the paths to the files with the seqid to ignore per loci for the BLAST.
     """
-    # Create a dictionary of schema FASTA files
-    schema = {fastafile: os.path.join(schema_folder, fastafile) for fastafile in os.listdir(schema_folder) if fastafile.endswith('.fasta')}
-    
-    # Create a dictionary of short schema FASTA files
+    # Map loci IDs to the paths to the FASTA files in the schema
+    loci_files = {file.rsplit('_', 1)[0]: os.path.join(schema_folder, file) for file in os.listdir(schema_folder) if file.endswith('.fasta')}
+    # Do the same for the FASTA files containing the representative alleles
     schema_short_dir = os.path.join(schema_folder, 'short')
-    schema_short = {fastafile.replace('_short', ''): os.path.join(schema_short_dir, fastafile) for fastafile in os.listdir(schema_short_dir) if fastafile.endswith('.fasta')}
-    
+    representative_files = {file.rsplit('_', 1)[0]: os.path.join(schema_short_dir, file) for file in os.listdir(schema_short_dir) if file.endswith('.fasta')}
+
     # Path to the master FASTA file
     master_file_path = os.path.join(results_output, 'master_protein.fasta')
     seqid_output = os.path.join(results_output, 'seqid_files')
     ff.create_directory(seqid_output)
-    
+
     # Create a directory for possible new loci translations
     possible_new_loci_translation_folder = os.path.join(results_output, 'schema_translation_folder')
     ff.create_directory(possible_new_loci_translation_folder)
-
-    # Determine paths to sequences to be used for BLAST
-    to_blast_paths = schema_short
-    to_run_against = schema_short
 
     # Initialize dictionaries for alleles, translations, and frequencies
     all_alleles: Dict[str, List[str]] = {}
     all_nucleotide_sequences: Dict[str, str] = {} 
     trans_paths: Dict[str, str] = {}
-    temp_frequency_in_genomes: Dict[str, List[str]] = {}
     group_reps_ids: Dict[str, List[str]] = {} 
     group_alleles_ids: Dict[str, List[str]] = {} 
-    new_max_hits: Dict[str, int] = {}
     blast_alleles: Dict[str, List[str]] = {}
     seqid_file_dict: Dict[str, str] = {}
-    
+
     # Process alleles to run, DNA sequences
-    for loci, loci_path in to_blast_paths.items():
-        loci_id = ff.file_basename(loci, False)
-        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
-        for allele_id, sequence in fasta_dict.items():
-            group_reps_ids.setdefault(loci_id, []).append(allele_id)
-            all_nucleotide_sequences.setdefault(loci_id, str(sequence))
+    for locus, file in representative_files.items():
+        sequences = sf.fetch_fasta_dict(file, False)
+        for seqid, sequence in sequences.items():
+            group_reps_ids.setdefault(locus, []).append(seqid)
+            all_nucleotide_sequences.setdefault(locus, str(sequence))
 
     # Write master file to run against, DNA sequences
-    prf.print_message("")
     prf.print_message('Write master file for Blastp.', 'info')
 
     for loci, loci_path in to_run_against.items():
-        loci_id = ff.file_basename(loci, False)
         negative_seqid_file = os.path.join(seqid_output, f'negative_seqid_{loci_id}.txt')
         blast_alleles.setdefault(loci_id, [])
         seqid_file_dict.setdefault(loci_id, negative_seqid_file)
@@ -2432,16 +1576,4 @@ def prepare_loci(schema_folder: str,
                                                         constants[6],
                                                         False)
 
-    for loci, alleles in blast_alleles.items():
-        """
-        For a hits max personalized for each loci
-
-        new_max_target = round(len(alleles)^2)
-        if new_max_target < 500:
-            new_max_hits[loci] = 500
-        else:
-        """
-        new_max_hits[loci] = 500
-
-                
-    return all_nucleotide_sequences, master_file_path, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, new_max_hits, seqid_file_dict
+    return all_nucleotide_sequences, master_file_path, trans_paths, to_blast_paths, all_alleles, group_reps_ids, group_alleles_ids, to_run_against, seqid_file_dict

@@ -533,7 +533,7 @@ def identify_spurious_genes() -> None:
 						dest='size_ratio',
 						default=0.8,
 						help='Size ratio to consider alleles as the same locus.')
-	
+
 	parser.add_argument('-m',
 						'--run-mode',
 						type=str,
@@ -569,17 +569,6 @@ def identify_spurious_genes() -> None:
 						default=None,
 						dest='logger',
 						help='Path to the logger file.')
-	
-	"""
-	parser.add_argument('-pm',
-						'--processing-mode',
-						type=str,
-						required=False,
-						dest='processing_mode',
-						default='reps_vs_alleles',
-						choices=ct.PROCESSING_MODE_CHOICES,
-						help='Mode to run the module: reps_vs_reps, reps_vs_alleles, alleles_vs_alleles, alleles_vs_reps.')
-	"""
 
 	# Parse the command-line arguments
 	args = parser.parse_args()
@@ -600,6 +589,11 @@ def identify_spurious_genes() -> None:
 	# here they are just for the user to see the options
 	del args.debug
 	del args.logger
+
+	if args.run_mode == 'unclassified_cds':
+		if not os.path.exists(ff.join_paths(args.allelecall_directory[0], ["temp"])):
+			sys.exit(f"Error: could not find the temp directory inside the folder with the allele calling results. Make sure that AlleleCall "
+					 "was run using the --no-cleanup and --output-unclassified options.")
 
 	# Call the main function of the IdentifySpuriousGenes class with the parsed arguments
 	pf.print_message(f"Running IdentifySpuriousGenes module...", message_type="info")

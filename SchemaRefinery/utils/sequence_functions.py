@@ -383,11 +383,11 @@ def import_sequences(input_file: str) -> Dict[str, str]:
 
 
 def translate_seq_deduplicate(seq_dict: Dict[str, str],
-							  path_to_write: str, 
-							  min_len: Union[int, float],
+							  output_path: str, 
+							  minimum_length: Union[int, float],
 							  translation_table: Union[int, float],
 							  deduplicate: bool = True
-							  ) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, str]]:
+							  ) -> Tuple[Dict[str, str], Dict[str, List[str]]]:
 	"""
 	Translates the DNA sequence to protein and verifies if that protein is already present in the dict, thus ensuring that the dict contains deduplicated sequences, it writes the sequences to a FASTA files and return the dict.
 
@@ -395,9 +395,9 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str],
 	----------
 	seq_dict : dict
 		Dict that contains sequence ID as key and the sequence as value.
-	path_to_write : str
-		Path to the file to create and write.
-	min_len : int
+	output_path : str
+		Path to the output directory.
+	minimum_length : int
 		Minimum length for the sequence.
 	translation_table : int
 		Translation table identifier.
@@ -409,37 +409,34 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str],
 	tuple
 		A tuple containing the translation dictionary, protein hashes dictionary, and untranslated sequences dictionary.
 	"""
-	translation_dict = {}
-	protein_hashes = {}
-	untras_seq: Dict[str, str] = {}
-	with open(path_to_write, 'w+') as outfile:
-		translation_data = [(seqid, translate_dna(str(sequence), translation_table, min_len, True)) for seqid, sequence in seq_dict.items()]
+	translation_data = [(seqid, translate_dna(str(sequence), translation_table, minimum_length, True)) for seqid, sequence in seq_dict.items()]
+	proteins = {rec[0]: str(rec[1][0][0]) for rec in translation_data if isinstance(rec[1], tuple)}
+	untranslatable = {rec[0]: rec[1] for rec in translation_data if not isinstance(rec[1], tuple)}
 
-		proteins = [(rec[0], str(rec[1][0][0])) for rec in translation_data if isinstance(rec[1], tuple)]
-		untranslatable = [rec for rec in translation_data if not isinstance(rec[1], tuple)]
+	if deduplicate:
+		to_delete = set()
+		protein_hashes: Dict[str, List[str]] = {}
+		for protid, protseq in proteins.items():
+			prot_hash = seq_to_hash(protseq)
+			protein_hashes.setdefault(prot_hash, []).append(protid)
+			if len(protein_hashes[prot_hash]) > 1:
+				to_delete.add(protid)
+		
+		for protid in to_delete:
+			del proteins[protid]
 
-		if len(proteins) > 0:
-			for protein in proteins:
-				# Do not write repeated protein sequences if `deduplicate` is True
-				if deduplicate:
-					prot_hash = seq_to_hash(protein[1])
-					if prot_hash not in protein_hashes:
-						protein_hashes[prot_hash] = [protein[0]]
-						translation_dict[protein[0]] = protein[1]
-						outfile.write(f'>{protein[0]}\n{protein[1]}\n')
-					else:
-						protein_hashes[prot_hash].append(protein[0])
-				else:
-					translation_dict[protein[0]] = protein[1]
-					outfile.write(f'>{protein[0]}\n{protein[1]}\n')
-		else:
-			pf.print_message("Could not translate any sequences.", "error", end='\r', flush=True)
+	if len(proteins) > 0:
+		with open(os.path.join(output_path, "translated_cds.fasta"), 'w+') as outfile:
+			protein_lines = [f'>{protid}\n{protseq}' for protid, protseq in proteins.items()]
+			outfile.write('\n'.join(protein_lines)+'\n')
+	else:
+		pf.print_message("Could not translate any of the sequences.", "error", end='\r', flush=True)
 
 	# Save data for untranslatable sequences
 	if untranslatable:
 		# Define path to file with data about untranslatable sequences
-		untras_path = '.'.join(path_to_write.split('.')[:-1]) + '_failed.txt'
-		with open(untras_path, 'w+') as outfile:
+		untranslated_outpath = os.path.join(output_path, "untranslated_sequences.txt")
+		with open(untranslated_outpath, 'w+') as outfile:
 			for seqid, exceptions in untranslatable.items():
 				if isinstance(exceptions, list):
 					exceptions_str = ''.join(exceptions)
@@ -447,10 +444,10 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str],
 					exceptions_str = str(exceptions)
 				outfile.write(f">{seqid}\n{exceptions_str}\n")
 
-	return translation_dict, protein_hashes, untras_seq
+	return proteins, protein_hashes
 
 
-def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
+def fetch_fasta_dict(file_path: str) -> Dict[str, str]:
 	"""
 	Read a FASTA file.
 
@@ -458,20 +455,16 @@ def fetch_fasta_dict(file_path: str, count_seq: bool) -> Dict[str, str]:
 	----------
 	file_path : str
 		Path to the file with FASTAs.
-	count_seq : bool
-		If count the number of processed sequences inside the file.
 
 	Returns
 	-------
 	dict
 		Returns dict with key as fasta header and value as fasta sequence.
 	"""
-	i = 1
 	fasta_dict = {}
 	for rec in read_fasta_file_iterator(file_path):
-		if count_seq:
-			i += 1
 		fasta_dict[rec.id] = str(rec.seq)
+
 	return fasta_dict
 
 
@@ -613,7 +606,7 @@ def translate_schema_loci(schema_directory: str,
 		
 		# Translate sequences and save to file
 		trans_dict: Dict[str, str]
-		trans_dict, _, _ = translate_seq_deduplicate(fasta_dict,
+		trans_dict, _, = translate_seq_deduplicate(fasta_dict,
 													 trans_path_file,
 													 0,
 													 translation_table,

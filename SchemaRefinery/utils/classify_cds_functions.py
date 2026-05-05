@@ -1,23 +1,26 @@
 import os
 from typing import Dict, List, Set, Union, Tuple
 
+import pandas as pd
 
 try:
     from utils import (file_functions as ff,
-                                        sequence_functions as sf,
-                                        clustering_functions as cf,
-                                        iterable_functions as itf,
-                                        kmers_functions as kf,
-                                        Types as tp,
-                                        print_functions as pf)
+                       blast_functions as bf,
+                       sequence_functions as sf,
+                       clustering_functions as cf,
+                       iterable_functions as itf,
+                       kmers_functions as kf,
+                       Types as tp,
+                       print_functions as pf)
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (file_functions as ff,
-                                        sequence_functions as sf,
-                                        clustering_functions as cf,
-                                        iterable_functions as itf,
-                                        kmers_functions as kf,
-                                        Types as tp,
-                                        print_functions as pf)
+                                      blast_functions as bf,
+                                      sequence_functions as sf,
+                                      clustering_functions as cf,
+                                      iterable_functions as itf,
+                                      kmers_functions as kf,
+                                      Types as tp,
+                                      print_functions as pf)
 
 def write_dropped_cds_to_file(dropped_cds: Dict[str, str], results_output: str) -> None:
     """
@@ -145,112 +148,6 @@ def update_ids_and_save_changes(merged_all_classes: tp.MergedAllClasses,
             id_changes.write(f"{original_ids}\t{tab.join(changed_ids)}\n")
 
 
-def replace_ids_in_clusters(clusters: Dict[str, List[str]], 
-                            frequency_cds: Dict[str, int], 
-                            dropped_cds: Dict[str, str], 
-                            all_nucleotide_sequences: Dict[str, str], 
-                            prot_len_dict: Dict[str, int],
-                            cds_translation_dict: Dict[str, str], 
-                            protein_hashes: Dict[str, List[str]], 
-                            cds_presence_in_genomes: Dict[str, List[str]],
-                            reps_kmers_sim: Dict[str, Dict[str, List[int]]]) -> Dict[str, List[str]]:
-    """
-    Replace the IDs of cluster alleles with new IDs in the format 'cluster_x' and update all relevant dictionaries.
-
-    Parameters
-    ----------
-    clusters : Dict[str, List[str]]
-        Dictionary of clusters with their members.
-    frequency_cds : Dict[str, int]
-        Dictionary mapping CDS IDs to their frequencies.
-    dropped_cds : Dict[str, str]
-        Dictionary of dropped CDS IDs.
-    all_nucleotide_sequences : Dict[str, str]
-        Dictionary of allele IDs and their DNA sequences.
-    prot_len_dict : Dict[str, int]
-        Dictionary mapping CDS IDs to their protein lengths.
-    cds_translation_dict : Dict[str, str]
-        Dictionary mapping CDS IDs to their translation sequences.
-    protein_hashes : Dict[str, List[str]]
-        Dictionary mapping protein hashes to lists of CDS IDs.
-    cds_presence_in_genomes : Dict[str, List[str]]
-        Dictionary mapping CDS IDs to their presence in genomes.
-    reps_kmers_sim : Dict[str, Dict[str, List[int]]]
-        Dictionary mapping representative cluster IDs to their k-mer similarities.
-
-    Returns
-    -------
-    cds_original_ids : Dict[str, List[str]]
-        Dictionary mapping original CDS IDs to their new IDs.
-
-    Notes
-    -----
-    The function iterates through the `clusters` dictionary, replacing the IDs of cluster alleles with new IDs in the format
-    'cluster_x'. It updates all relevant dictionaries (`frequency_cds`, `dropped_cds`, `all_nucleotide_sequences`, `prot_len_dict`,
-    `cds_translation_dict`, `protein_hashes`, `cds_presence_in_genomes`, and `reps_kmers_sim`) with the new IDs.
-
-    Examples
-    --------
-    Assuming the existence of appropriate dictionaries for `clusters`, `frequency_cds`, `dropped_cds`, `all_nucleotide_sequences`,
-    `prot_len_dict`, `cds_translation_dict`, `protein_hashes`, `cds_presence_in_genomes`, and `reps_kmers_sim`, the function can be called as follows:
-
-    >>> replace_ids_in_clusters(clusters, frequency_cds, dropped_cds, all_nucleotide_sequences, prot_len_dict, cds_translation_dict, protein_hashes, cds_presence_in_genomes, reps_kmers_sim)
-    
-    This would process the IDs as described and update all relevant dictionaries.
-    """
-    cds_original_ids: Dict[str, List[str]] = {}
-    # Replace the IDs of cluster alleles to x_1 and replace all of the alleles in the variables.
-    for cluster, members in list(clusters.items()):
-        i: int = 1
-        new_members_ids: List[str] = []
-        for member in list(members):
-            # Get the new ID.
-            new_id: str = f"{cluster}_{i}"
-            # Add the new ID to the dict.
-            cds_original_ids[member] = [new_id]
-            # Replace the old ID with the new ID for frequency_cds.
-            frequency_cds[new_id] = frequency_cds.pop(member)
-            # Dropped cds
-            dropped_id: str = itf.identify_string_in_dict_get_key(member, dropped_cds)
-            if dropped_id is not None:
-                dropped_cds[new_id] = dropped_cds.pop(dropped_id)
-            # Save the new members IDs.
-            new_members_ids.append(new_id)
-            # Replace the old ID with the new ID for the DNA sequences.
-            all_nucleotide_sequences[new_id] = all_nucleotide_sequences.pop(member)
-            # Replace in hashes dict
-            translation_hash: str = itf.identify_string_in_dict_get_key(member, protein_hashes)
-            # Replace in prot_len_dict
-            if prot_len_dict.get(member):
-                prot_len_dict[new_id] = prot_len_dict.pop(member)
-
-            index: int = protein_hashes[translation_hash].index(member)
-            # Replace the old ID with the new ID for the translation sequences.
-            # Since only representatives are in the dict we first check if it is present
-            if cds_translation_dict.get(member):
-                cds_translation_dict[new_id] = cds_translation_dict.pop(member)
-            else: # Add the sequences previously deduplicated
-                rep_id: str = protein_hashes[translation_hash][0]
-                cds_translation_dict[new_id] = cds_translation_dict[rep_id]
-
-            # Replace the value at the found index
-            protein_hashes[translation_hash][index] = new_id  # Replace `new_id` with the actual value you want to set
-            # Replace the old ID with the new ID for the protein hashes.
-            cds_presence_in_genomes[new_id] = cds_presence_in_genomes.pop(member)
-            i += 1
-        clusters[cluster] = new_members_ids
-    # Change IDs in reps_kmers_sim
-    for cds_id, elements_id in list(reps_kmers_sim.items()):
-        new_id_key = cds_original_ids.get(cds_id)[0]
-        reps_kmers_sim.setdefault(new_id_key, {})
-        for element_id, kmers in elements_id.items():
-            if cds_original_ids.get(element_id):
-                new_id: str = cds_original_ids[element_id][0]
-            reps_kmers_sim[new_id_key].setdefault(new_id, kmers)
-        del reps_kmers_sim[cds_id]
-
-    return cds_original_ids
-
 def write_fastas_to_files(clusters: Dict[str, List[str]], all_nucleotide_sequences: Dict[str, str], output_path: str) -> str:
     """
     Write the cluster sequences to FASTA files.
@@ -284,14 +181,14 @@ def write_fastas_to_files(clusters: Dict[str, List[str]], all_nucleotide_sequenc
     return temp_fastas_folder
 
 
-def set_minimum_genomes_threshold(temp_folder: str, constants: List[Union[int, float]]) -> None:
+def set_minimum_genomes_threshold(allelecall_directory: str, constants: List[Union[int, float]]) -> None:
     """
     Sets the minimum genomes threshold based on the dataset size.
 
     Parameters
     ----------
-    temp_folder : str
-        Path to the temporary folder containing genome data.
+    allelecall_directory : str
+        Path to the directory containing the allele calling results.
     constants : List[Union[int, float]]
         List of constants where the threshold will be set.
 
@@ -300,12 +197,10 @@ def set_minimum_genomes_threshold(temp_folder: str, constants: List[Union[int, f
     None
         The function updates the constants list in place.
     """
-    count_genomes_path: str = os.path.join(temp_folder, '1_cds_prediction')
-    
     try:
-        genome_files: List[str] = ff.get_paths_in_directory_with_suffix(count_genomes_path, '.fasta')
-        number_of_genomes: int = len(genome_files)
-        
+        genome_list: List[str] = pd.read_csv(ff.join_paths(allelecall_directory, ["results_statistics.tsv"]), sep='\t', usecols=['FILE'])['FILE'].tolist()
+        number_of_genomes: int = len(genome_list)
+
         if number_of_genomes <= 20:
             constants[2] = 5
         else:
@@ -315,14 +210,13 @@ def set_minimum_genomes_threshold(temp_folder: str, constants: List[Union[int, f
         constants[2] = 5  # Default value in case of error
 
 
-def filter_cds_by_size(all_nucleotide_sequences: Dict[str, str], size_threshold: int
-                       ) -> Tuple[Dict[str, int], Dict[str, str], Dict[str, str]]:
+def filter_by_size(sequences: Dict[str, str], size_threshold: int) -> Tuple[Dict[str, str], Dict[str, str]]:
     """
     Filters CDS by their size and updates the dropped CDS dictionary.
 
     Parameters
     ----------
-    all_nucleotide_sequences : Dict[str, str]
+    sequences : Dict[str, str]
         Dictionary with CDS IDs as keys and sequences as values.
     size_threshold : int
         Minimum size threshold for CDS.
@@ -332,23 +226,11 @@ def filter_cds_by_size(all_nucleotide_sequences: Dict[str, str], size_threshold:
     Tuple[Dict[str, int], Dict[str, str], Dict[str, str]]
         A tuple containing the CDS size dictionary, filtered CDS dictionary, and the dropped CDS dictionary.
     """
-    # Count CDS size
-    cds_size: Dict[str, int] = {key: len(str(sequence)) for key, sequence in all_nucleotide_sequences.items()}
+    total: int = len(sequences)
+    filtered_sequences: Dict[str, str] = {seqid: sequence for seqid, sequence in sequences.items() if len(sequence) >= size_threshold}
+    dropped: Set[str] = set(sequences.keys()) - set(filtered_sequences.keys())
 
-    dropped_cds: Dict[str, str] = {}
-    total_cds: int = len(all_nucleotide_sequences)
-    pf.print_message(f"Identified {total_cds} valid CDS not present in the schema.", 'info')
-
-    # Filter by size
-    if size_threshold:
-        all_nucleotide_sequences = {key: sequence for key, sequence in all_nucleotide_sequences.items() if cds_size[key] >= size_threshold}
-        dropped_cds = {key: 'Dropped_due_to_cds_size' for key, length in cds_size.items() if length < size_threshold}
-        pf.print_message(f"{len(all_nucleotide_sequences)}/{total_cds} have size greater or equal to {size_threshold} bp.", 'info')
-    else:
-        size_threshold = 0
-        pf.print_message("No size threshold was applied to the CDS filtering.", 'info')
-
-    return cds_size, all_nucleotide_sequences, dropped_cds
+    return filtered_sequences, dropped
 
 
 def write_cds_to_fasta(all_nucleotide_sequences: Dict[str, str], output_path: str) -> None:
@@ -372,110 +254,31 @@ def write_cds_to_fasta(all_nucleotide_sequences: Dict[str, str], output_path: st
             cds_not_found.write(f">{id_}\n{str(sequence)}\n")
 
 
-def count_cds_frequency(all_nucleotide_sequences: Dict[str, str], decoded_sequences_ids: Dict[str, List[float]]) -> Tuple[Dict[str, int], Dict[str, List[str]]]:
+def count_cds_frequency(unclassified_cds: Dict[str, str], decoded_seqids: Dict[str, List[float]]) -> Tuple[Dict[str, int], Dict[str, List[str]]]:
     """
     Counts the frequency of CDS in the genomes and identifies their presence.
 
     Parameters
     ----------
-    all_nucleotide_sequences : Dict[str, str]
+    unclassified_cds : Dict[str, str]
         Dictionary with CDS IDs as keys and sequences as values.
-    decoded_sequences_ids : Dict[str, List[str]]
+    decoded_seqids : Dict[str, List[str]]
         Dictionary with hashed sequences as keys and genome IDs as values.
 
     Returns
     -------
-    Tuple[Dict[str, int], Dict[str, List[str]]]
+    Dict[str, int]
         A tuple containing the frequency of CDS and their presence in genomes.
     """
-    frequency_cds: Dict[str, int] = {}
-    cds_presence_in_genomes: Dict[str, List[str]] = {}
-
-    for id_, sequence in all_nucleotide_sequences.items():
+    cds_frequency: Dict[str, int] = {}
+    # The unclassified CDSs and the decoded sequence IDs come from the same run
+    # So each unclassified CDS should have a corresponding hashed sequence in the decoded sequence IDs
+    for seqid, sequence in unclassified_cds.items():
         hashed_seq: str = sf.seq_to_hash(str(sequence))
-        if hashed_seq in decoded_sequences_ids:
-            frequency_cds[id_] = len(set(decoded_sequences_ids[hashed_seq][1:]))
-            cds_presence_in_genomes[id_] = decoded_sequences_ids[hashed_seq][1:]
-        else:
-            frequency_cds[id_] = 0
+        # Count only the unique genome IDs for the frequency [1:]
+        cds_frequency[seqid] = len(set(decoded_seqids[hashed_seq][1:]))
 
-    return frequency_cds, cds_presence_in_genomes
-
-
-def process_cds_not_present(initial_processing_output: str, temp_folder: str,
-                            all_nucleotide_sequences: Dict[str, str]
-                            ) -> Tuple[str, Dict[str, int], Dict[str, List[str]]]:
-    """
-    Processes CDS not present in the schema and writes them to a FASTA file.
-
-    Parameters
-    ----------
-    initial_processing_output : str
-        Path to the initial processing output directory.
-    temp_folder : str
-        Path to the temporary folder.
-    all_nucleotide_sequences : Dict[str, str]
-        Dictionary with CDS IDs as keys and sequences as values.
-
-    Returns
-    -------
-    Tuple[str, Dict[str, int], Dict[str, List[str]]]
-        A tuple containing the path to the CDS present file, frequency of CDS, and their presence in genomes.
-    """
-    cds_not_present_file_path: str = os.path.join(initial_processing_output, 'CDS_not_found.fasta')
-    write_cds_to_fasta(all_nucleotide_sequences, cds_not_present_file_path)
-
-    cds_present: str = os.path.join(temp_folder, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
-    decoded_sequences_ids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_present)
-
-    frequency_cds, cds_presence_in_genomes = count_cds_frequency(all_nucleotide_sequences, decoded_sequences_ids)
-
-    return cds_present, frequency_cds, cds_presence_in_genomes
-
-
-def translate_and_deduplicate_cds(all_nucleotide_sequences: Dict[str, str], 
-                                  initial_processing_output: str, 
-                                  constants: List[Union[int, float]]
-                                  ) -> Tuple[Dict[str, str], Dict[str, List[str]], Dict[str, int]]:
-    """
-    Translates and deduplicates CDS sequences, and counts translation sizes.
-
-    Parameters
-    ----------
-    all_nucleotide_sequences : Dict[str, str]
-        Dictionary with CDS IDs as keys and sequences as values.
-    initial_processing_output : str
-        Path to the initial processing output directory.
-    constants : List[Union[int, float]]
-        List of constants used for translation and deduplication.
-
-    Returns
-    -------
-    Tuple[Dict[str, str], Dict[str, str], Dict[str, int]]
-        A tuple containing the translation dictionary, protein hashes, and CDS translation sizes.
-    """
-    # Define file paths for translated and untranslated CDS
-    cds_not_present_trans_file_path: str = os.path.join(initial_processing_output, "CDS_not_found_translation.fasta")
-    cds_not_present_untrans_file_path: str = os.path.join(initial_processing_output, "CDS_not_found_untranslated.fasta")
-
-    # Translate and deduplicate protein sequences
-    all_translation_dict: Dict[str, str]
-    protein_hashes: Dict[str, List[str]]
-    all_translation_dict, protein_hashes, _ = sf.translate_seq_deduplicate(
-        all_nucleotide_sequences,
-        cds_not_present_trans_file_path,
-        constants[5],
-        constants[6],
-        True
-    )
-
-    # Count translation sizes
-    cds_translation_size: Dict[str, int] = {key: len(sequence) for key, sequence in all_translation_dict.items()}
-
-    # Print additional information about translations and deduplications
-    pf.print_message(f"{len(all_translation_dict)}/{len(all_nucleotide_sequences)} unique protein translations.", 'info')
-
-    return all_translation_dict, protein_hashes, cds_translation_size
+    return cds_frequency
 
 
 def remove_dropped_cds(all_translation_dict: Dict[str, str], 
@@ -515,92 +318,6 @@ def remove_dropped_cds(all_translation_dict: Dict[str, str],
     return {k: v for k, v in all_translation_dict.items() if k not in dropped_cds}
 
 
-def sort_by_protein_size(all_translation_dict: Dict[str, str]) -> Dict[str, str]:
-    """
-    Sorts the translation dictionary by the size of the proteins in descending order.
-
-    Parameters
-    ----------
-    all_translation_dict : Dict[str, str]
-        Dictionary with CDS IDs as keys and sequences as values.
-
-    Returns
-    -------
-    Dict[str, str]
-        Sorted translation dictionary.
-    """
-    return {k: v for k, v in sorted(all_translation_dict.items(), key=lambda x: len(x[1]), reverse=True)}
-
-
-def cluster_by_minimizers(all_translation_dict: Dict[str, str], 
-                          constants: List[Union[int, float]]) -> Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, List[str]], Dict[str, int]]:
-    """
-    Clusters the translation dictionary by minimizers.
-
-    Parameters
-    ----------
-    all_translation_dict : Dict[str, str]
-        Dictionary with CDS IDs as keys and sequences as values.
-    constants : List[Union[int, float]]
-        List of constants used for clustering.
-
-    Returns
-    -------
-    Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, List[str]], Dict[str, int]]
-        A tuple containing all alleles, representative sequences, representative groups, and protein length dictionary.
-    """
-    reps_groups: Dict[str, List[str]] = {}
-    all_alleles: Dict[str, List[str]] = {}
-    reps_sequences: Dict[str, str] = {}
-
-    all_alleles, reps_sequences, reps_groups, prot_len_dict = cf.minimizer_clustering(
-        all_translation_dict,
-        5,
-        5,
-        True,
-        1,
-        all_alleles,
-        reps_sequences,
-        reps_groups,
-        1,
-        constants[3],
-        constants[4],
-        True,
-        constants[8]
-    )
-
-    return all_alleles, reps_sequences, reps_groups, prot_len_dict
-
-
-def reformat_clusters(all_alleles: Dict[str, List[str]], 
-                      protein_hashes: Dict[str, List[str]]) -> Dict[str, List[str]]:
-    """
-    Reformats the clusters to include only the IDs of cluster members and adds unique CDS IDs to clusters.
-
-    Parameters
-    ----------
-    all_alleles : Dict[str, List[str]]
-        Dictionary with cluster representatives as keys and cluster members as values.
-    protein_hashes : Dict[str, List[str]]
-        Dictionary with protein hashes as keys and CDS IDs as values.
-
-    Returns
-    -------
-    Dict[str, List[str]]
-        Reformatted clusters.
-    """
-    all_alleles = {cluster_rep: [value[0] for value in values] for cluster_rep, values in all_alleles.items()}
-    filtered_protein_hashes: Dict[str, List[str]] = {hash_prot: cds_ids for hash_prot, cds_ids in protein_hashes.items() if len(cds_ids) > 1}
-
-    for cluster_rep, values in list(all_alleles.items()):
-        for cds_id in list(values):
-            protein_hash: str = itf.identify_string_in_dict_get_key(cds_id, filtered_protein_hashes)
-            if protein_hash is not None:
-                all_alleles[cluster_rep] += filtered_protein_hashes[protein_hash][1:]
-
-    return all_alleles
-
-
 def get_representative_translation_dict(all_translation_dict: Dict[str, str], 
                                         all_alleles: Dict[str, List[str]]) -> Dict[str, str]:
     """
@@ -628,40 +345,32 @@ def get_representative_translation_dict(all_translation_dict: Dict[str, str],
     return {k: v for k, v in sorted(reps_translation_dict.items(), key=lambda x: len(x[1]), reverse=True)}
 
 
-def calculate_kmers_similarity(reps_translation_dict: Dict[str, str], 
-                               reps_groups: Dict[str, List[str]], 
-                               prot_len_dict: Dict[str, int]) -> Dict[str, Dict[str, List[int]]]:
+def calculate_kmers_similarity(sequences: Dict[str, str], 
+                               representative_kmers: Dict[str, List[str]], 
+                               sequence_lengths: Dict[str, int]) -> Dict[str, Dict[str, List[int]]]:
     """
     Calculates the k-mers similarity and coverage between representatives.
 
     Parameters
     ----------
-    reps_translation_dict : Dict[str, str]
-        Dictionary with representative CDS IDs as keys and sequences as values.
-    reps_groups : Dict[str, List[str]]
-        Dictionary with representative groups.
-    prot_len_dict : Dict[str, int]
-        Dictionary with protein lengths.
+    sequences : Dict[str, str]
+        Dictionary with sequence IDs as keys and sequences as values.
+    representative_kmers : Dict[str, List[str]]
+        Dictionary with representative k-mers.
+    sequence_lengths : Dict[str, int]
+        Dictionary with sequence lengths.
 
     Returns
     -------
     Dict[str, Dict[str, List[int]]]
         Dictionary with k-mers similarity and coverage between representatives.
     """
-    reps_kmers_sim: Dict[str, Dict[str, List[int]]] = {}
+    similar_sequences: Dict[str, Dict[str, List[int]]] = {}
+    for seqid, sequence in sequences.items():
+        minimizers: Set[str] = set(kf.determine_minimizers(sequence, 5, 5, 1, True, True))
+        similar_sequences[seqid] = cf.select_representatives(minimizers, representative_kmers, 0, 0, sequence_lengths, seqid, 5, False)
 
-    for cluster_id, rep_seq in reps_translation_dict.items():
-        kmers_rep: Set[str] = set(kf.determine_minimizers(rep_seq, 5, 5, 1, True, True))
-        
-        reps_kmers_sim[cluster_id] = cf.select_representatives(
-            kmers_rep, reps_groups, 0, 0, prot_len_dict, cluster_id, 5, False
-        )
-        
-        reps_kmers_sim[cluster_id] = {
-            match_values[0]: match_values[1:] for match_values in reps_kmers_sim[cluster_id]
-        }
-
-    return reps_kmers_sim
+    return similar_sequences
 
 
 def write_fasta_file(file_path: str, sequences: Dict[str, str]) -> None:
@@ -686,105 +395,62 @@ def write_fasta_file(file_path: str, sequences: Dict[str, str]) -> None:
             fasta_file.write(f">{seq_id}\n{sequence}\n")
 
 
-def prepare_files_to_blast(translation_files_paths: str, 
-                       seqid_files_paths: str,
-                       representatives_blastn_folder: str, 
-                       representatives_blastn_folder_against: str,
-                       all_alleles: Dict[str, List[str]], 
-                       all_nucleotide_sequences: Dict[str, str],
-                       constants: List[Union[int, float]]) -> Tuple[Dict[str, str], str]:
+def prepare_files_to_blast(output_directory: str,
+                           clusters: Dict[str, List[str]], 
+                           sequences: Dict[str, str],
+                           protein_sequences: Dict[str, str],
+                           blastdb_aliastool_exec) -> Dict[str, str]:
     """
     Writes representative and master FASTA files for BLAST.
 
     Parameters
     ----------
-    translation_files_paths : str
-        Path to the directory where the transaltion files will be stored.
-    seqid_files_paths: str
-        Path to the directory where the seqid files will be stored. 
-    representatives_blastn_folder : str
-        Path to the folder where BLAST files will be written.
-    representatives_blastn_folder_against: str
-         Path to the folder where BLAST database files will be written.
-    all_alleles : Dict[str, List[str]]
+    output_directory : str
+        Path to the directory where the BLAST input files will be stored.
+    clusters : Dict[str, List[str]]
         Dictionary with cluster representatives as keys and cluster members as values.
-    all_nucleotide_sequences : Dict[str, str]
-        Dictionary with CDS IDs as keys and sequences as values.
-    constants : List[Union[int, float]]
-        List of constants used for clustering.
+    sequences : Dict[str, str]
+        Dictionary with sequence IDs as keys and sequences as values.
+    protein_sequences : Dict[str, str]
+        Dictionary with protein sequence IDs as keys and protein sequences as values.
 
     Returns
     -------
-    to_blast_paths : Dict[str, str]
-        Dictionary of paths to sequences to be used for BLAST.
-    to_run_against : Dict[str, str]
-        Dictionary of paths to sequences to be used for BLAST database.
-    master_file_path : str
-        Path to the file where the sequences for the BLAST database will be stored.
-    trans_paths : Dict[str, str]
-        Dictionary with the path of the translation file for each loci.
-    new_max_hits : Dict[str, int]
-        Dictionary with the number of max hits per loci for the BLAST.
-    seqid_file_dict : Dict[str, str]
-        Dictionary with the paths to the files with the seqid to ignore per loci for the BLAST.
+    file_paths : Dict[str, List[str]]
+        Dictionary containing repid as keys and a list of paths to the corresponding DNA FASTA, protein FASTA, and seqid TXT files as values.
     """
-    # Create directory and files path where to write FASTAs.
-    master_file_path: str = os.path.join(translation_files_paths, 'master.fasta')
+    file_paths: Dict[str, List[str]] = {}
+    for repid, members in clusters.items():
+        dna_fasta: str = os.path.join(output_directory, f"{repid}.fasta")
+        protein_fasta: str = os.path.join(output_directory, f"{repid}_protein.fasta")
+        seqid_file: str = os.path.join(output_directory, f"{repid}.txt")
+        seqid_file_alias: str = os.path.join(output_directory, f"{repid}_alias")
+        file_paths[repid] = [dna_fasta, protein_fasta, seqid_file, seqid_file_alias]
 
-    to_blast_paths: Dict[str, str] = {}
-    to_run_against: Dict[str, str] = {}
-    trans_paths: Dict[str, str] = {}
-    new_max_hits: Dict[str, int] = {}
-    seqid_file_dict: Dict[str, str] = {}
+        # Create FASTA file with DNA sequence of the representative
+        sequence: Dict[str, str] = {repid: sequences[repid]}
+        write_fasta_file(dna_fasta, sequence)
 
-    master_sequences: Dict[str, str] = {}
-    for members in all_alleles.values():
-        cluster_rep_id: str = members[0]
-        loci: str = cluster_rep_id.split('_')[0]
-        fasta_file: str = os.path.join(representatives_blastn_folder, f"cluster_rep_{cluster_rep_id}.fasta")
-        against_fasta_file: str = os.path.join(representatives_blastn_folder_against, f"cluster_rep_{cluster_rep_id}_against.fasta")
-        seqid_file: str = os.path.join(seqid_files_paths, f"cluster_rep_{cluster_rep_id}_seqid.txt")
-        to_blast_paths[loci] = fasta_file
-        to_run_against[loci] = against_fasta_file
-        seqid_file_dict[loci] = seqid_file
-        new_max_hits[loci] = 500
+        # Create FASTA file with protein sequence of the representative
+        protein: Dict[str, str] = {repid: protein_sequences[repid]}
+        write_fasta_file(protein_fasta, protein)
 
-        sequence: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
-        write_fasta_file(fasta_file, sequence)
+        # Create TXT file with the representative seqid
+        with open(seqid_file, 'w') as outfile:
+            outfile.write(f"{repid}\n")
 
-        master_sequences: Dict[str, str] = {cluster_rep_id: all_nucleotide_sequences[cluster_rep_id]}
-        write_fasta_file(against_fasta_file, master_sequences)
+        # Run blastdb_aliastool to create the alias files for the seqid files
+        stdout, stderr = bf.run_blastdb_aliastool_multiprocessing(blastdb_aliastool_exec, seqid_file, seqid_file_alias)
 
-        
-        write_type2 = 'a' if os.path.exists(seqid_file) else 'w'
-        with open(seqid_file, write_type2) as seqid_file:
-            for seq_id in master_sequences.keys():
-                seqid_file.write(f"{seq_id}\n")   
+    # Concatenate all the representative FASTA files into one file for BLASTn
+    concatenated_dna_fasta: str = os.path.join(output_directory, "concatenated_dna.fasta")
+    ff.concatenate_files([file[0] for file in file_paths.values()], concatenated_dna_fasta, header=None)
 
-    for loci, loci_path in to_blast_paths.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
-        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
-        # Translate sequences and update translation dictionary
-        trans_path_file = os.path.join(translation_files_paths, f"{loci_id}.fasta")
-        trans_paths[loci_id] = trans_path_file
-        trans_dict, _, _ = sf.translate_seq_deduplicate(fasta_dict,
-                                                        trans_path_file,
-                                                        constants[5],
-                                                        constants[6],
-                                                        False)
+    # Concatenate all the representative FASTA files into one file for BLASTp
+    concatenated_protein_fasta: str = os.path.join(output_directory, "concatenated_protein.fasta")
+    ff.concatenate_files([file[1] for file in file_paths.values()], concatenated_protein_fasta, header=None)
 
-    for loci, loci_path in to_run_against.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
-        fasta_dict = sf.fetch_fasta_dict(loci_path, False)
-        for allele_id, sequence in fasta_dict.items():
-            protseq = sf.translate_sequence(str(sequence), constants[6])
-            # Write to master file
-            write_type = 'a' if os.path.exists(master_file_path) else 'w'
-            with open(master_file_path, write_type) as master_file:
-                master_file.write(f">{allele_id}\n{str(protseq)}\n")
-        
-
-    return to_blast_paths, to_run_against, master_file_path, trans_paths, new_max_hits, seqid_file_dict
+    return file_paths, (concatenated_dna_fasta, concatenated_protein_fasta)
 
 
 def update_frequencies_in_genomes(clusters_to_keep_1a: Dict[str, List[str]], 

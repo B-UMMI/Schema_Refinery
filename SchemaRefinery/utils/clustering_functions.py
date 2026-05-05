@@ -102,18 +102,18 @@ def select_representatives(kmers: Union[List[Tuple[str, int]], Set[Tuple[str, in
 
 
 def minimizer_clustering(sorted_sequences: Dict[str, str], 
-                         word_size: int, 
-                         window_size: int, 
-                         position: bool,
-                         offset: int, 
-                         clusters: Dict[str, List[Tuple[str, float, int, int, int, float]]], 
-                         reps_sequences: Dict[str, str], 
+                         clusters: Dict[str, List[Tuple[str, float, int, int, int, float]]],
+                         reps_sequences: Dict[str, str],
                          reps_groups: Dict[str, List[str]],
-                         seq_num_cluster: int, 
-                         clustering_sim: float, 
-                         clustering_cov: float, 
-                         grow: bool,
-                         size_threshold: float) -> Tuple[Dict[str, List[Tuple[str, float, int, int, int, float]]], 
+                         word_size: int = 5, 
+                         window_size: int = 5, 
+                         position: bool = True,
+                         offset: int = 1, 
+                         seq_num_cluster: int = 1, 
+                         clustering_sim: float = 0.5, 
+                         clustering_cov: float = 0.5,
+                         size_threshold: float = 0.2,
+                         grow: bool = True) -> Tuple[Dict[str, List[Tuple[str, float, int, int, int, float]]], 
                                                         Dict[str, str], 
                                                         Dict[str, List[str]], 
                                                         Dict[str, int]]:
@@ -182,9 +182,8 @@ def minimizer_clustering(sorted_sequences: Dict[str, str],
     Tuple[Dict[str, List[Tuple[str, float, int, int, int, float]]], Dict[str, str], Dict[str, List[str]], Dict[str, int]]
         A tuple containing the clusters, representative sequences, representative groups, and protein length dictionary.
     """
-    # get len of all the proteins
+    # Get len of all the proteins
     prot_len_dict: Dict[str, int] = {protid: len(protein) for protid, protein in sorted_sequences.items()}
-
     for protid, protein in sorted_sequences.items():
         minimizers: List[Tuple[str, int]] = kf.determine_minimizers(protein, window_size,
                                                                     word_size, offset=offset,

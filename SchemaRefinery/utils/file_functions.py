@@ -15,6 +15,7 @@ except ModuleNotFoundError:
 									  print_functions as pf)
 	from SchemaRefinery.AdaptLoci import AdaptLoci as al
 
+
 def create_directory(dir: str) -> bool:
 	"""
 	Creates a directory based on the input dir path.
