@@ -54,6 +54,7 @@ def compute_frequency(locus_column: pd.Series, locus_id: str) -> int:
 	masked_column: pd.Series = locus_column.applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
 	# Count the frequency of each locus in all genomes
 	frequency = masked_column.sum()
+
 	return frequency
 
 
@@ -118,14 +119,6 @@ def calculate_frequency(allelecall_directories: List[str], temp_paths: List[str]
 		return cds_frequency
 
 
-# schema_directory = "/home/rmamede/WORK/TestSR/IdentifySpuriousGenes/mpneumoniae_wgMLST_schema_15042026"
-# output_directory = "/home/rmamede/WORK/TestSR/IdentifySpuriousGenes/test_output"
-# allelecall_directory = ["/home/rmamede/WORK/TestSR/IdentifySpuriousGenes/atb_plus_ncbi_results"]
-# annotation_paths = []
-# constants = [0.9, 90, None, 0.9, 0.9, 201, 4, 0.6, 0.8]
-# run_mode = 'unclassified_cds'
-# cpu = 4
-# no_cleanup = True
 def identify_spurious_genes(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
 							annotation_paths: List[str], constants: List[Any], run_mode: str, cpu: int, no_cleanup: bool) -> None:
 	"""
@@ -157,7 +150,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Create base output directory
 	ff.create_directory(output_directory)
 	# Create initial processing output directory based on run mode
-	processed_indata: str = os.path.join(output_directory, '1_Initial_Data')
+	processed_indata: str = os.path.join(output_directory, '1_Input_Data')
 	ff.create_directory(processed_indata)
 	# Set minimum number of genomes in which a CDS cluster should be present to be kept in the analysis
 	# Set to 5 if number of genomes <= 20 else to 1% of the dataset size
@@ -172,26 +165,25 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	blastp_exec: str = lf.get_tool_path('blastp')
 	blastdb_aliastool_exec: str = lf.get_tool_path('blastdb_aliastool')
 
+	excluded = []
 	if run_mode == 'unclassified_cds':
-		# COpy file with the unclassified CDSs to the initial processing output directory
+		# Copy file with the unclassified CDSs to the initial processing output directory
+		pf.print_message(f"Copying FASTA file with input CDSs to {processed_indata}...", "info")
 		unclassified_cds_src: str = os.path.join(allelecall_directory[0], "unclassified_sequences.fasta")
 		unclassified_cds_dest = shutil.copy(unclassified_cds_src, processed_indata)
-		# Deefine the path to the temp folder with the intermediate files from AlleleCall
+		# Define the path to the temp folder with the intermediate files from AlleleCall
 		temp_folder: str = os.path.join(allelecall_directory[0], 'temp')
 		# Calculate the frequency of the CDSs in the genomes
 		cds_frequency = calculate_frequency([None, None], [unclassified_cds_dest, temp_folder], run_mode)
 
-		pf.print_message("Excluding short CDSs...", "info")
+		# Exclude CDSs shorter than size threshold
+		pf.print_message(f"Excluding CDSs shorter than {constants[5]} bp...", "info")
 		unclassified_cds = sf.fetch_fasta_dict(unclassified_cds_dest)
-		unclassified_cds, shorter = ccf.filter_by_size(unclassified_cds, constants[5])
-
-		# Save the unclassified CDSs
-		pf.print_message("Saving unclassified CDSs to file...", "info")
-		unclassified_cds_outfile: str = os.path.join(processed_indata, 'unclassified_cds_noShort.fasta')
-		ccf.write_cds_to_fasta(unclassified_cds, unclassified_cds_outfile)
+		unclassified_cds, short = ccf.filter_by_size(unclassified_cds, constants[5])
+		excluded.append(short)
 		pf.print_message(f"{len(unclassified_cds)}/{len(cds_frequency)} CDSs have size greater or equal to {constants[5]} bp.", 'info')
 
-		pf.print_message("Translating and deduplicating unclassified CDSs...", "info")
+		pf.print_message("Translating and deduplicating the CDSs...", "info")
 		# Translate and deduplicate the CDSs
 		# The protein_sequences contains only the distinct sequences and the protein_hashes contains the mapping of the distinct sequences to the original CDS IDs (including duplicates)
 		protein_sequences, protein_hashes = sf.translate_seq_deduplicate(unclassified_cds, processed_indata, constants[5], constants[6], True)
@@ -217,43 +209,39 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		# Reformat clusters to contain only representative IDs as keys and a list of CDS IDs as values
 		clusters = {repid: [m[0] for m in members] for repid, members in clusters.items()}
 
-		# Calculate the total number of clusters
+		# Determine the total number of clusters
 		total_clusters: int = len(clusters)
-		pf.print_message(f"{len(protein_sequences)} distinct proteins have been clustered into {total_clusters} clusters.", "info")
+		pf.print_message(f"Clustered {len(protein_sequences)} distinct proteins into {total_clusters} clusters.", "info")
 
-		# Calculate the number of singleton clusters
+		# Determine the number of singleton clusters
 		singletons: int = len([cluster for cluster in clusters.values() if len(cluster) == 1])
-		pf.print_message(f"Out of those clusters, {total_clusters - singletons} have more than one CDS.", "info")
-		pf.print_message(f"Out of those clusters, {singletons} are singletons.", "info")
+		pf.print_message(f"{total_clusters - singletons} clusters contain more than one CDS.", "info")
+		pf.print_message(f"{singletons} clusters are singletons.", "info")
 
-		pf.print_message("Excluding clusters based on CDS frequency...", "info")
+		pf.print_message(f"Excluding clusters based on the frequency of the CDSs in the genomes (<{constants[2]})...", "info")
 		# Sum the frequency of the CDSs in each cluster to get the frequency per cluster
 		frequency_in_genomes: Dict[str, int] = {repid: sum(cds_frequency[seqid] for seqid in members) for repid, members in clusters.items()}
-
-		# Drop clusters that are present in less genomes than the given threshold and add the corresponding CDS IDs to the dropped dict with the reason for dropping them
-		pf.print_message(f"Filtering clusters based on the frequency of the CDSs in the genomes (>= {constants[2]})...", "info")
-		infrequent: List[str] = []
+		# Drop clusters with a frequency below the given threshold and add the corresponding CDS IDs to the dropped dict
+		excluded_seqids: List[str] = []
 		excluded_clusters: List[str] = []
 		for repid in clusters:
 			if frequency_in_genomes[repid] < constants[2]:
-				infrequent.extend(clusters[repid])
+				excluded_seqids.extend(clusters[repid])
 				excluded_clusters.append(repid)
-
+		# Exclude clusters
 		for repid in excluded_clusters:
 			del clusters[repid]
 
-		pf.print_message(f"Excluded {len(excluded_clusters)} clusters (a total of {len(infrequent)} CDSs).")
+		# Add seqids excluded based on cluster frequency on genomes
+		excluded.append(excluded_seqids)
+
+		pf.print_message(f"Excluded {len(excluded_clusters)} clusters (a total of {len(excluded_seqids)} CDSs).")
 		pf.print_message(f"{len(clusters)} clusters remain after filtering based on CDS frequency.", "info")
 
-		# Calculate k-mer similarity between the cluster representatives
-		# pf.print_message("Computing k-mer similarity and coverage between cluster representatives...", "info")
-		# representative_proteins = {repid: protein_sequences[repid] for repid in clusters.keys()}
-		# representative_kmers_sim: Dict[str, float] = ccf.calculate_kmers_similarity(representative_proteins, reps_groups, prot_len_dict)
-
-		blast_inputs = os.path.join(output_directory, "BLAST_inputs")
+		blast_inputs = os.path.join(output_directory, "2_BLAST_Inputs")
 		ff.create_directory(blast_inputs)
 		# Create the files needed to run BLAST
-		pf.print_message("Creating BLAST input files...", "info")
+		pf.print_message("Creating input files for BLAST...", "info")
 		loci_files, concatenated_files = ccf.prepare_files_to_blast(blast_inputs, clusters, unclassified_cds, protein_sequences, blastdb_aliastool_exec)
 
 	if run_mode == 'schema':
@@ -304,11 +292,11 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Main part that is the same for all run modes
 
 	# Create output folder to store BLASTp results
-	blast_output: str = os.path.join(output_directory, 'BLAST_results')
+	blast_output: str = os.path.join(output_directory, '3_BLAST_Results')
 	ff.create_directory(blast_output)
 
 	# Create BLASTp database
-	pf.print_message("Creating BLASTp database...", "info")
+	pf.print_message(f"Creating BLASTp database for {concatenated_files[1]}...", "info")
 	blastp_db_directory: str = ff.join_paths(blast_inputs, ['BLASTp_db'])
 	ff.create_directory(blastp_db_directory)
 	blastp_db_path: str = ff.join_paths(blastp_db_directory, ['BLASTp_db'])
@@ -325,106 +313,159 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	blastp_inputs: Dict[str, List[str]] = {locus: [paths[1], paths[3]] for locus, paths in loci_files.items()}
 	blastp_outdir = ff.join_paths(blast_output, ["BLASTp_results"])
 	ff.create_directory(blastp_outdir)
-	blastp_results_files = bf.run_blast_operations(blastp_inputs, blastp_outdir, blastp_db_path, blastp_exec, cpu)
+	# Allow multiple High-Scoring Segment Pairs to determine the global aligned fraction
+	# Define a value for max_targets that is high enough to report all/most relevant alignments
+	blastp_outfiles = bf.run_blast_operations(blastp_inputs, blastp_outdir, blastp_db_path, blastp_exec, cpu, max_hsps=5, max_targets=100)
 
-####################################
-	# Run BLASTn
-	#### Only run for the loci/clusters without BLASTp matches?
-	#### Maybe run this after BLASTp and include BLASTn results in the data structure created after processing the BLASTp results
+	# Create BLASTn database
 	blastn_db_directory: str = ff.join_paths(blast_inputs, ['BLASTn_db'])
 	ff.create_directory(blastn_db_directory)
 	blastn_db_path: str = ff.join_paths(blastn_db_directory, ['BLASTn_db'])
 	bf.make_blast_db(makeblastdb_exec, concatenated_files[0], blastn_db_path, 'nucl')
 
 	# Run BLASTn
+	# Only using representative alleles, so running for all loci should not be a problem
+	pf.print_message("Running BLASTn...", "info")
 	blastn_inputs: Dict[str, List[str]] = {locus: [paths[0], paths[3]] for locus, paths in loci_files.items()}
 	blastn_outdir = ff.join_paths(blast_output, ["BLASTn_results"])
 	ff.create_directory(blastn_outdir)
-	pf.print_message("Running BLASTn...", "info")
-	blastn_results_files = bf.run_blast_operations(blastn_inputs, blastn_outdir, blastn_db_path, blastn_exec, cpu)
+	blastn_outfiles = bf.run_blast_operations(blastn_inputs, blastn_outdir, blastn_db_path, blastn_exec, cpu, max_hsps=5, max_targets=100)
 
-	# Process the BLASTn results
-	# blastn_results_dict: Dict[str, Dict[str, List[str]]] = {}
-	# for file in blastn_results_files:
-	# 	with open(file, 'r') as infile:
-	# 		#### Need to check if the number of results is equal to the number of max hits to adjust the max hits to N*N, where N is the number of sequences in the db?
-	# 		# Each line contains the following values: qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
-	# 		file_lines = list(csv.reader(infile, delimiter='\t'))
-	# 		for line in file_lines:
-	# 			if line[0] not in blastn_results_dict:
-	# 				blastn_results_dict[line[0]] = {line[1]: line}
-	# 			else:
-	# 				blastn_results_dict[line[0]][line[1]] = line
-
-##########################
-	print()
-
-	# Process the BLASTp results
-	####### Need to take into account that the results may include query-to-subject and subject-to-query alignments!
-	blastp_results_dict: Dict[str, Dict[str, List[List[str], List[str]]]] = {}
-	for file in blastp_results_files:
+	# Process BLAST results
+	blast_results_dict: Dict[str, Dict[str, List[List[str], List[str]]]] = {}
+	for i, file in enumerate(blastp_outfiles):
+		blastp_file = file
+		# Import BLASTp results
 		with open(file, 'r') as infile:
-			#### Need to check if the number of results is equal to the number of max hits to adjust the max hits to N*N, where N is the number of sequences in the db?
 			# Each line contains the following values: qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
-			file_lines = list(csv.reader(infile, delimiter='\t'))
+			blastp_lines = list(csv.reader(infile, delimiter='\t'))
+			blastp_data = {}
+			if blastp_lines:
+				# Group all HSPSs for the same query-subject pair
+				#for line in blastp_lines[:1]:
+				for line in blastp_lines:
+					blastp_data.setdefault((line[0], line[1]), []).append(line[2:])
 
-		# Do not continue if file is empty
-		if not file_lines:
+		# Import BLASTn results
+		blastn_file = blastn_outfiles[i]
+		with open(blastn_file, 'r') as infile:
+			# Each line contains the following values: qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
+			blastn_lines = list(csv.reader(infile, delimiter='\t'))
+			blastn_data = {}
+			if blastn_lines:
+				# Group all HSPSs for the same query-subject pair
+				#for line in blastn_lines[:1]:
+				for line in blastn_lines:
+					blastn_data.setdefault((line[0], line[1]), []).append(line[2:])
+
+		# No matches with both BLASTp and BLASTn
+		if not blastp_data and not blastn_data:
+			pf.print_message(f"No BLASTp and BLASTn matches for {file}.", "info")
 			continue
 
-		queries = set()
-		for line in file_lines:
-			# Compute the BSR
-			query = line[0]
-			queries.add(query)
-			subject = line[1]
-			bsr = round(float(line[9]) / self_score_dict[query], 3)
-			# Get the length of the alignment (have to merge the length of the HSPs if there are multiple HSPs for the same query-subject pair later)
-			query_aligned_interval = [int(line[4]), int(line[5])] if int(line[4]) < int(line[5]) else [int(line[5]), int(line[4])]
-			subject_aligned_interval = [int(line[6]), int(line[7])] if int(line[6]) < int(line[7]) else [int(line[7]), int(line[6])]
-			# Add query and subject frequency values to the line
-			query_frequency = frequency_in_genomes[query]
-			subject_frequency = frequency_in_genomes[subject]
-			if run_mode == 'schema_vs_schema':
-				query_frequency_ss = frequency_in_genomes_second_schema[query]
-				subject_frequency_ss = frequency_in_genomes_second_schema[subject]
-			else:
-				query_frequency_ss = None
-				subject_frequency_ss = None
-
-			match_data = line + [bsr, query_aligned_interval, subject_aligned_interval]
-			global_data = [query_frequency, subject_frequency, query_frequency_ss, subject_frequency_ss]
-			if query not in blastp_results_dict:
-				blastp_results_dict[query] = {subject: [[match_data], *global_data]}
-			else:
-				if subject not in blastp_results_dict[query]:
-					blastp_results_dict[query][subject] = [[match_data], *global_data]
+		for qs_pair, matches in blastp_data.items():
+			query, subject = qs_pair
+			# Determine and add global values
+			if qs_pair not in blast_results_dict and (subject, query) not in blast_results_dict:
+				# Get query and subject frequency values to the line
+				query_frequency = frequency_in_genomes[query]
+				subject_frequency = frequency_in_genomes[subject]
+				if run_mode == "schema_vs_schema":
+					query_frequency_ss = frequency_in_genomes_second_schema[query]
+					subject_frequency_ss = frequency_in_genomes_second_schema[subject]
 				else:
-					blastp_results_dict[query][subject][0].append(match_data)
+					query_frequency_ss = None
+					subject_frequency_ss = None
 
-		queries = list(queries)
+				# Calculate the frequency ratio
+				# The frequency of the query or subject should not be 0 because of the frequency threshold initially applied
+				frequency_ratio = round(min(query_frequency/subject_frequency, subject_frequency/query_frequency), 3)
 
-		# Compute the total alignment length for each query-subject pair by merging the HSPs if there are multiple HSPs for the same query-subject pair
-		##### Do this to compute all values for each file in a single pass and keep only the values necessary to assign the classes in the future
-		#### What if there are multiple queries???
-		for subject, match_data in blastp_results_dict[query].items():
-			query_length: int = int(match_data[0][0][2])
-			subject_length: int = int(match_data[0][0][3])
-			# Merge aligned intervals
-			# Query
-			query_aligned_intervals: List[int] = sorted([match[13] for match in match_data[0]], key= lambda x: x[1])
+				# Get the sequence length for the query and subject
+				query_len = matches[0][0]
+				subject_len = matches[0][1]
+
+				global_data = [query_len, subject_len, query_frequency, subject_frequency, query_frequency_ss, subject_frequency_ss, frequency_ratio]
+				# Create query-subject pair entry
+				blast_results_dict.setdefault(qs_pair, [[[],[]], [[],[]], global_data])
+
+			# Get data for each match
+			for m in matches:
+				bsr = round(float(m[7]) / self_score_dict[query], 3)
+				# Get the length of the alignment (have to merge the length of the HSPs if there are multiple HSPs for the same query-subject pair later)
+				query_aligned_interval = [int(m[2]), int(m[3])] if int(m[2]) < int(m[3]) else [int(m[3]), int(m[2])]
+				subject_aligned_interval = [int(m[4]), int(m[5])] if int(m[4]) < int(m[5]) else [int(m[5]), int(m[4])]
+				match_pident = m[9]
+				match_data = [bsr, query_aligned_interval, subject_aligned_interval, match_pident]
+				if qs_pair in blast_results_dict:
+					blast_results_dict[qs_pair][0][0].append(match_data)
+				elif (subject, query) in blast_results_dict:
+					blast_results_dict[(subject, query)][1][0].append(match_data)
+
+			# Get BLASTn data
+			if qs_pair in blastn_data or (subject, query) in blastn_data:
+				blastn_matches = blastn_data.get(qs_pair, (subject, query))
+				for m in blastn_matches:
+					bsr = None
+					query_aligned_interval = [int(m[2]), int(m[3])] if int(m[2]) < int(m[3]) else [int(m[3]), int(m[2])]
+					subject_aligned_interval = [int(m[4]), int(m[5])] if int(m[4]) < int(m[5]) else [int(m[5]), int(m[4])]
+					match_pident = m[9]
+					match_data = [bsr, query_aligned_interval, subject_aligned_interval, match_pident]
+					if qs_pair in blast_results_dict:
+						blast_results_dict[qs_pair][0][1].append(match_data)
+					elif (subject, query) in blast_results_dict:
+						blast_results_dict[(subject, query)][1][1].append(match_data)
+
+#########################
+
+	# Compute the total alignment length for each query-subject pair by merging the HSPs if there are multiple HSPs for the same query-subject pair
+	### What if there are multiple queries? Such as when a locus has multiple representative alleles.
+	for qs_pair, match_data in blast_results_dict.items():
+		query_length: int = int(match_data[2][0])
+		subject_length: int = int(match_data[2][1])
+		# Merge aligned intervals
+		# Query to subject alignments
+		# Query
+		query_aligned_intervals: List[int] = sorted([m[1] for m in match_data[0][0]], key= lambda x: x[0])
+		query_aligned_merged_intervals = af.merge_intervals(query_aligned_intervals)
+		query_aligned_length = sum([(i[1]-i[0]) for i in query_aligned_merged_intervals])
+		# Subject
+		subject_aligned_intervals: List[int] = sorted([m[2] for m in match_data[0][0]], key= lambda x: x[0])
+		subject_aligned_merged_intervals = af.merge_intervals(subject_aligned_intervals)
+		subject_aligned_length = sum([(i[1]-i[0]) for i in subject_aligned_merged_intervals])
+		# Compute the weighted pident based on the pident of all HSPSs
+		# Different HSPSs can overlap and it is not possible to compute the true pident based on BLAST's outmft 6
+		query_aligned_identity: float = sum(float(m[3])*((m[1][1]-m[1][0])/query_length) for m in match_data[0][0])
+		subject_aligned_identity: float = sum(float(m[3])*((m[2][1]-m[2][0])/subject_length) for m in match_data[0][0])
+		# Compute the global palign minimum and maximum values
+		global_talign_min: float = min(query_aligned_length / query_length,
+									subject_aligned_length / subject_length)
+		global_talign_max: float = max(query_aligned_length / query_length,
+									subject_aligned_length / subject_length)
+		# Compute the minimum and maximum global percent identity
+		global_pident_min: float = min(query_aligned_identity, subject_aligned_identity)
+		global_pident_max: float = max(query_aligned_identity, subject_aligned_identity)
+		# Get the maximum BSR value from all query-subject HSPSs
+		max_bsr: float = max([m[0] for m in match_data[0][0]])
+		blast_results_dict[qs_pair][0].append([round(global_talign_min, 3), round(global_talign_max, 3),
+											   round(global_pident_min, 3), round(global_pident_max, 3),
+											   max_bsr])
+
+		# Subject to query alignments
+		# Query
+		query_aligned_intervals: List[int] = sorted([m[1] for m in match_data[1][0]], key= lambda x: x[0])
+		# It is possible that there are no Subject-Query alignments
+		if len(query_aligned_intervals) > 0:
 			query_aligned_merged_intervals = af.merge_intervals(query_aligned_intervals)
 			query_aligned_length = sum([(i[1]-i[0]) for i in query_aligned_merged_intervals])
 			# Subject
-			subject_aligned_intervals: List[int] = sorted([match[14] for match in match_data[0]], key= lambda x: x[1])
+			subject_aligned_intervals: List[int] = sorted([m[2] for m in match_data[1][0]], key= lambda x: x[0])
 			subject_aligned_merged_intervals = af.merge_intervals(subject_aligned_intervals)
 			subject_aligned_length = sum([(i[1]-i[0]) for i in subject_aligned_merged_intervals])
-
-			# Compute the global percent identity for the query and subject
-			#### Cannot really compute it like this, right?
-			query_aligned_identity: float = sum(float(match[11])*((match[13][1]-match[13][0])/query_length) for match in match_data[0])
-			subject_aligned_identity: float = sum(float(match[11])*((match[14][1]-match[14][0])/subject_length) for match in match_data[0])
-
+			# Compute the weighted pident based on the pident of all HSPSs
+			# Different HSPSs can overlap and it is not possible to compute the true pident based on BLAST's outmft 6
+			query_aligned_identity: float = sum(float(m[3])*((m[1][1]-m[1][0])/query_length) for m in match_data[1][0])
+			subject_aligned_identity: float = sum(float(m[3])*((m[2][1]-m[2][0])/subject_length) for m in match_data[1][0])
 			# Compute the global palign minimum and maximum values
 			global_talign_min: float = min(query_aligned_length / query_length,
 										subject_aligned_length / subject_length)
@@ -433,288 +474,152 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 			# Compute the minimum and maximum global percent identity
 			global_pident_min: float = min(query_aligned_identity, subject_aligned_identity)
 			global_pident_max: float = max(query_aligned_identity, subject_aligned_identity)
-
-			# Compute the minimum local palign
-			query_local_taligns: float = min([(i[1]-i[0])/query_length for i in query_aligned_intervals])
-			subject_local_taligns: float = min([(i[1]-i[0])/subject_length for i in subject_aligned_intervals])
-			local_talign_min: float = min(query_local_taligns, subject_local_taligns)
-
-			# Assign class to query-subject pair
-			# Calculate the frequency ratio
-			query_freq: int = match_data[1]
-			subject_freq: int = match_data[2]
-			# Get the maximum BSR value from all query-subject matches
-			max_bsr: float = max([match[12] for match in match_data[0]])
-
-			# The query_freq or subjet_freq should not be 0 because of the frequency threshold initially applied
-			freq_ratio = min(query_freq/subject_freq, subject_freq/query_freq)
-			# Classify based on global_talign_min and bsr
-			if global_talign_min >= constants[0]:
-				if max_bsr >= constants[7]:
-					assigned_class = '1a'
-				elif freq_ratio <= 0.1:
-					assigned_class = '1b' if freq_ratio <= 0.1 else '1c'
-			elif 0.4 <= global_talign_min < constants[0]:
-				#### Work with minimum or maximum pident???
-				if global_pident_min >= constants[1]:
-					if global_talign_max >= constants[0]:
-						assigned_class = '2a' if freq_ratio <= 0.1 else '2b'
-					else:
-						assigned_class = '3a' if freq_ratio <= 0.1 else '3b'
-				else:
-					if global_talign_max >= constants[0]:
-						assigned_class = '4a' if freq_ratio <= 0.1 else '4b'
-					else:
-						assigned_class = '4c'
-			else:
-				assigned_class = '5'
-
-		########## BLASTn matches are added as class 6 when there were no BLASTp matches
-		########## It's probably best if there's a match both with BLASTp and BLASTn and determine the difference to try to identify frameshifts (assume it's a frameshift if it only matches with BLASTn with high BSR)
-
-			# Append computed values to the matches
-			blastp_results_dict[query][subject].extend([query_aligned_length, subject_aligned_length,
-														round(global_talign_min, 3), round(global_talign_max, 3),
-														round(global_pident_min, 3), round(global_pident_max, 3),
-														round(local_talign_min, 3), assigned_class])
-
-		# Sort the results for each query by class
-		class_order = ct.CLASSES_OUTCOMES
-		# Assign an integer value to each class based on order
-		order_index = {value: index for index, value in enumerate(class_order)}
-		# Sort subject matches based on assigned class and add sorted data as new value to original dictionary
-		sorted_matches = dict(sorted(blastp_results_dict[query].items(), key=lambda x: order_index.get(x[1][-1])))
-		blastp_results_dict[query] = sorted_matches
-
-##################################
-
-	pf.print_message("Processing results to merge results and assign actions...", "info")
-	##### Need to get the class count per query
-	##### Assign a class to each match between a query and a subject or retain only the query-subject assignment?
-	processed_results = {"Join": [set(), set()], "Choice": {}, "Drop": {}, "Add": {}}
-	for query, subject_matches in blastp_results_dict.items():
-		for subject, match_data in subject_matches.items():
-			assigned_class = match_data[-1]
-			query_freq = match_data[1]
-			subject_freq = match_data[2]
-			if assigned_class == '1a':
-				# Add node data
-				processed_results["Join"][0].update([query, subject])
-				# Add edge data
-				# Do not add inverse edges
-				if (subject, query) not in processed_results["Join"][1]:
-					processed_results["Join"][1].add((query, subject))
-			elif assigned_class in {'1b', '2a', '3a', '4a'}:
-				if query_freq > subject_freq:
-					processed_results["Drop"].setdefault(subject, []).append(assigned_class)
-				else:
-					processed_results["Drop"].setdefault(query, []).append(assigned_class)
-			elif assigned_class in {'1c', '2b', '3b', '4b'}:
-				processed_results["Choice"].setdefault(query, []).append((subject, assigned_class))
-			#### Everything else is Add?
-			else:
-				processed_results["Add"].setdefault(query, []).append(assigned_class)
-
-	# Create graph from 1a matches and find connected components to create all Join groups
-	# Only if there are any Join actions
-	actions = {}
-	if len(processed_results["Join"][1]) > 0:
-		import networkx as nx
-		G = nx.Graph()
-		G.add_edges_from(processed_results["Join"][1])
-		# Get connected components to define Join groups
-		connected_components: List[Set[str]] = list(nx.connected_components(G))
-
-		# Sort components by size to get larger components first
-
-		# Start creating groups from components
-		for c in components:
-			actions[i] = []
-			for seqid in c:
-				# Change action from Join to Drop if seqid was assigned a Drop action
-				if seqid in processed_results["Drop"]:
-					actions[i].append([seqid, "Drop", processed_results["Drop"][seqid]])
-					del processed_results["Drop"][seqid]
-					continue
-				# Remove from Choice actions if seqid was assigned a Join action
-				if seqid in processed_results["Choice"]:
-					del processed_results["Choice"][seqid]
-				actions[i].append([seqid, "Join", "1a"])
-			# Sort to get Join actions first
-			actions[i] = sorted(actions[i], key= lambda x: x[1], reverse=True)
-			i += 1
-
-	# print(processed_results["Choice"])
-
-	# Add remaining Choice actions
-	for seqid, choices in processed_results["Choice"].items():
-		# Add main query
-		if seqid not in processed_results["Drop"]:
-			actions[seqid] = [[seqid, "Choice", [choices[0][1]]]]
+			# Get the maximum BSR value from all query-subject HSPSs
+			max_bsr: float = max([m[0] for m in match_data[1][0]])
+			blast_results_dict[qs_pair][1].append([round(global_talign_min, 3), round(global_talign_max, 3),
+												round(global_pident_min, 3), round(global_pident_max, 3),
+												max_bsr])
 		else:
-			actions[seqid] = [[seqid, "Drop", [choices[0][1]]]]
-			del processed_results["Drop"][seqid]
-		# Add matches
-		for c in choices:
-			if c[0] not in processed_results["Drop"]:
-				actions[seqid].append([c[0], "Choice", [c[1]]])
+			blast_results_dict[qs_pair][1].append([0, 0, 0, 0, 0])
+
+#########################
+
+	# Assign classes to all matches
+	for qs_pair, match_data in blast_results_dict.items():
+		query_freq = match_data[2][2]
+		subject_freq = match_data[2][3]
+		frequency_ratio = match_data[2][6]
+		# Classify Query-Subject matches
+		qs_data = match_data[0][2]
+		# Classify based on global_talign_min and bsr
+		if qs_data[0] >= constants[0]:
+			if qs_data[4] >= constants[7]:
+				assigned_class = '1a'
 			else:
-				actions[seqid].append([c[0], "Drop", [c[1]]])
-				del processed_results["Drop"][c[0]]
+				assigned_class = '1b' if frequency_ratio <= 0.1 else '1c'
+		elif (0.4 <= qs_data[0] < constants[0]):
+			# Working with maximum pident
+			if qs_data[3] >= constants[1]:
+				if qs_data[1] >= constants[0]:
+					assigned_class = '2a' if frequency_ratio <= 0.1 else '2b'
+				else:
+					assigned_class = '3a' if frequency_ratio <= 0.1 else '3b'
+			else:
+				if qs_data[1] >= constants[0]:
+					assigned_class = '4a' if frequency_ratio <= 0.1 else '4b'
+				else:
+					assigned_class = '4c'
+		else:
+			assigned_class = '5'
 
-	# Add remaining Drop actions
-	for seqid, assigned_class in processed_results["Drop"].items():
-		actions[seqid] = [[seqid, "Drop", assigned_class]]
+		blast_results_dict[qs_pair][0].append(assigned_class)
 
-	# Everything else is added with the Add action
-	for seqid, assigned_class in processed_results["Add"].items():
-		if seqid not in processed_results["Choice"] and seqid not in processed_results["Drop"]:
-			actions[seqid] = [[seqid, "Add", assigned_class]]
+		# Classify Subject-Query matches
+		sq_data = match_data[1][2]
+		# Classify based on global_talign_min and bsr
+		if sq_data[0] >= constants[0]:
+			if sq_data[4] >= constants[7]:
+				assigned_class = '1a'
+			else:
+				assigned_class = '1b' if frequency_ratio <= 0.1 else '1c'
+		elif (0.4 <= sq_data[0] < constants[0]):
+			# Working with maximum pident
+			if sq_data[3] >= constants[1]:
+				if sq_data[1] >= constants[0]:
+					assigned_class = '2a' if frequency_ratio <= 0.1 else '2b'
+				else:
+					assigned_class = '3a' if frequency_ratio <= 0.1 else '3b'
+			else:
+				if sq_data[1] >= constants[0]:
+					assigned_class = '4a' if frequency_ratio <= 0.1 else '4b'
+				else:
+					assigned_class = '4c'
+		else:
+			assigned_class = '5'
 
-	print(actions)
+		blast_results_dict[qs_pair][1].append(assigned_class)
+
+	########## BLASTn matches are added as class 6 when there were no BLASTp matches and CDSs/loci without matches are classified as 7
+	########## It's probably best if there's a match both with BLASTp and BLASTn and determine the difference to try to identify frameshifts (assume it's a frameshift if it only matches with BLASTn with high coverage)
+
+#########################
+
+	pf.print_message("Assigning actions based on classifications...", "info")
+	assigned_classes = {}
+	for qs_pair, match_data in blast_results_dict.items():
+		query_class = match_data[0][-1]
+		query_frequency = match_data[2][2]
+		subject_class = match_data[1][-1]
+		subject_frequency = match_data[2][3]
+		assigned_classes.setdefault(qs_pair[0], []).append([query_class, query_frequency, subject_frequency])
+		assigned_classes.setdefault(qs_pair[1], []).append([subject_class, subject_frequency, query_frequency])
+
+	# Sort the results for each query by class
+	class_order = ct.CLASSES_OUTCOMES
+	# Assign an integer value to each class based on order
+	order_index = {value: index for index, value in enumerate(class_order)}
+	# Sort list of assigned classes
+	actions = {}
+	for seqid, classes in assigned_classes.items():
+		sorted_classes = sorted(classes, key=lambda x: order_index.get(x[0]))
+		top_class, query_frequency, subject_frequency = sorted_classes[0]
+		# Assign action based on top class
+		if top_class == '1a':
+			actions[seqid] = ("Join", top_class)
+		elif top_class in {'1b', '2a', '3a', '4a'}:
+			# Need query and subject frequency to decide which to drop
+			if query_frequency > subject_frequency:
+				actions[seqid] = ("Add", top_class)
+			elif subject_frequency > query_frequency:
+				actions[seqid] = ("Drop", top_class)
+		elif top_class in {'1c', '2b', '3b', '4b'}:
+			actions[seqid] = ("Choice", top_class)
+		# Classes 4c, 5, 6, and 7 are Add
+		else:
+			actions[seqid] = ("Add", top_class)
+
+	# Use all Quey-Subject pairs to create a graph and identify connected components
+	import networkx as nx
+	G = nx.Graph()
+	G.add_edges_from(blast_results_dict.keys())
+	# Get connected components to define Join groups
+	connected_components: List[Set[str]] = list(nx.connected_components(G))
+	# Sort components by decreasing size
+	connected_components = sorted(connected_components, key=lambda x: len(x), reverse=True)
+	# Add action and top class to include in main output file
+	groups = []
+	for cc in connected_components:
+		current_group = [(seqid, *actions[seqid]) for seqid in cc]
+		groups.append(current_group)
+
+	# Add remaining representative seqids as Add
+	if run_mode == "unclassified_cds":
+		representative_seqids = clusters.keys()
+		# Determine seqids that are not in any component/group
+		component_seqids = set()
+		for cc in connected_components:
+			component_seqids.update(cc)
+
+		singletons = [seqid for seqid in representative_seqids if seqid not in component_seqids]
+		for seqid in singletons:
+			groups.append([(seqid, "Add", "7")])
 
 	# Write main output file
-	recommendations_file = ff.join_paths(output_directory, ["final_recommendations.tsv"])
-	outlines = []
-	for seqid, action_data in actions.items():
-		for a in action_data:
-			line = a[:2] + [a[2][0]]
-			outlines.append("\t".join(line))
-		outlines.append("#")
-	
+	recommendations_file = ff.join_paths(output_directory, ["recommendations.tsv"])
+	outlines = ["Locus\tAction\tClass", "#1"]
+	i = 2
+	for g in groups:
+		lines = ["\t".join(a) for a in g]
+		outlines.extend(lines)
+		outlines.append(f"#{i}")
+		i += 1
+
 	outtext = "\n".join(outlines)
-	with open(recommendations_file, "a") as outfile:
+	with open(recommendations_file, "w") as outfile:
 		outfile.write(outtext+"\n")
 
 ###############################################
 
-	# count_results_by_class = itf.sort_subdict_by_tuple(count_results_by_class, classes_outcome)
-	# # Extract which clusters are to maintain and to display to user.
-	# clusters_to_keep: tp.MergedAllClasses
-	# dropped_loci_ids: Set[str]
-	# clusters_to_keep_1a, clusters_to_keep, dropped_loci_ids = cof.extract_clusters_to_keep(classes_outcome, count_results_by_class, drop_mark)
-
-	# # Add the loci/new_loci IDs of the 1a joined clusters to the clusters_to_keep
-	# clusters_to_keep_1a_renamed: Dict[str, List[str]] = {values[0]: values for key, values in clusters_to_keep_1a.items()}
-
-	# # Merge classes
-	# merged_all_classes: tp.MergedAllClasses = {'1a': clusters_to_keep_1a_renamed.copy()}
-	# merged_all_classes.update(clusters_to_keep)
-	# if run_mode == 'unclassified_cds':
-	# 	updated_frequency_in_genomes: Dict[str, int] = ccf.update_frequencies_in_genomes(clusters_to_keep_1a_renamed,  frequency_in_genomes)
-	# 	# Open dict to store IDs of the reps and alleles
-	# 	group_reps_ids = {}
-	# 	group_alleles_ids = {}
-	# 	# Count the number of reps and alleles again because clusters were joined
-	# 	group_reps_ids, group_alleles_ids = cof.count_number_of_reps_and_alleles(merged_all_classes,
-	# 																			all_alleles,
-	# 																			dropped_loci_ids,
-	# 																			group_reps_ids,
-	# 																			group_alleles_ids)
-
-	# 	pf.print_message("Adding remaining clusters that didn't match by BLASTn...", "info")
-	# 	# Add cluster not matched by BLASTn
-	# 	all_matched_clusters: List[str] = itf.flatten_list([v for v in {key: value for key, value in clusters_to_keep.items() if key != '1a'}.values()]) + itf.flatten_list([values for values in clusters_to_keep_1a_renamed.values()])
-	# 	clusters_to_keep['Retained_not_matched_by_blastn'] = set([cluster for cluster in all_alleles.keys() if cluster not in all_matched_clusters])
-
-	# processed_drop: List[str] = []
-	# # Add Ids of the dropped cases due to frequency during classification
-	# cof.add_cds_to_dropped_cds(dropped_loci_ids,
-	# 						dropped_alleles,
-	# 						clusters_to_keep,
-	# 						clusters_to_keep_1a_renamed,
-	# 						all_alleles,
-	# 						'Dropped_due_to_smaller_genome_presence_than_matched_cluster',
-	# 						processed_drop)
-
-	# pf.print_message("Extracting results...", "info")
-	# related_clusters: tp.RelatedClusters
-	# recommendations: tp.Recomendations
-	# low_freq_recommendations: tp.Recomendations
-	# # Extract the results from the processed results
-	# related_clusters, recommendations, low_freq_recommendations = cof.extract_results(processed_results,
-	# 																					count_results_by_class,
-	# 																					frequency_in_genomes,
-	# 																					frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None, 
-	# 																					merged_all_classes,
-	# 																					dropped_loci_ids,
-	# 																					classes_outcome)
-
-	# pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
-	# # Write the results to files and return the paths to the files.
-	# reverse_matches: bool = True
-	# (related_matches_path,
-	#  count_results_by_cluster_path,
-	#  recommendations_file_path,
-	#  count_classes_final) = cof.write_recommendations_summary_results(to_blast_paths,
-	# 																		related_clusters,
-	# 																		count_results_by_class_with_inverse,
-	# 																		group_reps_ids,
-	# 																		group_alleles_ids,
-	# 																		frequency_in_genomes,
-	# 																		frequency_in_genomes_second_schema if run_mode == 'schema_vs_schema' else None,
-	# 																		recommendations,
-	# 																		low_freq_recommendations,
-	# 																		reverse_matches,
-	# 																		classes_outcome,
-	# 																		output_directory)
-
-	# # Get all of the CDS that matched with loci or loci matched with loci
-	# is_matched: Dict[str, Any]
-	# is_matched_alleles: Dict[str, Any]
-	# is_matched, is_matched_alleles = cof.get_matches(all_relationships,
-	# 												merged_all_classes,
-	# 												sorted_blast_dict)
-
-	# pf.print_message("Writing classes and cluster results to files...", "info")
-	# report_file_path: str = os.path.join(blast_results, 'blast_all_matches.tsv')
-	# # Write all of the alignments results to a file.
-	# cof.alignment_dict_to_file(representative_blast_results,
-	# 						   report_file_path,
-	# 						   'w')
-	# cof.alignment_dict_to_file(representative_blastn_results,
-	# 						   report_file_path,
-	# 						   'a')
-	# # Write the processed results to a file alignments by clusters and classes.
-	# cof.write_processed_results_to_file(merged_all_classes,
-	# 								representative_blast_results,
-	# 								classes_outcome,
-	# 								all_alleles,
-	# 								is_matched,
-	# 								is_matched_alleles,
-	# 								blast_results)
-	# merged_classes_6 = {k: merged_all_classes[k] for k in {'6'}}
-	# cof.write_processed_results_to_file(merged_classes_6,
-	# 								representative_blastn_results,
-	# 								['6'],
-	# 								all_alleles,
-	# 								is_matched,
-	# 								is_matched_alleles,
-	# 								blast_results)
-
-	# if run_mode == 'unclassified_cds':
-	# 	pf.print_message("Updating IDs and saving changes in cds_id_changes.tsv...", "info")
-	# 	# Update the IDs and save the changes in a file.
-	# 	ccf.update_ids_and_save_changes(merged_all_classes,
-	# 								all_alleles,
-	# 								cds_original_ids,
-	# 								dropped_alleles,
-	# 								all_nucleotide_sequences,
-	# 								results_output)
-	# 	pf.print_message("Writing dropped CDSs to file...", "info")
-	# 	# Write the dropped CDS to a file.
-	# 	ccf.write_dropped_cds_to_file(dropped_alleles, results_output)
-
-	# pf.print_message("Writing dropped possible new loci to file...", "info")
-	# # Write the dropped possible new loci to a file.
-	# drop_possible_loci_output = cof.write_dropped_possible_new_loci_to_file(dropped_loci_ids,
-	# 																	dropped_alleles,
-	# 																	output_directory)
-	# # Write alot of alleles file
-	# alot_of_alleles_file = os.path.join(output_directory, 'alot_of_alleles.txt')
-	# with open(alot_of_alleles_file, 'w') as alot_file:
-	# 	for loci in loci_too_big:
-	# 		alot_file.write(f"{loci}\n")
 
 	# # Print the classification results
 	# cof.print_classifications_results(merged_all_classes,

@@ -504,7 +504,7 @@ def calculate_self_score(paths_dict: Dict[str, str], blast_exec: str, output_fol
 	return self_scores
 
 
-def run_blast_operations(input_files: List[str], output_directory: str, blast_db: str, blast_exec: str, cpu: int) -> List[str]:
+def run_blast_operations(input_files: List[str], output_directory: str, blast_db: str, blast_exec: str, cpu: int, max_hsps: int, max_targets: int) -> List[str]:
 	"""
 	Run BLASTp in parallel for all the cluster representatives.
 
@@ -526,7 +526,6 @@ def run_blast_operations(input_files: List[str], output_directory: str, blast_db
 	blast_results_files : List[str]
 		List containing the paths to the BLASTp results files.
 	"""
-
 	blast_results_files: List[str] = []
 	i: int = 1
 
@@ -544,7 +543,9 @@ def run_blast_operations(input_files: List[str], output_directory: str, blast_db
 								fasta_files,
 								input_ids,
 								repeat(output_directory),
-								seqids_files):
+								seqids_files,
+								repeat(max_targets),
+								repeat(max_hsps)):
 			# Save the path to the BLASTp results file
 			blast_results_files.append(res[1])
 			pf.print_message(f"Running BLAST for {res[0]} - {i}/{total_blasts:<{max_id_length}}", "info", end='\r', flush=True)
