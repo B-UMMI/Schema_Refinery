@@ -31,108 +31,65 @@ except ModuleNotFoundError:
                                         print_functions as prf)
 
 
-def print_classifications_results(merged_all_classes: tp.MergedAllClasses, drop_possible_loci: List[int], 
-                                  to_blast_paths: Dict[str, str], clusters: Dict[str, Any], count_classes_final: Dict[str, int]) -> None:
+def prepare_cluster_blast_infiles(output_directory: str,
+                           clusters: Dict[str, List[str]], 
+                           sequences: Dict[str, str],
+                           protein_sequences: Dict[str, str],
+                           blastdb_aliastool_exec) -> Dict[str, str]:
     """
-    Prints the classification results based on the provided parameters.
+    Writes representative and master FASTA files for BLAST.
 
     Parameters
     ----------
-    merged_all_classes : tp.MergedAllClasses
-        Dictionary containing CDS to keep, classified by their class type.
-    drop_possible_loci : List[int]
-        List of possible loci dropped.
-    to_blast_paths : Dict[str, str]
-        Path to BLAST.
-    clusters : Dict[str, Any]
-        The dictionary containing the clusters.
-    moved_recs : Dict[str, List[Set[str]]]
-        The dictionary of which loci in each class got the recommendation they were expected to or were moved, for exemple 'Drop' instead of 'Choice'.
+    output_directory : str
+        Path to the directory where the BLAST input files will be stored.
+    clusters : Dict[str, List[str]]
+        Dictionary with cluster representatives as keys and cluster members as values.
+    sequences : Dict[str, str]
+        Dictionary with sequence IDs as keys and sequences as values.
+    protein_sequences : Dict[str, str]
+        Dictionary with protein sequence IDs as keys and protein sequences as values.
 
     Returns
     -------
-    None
-        Prints the classification results to stdout.
-
-    Notes
-    -----
-    - The function first processes the `clusters_to_keep` dictionary to count the number of CDS
-      representatives for each class.
-    - It then prints the results, including the number of groups classified under each class and
-      any recommendations for verification.
-    - If there are any retained groups not matched by BLASTn, it handles them separately.
+    file_paths : Dict[str, List[str]]
+        Dictionary containing repid as keys and a list of paths to the corresponding DNA FASTA, protein FASTA, and seqid TXT files as values.
     """
-    def print_results(class_: str, count: int, printout: Dict[str, Any]) -> None:
-        """
-        Prints the classification results based on the class type.
+    file_paths: Dict[str, List[str]] = {}
+    for repid, members in clusters.items():
+        dna_fasta: str = os.path.join(output_directory, f"{repid}.fasta")
+        protein_fasta: str = os.path.join(output_directory, f"{repid}_protein.fasta")
+        seqid_file: str = os.path.join(output_directory, f"{repid}.txt")
+        seqid_file_alias: str = os.path.join(output_directory, f"{repid}_alias")
+        file_paths[repid] = [dna_fasta, protein_fasta, seqid_file, seqid_file_alias]
 
-        Parameters
-        ----------
-        class_ : str
-            The class type.
-        count : int
-            The count of groups.
-        printout : Dict[str, Any]
-            The dictionary containing printout information.
-        moved_recs : Dict[str, List[Set[str]]]
-            The dictionary of which loci in each class got the recommendation they were expected to or were moved, for exemple 'Drop' instead of 'Choice'.
+        # Create FASTA file with DNA sequence of the representative
+        sequence: Dict[str, str] = {repid: sequences[repid]}
+        write_fasta_file(dna_fasta, sequence)
 
-        Returns
-        -------
-        None
-            Prints the classification results to stdout.
+        # Create FASTA file with protein sequence of the representative
+        protein: Dict[str, str] = {repid: protein_sequences[repid]}
+        write_fasta_file(protein_fasta, protein)
 
-        Notes
-        -----
-        - The function prints different messages based on the class type.
-        - It provides recommendations for verification for certain classes.
-        """
-        if count > 0:
-            if class_ in ['2b', '4b']:
-                prf.print_message(f"\t\t{count} loci are classified as {class_} and were retained"
-                            " but it is recommended to verify them as they may be contained or contain partially inside"
-                            " their BLAST match.", None)
-            elif class_ == '1a':
-                prf.print_message(f"\t\t{count} loci are classified as {class_}"
-                            f" and are contained in {len(printout['1a'])} joined groups that were retained.", None)
-            elif class_ in ['4c', '5']:
-                prf.print_message(f"\t\t{count} loci are classified as {class_}. These will be added to recommendations with 'Add'.", None)
-            else:
-                prf.print_message(f"\t\t{count} loci are classified as {class_}.", None)
+        # Create TXT file with the representative seqid
+        with open(seqid_file, 'w') as outfile:
+            outfile.write(f"{repid}\n")
 
-    # If 'Retained_not_matched_by_blastn' exists in clusters_to_keep, remove it and store it separately
-    retained_not_matched_by_blastn: Optional[Any] = merged_all_classes.pop('Retained_not_matched_by_blastn', None)
+        # Run blastdb_aliastool to create the alias files for the seqid files
+        stdout, stderr = bf.run_blastdb_aliastool_multiprocessing(blastdb_aliastool_exec, seqid_file, seqid_file_alias)
 
-    # Display info about the results obtained from processing the classes.
-    # Get the total number of CDS reps considered for classification.
-    count_cases: Dict[str, int] = {}
-    # Check if loci is not empty
-    total_loci: int = sum(count_cases.values()) + sum(count_classes_final.values())
-    prf.print_message(f"Out of {len(to_blast_paths)}:", None)
-    prf.print_message(f"\t{total_loci} representatives had matches with BLASTn against the schema DNA sequences.", None)
-    for class_, count in count_classes_final.items():
-        print_results(class_, count, merged_all_classes)
-    for class_, count in count_cases.items():
-        print_results(class_, count, merged_all_classes)
-    prf.print_message(f"\tOut of those {len(to_blast_paths.values()) - sum(count_cases.values()) - sum(count_classes_final.values())} didn't have any matches", None)
+    # Concatenate all the representative FASTA files into one file for BLASTn
+    concatenated_dna_fasta: str = os.path.join(output_directory, "concatenated_dna.fasta")
+    ff.concatenate_files([file[0] for file in file_paths.values()], concatenated_dna_fasta, header=None)
 
-    if retained_not_matched_by_blastn:
-        merged_all_classes['Retained_not_matched_by_blastn'] = retained_not_matched_by_blastn
+    # Concatenate all the representative FASTA files into one file for BLASTp
+    concatenated_protein_fasta: str = os.path.join(output_directory, "concatenated_protein.fasta")
+    ff.concatenate_files([file[1] for file in file_paths.values()], concatenated_protein_fasta, header=None)
+
+    return file_paths, (concatenated_dna_fasta, concatenated_protein_fasta)
 
 
-def prepare_loci(schema_folder: str,
-                 constants: List[Any],
-                 results_output: str) -> Tuple[
-                     Dict[str, str], 
-                     str, 
-                     Dict[str, str],
-                     Dict[str, str],  
-                     Dict[str, List[str]],  
-                     Dict[str, List[str]], 
-                     Dict[str, List[str]],
-                     Dict[str, str],
-                     Dict[str, int],
-                     Dict[str, int]]:
+def prepare_loci_blast_infiles(schema_folder: str, output_directory: str, constants: List[Any]):
     """
     Process new loci by translating sequences, counting frequencies, and preparing files for BLAST.
 
@@ -140,10 +97,10 @@ def prepare_loci(schema_folder: str,
     ----------
     schema_folder : str
         Path to the folder containing schema FASTA files.
+    output_directory : str
+        Path to the directory where results will be saved.
     constants : list
         A list of constants used for processing.
-    results_output : str
-        Path to the directory where results will be saved.
 
     Returns
     -------

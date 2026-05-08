@@ -4,11 +4,11 @@
 import os
 import csv
 import sys
-import subprocess
-import pandas as pd
 import shutil
+import subprocess
 from typing import Any, List, Dict, Optional, Set, Tuple
 
+import pandas as pd
 
 try:
 	from SchemaAnnotation import (consolidate as cs)
@@ -46,81 +46,42 @@ except ModuleNotFoundError:
 										globals as gb)
 
 
-def compute_frequency(locus_column: pd.Series, locus_id: str) -> int:
-	"""
-	"""
-	# For each locus count the frequency of ...
-	# Convert LNF, ASM, and ALM classifications to 0 (LNF, ASM, ALM) and everything else to 1
-	masked_column: pd.Series = locus_column.applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
-	# Count the frequency of each locus in all genomes
-	frequency = masked_column.sum()
-
-	return frequency
-
-
-def calculate_frequency(allelecall_directories: List[str], temp_paths: List[str], run_mode: str):
+def compute_cds_frequency(input_fasta, temp_directory):
 	"""
 	Calculates the CDS frequency in the genomes in 3 different ways depending on the run mode.
-
-	Parameters
-	----------
-	schema_folder : str
-		Path to the folder containing schema FASTA files.
-	allelecall_directory : str
-		Path to the directory containing allele call results.
-	second_schema_folder : str
-		Path to the folder containing schema FASTA files of the second schema.
-	second_allelecall_directory : str
-		Path to the directory containing allele call results for the second schema.
-	temp_paths : List[str]
-		List of temporary paths.
-	run_mode : str
-		Mode for running the module.
-		schema, unclassified_cds, schema_vs_schema
-
-	Returns
-	-------
-	Tuple
-		- frequency_in_genomes (Dict[str, int]): Dictionary of loci frequencies in genomes.
-		- frequency_in_genomes_second_schema (Dict[str, int]): Dictionary of loci frequencies in genomes from the second given schema.
-		- frequency_cds (Dict[str, int]): Dictionary of cds frequencies in genomes.
-		- cds_presence_in_genomes (Dict[str, List[str]]): Dictionary of the presence of the cds in the genomes.
-		- all_nucleotide_sequences (Dict[str, str]): Dictionary with CDS IDs as keys and sequences as values.
 	"""
-	# Calculate the CDS frequencies depending of the run mode
-	pf.print_message(f"Calculating CDS frequency for the following run mode: {run_mode}", 'info')
-	# Compute freuquencies for the schema and schema_vs_schema run modes
-	if run_mode != "unclassified_cds":
-		# List FASTA files in the schema folder and map them to their full paths
-		fs_profiles_file = ff.join_paths(allelecall_directories[0], ["results_alleles.tsv"])
-		fs_profiles = pd.read_csv(fs_profiles_file, sep = '\t', dtype = object)
-		fs_loci_ids = fs_profiles.columns[1:]
-		fs_frequencies: Dict[str, int] = {}
-		for locus in fs_loci_ids:
-			fs_frequencies[locus] = compute_frequency(fs_profiles[locus], locus)
-		# Calculate frequencies for the second schema if run mode is schema_vs_schema
-		if run_mode == "schema_vs_schema":
-			ss_profiles_file = ff.join_paths(allelecall_directories[1], ["results_alleles.tsv"])
-			ss_profiles = pd.read_csv(ss_profiles_file, sep = '\t', dtype = object)
-			ss_loci_ids = ss_profiles.columns[1:]
-			ss_frequencies: Dict[str, int] = {}
-			for locus in ss_loci_ids:
-				ss_frequencies[locus] = compute_frequency(ss_profiles[locus], locus)
-		return fs_frequencies, ss_frequencies if run_mode == "schema_vs_schema" else fs_frequencies, None
-	if run_mode == "unclassified_cds":
-		# Import unclassified CDSs (sequence IDs as keys and sequences as values)
-		pf.print_message("Importing unclassified CDSs...", "info")
-		unclassified_cds = sf.fetch_fasta_dict(temp_paths[0])
-		# Count the frequency of CDSs in the genomes and identify their presence
-		pf.print_message("Identifying CDSs present in the schema and counting frequency of missing CDSs in the genomes...", "info")
-		cds_present: str = os.path.join(temp_paths[1], "2_cds_preprocess/cds_deduplication/distinct.hashtable")
-		decoded_seqids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_present)
-		cds_frequency = ccf.count_cds_frequency(unclassified_cds, decoded_seqids)
-		return cds_frequency
+	# Import unclassified CDSs (sequence IDs as keys and sequences as values)
+	pf.print_message("Importing unclassified CDSs...", "info")
+	unclassified_cds = sf.fetch_fasta_dict(input_fasta)
+	# Count the frequency of CDSs in the genomes and identify their presence
+	pf.print_message("Identifying CDSs present in the schema and counting frequency of missing CDSs in the genomes...", "info")
+	cds_present: str = os.path.join(temp_directory, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
+	decoded_seqids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_present)
+	frequencies = ccf.count_cds_frequency(unclassified_cds, decoded_seqids)
+
+	return frequencies
+
+
+def compute_loci_frequency(input_directory):
+	"""
+	"""
+	# List FASTA files in the schema folder and map them to their full paths
+	profiles_file = ff.join_paths(input_directory, ["results_alleles.tsv"])
+	profiles = pd.read_csv(profiles_file, sep = '\t', dtype = object)
+	loci_ids = profiles.columns[1:]
+	frequencies: Dict[str, int] = {}
+	for locus in loci_ids:
+		locus_column = profiles[locus]
+		# Convert LNF, ASM, and ALM classifications to 0 (LNF, ASM, ALM) and everything else to 1 (assume NIPH/NIPHEM and PLOT5/PLOT3 as presence)
+		masked_column: pd.Series = locus_column.map(lambda x: 0 if str(x) in {'LNF', 'ASM', 'ALM'} else 1)
+		# Sum all 1's to get locus frequency in the genomes
+		frequencies[locus] = masked_column.sum()
+
+	return frequencies
 
 
 def identify_spurious_genes(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
-							annotation_paths: List[str], constants: List[Any], run_mode: str, cpu: int, no_cleanup: bool) -> None:
+							annotations: str, constants: List[Any], run_mode: str, cpu: int, no_cleanup: bool) -> None:
 	"""
 	Identify spurious genes in the given schema.
 
@@ -132,8 +93,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		Path to the output directory.
 	allelecall_directory : List[str]
 		Path to the allele call directory.
-	annotation_paths : List[str]
-		Paths for the files with the annotations.
+	annotations : str
+		Path to a TSV file containing loci annotations.
 	constants : List[Any]
 		List of constants used in the process.
 	run_mode : str
@@ -174,7 +135,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		# Define the path to the temp folder with the intermediate files from AlleleCall
 		temp_folder: str = os.path.join(allelecall_directory[0], 'temp')
 		# Calculate the frequency of the CDSs in the genomes
-		cds_frequency = calculate_frequency([None, None], [unclassified_cds_dest, temp_folder], run_mode)
+		cds_frequency = compute_cds_frequency(unclassified_cds_dest, temp_folder)
 
 		# Exclude CDSs shorter than size threshold
 		pf.print_message(f"Excluding CDSs shorter than {constants[5]} bp...", "info")
@@ -242,23 +203,13 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		ff.create_directory(blast_inputs)
 		# Create the files needed to run BLAST
 		pf.print_message("Creating input files for BLAST...", "info")
-		loci_files, concatenated_files = ccf.prepare_files_to_blast(blast_inputs, clusters, unclassified_cds, protein_sequences, blastdb_aliastool_exec)
+		loci_files, concatenated_files = cof.prepare_cluster_blast_infiles(blast_inputs, clusters, unclassified_cds, protein_sequences, blastdb_aliastool_exec)
 
 	if run_mode == 'schema':
-		# Calculate the frequency of the cds in genomes
-		results = calculate_frequency([allelecall_directory[0], None], None, None, None, run_mode, None)
-		frequency_in_genomes, _, _, _, _, dropped_alleles, _ = results
-
-		pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
-		(all_nucleotide_sequences,
-		master_file_path,
-		trans_paths,
-		to_blast_paths,
-		all_alleles,
-		group_reps_ids,
-		group_alleles_ids,
-		to_run_against,
-		seqid_file_dict) = cof.prepare_loci(schema_directory[0], constants, initial_processing_output)
+		# Calculate the frequency of the loci in the genomes
+		frequency_in_genomes = compute_loci_frequency(allelecall_directory[0])
+		pf.print_message("Creating input files for BLAST...", "info")
+		loci_files, concatenated_files = cof.prepare_loci_blast_infiles(schema_directory[0], constants, initial_processing_output)
 
 	if run_mode == 'schema_vs_schema':
 		ff.copy_folder(schema_directory[0], schema_folder)
@@ -618,45 +569,39 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	with open(recommendations_file, "w") as outfile:
 		outfile.write(outtext+"\n")
 
-###############################################
+	# Print the classification results
+	# Count classifications
+	action_counts = {}
+	for g in groups:
+		actions = [(a[1], a[2]) for a in g]
+		for a in actions:
+			if a in action_counts:
+				action_counts[a] += 1
+			else:
+				action_counts[a] = 1
 
+	sorted_counts = sorted(action_counts.items(), key=lambda x: order_index.get(x[0][1]))
+	for scount in sorted_counts:
+		pf.print_message(f"{scount[1]} representative sequences were classified as {scount[0][1]} and with an action of {scount[0][0]}.", "info")
 
-	# # Print the classification results
-	# cof.print_classifications_results(merged_all_classes,
-	# 									dropped_loci_ids,
-	# 									to_blast_paths,
-	# 									all_alleles,
-	# 									count_classes_final)
+	# Append loci annotations to the recommendations
+	annotated_recommendations = os.path.join(output_directory, "recommendations_annotated.tsv")
+	if annotations:
+		pf.print_message(f"Appending annotations in {annotations} to file with recommendations...", "info")
+		files = [recommendations_file, annotations]
+		consolidated_annotations: str = cs.consolidate_annotations(files, False, annotated_recommendations)
 
-	# # Annotate the recommendation outputs with the given annotation files using consolidate
-	# pf.print_message("")
-	# consolidated_annotations = os.path.join(output_directory, "recommendations_annotations.tsv")
-	# if annotation_paths:
-	# 	files: List[str]
-	# 	files = [recommendations_file_path] + annotation_paths
-	# 	pf.print_message("Consolidating annoations...", "info")
-	# 	consolidated_annotations: str = cs.consolidate_annotations(files,
-	# 								False,
-	# 								consolidated_annotations)
-	# 	pf.print_message('Annotation consolidation successfully completed.', 'info')
-	# 	pf.print_message('')
-
-	# # Clean up temporary files
-	# if not no_cleanup:
-	# 	pf.print_message("Cleaning up temporary files...", "info")
-	# 	# Remove temporary files
-	# 	ff.cleanup(output_directory, [related_matches_path,
-	# 							alot_of_alleles_file,
-	# 							count_results_by_cluster_path,
-	# 							recommendations_file_path,
-	# 							consolidated_annotations if annotation_paths else None,
-	# 							drop_possible_loci_output,
-	# 							temp_fastas_folder if run_mode == 'unclassified_cds' else None,
-	# 							logf.get_log_file_path(gb.LOGGER)])
+	# Clean up temporary files
+	if not no_cleanup:
+		pf.print_message("Cleaning up temporary files...", "info")
+		# Remove temporary files
+		shutil.rmtree(processed_indata)
+		shutil.rmtree(blast_inputs)
+		shutil.rmtree(blast_output)
 
 
 def main(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
-		annotation_paths: List[str], alignment_ratio_threshold: float, pident_threshold: float,
+		annotations: str, alignment_ratio_threshold: float, pident_threshold: float,
 		clustering_sim_threshold: float, clustering_cov_threshold:float, genome_presence: int,
 		absolute_size: int, translation_table: int, bsr: float, size_ratio: float, run_mode: str,
 		cpu: int, no_cleanup: bool) -> None:
@@ -671,8 +616,8 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
 		Path to the output directory.
 	allelecall_directory : List[str]
 		Path to the allele call directory.
-	annotation_paths : List[str]
-		Paths for the files with the annotations.
+	annotations : str
+		Path to a TSV file containing loci annotations.
 	alignment_ratio_threshold : float
 		Threshold for alignment ratio.
 	pident_threshold : float
@@ -716,7 +661,7 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
 	identify_spurious_genes(schema_directory,
 							output_directory,
 							allelecall_directory,
-							annotation_paths,
+							annotations,
 							constants,
 							run_mode,
 							cpu,

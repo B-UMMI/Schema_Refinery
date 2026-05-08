@@ -457,11 +457,10 @@ def identify_spurious_genes() -> None:
 	parser.add_argument('-ann',
 						'--annotations',
 						type=str,
-						nargs='+',
 						required=False,
 						default=None,
-						dest='annotation_paths',
-						help='Path to the tsv file with the schema annotations.')
+						dest='annotations',
+						help='Path a TSV file containing loci annotations.')
 
 	parser.add_argument('-at',
 						'--alignment-ratio-threshold',

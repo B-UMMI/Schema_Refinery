@@ -494,6 +494,7 @@ def merge_folders(folder1: str, folder2: str, output_folder: str, cpu: int, bsr:
 	shutil.rmtree(temp_folder)
 	shutil.rmtree(temp_output)
 
+
 def cleanup(directory: str, exclude: List[str]) -> None:
 	"""
 	Clean up a directory by removing all files and subdirectories except those specified in the exclusion list.
