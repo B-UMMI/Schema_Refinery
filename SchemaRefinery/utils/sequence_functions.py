@@ -265,7 +265,7 @@ def read_fasta_file_iterator(file: str) -> Iterator[SeqRecord]:
 	return SeqIO.parse(file, "fasta")
 
 
-def read_fasta_file_dict(file: str) -> Dict[str, Iterator[SeqRecord]]:
+def read_fasta_file_dict(file: str, biopython_obj: bool = True) -> Dict[str, Iterator[SeqRecord]]:
 	"""
 	Reads a FASTA file and returns a dictionary where the keys are sequence identifiers and the values are sequence records.
 
@@ -279,7 +279,12 @@ def read_fasta_file_dict(file: str) -> Dict[str, Iterator[SeqRecord]]:
 	dict
 		A dictionary where the keys are sequence identifiers and the values are Bio.SeqRecord objects.
 	"""
-	return SeqIO.to_dict(SeqIO.parse(file, "fasta"))
+	records = SeqIO.to_dict(SeqIO.parse(file, "fasta"))
+	if biopython_obj:
+		return records
+	else:
+		records = {seqid: str(rec.seq) for seqid, rec in records.items()}
+		return records
 
 
 def seq_to_hash(seq: str) -> str:
@@ -413,9 +418,9 @@ def translate_seq_deduplicate(seq_dict: Dict[str, str],
 	proteins = {rec[0]: str(rec[1][0][0]) for rec in translation_data if isinstance(rec[1], tuple)}
 	untranslatable = {rec[0]: rec[1] for rec in translation_data if not isinstance(rec[1], tuple)}
 
+	protein_hashes: Dict[str, List[str]] = {}
 	if deduplicate:
 		to_delete = set()
-		protein_hashes: Dict[str, List[str]] = {}
 		for protid, protseq in proteins.items():
 			prot_hash = seq_to_hash(protseq)
 			protein_hashes.setdefault(prot_hash, []).append(protid)

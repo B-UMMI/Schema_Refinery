@@ -113,6 +113,9 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Create initial processing output directory based on run mode
 	processed_indata: str = os.path.join(output_directory, '1_Input_Data')
 	ff.create_directory(processed_indata)
+	# Create folder to store BLAST inputs
+	blast_inputs = os.path.join(output_directory, "2_BLAST_Inputs")
+	ff.create_directory(blast_inputs)
 	# Set minimum number of genomes in which a CDS cluster should be present to be kept in the analysis
 	# Set to 5 if number of genomes <= 20 else to 1% of the dataset size
 	if not constants[2]:
@@ -146,8 +149,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 
 		pf.print_message("Translating and deduplicating the CDSs...", "info")
 		# Translate and deduplicate the CDSs
-		# The protein_sequences contains only the distinct sequences and the protein_hashes contains the mapping of the distinct sequences to the original CDS IDs (including duplicates)
-		protein_sequences, protein_hashes = sf.translate_seq_deduplicate(unclassified_cds, processed_indata, constants[5], constants[6], True)
+		# The protein_sequences contains only the distinct sequences
+		protein_sequences, _ = sf.translate_seq_deduplicate(unclassified_cds, processed_indata, constants[5], constants[6], True)
 
 		pf.print_message("Clustering the translated distinct CDSs...", "info")
 		# Sort proteins by size before clustering
@@ -199,31 +202,35 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		pf.print_message(f"Excluded {len(excluded_clusters)} clusters (a total of {len(excluded_seqids)} CDSs).")
 		pf.print_message(f"{len(clusters)} clusters remain after filtering based on CDS frequency.", "info")
 
-		blast_inputs = os.path.join(output_directory, "2_BLAST_Inputs")
-		ff.create_directory(blast_inputs)
 		# Create the files needed to run BLAST
 		pf.print_message("Creating input files for BLAST...", "info")
 		loci_files, concatenated_files = cof.prepare_cluster_blast_infiles(blast_inputs, clusters, unclassified_cds, protein_sequences, blastdb_aliastool_exec)
 
 	if run_mode == 'schema':
+		# Copy the schema to the folder with intermediate files
+		pf.print_message("Copying input schema to temp folder...", "info")
+		temp_schema = ff.join_paths(processed_indata, [ff.file_basename(schema_directory[0])])
+		ff.copy_folder(schema_directory[0], temp_schema)
 		# Calculate the frequency of the loci in the genomes
 		frequency_in_genomes = compute_loci_frequency(allelecall_directory[0])
 		pf.print_message("Creating input files for BLAST...", "info")
-		loci_files, concatenated_files = cof.prepare_loci_blast_infiles(schema_directory[0], constants, initial_processing_output)
+		loci_files, concatenated_files = cof.prepare_loci_blast_infiles(temp_schema, blast_inputs, constants[5], constants[6], blastdb_aliastool_exec)
 
 	if run_mode == 'schema_vs_schema':
-		ff.copy_folder(schema_directory[0], schema_folder)
-		second_schema_folder = os.path.join(initial_processing_output, 'second_schema')
-		ff.create_directory(second_schema_folder)
-		ff.copy_folder(schema_directory[1], second_schema_folder)
+		# Copy schemas to temp folder
+		ff.copy_folder(schema_directory[0], processed_indata)
+		ff.copy_folder(schema_directory[1], processed_indata)
 
 		pf.print_message(f'First schema: {schema_directory[0]}', 'info')
 		pf.print_message(f'Second schema: {schema_directory[1]}', 'info')
 
-		# Calculate the frequency of the cds in genomes for the first schema and second schema
-		results = calculate_frequency([allelecall_directory[0], allelecall_directory[1]], None, None, None, run_mode, None)
-		frequency_in_genomes, frequency_in_genomes_second_schema, _, _, _, dropped_alleles, _ = results
+		# Calculate the loci frequency bases on the allele calling results with the first schema
+		first_schema_frequencies = compute_loci_frequency(allelecall_directory[0])
+		# Second schema
+		second_schema_frequencies = compute_loci_frequency(allelecall_directory[1])
+		frequency_in_genomes = [first_schema_frequencies, second_schema_frequencies]
 
+		### What's this???
 		ff.merge_folders(schema_directory[0], schema_directory[1], schema_folder, cpu, bsr, translation_table)
 
 		pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
@@ -240,7 +247,9 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 											constants,
 											initial_processing_output)
 
-	# Main part that is the same for all run modes
+	#####################################
+	# Main part common to all run modes #
+	#####################################
 
 	# Create output folder to store BLASTp results
 	blast_output: str = os.path.join(output_directory, '3_BLAST_Results')
@@ -293,7 +302,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 			blastp_data = {}
 			if blastp_lines:
 				# Group all HSPSs for the same query-subject pair
-				#for line in blastp_lines[:1]:
 				for line in blastp_lines:
 					blastp_data.setdefault((line[0], line[1]), []).append(line[2:])
 
@@ -305,7 +313,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 			blastn_data = {}
 			if blastn_lines:
 				# Group all HSPSs for the same query-subject pair
-				#for line in blastn_lines[:1]:
 				for line in blastn_lines:
 					blastn_data.setdefault((line[0], line[1]), []).append(line[2:])
 
@@ -319,11 +326,13 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 			# Determine and add global values
 			if qs_pair not in blast_results_dict and (subject, query) not in blast_results_dict:
 				# Get query and subject frequency values to the line
-				query_frequency = frequency_in_genomes[query]
-				subject_frequency = frequency_in_genomes[subject]
+				# Use the seqid in the BLAST output files if running in the "unclassified_cds" mode
+				# Determine the locus identifier otherwise
+				query_frequency = frequency_in_genomes.get(query, frequency_in_genomes[query.rsplit('_', 1)[0]])
+				subject_frequency = frequency_in_genomes.get(subject, frequency_in_genomes[subject.rsplit('_', 1)[0]])
 				if run_mode == "schema_vs_schema":
-					query_frequency_ss = frequency_in_genomes_second_schema[query]
-					subject_frequency_ss = frequency_in_genomes_second_schema[subject]
+					query_frequency_ss = frequency_in_genomes_second_schema.get(query, frequency_in_genomes[query.rsplit('_', 1)[0]])
+					subject_frequency_ss = frequency_in_genomes_second_schema.get(subject, frequency_in_genomes[subject.rsplit('_', 1)[0]])
 				else:
 					query_frequency_ss = None
 					subject_frequency_ss = None
@@ -370,7 +379,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 #########################
 
 	# Compute the total alignment length for each query-subject pair by merging the HSPs if there are multiple HSPs for the same query-subject pair
-	### What if there are multiple queries? Such as when a locus has multiple representative alleles.
+	# At this stage, the results are still structured as Query-Subject pairs of representative alleles
+	# It is necessary to merge the results by locus at a later stage
 	for qs_pair, match_data in blast_results_dict.items():
 		query_length: int = int(match_data[2][0])
 		subject_length: int = int(match_data[2][1])
@@ -502,8 +512,15 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		query_frequency = match_data[2][2]
 		subject_class = match_data[1][-1]
 		subject_frequency = match_data[2][3]
-		assigned_classes.setdefault(qs_pair[0], []).append([query_class, query_frequency, subject_frequency])
-		assigned_classes.setdefault(qs_pair[1], []).append([subject_class, subject_frequency, query_frequency])
+		# Need to group assigned classes for each locus if running in modes "schema" or "schema-vs-schema"
+		if run_mode == "unclassified_cds":
+			assigned_classes.setdefault(qs_pair[0], []).append([query_class, query_frequency, subject_frequency])
+			assigned_classes.setdefault(qs_pair[1], []).append([subject_class, subject_frequency, query_frequency])
+		else:
+			query_id = (qs_pair[0]).rsplit('_', 1)[0]
+			subject_id = (qs_pair[1]).rsplit('_', 1)[0]
+			assigned_classes.setdefault(query_id, []).append([query_class, query_frequency, subject_frequency])
+			assigned_classes.setdefault(subject_id, []).append([subject_class, subject_frequency, query_frequency])
 
 	# Sort the results for each query by class
 	class_order = ct.CLASSES_OUTCOMES
@@ -540,7 +557,12 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Add action and top class to include in main output file
 	groups = []
 	for cc in connected_components:
-		current_group = [(seqid, *actions[seqid]) for seqid in cc]
+		# Get the action for the unclassified CDS of for the locus if running the "schema" or "schema_vs_schema" mode
+		if run_mode == "unclassified_cds":
+			current_group = [(seqid, *actions[seqid]) for seqid in cc]
+		else:
+			seqids = set([seqid.rsplit('_', 1)[0] for seqid in cc])
+			current_group = [(seqid, *actions[seqid]) for seqid in seqids]
 		groups.append(current_group)
 
 	# Add remaining representative seqids as Add
@@ -550,19 +572,28 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		component_seqids = set()
 		for cc in connected_components:
 			component_seqids.update(cc)
+	# Add loci that had no matches
+	else:
+		representative_seqids = loci_files.keys()
+		print(len(representative_seqids))
+		component_seqids = set()
+		for cc in connected_components:
+			component_seqids.update(set([i.rsplit('_', 1)[0] for i in cc]))
 
-		singletons = [seqid for seqid in representative_seqids if seqid not in component_seqids]
-		for seqid in singletons:
-			groups.append([(seqid, "Add", "7")])
+	singletons = [seqid for seqid in representative_seqids if seqid not in component_seqids]
+	pf.print_message(f"{len(singletons)} representative CDSs/loci had no matches with any sequence.", "info")
+	for seqid in singletons:
+		groups.append([(seqid, "Add", "7")])
 
 	# Write main output file
 	recommendations_file = ff.join_paths(output_directory, ["recommendations.tsv"])
-	outlines = ["Locus\tAction\tClass", "#1"]
-	i = 2
+	outlines = ["Locus\tAction\tClass"]
+	i = 1
 	for g in groups:
+		# Add group number
+		outlines.append(f"#{i}")
 		lines = ["\t".join(a) for a in g]
 		outlines.extend(lines)
-		outlines.append(f"#{i}")
 		i += 1
 
 	outtext = "\n".join(outlines)
