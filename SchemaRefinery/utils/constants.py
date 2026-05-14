@@ -66,7 +66,20 @@ DNA_BASES = ['A', 'T', 'C', 'G']
 
 PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
 
-IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema', 'schema_vs_schema']
+IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['cds', 'schema']
+
+# Header for file with data for all matches selected by the RefineSchema module
+MATCHES_HEADER = ["Query", "Subject", "Query_length", "Subject_length",
+                  "Query_frequency", "Subject_frequency", "Frequency_ratio",
+                  "Query_class", "Subject_class",
+                  "Query_palign_min", "Query_palign_max",
+                  "Query_pident_min", "Query_pident_max",
+                  "Query_max_bsr",
+                  "Subject_palign_min", "Subject_palign_max",
+                  "Subject_pident_min", "Subject_pident_max",
+                  "Subject_max_bsr"]
+
+MATCHES_FILENAME = "matches_data.tsv"
 
 SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
@@ -136,6 +149,8 @@ FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 
 # IdentifyingSpuriousLoci module
 
+CHEWIE_CLASSES = ["ASM", "ALM", "PLOT3", "PLOT5", "LOTSC", "NIPH", "NIPHEM", "PAMA", "LNF"]
+
 CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1c', '2b', '3b', '1b', '2a', '3a', '4a', '4b', '4c', '5', '6', '7')
 
 BLASTDBCMD_ALIAS = 'blastdbcmd.exe' if platform.system() == 'Windows' else shutil.which('blastdbcmd')
@@ -155,4 +170,3 @@ INPUTS_PDB_PREFIX = ('The following input files have prefixes that are interpret
 					 'which leads to issues when SchemaRefinery cannot find the original '
 					 'IDs in the results. Please ensure that the file prefixes (substring '
 					 'before the first "." in the filename) cannot be interpreted as chain PDB IDs.')
-

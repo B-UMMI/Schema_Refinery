@@ -52,42 +52,52 @@ def compute_cds_frequency(input_fasta, temp_directory):
 	"""
 	# Import unclassified CDSs (sequence IDs as keys and sequences as values)
 	pf.print_message("Importing unclassified CDSs...", "info")
-	unclassified_cds = sf.fetch_fasta_dict(input_fasta)
+	cds_sequences = sf.fetch_fasta_dict(input_fasta)
 	# Count the frequency of CDSs in the genomes and identify their presence
 	pf.print_message("Identifying CDSs present in the schema and counting frequency of missing CDSs in the genomes...", "info")
 	cds_present: str = os.path.join(temp_directory, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
 	decoded_seqids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_present)
-	frequencies = ccf.count_cds_frequency(unclassified_cds, decoded_seqids)
+	frequencies = ccf.count_cds_frequency(cds_sequences, decoded_seqids)
 
 	return frequencies
 
 
-def compute_loci_frequency(input_directory):
+def compute_class_counts(input_directory):
 	"""
 	"""
-	# List FASTA files in the schema folder and map them to their full paths
 	profiles_file = ff.join_paths(input_directory, ["results_alleles.tsv"])
 	profiles = pd.read_csv(profiles_file, sep = '\t', dtype = object)
+	total_genomes = len(profiles["FILE"])
 	loci_ids = profiles.columns[1:]
-	frequencies: Dict[str, int] = {}
+	classification_percentages = {}
 	for locus in loci_ids:
 		locus_column = profiles[locus]
-		# Convert LNF, ASM, and ALM classifications to 0 (LNF, ASM, ALM) and everything else to 1 (assume NIPH/NIPHEM and PLOT5/PLOT3 as presence)
-		masked_column: pd.Series = locus_column.map(lambda x: 0 if str(x) in {'LNF', 'ASM', 'ALM'} else 1)
-		# Sum all 1's to get locus frequency in the genomes
-		frequencies[locus] = masked_column.sum()
+		# Remove "INF-" prefixes
+		masked_column: pd.Series = locus_column.str.replace('INF-', '')
+		# Convert exact matches to 1
+		masked_column: pd.Series = locus_column.map(lambda x: "1" if str(x) not in ct.CHEWIE_CLASSES else x)
+		class_counts = masked_column.value_counts()
+		# Determine percentage of special classifications
+		class_counts = [class_counts.get(c, 0) for c in ct.CHEWIE_CLASSES] + [class_counts.get("1", 0)]
+		class_counts = list(map(int, class_counts))
+		# Do not include LNF classifications and exact matches
+		special_percentage = round(sum(class_counts[:-2])/total_genomes, 3)
+		# Determine frequency
+		# Consider PLOT5/PLOT3/LOTSC and NIPH/NIPHEM classes as presence
+		locus_frequency = sum(class_counts[2:7]+[class_counts[-1]])
+		classification_percentages[locus] = [class_counts, special_percentage, locus_frequency]
 
-	return frequencies
+	return classification_percentages
 
 
-def identify_spurious_genes(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
+def identify_spurious_genes(input_schemas: List[str], output_directory: str, allelecall_directory: List[str],
 							annotations: str, constants: List[Any], run_mode: str, cpu: int, no_cleanup: bool) -> None:
 	"""
 	Identify spurious genes in the given schema.
 
 	Parameters
 	----------
-	schema_directory : List[str]
+	input_schemas : List[str]
 		Path to the schema directory.
 	output_directory : str
 		Path to the output directory.
@@ -116,11 +126,12 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Create folder to store BLAST inputs
 	blast_inputs = os.path.join(output_directory, "2_BLAST_Inputs")
 	ff.create_directory(blast_inputs)
-	# Set minimum number of genomes in which a CDS cluster should be present to be kept in the analysis
-	# Set to 5 if number of genomes <= 20 else to 1% of the dataset size
+	# Set the minimum number of genomes in which a CDS cluster should be present to be kept in the analysis
+	# Set to >=2% or 0 if dataset has less than 26 genomes
 	if not constants[2]:
-		pf.print_message("Setting value for the minimum number of genomes a CDS cluster should be present in...", "info")
-		ccf.set_minimum_genomes_threshold(allelecall_directory[0], constants)
+		pf.print_message("Setting value for the minimum number of genomes a representative CDS/locus should be present in...", "info")
+		# The allele call results must be for the same dataset
+		constants[2] = ccf.set_minimum_genomes_threshold(allelecall_directory[0], constants[2])
 		pf.print_message(f"Set genome presence threshold to {constants[2]}.", "info")
 
 	# Get Path to the BLAST executables
@@ -129,28 +140,30 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	blastp_exec: str = lf.get_tool_path('blastp')
 	blastdb_aliastool_exec: str = lf.get_tool_path('blastdb_aliastool')
 
-	excluded = []
-	if run_mode == 'unclassified_cds':
+	excluded = {}
+	if run_mode == 'cds':
 		# Copy file with the unclassified CDSs to the initial processing output directory
 		pf.print_message(f"Copying FASTA file with input CDSs to {processed_indata}...", "info")
-		unclassified_cds_src: str = os.path.join(allelecall_directory[0], "unclassified_sequences.fasta")
-		unclassified_cds_dest = shutil.copy(unclassified_cds_src, processed_indata)
+		cds_sequences_src: str = os.path.join(allelecall_directory[0], "unclassified_sequences.fasta")
+		cds_sequences_dest = shutil.copy(cds_sequences_src, processed_indata)
 		# Define the path to the temp folder with the intermediate files from AlleleCall
 		temp_folder: str = os.path.join(allelecall_directory[0], 'temp')
 		# Calculate the frequency of the CDSs in the genomes
-		cds_frequency = compute_cds_frequency(unclassified_cds_dest, temp_folder)
+		cds_frequency = compute_cds_frequency(cds_sequences_dest, temp_folder)
 
 		# Exclude CDSs shorter than size threshold
-		pf.print_message(f"Excluding CDSs shorter than {constants[5]} bp...", "info")
-		unclassified_cds = sf.fetch_fasta_dict(unclassified_cds_dest)
-		unclassified_cds, short = ccf.filter_by_size(unclassified_cds, constants[5])
-		excluded.append(short)
-		pf.print_message(f"{len(unclassified_cds)}/{len(cds_frequency)} CDSs have size greater or equal to {constants[5]} bp.", 'info')
+		pf.print_message(f"Excluding CDSs shorter than {constants[6]} bp...", "info")
+		cds_sequences = sf.fetch_fasta_dict(cds_sequences_dest)
+		cds_sequences, short = ccf.filter_by_size(cds_sequences, constants[6])
+		for seqid in short:
+			excluded.setdefault(seqid, []).append("short")
+
+		pf.print_message(f"{len(cds_sequences)}/{len(cds_frequency)} CDSs have size greater or equal to {constants[6]} bp.", 'info')
 
 		pf.print_message("Translating and deduplicating the CDSs...", "info")
 		# Translate and deduplicate the CDSs
 		# The protein_sequences contains only the distinct sequences
-		protein_sequences, _ = sf.translate_seq_deduplicate(unclassified_cds, processed_indata, constants[5], constants[6], True)
+		protein_sequences, _ = sf.translate_seq_deduplicate(cds_sequences, processed_indata, constants[6], constants[7], True)
 
 		pf.print_message("Clustering the translated distinct CDSs...", "info")
 		# Sort proteins by size before clustering
@@ -165,9 +178,9 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 			clusters,
 			reps_sequences,
 			reps_groups,
-			clustering_sim=constants[3],
-			clustering_cov=constants[4],
-			size_threshold = constants[8],
+			clustering_sim=constants[4],
+			clustering_cov=constants[5],
+			size_threshold = constants[9],
 			grow = True)
 
 		# Reformat clusters to contain only representative IDs as keys and a list of CDS IDs as values
@@ -182,70 +195,93 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		pf.print_message(f"{total_clusters - singletons} clusters contain more than one CDS.", "info")
 		pf.print_message(f"{singletons} clusters are singletons.", "info")
 
-		pf.print_message(f"Excluding clusters based on the frequency of the CDSs in the genomes (<{constants[2]})...", "info")
+		pf.print_message(f"Excluding clusters based on the frequency of the CDSs in the genomes (<={constants[2]})...", "info")
 		# Sum the frequency of the CDSs in each cluster to get the frequency per cluster
 		frequency_in_genomes: Dict[str, int] = {repid: sum(cds_frequency[seqid] for seqid in members) for repid, members in clusters.items()}
 		# Drop clusters with a frequency below the given threshold and add the corresponding CDS IDs to the dropped dict
-		excluded_seqids: List[str] = []
+		infrequent: List[str] = []
 		excluded_clusters: List[str] = []
 		for repid in clusters:
-			if frequency_in_genomes[repid] < constants[2]:
-				excluded_seqids.extend(clusters[repid])
+			if frequency_in_genomes[repid] <= constants[2]:
+				infrequent.extend(clusters[repid])
 				excluded_clusters.append(repid)
 		# Exclude clusters
 		for repid in excluded_clusters:
 			del clusters[repid]
 
 		# Add seqids excluded based on cluster frequency on genomes
-		excluded.append(excluded_seqids)
+		for seqid in infrequent:
+			excluded.setdefault(seqid, []).append("infrequent")
 
-		pf.print_message(f"Excluded {len(excluded_clusters)} clusters (a total of {len(excluded_seqids)} CDSs).")
+		pf.print_message(f"Excluded {len(excluded_clusters)} clusters (a total of {len(infrequent)} CDSs).")
 		pf.print_message(f"{len(clusters)} clusters remain after filtering based on CDS frequency.", "info")
 
 		# Create the files needed to run BLAST
 		pf.print_message("Creating input files for BLAST...", "info")
-		loci_files, concatenated_files = cof.prepare_cluster_blast_infiles(blast_inputs, clusters, unclassified_cds, protein_sequences, blastdb_aliastool_exec)
+		loci_files, concatenated_files = cof.prepare_cluster_blast_infiles(blast_inputs, clusters, cds_sequences, protein_sequences, blastdb_aliastool_exec)
 
 	if run_mode == 'schema':
-		# Copy the schema to the folder with intermediate files
-		pf.print_message("Copying input schema to temp folder...", "info")
-		temp_schema = ff.join_paths(processed_indata, [ff.file_basename(schema_directory[0])])
-		ff.copy_folder(schema_directory[0], temp_schema)
-		# Calculate the frequency of the loci in the genomes
-		frequency_in_genomes = compute_loci_frequency(allelecall_directory[0])
+		# Check if schemas have loci with the same identifiers
+		common_loci = set()
+		# Get list of files for the first schema
+		schemas_files = [set([ff.file_basename(file, False) for file in ff.get_paths_in_directory_with_suffix(input_schemas[0], ".fasta")])]
+		for schema in input_schemas[1:]:
+			# Get the list of files for the other schemas and determine if they have loci identifers in common with previous schemas
+			current_schema_files = set([ff.file_basename(file, False) for file in ff.get_paths_in_directory_with_suffix(schema, ".fasta")])
+			for i, file_set in enumerate(schemas_files):
+				common_loci_ids = set.intersection(file_set, current_schema_files)
+				if len(common_loci_ids) > 0:
+					pf.print_message(f"The input schemas in {input_schemas[i]} and {schema} have the following loci identifiers in common: {', '.join(common_loci_ids)}", "info")
+					common_loci.update(common_loci_ids)
+			schemas_files.append(current_schema_files)
+
+		if len(common_loci) > 0:
+			pf.print_message(f"Found a total of {len(common_loci)} loci identifiers shared between different schemas.", "info")
+			pf.print_message("Please make sure that loci in different schemas have different identifiers.", "info")
+			sys.exit(0)
+
+		# Calculate the allele call class counts
+		input_class_counts = []
+		for ad in allelecall_directory:
+			class_counts = compute_class_counts(ad)
+			input_class_counts.append(class_counts)
+
+		# Merge dictionaries with class counts into a single dictionary with the class counts for all loci
+		loci_class_counts = {}
+		for cc in input_class_counts:
+			loci_class_counts = loci_class_counts | cc
+
+		# Exclude loci based on their frequency on the genomes and the fraction of special classifications
+		for locus, counts in loci_class_counts.items():
+			if counts[2] <= constants[2]:
+				excluded.setdefault(locus, []).append("short")
+			if counts[1] >= constants[3]:
+				excluded.setdefault(locus, []).append("special")
+
+		frequency_in_genomes = {locus: counts[2] for locus, counts in loci_class_counts.items()}
+
+####################
+
+		# Copy FASTA files from all schemas into the same directory
+		temp_schema = ff.join_paths(processed_indata, ["merged_schema"])
+		ff.create_directory(temp_schema)
+		temp_schema_short = ff.join_paths(temp_schema, ["short"])
+		ff.create_directory(temp_schema_short)
+		pf.print_message(f"Copying FASTA files from all schemas to {temp_schema_short}...", "info")
+		for schema in input_schemas:
+			pf.print_message(f'Copying FASTA files from: {schema}', 'info')
+			schema_short = ff.join_paths(schema, ["short"])
+			# List FASTA files in the "short" directory
+			schema_short_files = ff.get_paths_in_directory_with_suffix(schema_short, ".fasta")
+			for file in schema_short_files:
+				locus_id = ff.file_basename(file).rsplit('_short', 1)[0]
+				if locus_id not in excluded:
+					shutil.copy(file, temp_schema_short)
+				else:
+					pf.print_message(f"File {file} was excluded because of the following reasons: {excluded[locus_id]}.", "info")
+
 		pf.print_message("Creating input files for BLAST...", "info")
-		loci_files, concatenated_files = cof.prepare_loci_blast_infiles(temp_schema, blast_inputs, constants[5], constants[6], blastdb_aliastool_exec)
-
-	if run_mode == 'schema_vs_schema':
-		# Copy schemas to temp folder
-		ff.copy_folder(schema_directory[0], processed_indata)
-		ff.copy_folder(schema_directory[1], processed_indata)
-
-		pf.print_message(f'First schema: {schema_directory[0]}', 'info')
-		pf.print_message(f'Second schema: {schema_directory[1]}', 'info')
-
-		# Calculate the loci frequency bases on the allele calling results with the first schema
-		first_schema_frequencies = compute_loci_frequency(allelecall_directory[0])
-		# Second schema
-		second_schema_frequencies = compute_loci_frequency(allelecall_directory[1])
-		frequency_in_genomes = [first_schema_frequencies, second_schema_frequencies]
-
-		### What's this???
-		ff.merge_folders(schema_directory[0], schema_directory[1], schema_folder, cpu, bsr, translation_table)
-
-		pf.print_message('Prepare loci files for Blast and count frequencies.', 'info')
-		(all_nucleotide_sequences,
-		master_file_path,
-		trans_paths,
-		to_blast_paths,
-		all_alleles,
-		group_reps_ids,
-		group_alleles_ids,
-		to_run_against,
-		new_max_hits,
-		seqid_file_dict) = cof.prepare_loci(schema_folder,
-											constants,
-											initial_processing_output)
+		loci_files, concatenated_files = cof.prepare_loci_blast_infiles(temp_schema, blast_inputs, constants[6], constants[7], blastdb_aliastool_exec)
 
 	#####################################
 	# Main part common to all run modes #
@@ -263,7 +299,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	bf.make_blast_db(makeblastdb_exec, concatenated_files[1], blastp_db_path, 'prot')
 
 	# Calculate BLASTp self-score for all loci/cluster representatives
-	self_blastp_inputs = {locus: paths[0] for locus, paths in loci_files.items()}
+	self_blastp_inputs = {locus: paths[1] for locus, paths in loci_files.items()}
 	self_blastp_outdir = ff.join_paths(blast_output, ["self_scores"])
 	ff.create_directory(self_blastp_outdir)
 	self_score_dict: Dict[str, float] = bf.calculate_self_score(self_blastp_inputs, blastp_exec, self_blastp_outdir, cpu)
@@ -299,6 +335,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		with open(file, 'r') as infile:
 			# Each line contains the following values: qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
 			blastp_lines = list(csv.reader(infile, delimiter='\t'))
+			# Filter results based on criteria
+
 			blastp_data = {}
 			if blastp_lines:
 				# Group all HSPSs for the same query-subject pair
@@ -310,6 +348,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		with open(blastn_file, 'r') as infile:
 			# Each line contains the following values: qseqid sseqid qlen slen qstart qend sstart send length score gaps pident
 			blastn_lines = list(csv.reader(infile, delimiter='\t'))
+			# Filter results based on criteria
+
 			blastn_data = {}
 			if blastn_lines:
 				# Group all HSPSs for the same query-subject pair
@@ -321,50 +361,54 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 			pf.print_message(f"No BLASTp and BLASTn matches for {file}.", "info")
 			continue
 
-		for qs_pair, matches in blastp_data.items():
+		# Merge BLASTp and BLASTn pairs
+		blast_pairs = set.union(set(blastn_data.keys()), set(blastp_data.keys()))
+
+		for qs_pair in blast_pairs:
 			query, subject = qs_pair
+			blastp_matches = blastp_data.get(qs_pair)
+			blastn_matches = blastn_data.get(qs_pair)
 			# Determine and add global values
 			if qs_pair not in blast_results_dict and (subject, query) not in blast_results_dict:
 				# Get query and subject frequency values to the line
-				# Use the seqid in the BLAST output files if running in the "unclassified_cds" mode
+				# Use the seqid in the BLAST output files if running in the "cds" mode
 				# Determine the locus identifier otherwise
 				query_frequency = frequency_in_genomes.get(query, frequency_in_genomes[query.rsplit('_', 1)[0]])
 				subject_frequency = frequency_in_genomes.get(subject, frequency_in_genomes[subject.rsplit('_', 1)[0]])
-				if run_mode == "schema_vs_schema":
-					query_frequency_ss = frequency_in_genomes_second_schema.get(query, frequency_in_genomes[query.rsplit('_', 1)[0]])
-					subject_frequency_ss = frequency_in_genomes_second_schema.get(subject, frequency_in_genomes[subject.rsplit('_', 1)[0]])
-				else:
-					query_frequency_ss = None
-					subject_frequency_ss = None
 
 				# Calculate the frequency ratio
 				# The frequency of the query or subject should not be 0 because of the frequency threshold initially applied
 				frequency_ratio = round(min(query_frequency/subject_frequency, subject_frequency/query_frequency), 3)
 
 				# Get the sequence length for the query and subject
-				query_len = matches[0][0]
-				subject_len = matches[0][1]
+				# Need to get sequence length value from BLASTn matches it there were no BLASTp matches
+				if blastp_matches:
+					query_len = blastp_matches[0][0]
+					subject_len = blastp_matches[0][1]
+				else:
+					query_len = str(int(int(blastn_matches[0][0])/3))
+					subject_len = str(int(int(blastn_matches[0][1])/3))
 
-				global_data = [query_len, subject_len, query_frequency, subject_frequency, query_frequency_ss, subject_frequency_ss, frequency_ratio]
+				global_data = [query_len, subject_len, query_frequency, subject_frequency, frequency_ratio]
 				# Create query-subject pair entry
 				blast_results_dict.setdefault(qs_pair, [[[],[]], [[],[]], global_data])
 
-			# Get data for each match
-			for m in matches:
-				bsr = round(float(m[7]) / self_score_dict[query], 3)
-				# Get the length of the alignment (have to merge the length of the HSPs if there are multiple HSPs for the same query-subject pair later)
-				query_aligned_interval = [int(m[2]), int(m[3])] if int(m[2]) < int(m[3]) else [int(m[3]), int(m[2])]
-				subject_aligned_interval = [int(m[4]), int(m[5])] if int(m[4]) < int(m[5]) else [int(m[5]), int(m[4])]
-				match_pident = m[9]
-				match_data = [bsr, query_aligned_interval, subject_aligned_interval, match_pident]
-				if qs_pair in blast_results_dict:
-					blast_results_dict[qs_pair][0][0].append(match_data)
-				elif (subject, query) in blast_results_dict:
-					blast_results_dict[(subject, query)][1][0].append(match_data)
+			# Get BLASTp data
+			if blastp_matches:
+				for m in blastp_matches:
+					bsr = round(float(m[7]) / self_score_dict[query], 3)
+					# Get the length of the alignment (have to merge the length of the HSPs if there are multiple HSPs for the same query-subject pair later)
+					query_aligned_interval = [int(m[2]), int(m[3])] if int(m[2]) < int(m[3]) else [int(m[3]), int(m[2])]
+					subject_aligned_interval = [int(m[4]), int(m[5])] if int(m[4]) < int(m[5]) else [int(m[5]), int(m[4])]
+					match_pident = m[9]
+					match_data = [bsr, query_aligned_interval, subject_aligned_interval, match_pident]
+					if qs_pair in blast_results_dict:
+						blast_results_dict[qs_pair][0][0].append(match_data)
+					elif (subject, query) in blast_results_dict:
+						blast_results_dict[(subject, query)][1][0].append(match_data)
 
 			# Get BLASTn data
-			if qs_pair in blastn_data or (subject, query) in blastn_data:
-				blastn_matches = blastn_data.get(qs_pair, (subject, query))
+			if blastn_matches:
 				for m in blastn_matches:
 					bsr = None
 					query_aligned_interval = [int(m[2]), int(m[3])] if int(m[2]) < int(m[3]) else [int(m[3]), int(m[2])]
@@ -384,33 +428,37 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	for qs_pair, match_data in blast_results_dict.items():
 		query_length: int = int(match_data[2][0])
 		subject_length: int = int(match_data[2][1])
-		# Merge aligned intervals
+		# Merge BLASTp aligned intervals
 		# Query to subject alignments
 		# Query
 		query_aligned_intervals: List[int] = sorted([m[1] for m in match_data[0][0]], key= lambda x: x[0])
-		query_aligned_merged_intervals = af.merge_intervals(query_aligned_intervals)
-		query_aligned_length = sum([(i[1]-i[0]) for i in query_aligned_merged_intervals])
-		# Subject
-		subject_aligned_intervals: List[int] = sorted([m[2] for m in match_data[0][0]], key= lambda x: x[0])
-		subject_aligned_merged_intervals = af.merge_intervals(subject_aligned_intervals)
-		subject_aligned_length = sum([(i[1]-i[0]) for i in subject_aligned_merged_intervals])
-		# Compute the weighted pident based on the pident of all HSPSs
-		# Different HSPSs can overlap and it is not possible to compute the true pident based on BLAST's outmft 6
-		query_aligned_identity: float = sum(float(m[3])*((m[1][1]-m[1][0])/query_length) for m in match_data[0][0])
-		subject_aligned_identity: float = sum(float(m[3])*((m[2][1]-m[2][0])/subject_length) for m in match_data[0][0])
-		# Compute the global palign minimum and maximum values
-		global_talign_min: float = min(query_aligned_length / query_length,
-									subject_aligned_length / subject_length)
-		global_talign_max: float = max(query_aligned_length / query_length,
-									subject_aligned_length / subject_length)
-		# Compute the minimum and maximum global percent identity
-		global_pident_min: float = min(query_aligned_identity, subject_aligned_identity)
-		global_pident_max: float = max(query_aligned_identity, subject_aligned_identity)
-		# Get the maximum BSR value from all query-subject HSPSs
-		max_bsr: float = max([m[0] for m in match_data[0][0]])
-		blast_results_dict[qs_pair][0].append([round(global_talign_min, 3), round(global_talign_max, 3),
-											   round(global_pident_min, 3), round(global_pident_max, 3),
-											   max_bsr])
+		# It is possible that there are not BLASTp alignments, only BLASTn
+		if len(query_aligned_intervals) > 0:
+			query_aligned_merged_intervals = af.merge_intervals(query_aligned_intervals)
+			query_aligned_length = sum([(i[1]-i[0]) for i in query_aligned_merged_intervals])
+			# Subject
+			subject_aligned_intervals: List[int] = sorted([m[2] for m in match_data[0][0]], key= lambda x: x[0])
+			subject_aligned_merged_intervals = af.merge_intervals(subject_aligned_intervals)
+			subject_aligned_length = sum([(i[1]-i[0]) for i in subject_aligned_merged_intervals])
+			# Compute the weighted pident based on the pident of all HSPSs
+			# Different HSPSs can overlap and it is not possible to compute the true pident based on BLAST's outmft 6
+			query_aligned_identity: float = sum(float(m[3])*((m[1][1]-m[1][0])/query_length) for m in match_data[0][0])
+			subject_aligned_identity: float = sum(float(m[3])*((m[2][1]-m[2][0])/subject_length) for m in match_data[0][0])
+			# Compute the global palign minimum and maximum values
+			global_talign_min: float = min(query_aligned_length / query_length,
+										subject_aligned_length / subject_length)
+			global_talign_max: float = max(query_aligned_length / query_length,
+										subject_aligned_length / subject_length)
+			# Compute the minimum and maximum global percent identity
+			global_pident_min: float = min(query_aligned_identity, subject_aligned_identity)
+			global_pident_max: float = max(query_aligned_identity, subject_aligned_identity)
+			# Get the maximum BSR value from all query-subject HSPSs
+			max_bsr: float = max([m[0] for m in match_data[0][0]])
+			blast_results_dict[qs_pair][0].append([round(global_talign_min, 3), round(global_talign_max, 3),
+												round(global_pident_min, 3), round(global_pident_max, 3),
+												max_bsr])
+		else:
+			blast_results_dict[qs_pair][0].append(None)
 
 		# Subject to query alignments
 		# Query
@@ -441,7 +489,7 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 												round(global_pident_min, 3), round(global_pident_max, 3),
 												max_bsr])
 		else:
-			blast_results_dict[qs_pair][1].append([0, 0, 0, 0, 0])
+			blast_results_dict[qs_pair][1].append(None)
 
 #########################
 
@@ -449,59 +497,86 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	for qs_pair, match_data in blast_results_dict.items():
 		query_freq = match_data[2][2]
 		subject_freq = match_data[2][3]
-		frequency_ratio = match_data[2][6]
-		# Classify Query-Subject matches
+		frequency_ratio = match_data[2][4]
+
+		# Get data for Query-Subject matches
 		qs_data = match_data[0][2]
+		# Get data for Subject-Query matches
+		sq_data = match_data[1][2]
+
+		# Classify Query-Subject matches
 		# Classify based on global_talign_min and bsr
-		if qs_data[0] >= constants[0]:
-			if qs_data[4] >= constants[7]:
-				assigned_class = '1a'
-			else:
-				assigned_class = '1b' if frequency_ratio <= 0.1 else '1c'
-		elif (0.4 <= qs_data[0] < constants[0]):
-			# Working with maximum pident
-			if qs_data[3] >= constants[1]:
-				if qs_data[1] >= constants[0]:
-					assigned_class = '2a' if frequency_ratio <= 0.1 else '2b'
+		if qs_data:
+			if qs_data[0] >= constants[0]:
+				if qs_data[4] >= constants[8]:
+					assigned_class = '1a'
 				else:
-					assigned_class = '3a' if frequency_ratio <= 0.1 else '3b'
-			else:
-				if qs_data[1] >= constants[0]:
-					assigned_class = '4a' if frequency_ratio <= 0.1 else '4b'
+					assigned_class = '1b' if frequency_ratio <= 0.1 else '1c'
+			elif (0.4 <= qs_data[0] < constants[0]):
+				# Working with maximum pident
+				if qs_data[3] >= constants[1]:
+					if qs_data[1] >= constants[0]:
+						assigned_class = '2a' if frequency_ratio <= 0.1 else '2b'
+					else:
+						assigned_class = '3a' if frequency_ratio <= 0.1 else '3b'
 				else:
-					assigned_class = '4c'
+					if qs_data[1] >= constants[0]:
+						assigned_class = '4a' if frequency_ratio <= 0.1 else '4b'
+					else:
+						assigned_class = '4c'
+			else:
+				assigned_class = '5'
+		# No match with BLASTp, only with BLASTn
 		else:
-			assigned_class = '5'
+			assigned_class = '6'
 
 		blast_results_dict[qs_pair][0].append(assigned_class)
 
 		# Classify Subject-Query matches
-		sq_data = match_data[1][2]
 		# Classify based on global_talign_min and bsr
-		if sq_data[0] >= constants[0]:
-			if sq_data[4] >= constants[7]:
-				assigned_class = '1a'
-			else:
-				assigned_class = '1b' if frequency_ratio <= 0.1 else '1c'
-		elif (0.4 <= sq_data[0] < constants[0]):
-			# Working with maximum pident
-			if sq_data[3] >= constants[1]:
-				if sq_data[1] >= constants[0]:
-					assigned_class = '2a' if frequency_ratio <= 0.1 else '2b'
+		if sq_data:
+			if sq_data[0] >= constants[0]:
+				if sq_data[4] >= constants[8]:
+					assigned_class = '1a'
 				else:
-					assigned_class = '3a' if frequency_ratio <= 0.1 else '3b'
-			else:
-				if sq_data[1] >= constants[0]:
-					assigned_class = '4a' if frequency_ratio <= 0.1 else '4b'
+					assigned_class = '1b' if frequency_ratio <= 0.1 else '1c'
+			elif (0.4 <= sq_data[0] < constants[0]):
+				# Working with maximum pident
+				if sq_data[3] >= constants[1]:
+					if sq_data[1] >= constants[0]:
+						assigned_class = '2a' if frequency_ratio <= 0.1 else '2b'
+					else:
+						assigned_class = '3a' if frequency_ratio <= 0.1 else '3b'
 				else:
-					assigned_class = '4c'
+					if sq_data[1] >= constants[0]:
+						assigned_class = '4a' if frequency_ratio <= 0.1 else '4b'
+					else:
+						assigned_class = '4c'
+			else:
+				assigned_class = '5'
 		else:
-			assigned_class = '5'
+			assigned_class = '6'
 
 		blast_results_dict[qs_pair][1].append(assigned_class)
 
-	########## BLASTn matches are added as class 6 when there were no BLASTp matches and CDSs/loci without matches are classified as 7
-	########## It's probably best if there's a match both with BLASTp and BLASTn and determine the difference to try to identify frameshifts (assume it's a frameshift if it only matches with BLASTn with high coverage)
+	# Write output file with information for all matches
+	match_data_lines = [ct.MATCHES_HEADER]
+	for qs_pair, match_data in blast_results_dict.items():
+		query, subject = qs_pair
+		global_data = match_data[2]
+		query_class = match_data[0][-1]
+		subject_class = match_data[1][-1]
+		query_data = match_data[0][-2] if match_data[0][-2] is not None else ["NA"]*5
+		subject_data = match_data[1][-2] if match_data[1][-2] is not None else ["NA"]*5
+
+		# Merge values into a single list
+		qs_pair_data = [query, subject] + list(map(str, global_data)) + [query_class, subject_class] + list(map(str, query_data)) + list(map(str, subject_data))
+		match_data_lines.append(qs_pair_data)
+
+	match_data_outlines = ["\t".join(line) for line in match_data_lines]
+	match_data_outfile = ff.join_paths(output_directory, [ct.MATCHES_FILENAME])
+	with open(match_data_outfile, "w") as outfile:
+		outfile.write("\n".join(match_data_outlines)+"\n")
 
 #########################
 
@@ -513,7 +588,8 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		subject_class = match_data[1][-1]
 		subject_frequency = match_data[2][3]
 		# Need to group assigned classes for each locus if running in modes "schema" or "schema-vs-schema"
-		if run_mode == "unclassified_cds":
+		if run_mode == "cds":
+			# When running 
 			assigned_classes.setdefault(qs_pair[0], []).append([query_class, query_frequency, subject_frequency])
 			assigned_classes.setdefault(qs_pair[1], []).append([subject_class, subject_frequency, query_frequency])
 		else:
@@ -540,9 +616,9 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 				actions[seqid] = ("Add", top_class)
 			elif subject_frequency > query_frequency:
 				actions[seqid] = ("Drop", top_class)
-		elif top_class in {'1c', '2b', '3b', '4b'}:
+		elif top_class in {'1c', '2b', '3b', '4b', '6'}:
 			actions[seqid] = ("Choice", top_class)
-		# Classes 4c, 5, 6, and 7 are Add
+		# Classes 4c and 5 are Add
 		else:
 			actions[seqid] = ("Add", top_class)
 
@@ -557,16 +633,16 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Add action and top class to include in main output file
 	groups = []
 	for cc in connected_components:
-		# Get the action for the unclassified CDS of for the locus if running the "schema" or "schema_vs_schema" mode
-		if run_mode == "unclassified_cds":
+		# Get the action for the representative CDS of for the locus if running in the "schema" mode
+		if run_mode == "cds":
 			current_group = [(seqid, *actions[seqid]) for seqid in cc]
 		else:
 			seqids = set([seqid.rsplit('_', 1)[0] for seqid in cc])
 			current_group = [(seqid, *actions[seqid]) for seqid in seqids]
 		groups.append(current_group)
 
-	# Add remaining representative seqids as Add
-	if run_mode == "unclassified_cds":
+	# Add remaining representative seqids as Add and assign class 7
+	if run_mode == "cds":
 		representative_seqids = clusters.keys()
 		# Determine seqids that are not in any component/group
 		component_seqids = set()
@@ -575,7 +651,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	# Add loci that had no matches
 	else:
 		representative_seqids = loci_files.keys()
-		print(len(representative_seqids))
 		component_seqids = set()
 		for cc in connected_components:
 			component_seqids.update(set([i.rsplit('_', 1)[0] for i in cc]))
@@ -615,6 +690,9 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 	for scount in sorted_counts:
 		pf.print_message(f"{scount[1]} representative sequences were classified as {scount[0][1]} and with an action of {scount[0][0]}.", "info")
 
+	# Need to create FASTA files with the set of representative alleles listed in the file with recommendations
+	###################
+
 	# Append loci annotations to the recommendations
 	annotated_recommendations = os.path.join(output_directory, "recommendations_annotated.tsv")
 	if annotations:
@@ -631,17 +709,17 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
 		shutil.rmtree(blast_output)
 
 
-def main(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
+def main(input_schemas: List[str], output_directory: str, allelecall_directory: List[str],
 		annotations: str, alignment_ratio_threshold: float, pident_threshold: float,
 		clustering_sim_threshold: float, clustering_cov_threshold:float, genome_presence: int,
-		absolute_size: int, translation_table: int, bsr: float, size_ratio: float, run_mode: str,
+		special_classifications: float, absolute_size: int, translation_table: int, bsr: float, size_ratio: float, run_mode: str,
 		cpu: int, no_cleanup: bool) -> None:
 	"""
 	Main function to identify spurious genes in a schema.
 
 	Parameters
 	----------
-	schema_directory : List[str]
+	input_schemas : List[str]
 		Path to the schema directory.
 	output_directory : str
 		Path to the output directory.
@@ -682,6 +760,7 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
 	constants: List[Any] = [alignment_ratio_threshold, 
 							pident_threshold,
 							genome_presence,
+							special_classifications,
 							clustering_sim_threshold,
 							clustering_cov_threshold,
 							absolute_size,
@@ -689,7 +768,7 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
 							bsr,
 							size_ratio]
 
-	identify_spurious_genes(schema_directory,
+	identify_spurious_genes(input_schemas,
 							output_directory,
 							allelecall_directory,
 							annotations,

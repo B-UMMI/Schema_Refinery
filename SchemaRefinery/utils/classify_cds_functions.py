@@ -181,33 +181,34 @@ def write_fastas_to_files(clusters: Dict[str, List[str]], all_nucleotide_sequenc
     return temp_fastas_folder
 
 
-def set_minimum_genomes_threshold(allelecall_directory: str, constants: List[Union[int, float]]) -> None:
+def set_minimum_genomes_threshold(allelecall_directory: str, user_frequency: int) -> None:
     """
-    Sets the minimum genomes threshold based on the dataset size.
+    Determine the minimum CDS/allele frequency based on the dataset size.
 
     Parameters
     ----------
     allelecall_directory : str
         Path to the directory containing the allele calling results.
-    constants : List[Union[int, float]]
-        List of constants where the threshold will be set.
 
     Returns
     -------
-    None
-        The function updates the constants list in place.
+    minimum_frequency : int
+        The minimum frequency value for loci presence.
     """
-    try:
-        genome_list: List[str] = pd.read_csv(ff.join_paths(allelecall_directory, ["results_statistics.tsv"]), sep='\t', usecols=['FILE'])['FILE'].tolist()
-        number_of_genomes: int = len(genome_list)
+    genome_list: List[str] = pd.read_csv(ff.join_paths(allelecall_directory, ["results_statistics.tsv"]), sep='\t', usecols=['FILE'])['FILE'].tolist()
+    number_of_genomes: int = len(genome_list)
 
-        if number_of_genomes <= 20:
-            constants[2] = 5
+    if not user_frequency:
+        # Define minimum frequency value (this will round to 0 if dataset has less than 26 genomes)
+        minimum_frequency = round(number_of_genomes*0.02)
+    else:
+        if user_frequency > number_of_genomes:
+            pf.print_message("Value passed for the minimum locus frequency in the genomes exceeds the size of the dataset. Please provide a smaller value.", "error")
+            sys.exit(0)
         else:
-            constants[2] = round(number_of_genomes * 0.01)
-    except Exception as e:
-        pf.print_message(f"Setting minimum genomes threshold: {e}", 'error')
-        constants[2] = 5  # Default value in case of error
+            minimum_frequency = user_frequency
+
+    return minimum_frequency
 
 
 def filter_by_size(sequences: Dict[str, str], size_threshold: int) -> Tuple[Dict[str, str], Dict[str, str]]:

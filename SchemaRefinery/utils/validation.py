@@ -532,14 +532,14 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     errors: List[str] = []
 
     # Verify if files or directories exist
-    for path in args.schema_directory:
+    for path in args.input_schemas:
         verify_schema_structure(path, errors)
     verify_path_exists(args.output_directory, 'directory', errors)
     for path in args.allelecall_directory:
         verify_path_exists(path, 'directory', errors)
 
     if args.run_mode == 'schema_vs_schema':
-        if len(args.schema_directory) != 2 or len(args.allelecall_directory) != 2:
+        if len(args.input_schemas) != 2 or len(args.allelecall_directory) != 2:
             errors.append("\nError: With run mode 'schema_vs_schema', 'schema_directory' and 'allelecall_directory' need to have two paths each, one per schema.")
 
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
