@@ -67,6 +67,7 @@ def print_logo() -> None:
         for line in big_logo.splitlines():
             print(line.center(size.columns))
 
+
 def print_module_currently_running(module: str) -> None:
     """
     Print the module that is currently running.
@@ -196,6 +197,7 @@ def print_system_info() -> None:
     print_message(f"System Uptime: {uptime_days} days, {uptime_hours} hours, {uptime_minutes} minutes, {uptime_remaining_seconds} seconds", 'debug')
     print_message(border_line, "debug_additional_info_in_logger_only")
 
+
 def print_schema_refinery_info():
     """
     Print the SchemaRefinery information.
@@ -225,6 +227,7 @@ def print_schema_refinery_info():
     print_message(f"Conda Environment: {conda_env}", 'debug') if conda_env else None
     print_message(f"Conda Prefix: {conda_prefix}", 'debug') if conda_prefix else None
     print_message(border_line, "debug_additional_info_in_logger_only")
+
 
 def print_dependencies_info(dependencies):
     """
@@ -275,6 +278,7 @@ def print_dependencies_info(dependencies):
 
     print_message(border_line, "debug_additional_info_in_logger_only")
 
+
 def print_module_error(error: str) -> None:
     """
     Print the error message for a module.
@@ -296,6 +300,7 @@ def print_module_error(error: str) -> None:
     print_message(error, 'error')
     traceback.print_exc()
     print_message(border_line, "debug_additional_info_in_logger_only")
+
 
 def print_input_arguments(args) -> None:
     """

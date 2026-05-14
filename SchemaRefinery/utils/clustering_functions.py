@@ -9,6 +9,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (kmers_functions as kf,
                                        iterable_functions as itf)
 
+
 def select_representatives(kmers: Union[List[Tuple[str, int]], Set[Tuple[str, int]]], 
                            reps_groups: Dict[str, List[str]], 
                            clustering_sim: float, 
@@ -263,4 +264,3 @@ def cluster_by_ids(list_of_ids: List[List[str]]) -> List[List[str]]:
     connected: List[List[str]] = [sorted(list(component), key=lambda node: node_order[node]) for component in connected_components]
 
     return connected
-

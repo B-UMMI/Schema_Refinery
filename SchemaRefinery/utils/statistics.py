@@ -1,5 +1,6 @@
 from typing import List
 
+
 def if_loci_intersect(set1: List[float], set2: List[float]) -> bool:
     """
     Check if two loci (intervals) intersect.
@@ -25,6 +26,7 @@ def if_loci_intersect(set1: List[float], set2: List[float]) -> bool:
     """
     # Check if the intervals intersect
     return set1[0] <= set2[1] and set1[1] >= set2[0] or set2[0] <= set1[1] and set2[1] >= set1[0]
+
 
 def calculate_loci_distance(set1: List[float], set2: List[float], threshold: float) -> bool:
     """

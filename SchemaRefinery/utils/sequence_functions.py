@@ -1,10 +1,10 @@
-from typing import List, Set, Dict, Union, Tuple, Optional, Iterator
-import hashlib
 import os
+import hashlib
+from typing import List, Set, Dict, Union, Tuple, Optional, Iterator
+
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
-
 
 try:
 	from utils import (file_functions as ff,
@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 	from SchemaRefinery.utils import (file_functions as ff,
 										constants as ct,
 										print_functions as pf)
+
 
 def check_str_alphabet(input_string: str, alphabet: Union[List[str], Set[str]]) -> bool:
 	"""

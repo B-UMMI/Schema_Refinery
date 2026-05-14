@@ -48,16 +48,30 @@ except ModuleNotFoundError:
 
 def compute_cds_frequency(input_fasta, temp_directory):
 	"""
-	Calculates the CDS frequency in the genomes in 3 different ways depending on the run mode.
-	"""
-	# Import unclassified CDSs (sequence IDs as keys and sequences as values)
-	pf.print_message("Importing unclassified CDSs...", "info")
+	Calculate the CDS frequency in the genomes.
+
+	Parameters
+	----------
+	input_fasta : str
+		Path to the input FASTA file containing CDSs.
+	temp_directory : str
+		Path to the temp folder created by chewBBACA's AlleleCall
+		module when the `--no-cleanup` option is provided.
+ 	"""
+	# Import CDSs (sequence IDs as keys and sequences as values)
 	cds_sequences = sf.fetch_fasta_dict(input_fasta)
 	# Count the frequency of CDSs in the genomes and identify their presence
-	pf.print_message("Identifying CDSs present in the schema and counting frequency of missing CDSs in the genomes...", "info")
-	cds_present: str = os.path.join(temp_directory, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
-	decoded_seqids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_present)
-	frequencies = ccf.count_cds_frequency(cds_sequences, decoded_seqids)
+	# Read the file with the CDS genome presence data created by chewBBACA
+	cds_presence: str = os.path.join(temp_directory, "2_cds_preprocess/cds_deduplication/distinct.hashtable")
+	# Decode the data
+	decoded_seqids: Dict[str, List[float]] = itf.decode_CDS_sequences_ids(cds_presence)
+	# The CDSs and the decoded sequence IDs need to come from the same run
+    # Each CDS must have a corresponding hash in the decoded sequence IDs
+	frequencies: Dict[str, int] = {}
+    for seqid, sequence in cds_sequences.items():
+        hashed_seq: str = sf.seq_to_hash(str(sequence))
+        # Count only the unique genome IDs for the frequency [1:]
+        frequencies[seqid] = len(set(decoded_seqids[hashed_seq][1:]))
 
 	return frequencies
 
@@ -149,6 +163,7 @@ def identify_spurious_genes(input_schemas: List[str], output_directory: str, all
 		# Define the path to the temp folder with the intermediate files from AlleleCall
 		temp_folder: str = os.path.join(allelecall_directory[0], 'temp')
 		# Calculate the frequency of the CDSs in the genomes
+		pf.print_message("Computing the frequency of the CDSs in the genomes...", "info")
 		cds_frequency = compute_cds_frequency(cds_sequences_dest, temp_folder)
 
 		# Exclude CDSs shorter than size threshold
@@ -491,6 +506,67 @@ def identify_spurious_genes(input_schemas: List[str], output_directory: str, all
 		else:
 			blast_results_dict[qs_pair][1].append(None)
 
+		# Merge BLASTn aligned intervals
+		# Query to subject alignments
+		# Query
+		query_aligned_intervals: List[int] = sorted([m[1] for m in match_data[0][1]], key= lambda x: x[0])
+		# It is possible that there are not BLASTn alignments
+		if len(query_aligned_intervals) > 0:
+			query_aligned_merged_intervals = af.merge_intervals(query_aligned_intervals)
+			query_aligned_length = sum([(i[1]-i[0]) for i in query_aligned_merged_intervals])
+			# Subject
+			subject_aligned_intervals: List[int] = sorted([m[2] for m in match_data[0][1]], key= lambda x: x[0])
+			subject_aligned_merged_intervals = af.merge_intervals(subject_aligned_intervals)
+			subject_aligned_length = sum([(i[1]-i[0]) for i in subject_aligned_merged_intervals])
+			# Compute the weighted pident based on the pident of all HSPSs
+			# Different HSPSs can overlap and it is not possible to compute the true pident based on BLAST's outmft 6
+			query_aligned_identity: float = sum(float(m[3])*((m[1][1]-m[1][0])/(query_length*3)) for m in match_data[0][1])
+			subject_aligned_identity: float = sum(float(m[3])*((m[2][1]-m[2][0])/(subject_length*3)) for m in match_data[0][1])
+			# Compute the global palign minimum and maximum values
+			global_talign_min: float = min(query_aligned_length / query_length,
+										subject_aligned_length / subject_length)
+			global_talign_max: float = max(query_aligned_length / query_length,
+										subject_aligned_length / subject_length)
+			# Compute the minimum and maximum global percent identity
+			global_pident_min: float = min(query_aligned_identity, subject_aligned_identity)
+			global_pident_max: float = max(query_aligned_identity, subject_aligned_identity)
+			# Get the maximum BSR value from all query-subject HSPSs
+			max_bsr = 0
+			blast_results_dict[qs_pair][0].append([round(global_talign_min, 3), round(global_talign_max, 3),
+												round(global_pident_min, 3), round(global_pident_max, 3), max_bsr])
+		else:
+			blast_results_dict[qs_pair][0].append(None)
+
+		# Subject to query alignments
+		# Query
+		query_aligned_intervals: List[int] = sorted([m[1] for m in match_data[1][1]], key= lambda x: x[0])
+		# It is possible that there are no Subject-Query alignments
+		if len(query_aligned_intervals) > 0:
+			query_aligned_merged_intervals = af.merge_intervals(query_aligned_intervals)
+			query_aligned_length = sum([(i[1]-i[0]) for i in query_aligned_merged_intervals])
+			# Subject
+			subject_aligned_intervals: List[int] = sorted([m[2] for m in match_data[1][1]], key= lambda x: x[0])
+			subject_aligned_merged_intervals = af.merge_intervals(subject_aligned_intervals)
+			subject_aligned_length = sum([(i[1]-i[0]) for i in subject_aligned_merged_intervals])
+			# Compute the weighted pident based on the pident of all HSPSs
+			# Different HSPSs can overlap and it is not possible to compute the true pident based on BLAST's outmft 6
+			query_aligned_identity: float = sum(float(m[3])*((m[1][1]-m[1][0])/(query_length*3)) for m in match_data[1][1])
+			subject_aligned_identity: float = sum(float(m[3])*((m[2][1]-m[2][0])/(subject_length*3)) for m in match_data[1][1])
+			# Compute the global palign minimum and maximum values
+			global_talign_min: float = min(query_aligned_length / query_length,
+										subject_aligned_length / subject_length)
+			global_talign_max: float = max(query_aligned_length / query_length,
+										subject_aligned_length / subject_length)
+			# Compute the minimum and maximum global percent identity
+			global_pident_min: float = min(query_aligned_identity, subject_aligned_identity)
+			global_pident_max: float = max(query_aligned_identity, subject_aligned_identity)
+			# Get the maximum BSR value from all query-subject HSPSs
+			max_bsr: float = 0
+			blast_results_dict[qs_pair][1].append([round(global_talign_min, 3), round(global_talign_max, 3),
+												round(global_pident_min, 3), round(global_pident_max, 3), max_bsr])
+		else:
+			blast_results_dict[qs_pair][1].append(None)
+
 #########################
 
 	# Assign classes to all matches
@@ -566,11 +642,13 @@ def identify_spurious_genes(input_schemas: List[str], output_directory: str, all
 		global_data = match_data[2]
 		query_class = match_data[0][-1]
 		subject_class = match_data[1][-1]
-		query_data = match_data[0][-2] if match_data[0][-2] is not None else ["NA"]*5
-		subject_data = match_data[1][-2] if match_data[1][-2] is not None else ["NA"]*5
+		query_blastp_data = match_data[0][-3] if match_data[0][-3] is not None else ["NA"]*5
+		subject_blastp_data = match_data[1][-3] if match_data[1][-3] is not None else ["NA"]*5
+		query_blastn_data = match_data[0][-2][:-1] if match_data[0][-2] is not None else ["NA"]*4
+		subject_blastn_data = match_data[1][-2][:-1] if match_data[1][-2] is not None else ["NA"]*4
 
 		# Merge values into a single list
-		qs_pair_data = [query, subject] + list(map(str, global_data)) + [query_class, subject_class] + list(map(str, query_data)) + list(map(str, subject_data))
+		qs_pair_data = [query, subject] + list(map(str, global_data)) + [query_class, subject_class] + list(map(str, query_blastp_data)) + list(map(str, subject_blastp_data)) + list(map(str, query_blastn_data)) + list(map(str, subject_blastn_data))
 		match_data_lines.append(qs_pair_data)
 
 	match_data_outlines = ["\t".join(line) for line in match_data_lines]

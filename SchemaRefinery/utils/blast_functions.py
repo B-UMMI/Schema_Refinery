@@ -56,6 +56,7 @@ def make_blast_db(makeblastdb_path: str, input_fasta: str, output_path: str, db_
 	stdout, stderr = makedb_process.communicate()
 	return stdout, stderr
 
+
 def run_blastdbcmd(blastdbcmd_path, blast_db, output_file) -> Tuple[bytes, Union[bytes, str]]:
 	"""Run blastdbcmd to extract sequences from a BLAST database.
 
@@ -88,6 +89,7 @@ def run_blastdbcmd(blastdbcmd_path, blast_db, output_file) -> Tuple[bytes, Union
 		sys.exit(f'Cound not extract sequences from {blast_db}.\n')
 
 	return stdout, stderr
+
 
 def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str,
 			  max_hsps: int = 1, threads: int = 1, ids_file: Optional[str] = None,
@@ -168,6 +170,7 @@ def run_blast(blast_path: str, blast_db: str, fasta_file: str, blast_output: str
 		sys.exit()
 
 	return stdout, stderr
+
 
 def run_blast_with_args_only(blast_args: List[str]) -> None:
 	"""
@@ -427,6 +430,7 @@ def run_blastdb_aliastool_multiprocessing(blastdb_aliastool_path: str, seqid_inf
 		sys.exit(f'Could not convert {seqid_infile} to binary format. {blastdb_aliastool_path} returned the following error: {stderr}')
 
 	return stdout, stderr
+
 
 def run_blastdb_aliastool(blastdb_aliastool_path: str, seqid_infile: List[str], seqid_outfile: List[str], cpu: int) -> Tuple[bytes, Union[bytes, str]]:
 	"""

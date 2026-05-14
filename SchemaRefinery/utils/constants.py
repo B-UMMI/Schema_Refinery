@@ -72,12 +72,16 @@ IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['cds', 'schema']
 MATCHES_HEADER = ["Query", "Subject", "Query_length", "Subject_length",
                   "Query_frequency", "Subject_frequency", "Frequency_ratio",
                   "Query_class", "Subject_class",
-                  "Query_palign_min", "Query_palign_max",
-                  "Query_pident_min", "Query_pident_max",
-                  "Query_max_bsr",
-                  "Subject_palign_min", "Subject_palign_max",
-                  "Subject_pident_min", "Subject_pident_max",
-                  "Subject_max_bsr"]
+                  "Query_BLASTp_palign_min", "Query_BLASTp_palign_max",
+                  "Query_BLASTp_pident_min", "Query_BLASTp_pident_max",
+                  "Query_BLASTp_max_bsr",
+                  "Subject_BLASTp_palign_min", "Subject_BLASTp_palign_max",
+                  "Subject_BLASTp_pident_min", "Subject_BLASTp_pident_max",
+                  "Subject_BLASTp_max_bsr",
+                  "Query_BLASTn_palign_min", "Query_BLASTn_palign_max",
+                  "Query_BLASTn_pident_min", "Query_BLASTn_pident_max",
+                  "Subject_BLASTn_palign_min", "Subject_BLASTn_palign_max",
+                  "Subject_BLASTn_pident_min", "Subject_BLASTn_pident_max"]
 
 MATCHES_FILENAME = "matches_data.tsv"
 
