@@ -68,6 +68,8 @@ PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_allele
 
 IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['cds', 'schema']
 
+EXCLUDED_FILENAME = "excluded.txt"
+
 # Header for file with data for all matches selected by the RefineSchema module
 MATCHES_HEADER = ["Query", "Subject", "Query_length", "Subject_length",
                   "Query_frequency", "Subject_frequency", "Frequency_ratio",
@@ -84,6 +86,8 @@ MATCHES_HEADER = ["Query", "Subject", "Query_length", "Subject_length",
                   "Subject_BLASTn_pident_min", "Subject_BLASTn_pident_max"]
 
 MATCHES_FILENAME = "matches_data.tsv"
+
+RECOMMENDATIONS_HEADER = "Locus\tAction\tClass"
 
 SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
@@ -155,7 +159,7 @@ FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 
 CHEWIE_CLASSES = ["ASM", "ALM", "PLOT3", "PLOT5", "LOTSC", "NIPH", "NIPHEM", "PAMA", "LNF"]
 
-CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1c', '2b', '3b', '1b', '2a', '3a', '4a', '4b', '4c', '5', '6', '7')
+CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1c', '2b', '3b', '1b', '2a', '3a', '4a', '4b', '4c', '5', '6', '7', '8')
 
 BLASTDBCMD_ALIAS = 'blastdbcmd.exe' if platform.system() == 'Windows' else shutil.which('blastdbcmd')
 

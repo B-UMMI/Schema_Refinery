@@ -536,19 +536,24 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     SystemExit
         - If the arguments are invalid
     """
-
     errors: List[str] = []
 
-    # Verify if files or directories exist
-    for path in args.input_schemas:
-        verify_schema_structure(path, errors)
+    # Check if output directory exists
     verify_path_exists(args.output_directory, 'directory', errors)
-    for path in args.allelecall_directory:
+
+    # Verify if files or directories exist
+    if args.run_mode == 'schema':
+        for path in args.input_schemas:
+            verify_schema_structure(path, errors)
+
+    # Check if allele calling directories exist
+    for path in args.allelecall_directories:
         verify_path_exists(path, 'directory', errors)
 
-    if args.run_mode == 'schema_vs_schema':
-        if len(args.input_schemas) != 2 or len(args.allelecall_directory) != 2:
-            errors.append("\nError: With run mode 'schema_vs_schema', 'schema_directory' and 'allelecall_directory' need to have two paths each, one per schema.")
+    # Check if the number of input schemas matches the number of allele calling directories in schema run mode
+    if args.run_mode == 'schema':
+        if len(args.input_schemas) != len(args.allelecall_directories):
+            errors.append("\nError: With run mode 'schema', 'schema_directory' and 'allelecall_directory' need to have the same number of paths.")
 
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
         errors.append("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
