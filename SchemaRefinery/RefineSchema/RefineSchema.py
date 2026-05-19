@@ -373,12 +373,12 @@ def count_action_class_pairs(groups):
 				action_counts[a] = 1
 
 	return action_counts
-	
 
-def identify_spurious_genes(input_schemas: List[str], output_directory: str, allelecall_directories: List[str],
+
+def refine_schema(input_schemas: List[str], output_directory: str, allelecall_directories: List[str],
 							annotations: str, constants: List[Any], run_mode: str, cpu: int, no_cleanup: bool) -> None:
 	"""
-	Identify spurious genes in the given schema.
+	Evaluates the loci in the input schemas or the CDSs in a FASTA file to determine actions to create a refined schema.
 
 	Parameters
 	----------
@@ -804,7 +804,7 @@ def main(input_schemas: List[str], output_directory: str, allelecall_directories
 		special_classifications: float, absolute_size: int, translation_table: int, bsr: float, size_ratio: float, run_mode: str,
 		cpu: int, no_cleanup: bool) -> None:
 	"""
-	Main function to identify spurious genes in a schema.
+	Main function to RefineSchema module.
 
 	Parameters
 	----------
@@ -857,11 +857,11 @@ def main(input_schemas: List[str], output_directory: str, allelecall_directories
 							bsr,
 							size_ratio]
 
-	identify_spurious_genes(input_schemas,
-							output_directory,
-							allelecall_directories,
-							annotations,
-							constants,
-							run_mode,
-							cpu,
-							no_cleanup)
+	refine_schema(input_schemas,
+				  output_directory,
+				  allelecall_directories,
+				  annotations,
+				  constants,
+				  run_mode,
+				  cpu,
+				  no_cleanup)

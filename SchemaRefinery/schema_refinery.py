@@ -19,7 +19,7 @@ import webbrowser
 try:
 	from DownloadAssemblies import DownloadAssemblies
 	from SchemaAnnotation import SchemaAnnotation
-	from RefineSchema import IdentifySpuriousGenes
+	from RefineSchema import RefineSchema
 	from IdentifyParalogousLoci import IdentifyParalogousLoci
 	from AdaptLoci import AdaptLoci
 	from MatchSchemas import MatchSchemas
@@ -35,7 +35,7 @@ try:
 except ModuleNotFoundError:
 	from SchemaRefinery.DownloadAssemblies import DownloadAssemblies
 	from SchemaRefinery.SchemaAnnotation import SchemaAnnotation
-	from SchemaRefinery.RefineSchema import IdentifySpuriousGenes
+	from SchemaRefinery.RefineSchema import RefineSchema
 	from SchemaRefinery.IdentifyParalogousLoci import IdentifyParalogousLoci
 	from SchemaRefinery.AdaptLoci import AdaptLoci
 	from SchemaRefinery.MatchSchemas import MatchSchemas
@@ -409,13 +409,12 @@ def schema_annotation() -> None:
 	SchemaAnnotation.main(args)
 
 
-def identify_spurious_genes() -> None:
+def refine_schema() -> None:
 	"""
-	Parse command-line arguments and initiate the process to identify spurious genes.
+	Parse command-line arguments and initiate the process to refine the schema.
 
 	This function sets up an argument parser to handle various command-line
-	options for identifying spurious genes in a schema. It then calls the main
-	function of the IdentifySpuriousGenes class with the parsed arguments.
+	options for refining a schema. It then calls the main function of the RefineSchema class with the parsed arguments.
 
 	Parameters
 	----------
@@ -613,9 +612,9 @@ def identify_spurious_genes() -> None:
 			sys.exit(f"Error: could not find the temp directory inside the folder with the allele calling results. Make sure that AlleleCall "
 					 "was run using the `--no-cleanup` and `--output-unclassified` options.")
 
-	# Call the main function of the IdentifySpuriousGenes class with the parsed arguments
-	pf.print_message(f"Running IdentifySpuriousGenes module...", message_type="info")
-	IdentifySpuriousGenes.main(**vars(args))
+	# Call the main function of the RefineSchema class with the parsed arguments
+	pf.print_message(f"Running the RefineSchema module...", message_type="info")
+	RefineSchema.main(**vars(args))
 
 
 def adapt_loci() -> None:
@@ -1117,7 +1116,7 @@ def open_docs() -> None:
 module_info = {
 		'DownloadAssemblies': ["Downloads assemblies from the NCBI and the ENA661K database.", download_assemblies],
 		'SchemaAnnotation': ['Annotate a schema based on TrEMBL and Swiss-Prot records, and based on alignment against Genbank files and other schemas.', schema_annotation],
-		'IdentifySpuriousGenes': ["Identifies spurious genes in a schema by running against itself or against CDSs to infer new loci and identify problematic genes.", identify_spurious_genes],
+		'RefineSchema': ["Refines a schema by identifying and removing spurious genes.", refine_schema],
 		'AdaptLoci': ["Adapts loci from a fasta files to a new schema.", adapt_loci],
 		'IdentifyParalogousLoci': ["Identifies paralogous loci based on schema input", identify_paralogous_loci],
 		'MatchSchemas': ["Match schemas to identify the best matches between two schemas.", match_schemas],
