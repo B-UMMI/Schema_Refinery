@@ -2,8 +2,7 @@ import os
 from typing import Dict, List, Tuple
 
 try:
-	from utils import (
-						sequence_functions as sf,
+	from utils import (sequence_functions as sf,
 						blast_functions as bf,
 						linux_functions as lf,
 						file_functions as ff,
@@ -13,8 +12,7 @@ try:
 						logger_functions as logf,
 						globals as gb)
 except ModuleNotFoundError:
-	from SchemaRefinery.utils import (
-									sequence_functions as sf,
+	from SchemaRefinery.utils import (sequence_functions as sf,
 									blast_functions as bf,
 									linux_functions as lf,
 									file_functions as ff,

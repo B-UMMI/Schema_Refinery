@@ -89,6 +89,10 @@ MATCHES_FILENAME = "matches_data.tsv"
 
 RECOMMENDATIONS_HEADER = "Locus\tAction\tClass"
 
+CDS_HASHTABLE_PATH = "2_cds_preprocess/cds_deduplication/distinct.hashtable"
+
+PROFILES_FILENAME = "results_alleles.tsv"
+
 SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
 DATABASE_CHOICES = ['NCBI', 'ENA661K']
