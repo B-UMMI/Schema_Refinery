@@ -78,7 +78,7 @@ def prepare_cluster_blast_infiles(output_directory: str,
             outfile.write(f"{repid}\n")
 
         # Run blastdb_aliastool to create the alias files for the seqid files
-        stdout, stderr = bf.run_blastdb_aliastool_multiprocessing(blastdb_aliastool_exec, seqid_file, seqid_file_alias)
+        stdout, stderr = bf.run_blastdb_aliastool(blastdb_aliastool_exec, seqid_file, seqid_file_alias)
 
     # Concatenate all the representative FASTA files into one file for BLASTn
     concatenated_dna_fasta: str = os.path.join(output_directory, "concatenated_dna.fasta")
@@ -143,7 +143,7 @@ def prepare_loci_blast_infiles(schema_folder: str, output_directory: str, minimu
             outfile.write(f"{representative_seqids}\n")
 
         # Run blastdb_aliastool to create the alias files for the seqid files
-        stdout, stderr = bf.run_blastdb_aliastool_multiprocessing(blastdb_aliastool_exec, seqid_file, seqid_file_alias)
+        stdout, stderr = bf.run_blastdb_aliastool(blastdb_aliastool_exec, seqid_file, seqid_file_alias)
 
     # Concatenate all the representative FASTA files into one file for BLASTn
     concatenated_dna_fasta: str = os.path.join(output_directory, "concatenated_dna.fasta")

@@ -1175,7 +1175,6 @@ def entry_point():
 			sys.exit(0)
 		i += 1
 
-
 	# Create Output directory
 	if output_folder:
 		ff.create_directory(output_folder)

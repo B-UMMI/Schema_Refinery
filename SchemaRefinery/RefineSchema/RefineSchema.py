@@ -747,7 +747,7 @@ def refine_schema(input_schemas: List[str], allelecall_directories: List[str], o
 				if locus_id not in excluded:
 					shutil.copy(file, temp_schema_short)
 				else:
-					pf.print_message(f"File {file} was excluded because of the following reasons: {excluded[locus_id]}.", "info")
+					pf.print_message(f"Locus {locus_id} was excluded because of the following reasons: {', '.join(excluded[locus_id])}.", "info")
 
 		pf.print_message("Creating input files for BLAST...", "info")
 		loci_files, concatenated_files = cof.prepare_loci_blast_infiles(temp_schema, blast_inputs, constants[6], constants[7], blastdb_aliastool_exec)
@@ -778,7 +778,7 @@ def refine_schema(input_schemas: List[str], allelecall_directories: List[str], o
 	self_blastp_inputs = {locus: paths[1] for locus, paths in loci_files.items()}
 	self_blastp_outdir = ff.join_paths(blast_output, ["self_scores"])
 	ff.create_directory(self_blastp_outdir)
-	self_score_dict: Dict[str, float] = bf.calculate_self_score(self_blastp_inputs, blastp_exec, self_blastp_outdir, cpu)
+	self_score_dict: Dict[str, float] = bf.run_self_score_multiprocessing(self_blastp_inputs, blastp_exec, self_blastp_outdir, cpu)
 
 	# Run BLASTp to align each representative protein against all other representative proteins
 	pf.print_message("Running BLASTp...", "info")
@@ -787,7 +787,9 @@ def refine_schema(input_schemas: List[str], allelecall_directories: List[str], o
 	ff.create_directory(blastp_outdir)
 	# Allow multiple High-Scoring Segment Pairs to determine the global aligned fraction
 	# Define a value for max_targets that is high enough to report all/most relevant alignments
-	blastp_outfiles = bf.run_blast_operations(blastp_inputs, blastp_outdir, blastp_db_path, blastp_exec, cpu, max_hsps=5, max_targets=100)
+	# Only return HSPs with a query coverage of at least 20% ("-qcov_hsp_perc", "20") to avoid reporting very short alignments that are not relevant for the analysis
+	# Only return the best non-overlapping HSPs for each query region
+	blastp_outfiles = bf.run_blast_multiprocessing(blastp_inputs, blastp_outdir, blastp_db_path, blastp_exec, cpu, max_hsps=5, max_targets=100, additional_args=["-qcov_hsp_perc", "20", "-subject_besthit"])
 
 	# Create BLASTn database
 	blastn_db_directory: str = ff.join_paths(blast_inputs, ['BLASTn_db'])
@@ -801,7 +803,7 @@ def refine_schema(input_schemas: List[str], allelecall_directories: List[str], o
 	blastn_inputs: Dict[str, List[str]] = {locus: [paths[0], paths[3]] for locus, paths in loci_files.items()}
 	blastn_outdir = ff.join_paths(blast_output, ["BLASTn_results"])
 	ff.create_directory(blastn_outdir)
-	blastn_outfiles = bf.run_blast_operations(blastn_inputs, blastn_outdir, blastn_db_path, blastn_exec, cpu, max_hsps=5, max_targets=100)
+	blastn_outfiles = bf.run_blast_multiprocessing(blastn_inputs, blastn_outdir, blastn_db_path, blastn_exec, cpu, max_hsps=5, max_targets=100, additional_args=["-qcov_hsp_perc", "20", "-subject_besthit"])
 
 	# Process BLAST results to get global and local stats
 	blast_results_dict = {}
@@ -815,7 +817,8 @@ def refine_schema(input_schemas: List[str], allelecall_directories: List[str], o
 
 		# No matches with both BLASTp and BLASTn
 		if not blastp_data and not blastn_data:
-			pf.print_message(f"No BLASTp and BLASTn matches for {file}.", "info")
+			locus_id = ff.file_basename(file, False).rsplit('blast_results_', 1)[1]
+			pf.print_message(f"No BLASTp and BLASTn matches for locus {locus_id}.", "info")
 			continue
 
 		# Merge BLASTp and BLASTn pairs
@@ -898,8 +901,6 @@ def refine_schema(input_schemas: List[str], allelecall_directories: List[str], o
 	pf.print_message(f"Saving matches data to {match_data_outfile}...", "info")
 	total_matches = write_matches_data(blast_results_dict, match_data_outfile)
 	pf.print_message(f"Saved data for {total_matches} matches.", "info")
-
-##### Am I selecting the top class per locus??? Or am I just using the last match?
 
 	# Get all classes assigned to each sequence
 	pf.print_message("Assigning actions based on assigned classes...", "info")
