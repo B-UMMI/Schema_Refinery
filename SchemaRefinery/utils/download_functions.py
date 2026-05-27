@@ -9,6 +9,7 @@ try:
 except ModuleNotFoundError:
     from SchemaRefinery.utils import print_functions as pf
 
+
 def download_file(url: str, file_name: str, retry: int) -> tuple[Union[str, tuple[str, HTTPMessage]], str]:
     """
     Downloads a file from the given URL and saves it with the specified file name. Retries the download

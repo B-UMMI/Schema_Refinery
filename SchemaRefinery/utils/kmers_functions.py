@@ -1,5 +1,6 @@
 from typing import List, Optional, Union, Tuple
 
+
 def string_kmerizer(input_string: str, k_value: int, offset: int = 1, position: bool = False) -> List[Union[str, Tuple[str, int]]]:
     """
     Decompose a string into k-mers.

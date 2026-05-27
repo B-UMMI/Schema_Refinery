@@ -66,7 +66,32 @@ DNA_BASES = ['A', 'T', 'C', 'G']
 
 PROCESSING_MODE_CHOICES = ['reps_vs_reps', 'reps_vs_alleles', 'alleles_vs_alleles', 'alleles_vs_reps']
 
-IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['unclassified_cds', 'schema', 'schema_vs_schema']
+IDENTIFY_SPURIOUS_LOCI_RUN_MODE_CHOICES = ['cds', 'schema']
+
+EXCLUDED_FILENAME = "excluded.txt"
+
+# Header for file with data for all matches selected by the RefineSchema module
+MATCHES_HEADER = ["Query", "Subject", "Query_length", "Subject_length",
+                  "Query_frequency", "Subject_frequency", "Frequency_ratio",
+                  "Query_class", "Subject_class",
+                  "Query_BLASTp_palign_min", "Query_BLASTp_palign_max",
+                  "Query_BLASTp_pident_min", "Query_BLASTp_pident_max",
+                  "Query_BLASTp_max_bsr",
+                  "Subject_BLASTp_palign_min", "Subject_BLASTp_palign_max",
+                  "Subject_BLASTp_pident_min", "Subject_BLASTp_pident_max",
+                  "Subject_BLASTp_max_bsr",
+                  "Query_BLASTn_palign_min", "Query_BLASTn_palign_max",
+                  "Query_BLASTn_pident_min", "Query_BLASTn_pident_max",
+                  "Subject_BLASTn_palign_min", "Subject_BLASTn_palign_max",
+                  "Subject_BLASTn_pident_min", "Subject_BLASTn_pident_max"]
+
+MATCHES_FILENAME = "matches_data.tsv"
+
+RECOMMENDATIONS_HEADER = "Locus\tAction\tClass"
+
+CDS_HASHTABLE_PATH = "2_cds_preprocess/cds_deduplication/distinct.hashtable"
+
+PROFILES_FILENAME = "results_alleles.tsv"
 
 SCHEMA_ANNOTATION_RUN_MODE_CHOICES = ['reps', 'alleles']
 
@@ -136,7 +161,9 @@ FTP_HASH_FILE = 'http://ftp.ebi.ac.uk/pub/databases/ENA2018-bacteria-661k/checkl
 
 # IdentifyingSpuriousLoci module
 
-CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1c', '2b', '3b', '1b', '2a', '3a', '4a', '4b', '4c', '5', '6')
+CHEWIE_CLASSES = ["ASM", "ALM", "PLOT3", "PLOT5", "LOTSC", "NIPH", "NIPHEM", "PAMA", "LNF"]
+
+CLASSES_OUTCOMES: Tuple[str, ...] = ('1a', '1c', '2b', '3b', '1b', '2a', '3a', '4a', '4b', '4c', '5', '6', '7', '8')
 
 BLASTDBCMD_ALIAS = 'blastdbcmd.exe' if platform.system() == 'Windows' else shutil.which('blastdbcmd')
 
@@ -155,4 +182,3 @@ INPUTS_PDB_PREFIX = ('The following input files have prefixes that are interpret
 					 'which leads to issues when SchemaRefinery cannot find the original '
 					 'IDs in the results. Please ensure that the file prefixes (substring '
 					 'before the first "." in the filename) cannot be interpreted as chain PDB IDs.')
-

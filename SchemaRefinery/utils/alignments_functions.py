@@ -1,3 +1,4 @@
+import csv
 from copy import deepcopy
 from typing import List, Tuple, Dict, Any, Union
 
@@ -7,6 +8,7 @@ try:
 except ModuleNotFoundError:
     from SchemaRefinery.utils import (iterable_functions as itf,
                                       Types as tp,)
+
 
 def get_alignments_dict(blast_results_file: str) -> Dict[str, List[Dict[str, Any]]]:
     """
@@ -66,6 +68,17 @@ def get_alignments_dict(blast_results_file: str) -> Dict[str, List[Dict[str, Any
     return alignments_dict
 
 
+def get_self_scores(blast_file: str) -> int:
+    """
+    """
+    with open(blast_file, "r") as f:
+        lines = csv.reader(f, delimiter="\t")
+        self_lines: List[List[str]] = [line for line in lines if line[0] == line[1]]
+        self_scores: Dict[str, int] = {line[0]: int(line[9]) for line in self_lines}
+
+    return self_scores
+
+
 def get_alignments_dict_from_blast_results(
     blast_results_file: str,
     pident_threshold: float,
@@ -111,12 +124,9 @@ def get_alignments_dict_from_blast_results(
     where query will be the allele identifier e.g., loci1_1, so for the same loci there may be various query entries.
     The self_score will be the highest self-score found in the BLAST results file or a dictionary containing the self-score for each representative present.
     """
-
     alignments_dict: tp.BlastDict = {}
     alignment_coords_pident: tp.RepresentativeBlastResultsCoords = {}
     alignment_coords_all: tp.RepresentativeBlastResultsCoords = {}
-    pattern: str = r'_(\d+)$'
-    self_scores: Union[int, Dict[str, int]] = 0 if not multiple_reps else {}
 
     with open(blast_results_file, "r") as f:
         lines: List[str] = f.readlines()
@@ -152,36 +162,7 @@ def get_alignments_dict_from_blast_results(
                 "gaps": gaps,
                 "pident": pident
             }
-            
-            if if_alleles:
-                if itf.remove_by_regex(query, pattern) == itf.remove_by_regex(subject, pattern):
-                    if not multiple_reps:
-                        self_score = 0
-                    else:
-                        self_scores.setdefault(query, 0)
-                        self_score = self_scores[query]
-                    # Largest self-score is chosen
-                    if get_self_score and score > self_score:
-                        if multiple_reps:
-                            self_scores[query] = score
-                        else:
-                            self_scores = score
-                    continue
-            # Skip if entry matched itself and get self-score if needed
-            elif query == subject:
-                if not multiple_reps:
-                    self_score = 0
-                else:
-                    self_scores.setdefault(query, 0)
-                    self_score = self_scores[query]
-                # Largest self-score is chosen
-                if get_self_score and score > self_score:
-                    if multiple_reps:
-                        self_scores[query] = score
-                    else:
-                        self_scores = score
-                continue
-            
+
             if skip_reverse_alignments:
                 if query_start > query_end or subject_start > subject_end:
                     continue
@@ -221,8 +202,8 @@ def get_alignments_dict_from_blast_results(
                     if pident >= pident_threshold:
                         alignment_coords_pident[query][subject]['query'].append([query_start, query_end])
                         alignment_coords_pident[query][subject]['subject'].append([subject_start, subject_end])
-            
-    return alignments_dict, self_scores, alignment_coords_all, alignment_coords_pident
+
+    return alignments_dict, alignment_coords_all, alignment_coords_pident
 
 
 def get_alignments_dict_from_blast_results_simplified(
@@ -350,10 +331,6 @@ def merge_intervals(intervals: List[List[int]]) -> List[List[int]]:
     List[List[int]]
         List of merged intervals, where overlapping intervals are combined into a single interval.
     """
-
-    if not intervals:
-        return []
-
     merged: List[List[int]] = [deepcopy(intervals[0])]
     for current in intervals[1:]:
         previous: List[int] = merged[-1]

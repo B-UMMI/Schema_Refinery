@@ -6,6 +6,7 @@ try:
 except ModuleNotFoundError:
     from SchemaRefinery.utils import print_functions as pf
 
+
 def get_tool_path(name: str) -> str:
     """
     Get the path of the specified tool.

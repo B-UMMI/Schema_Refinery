@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     from SchemaRefinery.utils import (constants as ct,
                                       print_functions as pf)
 
+
 def validate_python_version(minimum_version: Tuple[int, int, int] = ct.MIN_PYTHON) -> str:
     """
     Validate Python version used to run Schema Refinery.
@@ -46,6 +47,7 @@ def validate_python_version(minimum_version: Tuple[int, int, int] = ct.MIN_PYTHO
 
     return python_version
 
+
 def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
     """
     Validate the number of CPUs available in the system and return the optimal number of CPUs to use.
@@ -67,6 +69,7 @@ def validate_system_max_cpus_number(given_number_of_cpus: int) -> int:
         return optimal_cpus
     return given_number_of_cpus
 
+
 def verify_path_exists(path: str, path_type: str, errors: List[str]) -> None:
     """
     Verify if a file or directory exists and append errors to the provided list.
@@ -82,6 +85,7 @@ def verify_path_exists(path: str, path_type: str, errors: List[str]) -> None:
     """
     if not os.path.exists(path):
         errors.append(f"The specified {path_type} does not exist: {path}")
+
 
 def verify_schema_structure(schema_directory: str, errors: List[str]) -> None:
     """
@@ -114,6 +118,7 @@ def verify_schema_structure(schema_directory: str, errors: List[str]) -> None:
 
     if len(short_files) == 0:
         errors.append(f"The schema short directory is empty: {short_schema_directory}")
+
 
 def tryeval(val):
     """
@@ -360,6 +365,7 @@ def validate_criteria_file(file_path: str, expected_criteria: Dict[str, Any] = c
     else:
         return parameter_values
 
+
 def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the download assemblies module.
@@ -406,6 +412,7 @@ def validate_download_assemblies_module_arguments(args: argparse.Namespace) -> N
         pf.print_message("The following errors were found:", "error")
         pf.print_message("\n".join(errors))
         sys.exit()
+
 
 def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> None:
     """
@@ -514,6 +521,7 @@ def validate_schema_annotation_module_arguments(args: argparse.Namespace) -> Non
         pf.print_message("\n".join(errors))
         sys.exit()
 
+
 def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the identify spurious genes module.
@@ -528,19 +536,24 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
     SystemExit
         - If the arguments are invalid
     """
-
     errors: List[str] = []
 
-    # Verify if files or directories exist
-    for path in args.schema_directory:
-        verify_schema_structure(path, errors)
+    # Check if output directory exists
     verify_path_exists(args.output_directory, 'directory', errors)
-    for path in args.allelecall_directory:
+
+    # Verify if files or directories exist
+    if args.run_mode == 'schema':
+        for path in args.input_schemas:
+            verify_schema_structure(path, errors)
+
+    # Check if allele calling directories exist
+    for path in args.allelecall_directories:
         verify_path_exists(path, 'directory', errors)
 
-    if args.run_mode == 'schema_vs_schema':
-        if len(args.schema_directory) != 2 or len(args.allelecall_directory) != 2:
-            errors.append("\nError: With run mode 'schema_vs_schema', 'schema_directory' and 'allelecall_directory' need to have two paths each, one per schema.")
+    # Check if the number of input schemas matches the number of allele calling directories in schema run mode
+    if args.run_mode == 'schema':
+        if len(args.input_schemas) != len(args.allelecall_directories):
+            errors.append("\nError: With run mode 'schema', 'schema_directory' and 'allelecall_directory' need to have the same number of paths.")
 
     if args.alignment_ratio_threshold < 0 or args.alignment_ratio_threshold >= 1:
         errors.append("\nError: 'alignment-ratio-threshold' must be a value between 0 and 1.")
@@ -581,6 +594,7 @@ def validate_identify_spurious_genes_module_arguments(args: argparse.Namespace) 
         pf.print_message("\n".join(errors))
         sys.exit()
 
+
 def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the adapt loci module.
@@ -616,7 +630,8 @@ def validate_adapt_loci_module_arguments(args: argparse.Namespace) -> None:
     # Display all errors at once if there are any
     if errors:
         sys.exit("\n".join(errors))
-    
+
+
 def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the identify paralogous loci module.
@@ -658,6 +673,7 @@ def validate_identify_paralogous_loci_arguments(args: argparse.Namespace) -> Non
         pf.print_message("\n".join(errors))
         sys.exit()
 
+
 def validate_match_schemas(args: argparse.Namespace) -> None:
     """
     Validate the arguments passed to the match schemas module.
@@ -697,6 +713,7 @@ def validate_match_schemas(args: argparse.Namespace) -> None:
         pf.print_message("The following errors were found:", "error")
         pf.print_message("\n".join(errors))
         sys.exit()
+
 
 def validate_create_schema_structure(args: argparse.Namespace) -> None:
     """

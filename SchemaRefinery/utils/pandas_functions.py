@@ -3,6 +3,7 @@ import shutil
 import pandas as pd
 from typing import Dict, Any, List, Union
 
+
 def dict_to_df(dictionary: Dict[str, Any]) -> pd.DataFrame:
 	"""
 	Convert a dictionary to a pandas DataFrame.
@@ -59,6 +60,7 @@ def merge_files_into_same_file_by_key(files: List[str], key_to_merge: str, outpu
 	
 	# Save the merged table to a TSV file
 	merged_table.to_csv(output_file, sep='\t', index=False)
+
 
 def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[str, int], column_value2: Union[str, int], output_file: str) -> str:
 	"""
@@ -125,6 +127,7 @@ def merge_files_by_column_values(file1: str, file2: str, column_value1: Union[st
 	merged_table.to_csv(output_file, sep='\t', index=False)
 
 	return output_file
+
 
 def merge_files_by_column_values_df(df1: pd.DataFrame, df2: pd.DataFrame, column_value1: Union[str, int], column_value2: Union[str, int], output_file: str, left: str, right: str) -> pd.DataFrame:
 	"""
