@@ -1,3 +1,7 @@
+## Version 0.5.1 - 2026-07-24
+
+- Fix sequence ID splitting in the IdentifySpuriousGenes module to make it compatible with schemas created with the latest chewBBACA versions.
+
 ## Version 0.5.0 - 2026-01-14
 
 - Optimize and fix issues in the CreateSchemaStructure module.
