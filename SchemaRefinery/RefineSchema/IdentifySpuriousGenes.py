@@ -40,6 +40,7 @@ except ModuleNotFoundError:
                                         time_functions as ti,
                                         globals as gb)
 
+
 def create_directories(output_directory: str, run_mode: str) -> Tuple[str, str, str, str, str, Optional[str], Optional[str], str, str]:
     """
     Create necessary directories for the processing pipeline.
@@ -177,7 +178,7 @@ def calculate_frequency(schema_folder: str,
             # For each locus count the frequency (don't count LNF, ASM or ALM)
             matching_cols = [col for col in allele_columns if loci_id in col]
             # Change the values in the dataframe into 0 (LNF, ASM, ALM) or 1 (the locus has found seen in the genome)
-            presence_mask = df[matching_cols].applymap(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
+            presence_mask = df[matching_cols].map(lambda x: 0 if str(x) == 'LNF' or str(x) == 'ASM' or str(x) == 'ALM' else 1)
             # Count the frequency of each locus in all genome
             genome_presence = presence_mask.any(axis=1)
             frequency_in_genomes[loci_id] = genome_presence.sum()
@@ -250,8 +251,6 @@ def calculate_frequency(schema_folder: str,
 
     
     return frequency_in_genomes, frequency_in_genomes_second_schema, frequency_cds, cds_presence_in_genomes, all_nucleotide_sequences, dropped_alleles, cds_size
-
-
 
 
 def identify_spurious_genes(schema_directory: List[str], output_directory: str, allelecall_directory: List[str],
@@ -595,7 +594,6 @@ def identify_spurious_genes(schema_directory: List[str], output_directory: str, 
                                                                                         dropped_loci_ids,
                                                                                         classes_outcome)
 
-
     pf.print_message("Writing count_results_by_cluster.tsv, related_matches.tsv files and recommendations.tsv...", "info")
     # Write the results to files and return the paths to the files.
     reverse_matches: bool = True
@@ -782,8 +780,9 @@ def main(schema_directory: List[str], output_directory: str, allelecall_director
         if not os.path.exists(temp_paths[0]) or not os.path.exists(temp_paths[1]):
             sys.exit(f"Error: {temp_paths[0]} must exist, make sure that AlleleCall "
                         "was run using --no-cleanup and --output-unclassified flag.")
-    
-    # Put all constants in one dict in order to decrease number of variables used around
+
+    # Put all constants in one dict in order to decrease number of variables
+    # used around.
     constants: List[Any] = [alignment_ratio_threshold, 
                 pident_threshold,
                 genome_presence,

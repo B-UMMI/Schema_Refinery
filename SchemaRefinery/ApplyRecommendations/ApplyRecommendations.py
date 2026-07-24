@@ -60,7 +60,7 @@ def process_recommendations(recommendations_file: str,
 
 	# Get all FASTA paths in the FASTA folder
 	fasta_files: Dict[str, str] = {
-		os.path.basename(fasta_file).split('.')[0]: os.path.join(fastas_folder, fasta_file)
+		os.path.basename(fasta_file).rsplit('.', 1)[0]: os.path.join(fastas_folder, fasta_file)
 		for fasta_file in os.listdir(fastas_folder) if fasta_file.endswith('.fasta')
 	}
 	pf.print_message(f'The input schema ({fastas_folder}) has {len(fasta_files)} loci.', 'info')

@@ -1310,10 +1310,9 @@ def write_recommendations_summary_results(to_blast_paths: Dict[str, str],
                     else:
                         continue
         # Add the loci that had no action needed to the output file with the action 'Add' and class '7'
-        for loci, loci_path in to_blast_paths.items():
-            loci_id = ff.file_basename(loci).split('.')[0]
-            if loci_id not in matched_loci:
-               recommendations_report_file.write(f"{loci_id}\tAdd\t7\n") 
+        for locus_id in to_blast_paths:
+            if locus_id not in matched_loci:
+               recommendations_report_file.write(f"{locus_id}\tAdd\t7\n") 
     
     order_index = {value: index for index, value in enumerate(classes_outcome)}
     count_classes_final = dict(sorted(count_classes.items(), key=lambda item: order_index.get(item[0], len(classes_outcome))))
@@ -1683,7 +1682,7 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], trans_paths: Di
     # ============================================
     # Run BLASTn with loci not matched
     # ============================================
-    
+
     # BLASTn folder
     blastn_output: str = os.path.join(output_dir, '2_BLASTn_processing')
     ff.create_directory(blastn_output)
@@ -1708,13 +1707,13 @@ def run_blasts(blast_db: str, all_alleles: Dict[str, List[str]], trans_paths: Di
     # Get all unique loci_ids from allele names
     loci_ids_needed = set(all_alleles.keys()) - set(loci_matches)
     for loci_file, loci_path in to_blast_paths.items():
-        loci_name = ff.file_basename(loci_file).rsplit('.', 1)[0]
+        loci_name = ff.file_basename(loci_file, False)
         if loci_name in loci_ids_needed:
             matched_loci_paths[loci_name] = loci_path
     # Open the master file once in append mode
     with open(master_file_path_nucl, 'a') as master_file:
         for loci, loci_path in to_run_against.items():
-            loci_name = ff.file_basename(loci).rsplit('.', 1)[0]
+            loci_name = ff.file_basename(loci, False)
             if loci_name in loci_ids_needed:
                 fasta_dict = sf.fetch_fasta_dict(loci_path, False)
                 for allele_id, sequence in fasta_dict.items():

@@ -740,7 +740,7 @@ def prepare_files_to_blast(translation_files_paths: str,
     master_sequences: Dict[str, str] = {}
     for members in all_alleles.values():
         cluster_rep_id: str = members[0]
-        loci: str = cluster_rep_id.split('_')[0]
+        loci: str = cluster_rep_id.rsplit('_', 1)[0]
         fasta_file: str = os.path.join(representatives_blastn_folder, f"cluster_rep_{cluster_rep_id}.fasta")
         against_fasta_file: str = os.path.join(representatives_blastn_folder_against, f"cluster_rep_{cluster_rep_id}_against.fasta")
         seqid_file: str = os.path.join(seqid_files_paths, f"cluster_rep_{cluster_rep_id}_seqid.txt")
@@ -761,8 +761,7 @@ def prepare_files_to_blast(translation_files_paths: str,
             for seq_id in master_sequences.keys():
                 seqid_file.write(f"{seq_id}\n")   
 
-    for loci, loci_path in to_blast_paths.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
+    for loci_id, loci_path in to_blast_paths.items():
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         # Translate sequences and update translation dictionary
         trans_path_file = os.path.join(translation_files_paths, f"{loci_id}.fasta")
@@ -773,8 +772,7 @@ def prepare_files_to_blast(translation_files_paths: str,
                                                         constants[6],
                                                         False)
 
-    for loci, loci_path in to_run_against.items():
-        loci_id = ff.file_basename(loci).split('.')[0]
+    for loci_id, loci_path in to_run_against.items():
         fasta_dict = sf.fetch_fasta_dict(loci_path, False)
         for allele_id, sequence in fasta_dict.items():
             protseq = sf.translate_sequence(str(sequence), constants[6])
@@ -782,7 +780,6 @@ def prepare_files_to_blast(translation_files_paths: str,
             write_type = 'a' if os.path.exists(master_file_path) else 'w'
             with open(master_file_path, write_type) as master_file:
                 master_file.write(f">{allele_id}\n{str(protseq)}\n")
-        
 
     return to_blast_paths, to_run_against, master_file_path, trans_paths, new_max_hits, seqid_file_dict
 
