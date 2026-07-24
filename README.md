@@ -10,4 +10,4 @@ Schema Refinery is a comprehensive toolkit designed for refining and managing ML
 
 ## Version 0.5.1 - 2026-07-24
 
-- Fix sequence ID splitting in the IdentifySpuriousGenes module to male it compatible with the schemas created by the latest chewBBACA versions.
+- Fix sequence ID splitting in the IdentifySpuriousGenes module to make it compatible with the schemas created by the latest chewBBACA versions.
