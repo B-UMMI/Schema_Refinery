@@ -8,7 +8,6 @@ Schema Refinery is a comprehensive toolkit designed for refining and managing ML
 
 ## News
 
-## Version 0.5.0 - 2026-01-14
+## Version 0.5.1 - 2026-07-24
 
-- Optimize and fix issues in the CreateSchemaStructure module.
-- Changed name of the CreateSchemaStructure module to ApplyRecommendations.
+- Fix sequence ID splitting in the IdentifySpuriousGenes module to male it compatible with the schemas created by the latest chewBBACA versions.
