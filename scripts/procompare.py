@@ -36,7 +36,6 @@ Outputs:
 
 
 import argparse
-from asyncore import write 
 import csv 
 import sys
 import os
